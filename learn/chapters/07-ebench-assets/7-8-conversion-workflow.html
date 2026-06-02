@@ -23,6 +23,26 @@
       <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-8</div>
       <h1>Conversion workflow：从 LabUtopia USD 到 EBench task</h1>
       <p class="lede">如果真的要把 LabUtopia 的实验室资产带到 EBench，推荐按 workflow 做，而不是一次性复制目录后祈祷它能跑。</p>
+
+      <div class="plain-grid">
+        <section class="plain-card">
+          <h2 id="plain">先讲人话</h2>
+          <p>如果真的要把 LabUtopia 的实验室资产带到 EBench，推荐按 workflow 做，而不是一次性复制目录后祈祷它能跑。 换成更直白的话：这一节是在告诉你“遇到 Conversion workflow：从 LabUtopia USD 到 EBench task 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="analogy">你可以这样想</h2>
+          <p>把它想成搬家：东西可以搬，但门锁、插座、电压和房间布局不同，不能原封不动就开工。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="checkpoint">读完你应该能回答</h2>
+          <ul>
+            <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+            <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets/chemistry_lab</span>。</li>
+            <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+          </ul>
+        </section>
+      </div>
+
       <h2 id="why">为什么它在本项目里重要</h2>
       <p>第一步做 asset inventory：列出 root USD、subUSD、textures、MDL、prim path、scale、collision、articulation、semantic object list。第二步在 Isaac Sim 4.1/GenManip 环境打开，记录 missing reference、material warning、physics warning。第三步根据 EBench/lift2 workspace 检查可达性和 camera visibility。第四步把 scene/objects 包装成 EBench-Assets 风格目录和 metadata。</p>
       <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

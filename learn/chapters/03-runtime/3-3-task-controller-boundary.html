@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 3 · Runtime Architecture · 3-3</div>
   <h1>Task/Controller boundary：谁看世界，谁做动作</h1>
   <p class="lede">LabUtopia 的 README 已经给出设计哲学：scene state 和 observation acquisition 由 tasks 处理，robot control 与 success condition checking 由 controllers 处理。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>LabUtopia 的 README 已经给出设计哲学：scene state 和 observation acquisition 由 tasks 处理，robot control 与 success condition checking 由 controllers 处理。 换成更直白的话：这一节是在告诉你“遇到 Task/Controller boundary：谁看世界，谁做动作 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成一次做实验的流水线：先拿实验单，再摆场景，再观察，再动作，再记录结果。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">tasks/base_task.py</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p><span class="term">BaseTask</span> 负责 cameras、objects、materials、state dict。它知道如何从 stage 中读取 object position、size、camera frame，也知道什么时候需要 reset。<span class="term">BaseController</span> 负责把 state 变成 action，管理 collect/infer mode、RMPFlow、DataCollector、episode count 和 failure reason。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

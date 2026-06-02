@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 0 · 先把整座实验室看成一张图 · 0-1</div>
   <h1>为什么 LabUtopia 不是一个普通仿真 demo</h1>
   <p class="lede">如果你只把 LabUtopia 当成一批 USD 场景，就会错过它真正的结构：它同时是 scientific embodied agents 的仿真环境、任务层级和数据生成入口。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>如果你只把 LabUtopia 当成一批 USD 场景，就会错过它真正的结构：它同时是 scientific embodied agents 的仿真环境、任务层级和数据生成入口。 换成更直白的话：这一节是在告诉你“遇到 为什么 LabUtopia 不是一个普通仿真 demo 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成先画地图：你不是马上拧螺丝，而是先知道门、桌子、机器人、数据出口分别在哪里。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">README.md</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>这份教程把项目当成一本书来拆。第一层是 <span class="term">Isaac Sim</span> 与 <span class="term">OpenUSD</span> 的世界观；第二层是 LabUtopia 论文里的 <span class="term">LabSim</span>、<span class="term">LabScene</span>、<span class="term">LabBench</span>；第三层才是代码里的 <span class="term">BaseTask</span>、<span class="term">BaseController</span>、policy workspace 和 assets。读者如果有一点 RL 与 USD 资产基础，最容易卡住的不是概念，而是这些层之间的映射。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

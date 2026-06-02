@@ -23,6 +23,26 @@
       <div class="eyebrow">Appendix · 查阅资料 · A-2</div>
       <h1>Commands：常用命令速查</h1>
       <p class="lede">这里收集本书涉及的常用命令，方便你从阅读切到实践。</p>
+
+      <div class="plain-grid">
+        <section class="plain-card">
+          <h2 id="plain">先讲人话</h2>
+          <p>这里收集本书涉及的常用命令，方便你从阅读切到实践。 换成更直白的话：这一节是在告诉你“遇到 Commands：常用命令速查 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="analogy">你可以这样想</h2>
+          <p>把它想成书后索引：读正文卡住时回来查，不需要一次背完。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="checkpoint">读完你应该能回答</h2>
+          <ul>
+            <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+            <li>如果要在项目里找证据，第一眼应该打开 <span class="term">本节提到的配置、代码或资产路径</span>。</li>
+            <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+          </ul>
+        </section>
+      </div>
+
       <h2 id="why">为什么它在本项目里重要</h2>
       <p>LabUtopia collection 使用 <span class="term">python main.py --config-name ...</span>；training 使用 <span class="term">python train.py --config-name=...</span>；Isaac Sim 环境安装按 README 使用 <span class="term">isaacsim[all,extscache]==5.1.0</span>。EBench assets/dataset 下载使用 huggingface-cli，评测使用 <span class="term">gmp submit</span>、<span class="term">gmp eval</span>、<span class="term">gmp status</span>。</p>
       <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

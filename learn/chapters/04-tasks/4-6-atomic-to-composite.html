@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 4 · Tasks 与 Controllers · 4-6</div>
   <h1>Atomic controllers 与高阶 controller 的关系</h1>
   <p class="lede">controllers/atomic_actions 里有 move、pick、place、pour、press、shake、stir 等低层控制器，高阶 controller 往往把这些动作组合成任务阶段。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>controllers/atomic_actions 里有 move、pick、place、pour、press、shake、stir 等低层控制器，高阶 controller 往往把这些动作组合成任务阶段。 换成更直白的话：这一节是在告诉你“遇到 Atomic controllers 与高阶 controller 的关系 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成学做实验动作：先练拿起、放下、倾倒，再把它们串成完整实验。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">controllers/atomic_actions</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>这是一种 pragmatic 的 hierarchy。底层 atomic controller 负责一个短动作的几何与控制，高层 controller 负责阶段顺序、语言指令、success check 和数据写入。它不像 hierarchical RL 那样训练 option policy，但工程结构上有类似分层思想。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

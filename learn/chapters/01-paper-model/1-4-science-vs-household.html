@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 1 · 从论文模型建立 LabUtopia 心智地图 · 1-4</div>
   <h1>科学实验任务和 household manipulation 的根本差异</h1>
   <p class="lede">LabUtopia 和 EBench 都在 Isaac Sim 语境里，但一个强调 scientific laboratory，一个强调 indoor/mobile manipulation。这个差异会一路影响资产、任务、动作和评测。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>LabUtopia 和 EBench 都在 Isaac Sim 语境里，但一个强调 scientific laboratory，一个强调 indoor/mobile manipulation。这个差异会一路影响资产、任务、动作和评测。 换成更直白的话：这一节是在告诉你“遇到 科学实验任务和 household manipulation 的根本差异 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成给实验室贴标签：同一间房既可以从论文看，也可以从代码看，标签帮你不迷路。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">controllers/*beaker*.py</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>科学实验任务通常要求器材身份、液体容器、加热/搅拌/清洗等步骤有明确语义。household manipulation 更强调家庭空间、日常物体、双臂移动操作和 VLA 对语言指令的泛化。二者都可视作 embodied agents benchmark，但它们不是同一批 assets 换名字。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

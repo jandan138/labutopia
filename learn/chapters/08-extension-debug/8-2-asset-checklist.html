@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 8 · 扩展与 Debug · 8-2</div>
   <h1>新增资产前的 checklist</h1>
   <p class="lede">新增 USD/MDL/texture 资产时，先做 checklist。否则后面 controller、dataset、policy 都会替资产问题背锅。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>新增 USD/MDL/texture 资产时，先做 checklist。否则后面 controller、dataset、policy 都会替资产问题背锅。 换成更直白的话：这一节是在告诉你“遇到 新增资产前的 checklist 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成修机器：先听声音判断是哪一层坏了，再拆对应零件。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>检查项包括：USD 是否能在目标 Isaac Sim 版本打开；所有 reference/texture/MDL 是否可解析；scale 是否以米为单位合理；collision 是否存在且不穿模；articulation 是否有正确 joint；prim path 是否稳定；camera 是否能看到目标；material 是否在训练视角下可区分；object_utils 是否能读到 geometry center。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

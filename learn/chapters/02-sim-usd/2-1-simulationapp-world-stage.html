@@ -23,6 +23,26 @@
       <div class="eyebrow">Part 2 · Isaac Sim 与 OpenUSD 基础 · 2-1</div>
       <h1>SimulationApp, World, Stage 三件事</h1>
       <p class="lede">LabUtopia 的第一行关键代码不是 robot，也不是 task，而是 <span class="term">SimulationApp</span>。它决定 Isaac Sim runtime 能否启动，后面的 World 与 Stage 都在它之后才有意义。</p>
+
+      <div class="plain-grid">
+        <section class="plain-card">
+          <h2 id="plain">先讲人话</h2>
+          <p>LabUtopia 的第一行关键代码不是 robot，也不是 task，而是 SimulationApp。它决定 Isaac Sim runtime 能否启动，后面的 World 与 Stage 都在它之后才有意义。 换成更直白的话：这一节是在告诉你“遇到 SimulationApp, World, Stage 三件事 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="analogy">你可以这样想</h2>
+          <p>把它想成一场舞台剧：Stage 是舞台，World 是每一拍的节奏，SimulationApp 是剧场电源。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="checkpoint">读完你应该能回答</h2>
+          <ul>
+            <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+            <li>如果要在项目里找证据，第一眼应该打开 <span class="term">main.py</span>。</li>
+            <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+          </ul>
+        </section>
+      </div>
+
       <h2 id="why">为什么它在本项目里重要</h2>
       <p><span class="term">SimulationApp</span> 是应用级入口，负责加载 Omniverse/Isaac Sim 扩展、渲染和物理 runtime。<span class="term">World</span> 是 Isaac Sim core API 里的 simulation wrapper，管理 physics step、reset、play/stop 状态。<span class="term">Stage</span> 则是 OpenUSD 场景图，里面有 prim、reference、material、camera、robot articulation。</p>
       <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 3 · Runtime Architecture · 3-6</div>
   <h1>Collect mode 与 infer mode</h1>
   <p class="lede">同一个 controller base 同时支持 collect 和 infer，这让 LabUtopia 既能生成 demonstration，也能把训练好的 policy 放回 simulation 中测试。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>同一个 controller base 同时支持 collect 和 infer，这让 LabUtopia 既能生成 demonstration，也能把训练好的 policy 放回 simulation 中测试。 换成更直白的话：这一节是在告诉你“遇到 Collect mode 与 infer mode 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成一次做实验的流水线：先拿实验单，再摆场景，再观察，再动作，再记录结果。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">controllers/base_controller.py</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>在 <span class="term">collect</span> mode 下，BaseController 创建 <span class="term">DataCollector</span>，controller 通常按规则或运动规划生成动作，并把 trajectory 写入 HDF5。 在 <span class="term">infer</span> mode 下，BaseController 创建 <span class="term">FrankaTrajectoryController</span> 和 <span class="term">InferenceEngine</span>，由 local/remote/replay engine 提供动作。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

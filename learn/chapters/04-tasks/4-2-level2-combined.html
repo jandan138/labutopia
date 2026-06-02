@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 4 · Tasks 与 Controllers · 4-2</div>
   <h1>Level2 combined skill：组合不是简单相加</h1>
   <p class="lede">Level2 把多个 atomic skill 接起来，例如 pick 后 pour、place 后 press、transport beaker、openclose。组合的难点不只是多了步骤，而是中间状态成为下一步的初始条件。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>Level2 把多个 atomic skill 接起来，例如 pick 后 pour、place 后 press、transport beaker、openclose。组合的难点不只是多了步骤，而是中间状态成为下一步的初始条件。 换成更直白的话：这一节是在告诉你“遇到 Level2 combined skill：组合不是简单相加 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成学做实验动作：先练拿起、放下、倾倒，再把它们串成完整实验。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">config/level2_PourLiquid.yaml</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>以 <span class="term">level2_PourLiquid.yaml</span> 为例，task_type 是 pickpour，controller_type 可能是 pickpour 或 pour。controller 不再只追一个目标，而要管理阶段切换：靠近、抓取、移动、倾倒、退出。每个阶段的误差都会改变下一阶段的可达性。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

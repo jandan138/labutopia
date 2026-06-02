@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 0 · 先把整座实验室看成一张图 · 0-4</div>
   <h1>资料口径：哪些是论文事实，哪些是本地事实</h1>
   <p class="lede">项目理解最怕把论文愿景、本地 README、外部 benchmark 文档和代码事实混成一句话。本书会把来源口径拆开。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>项目理解最怕把论文愿景、本地 README、外部 benchmark 文档和代码事实混成一句话。本书会把来源口径拆开。 换成更直白的话：这一节是在告诉你“遇到 资料口径：哪些是论文事实，哪些是本地事实 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成先画地图：你不是马上拧螺丝，而是先知道门、桌子、机器人、数据出口分别在哪里。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">README.md</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>LabUtopia 的公开资料来自 arXiv、NeurIPS 2025 abstract、project page、Hugging Face dataset 和本地 README。它们告诉我们 LabUtopia 面向 scientific embodied agents，强调 high-fidelity simulation、hierarchical benchmark、scientific laboratory tasks，并在本地 README 中给出 <span class="term">Isaac Sim 5.1</span>、Python 3.11、Ubuntu 24.04 的环境要求。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

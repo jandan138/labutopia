@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 8 · 扩展与 Debug · 8-4</div>
   <h1>从网页教程回到真实项目：推荐阅读顺序</h1>
   <p class="lede">如果你要真正掌握项目，不要按文件树从上到下读。按一次 episode 的数据流读，效率更高。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>如果你要真正掌握项目，不要按文件树从上到下读。按一次 episode 的数据流读，效率更高。 换成更直白的话：这一节是在告诉你“遇到 从网页教程回到真实项目：推荐阅读顺序 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成修机器：先听声音判断是哪一层坏了，再拆对应零件。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">main.py</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>第一轮读 main.py，只追 cfg、world、stage、task、controller、state、action。第二轮读一个最简单 task，比如 level1_pick 的 config/task/controller。第三轮读 BaseTask/BaseController，理解共用机制。第四轮读 DataCollector，看数据如何落盘。第五轮读 policy/config/task 与 workspace，看数据如何进模型。第六轮才看 long-horizon 或 mobile task。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

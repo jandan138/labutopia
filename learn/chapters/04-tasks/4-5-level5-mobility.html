@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 4 · Tasks 与 Controllers · 4-5</div>
   <h1>Level5 mobility：navigation 与 mobile manipulation</h1>
   <p class="lede">Level5 引入移动底盘，LabUtopia 从 table-top manipulation 进入 navigation/mobile manipulation，robot type 也从 Franka 切到 ridgebase。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>Level5 引入移动底盘，LabUtopia 从 table-top manipulation 进入 navigation/mobile manipulation，robot type 也从 Franka 切到 ridgebase。 换成更直白的话：这一节是在告诉你“遇到 Level5 mobility：navigation 与 mobile manipulation 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成学做实验动作：先练拿起、放下、倾倒，再把它们串成完整实验。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">config/level5_Navigation.yaml</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p><span class="term">level5_Navigation.yaml</span> 使用 navigation lab USD，并通过 <span class="term">assets/navigation/barrier/lab_1.png</span> 表示障碍地图。<span class="term">NavigationTask</span> 与 <span class="term">NavigationController</span> 使用 A* 相关工具和 ridgebase controller，让 base motion 成为任务的一部分。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

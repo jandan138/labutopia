@@ -45,6 +45,10 @@ def main() -> None:
         require('data-section="' in html, f"{file_name} missing data-section")
         require('<p class="lede">' in html, f"{file_name} missing lede paragraph")
         require("<h2 id=" in html, f"{file_name} missing h2 anchors")
+        require('class="plain-card"' in html, f"{file_name} missing plain-language card")
+        require("先讲人话" in html, f"{file_name} missing plain-language explanation")
+        require("你可以这样想" in html, f"{file_name} missing analogy explanation")
+        require("读完你应该能回答" in html, f"{file_name} missing reader checkpoint")
         require("TODO" not in html and "TBD" not in html, f"{file_name} contains placeholders")
 
     all_html = "\n".join(read(ROOT / file_name) for file_name in files) + "\n" + index_html
@@ -85,6 +89,11 @@ def main() -> None:
     ]
     for widget in required_widgets:
         require(widget in all_html, f"missing widget: {widget}")
+
+    widgets_js = read(ROOT / "assets/js/widgets/book-widgets.js")
+    require("widget-help" in widgets_js, "widgets must render help text that explains why the control exists")
+    require("widget-feedback" in widgets_js, "widgets must render feedback that changes when the reader interacts")
+    require("data-widget-action" in widgets_js, "interactive widget controls must expose data-widget-action markers")
 
     required_sources = [
         "https://arxiv.org/abs/2505.22634",

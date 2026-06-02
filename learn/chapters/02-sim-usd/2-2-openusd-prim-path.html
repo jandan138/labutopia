@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 2 · Isaac Sim 与 OpenUSD 基础 · 2-2</div>
   <h1>OpenUSD：prim path 为什么像 API</h1>
   <p class="lede">在 LabUtopia 里，USD 的 prim path 不只是 UI 中的树节点名字，它实际承担了对象寻址、camera 初始化、material binding 和 success check 的 API 角色。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>在 LabUtopia 里，USD 的 prim path 不只是 UI 中的树节点名字，它实际承担了对象寻址、camera 初始化、material binding 和 success check 的 API 角色。 换成更直白的话：这一节是在告诉你“遇到 OpenUSD：prim path 为什么像 API 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成一场舞台剧：Stage 是舞台，World 是每一拍的节奏，SimulationApp 是剧场电源。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">tasks/base_task.py</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>OpenUSD 的核心是 stage/layer/prim/composition。你可以把 stage 想成场景数据库，把 prim path 想成数据库 key。LabUtopia 的 task config 把 object path、target path、camera prim path 写进 YAML，运行时用 <span class="term">stage.GetPrimAtPath</span> 查询它们是否存在，然后把位置、尺寸、语义或材质绑定到这些 prim 上。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

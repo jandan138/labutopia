@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 1 · 从论文模型建立 LabUtopia 心智地图 · 1-1</div>
   <h1>LabSim：不是渲染器，而是实验闭环</h1>
   <p class="lede">LabSim 可以先粗略理解为“让实验室任务真正动起来的 simulation runtime”，它把场景、物体、机器人、传感器和 episode loop 放进同一个执行语境。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>LabSim 可以先粗略理解为“让实验室任务真正动起来的 simulation runtime”，它把场景、物体、机器人、传感器和 episode loop 放进同一个执行语境。 换成更直白的话：这一节是在告诉你“遇到 LabSim：不是渲染器，而是实验闭环 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成给实验室贴标签：同一间房既可以从论文看，也可以从代码看，标签帮你不迷路。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">main.py</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>在论文语言里，<span class="term">LabSim</span> 承载 high-fidelity simulation；在本地代码里，它落到 <span class="term">SimulationApp</span>、<span class="term">World</span>、USD reference、camera sensor、task/controller loop。这种对应关系很重要，因为你在代码里找不到一个叫 LabSim 的大类，但能看到它被拆成多个模块。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

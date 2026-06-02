@@ -87,6 +87,12 @@ for (const [viewportName, viewport] of viewports) {
             brokenImages,
             wideElements,
             widgets: document.querySelectorAll("[data-widget]").length,
+            widgetAudit: [...document.querySelectorAll("[data-widget]")].map((widget) => ({
+              name: widget.getAttribute("data-widget"),
+              help: Boolean(widget.querySelector(".widget-help")),
+              feedback: Boolean(widget.querySelector(".widget-feedback")),
+              actions: widget.querySelectorAll("[data-widget-action]").length,
+            })),
             sidebarLinks: document.querySelectorAll("#sidebar a").length,
           };
         });
@@ -95,6 +101,28 @@ for (const [viewportName, viewport] of viewports) {
 
         expect(metrics.horizontalOverflow, JSON.stringify(metrics, null, 2)).toBeFalsy();
         expect(metrics.brokenImages, JSON.stringify(metrics, null, 2)).toHaveLength(0);
+        for (const widget of metrics.widgetAudit) {
+          expect(widget.help, JSON.stringify(widget, null, 2)).toBeTruthy();
+          expect(widget.feedback, JSON.stringify(widget, null, 2)).toBeTruthy();
+          expect(widget.actions, JSON.stringify(widget, null, 2)).toBeGreaterThan(0);
+        }
+        const actionCount = await page.locator("[data-widget-action]").count();
+        if (actionCount > 0) {
+          const feedback = page.locator(".widget-feedback").first();
+          const before = await feedback.innerText();
+          const action = page.locator("[data-widget-action]").nth(actionCount > 1 ? actionCount - 1 : 0);
+          const tag = await action.evaluate((el) => el.tagName.toLowerCase());
+          const type = await action.evaluate((el) => el.getAttribute("type") || "");
+          if (tag === "input" && type === "range") {
+            await action.evaluate((el) => {
+              el.value = el.max || "50";
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+          } else {
+            await action.click();
+          }
+          await expect(feedback).not.toHaveText(before);
+        }
         expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
         expect(pageErrors, pageErrors.join("\n")).toHaveLength(0);
         expect(failedRequests, failedRequests.join("\n")).toHaveLength(0);

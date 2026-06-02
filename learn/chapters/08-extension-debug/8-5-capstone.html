@@ -23,6 +23,26 @@
       <div class="eyebrow">Part 8 · 扩展与 Debug · 8-5</div>
       <h1>Capstone：把一个小实验跑完整</h1>
       <p class="lede">最后，用一个小实验把整本书串起来：选择 level1_pick，确认 assets，collect 少量 episode，检查 HDF5，再用训练配置理解输入输出。</p>
+
+      <div class="plain-grid">
+        <section class="plain-card">
+          <h2 id="plain">先讲人话</h2>
+          <p>最后，用一个小实验把整本书串起来：选择 level1_pick，确认 assets，collect 少量 episode，检查 HDF5，再用训练配置理解输入输出。 换成更直白的话：这一节是在告诉你“遇到 Capstone：把一个小实验跑完整 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="analogy">你可以这样想</h2>
+          <p>把它想成修机器：先听声音判断是哪一层坏了，再拆对应零件。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="checkpoint">读完你应该能回答</h2>
+          <ul>
+            <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+            <li>如果要在项目里找证据，第一眼应该打开 <span class="term">main.py</span>。</li>
+            <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+          </ul>
+        </section>
+      </div>
+
       <h2 id="why">为什么它在本项目里重要</h2>
       <p>建议流程：运行 <span class="term">python main.py --config-name level1_pick --no-video</span> 采集少量数据；打开 run_dir/config.yaml 确认 cfg 被保存；检查 dataset/episode_0000.h5 中 camera、agent_pose、actions、language_instruction；打开 policy/config/task/dp.yaml 或 act.yaml 对齐 dataset_path；最后再读对应 workspace。</p>
       <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

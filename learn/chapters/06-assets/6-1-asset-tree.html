@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 6 · LabUtopia Assets · 6-1</div>
   <h1>资产树总览：471 个文件如何服务任务</h1>
   <p class="lede">LabUtopia 本地 assets 不是巨型外部数据包，而是一组随 repo 管理的 USD/MDL/texture/robot/navigation 资产，直接被 config 引用。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>LabUtopia 本地 assets 不是巨型外部数据包，而是一组随 repo 管理的 USD/MDL/texture/robot/navigation 资产，直接被 config 引用。 换成更直白的话：这一节是在告诉你“遇到 资产树总览：471 个文件如何服务任务 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成实验室仓库：不是所有瓶子都一样，位置、材质、碰撞和名字都会影响能不能用。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>本地统计显示 <span class="term">assets</span> 目录约 471 个文件、0.34 GB，主要扩展名包括 <span class="term">.mdl</span>、<span class="term">.jpg</span>、<span class="term">.png</span>、<span class="term">.usd</span>、<span class="term">.urdf</span>、<span class="term">.yaml</span>。这说明 LabUtopia assets 的重点是 scene USD、materials/textures 和 robot descriptions，而不是像大型 benchmark asset hub 那样外置几 GB 数据。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

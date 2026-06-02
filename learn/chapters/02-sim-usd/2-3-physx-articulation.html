@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 2 · Isaac Sim 与 OpenUSD 基础 · 2-3</div>
   <h1>PhysX 与 articulation：动作怎么变成运动</h1>
   <p class="lede">你在 policy 里看到的是 action array，但 Isaac Sim 里真正动起来的是 robot articulation、joint target、gripper command 和 physics step。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>你在 policy 里看到的是 action array，但 Isaac Sim 里真正动起来的是 robot articulation、joint target、gripper command 和 physics step。 换成更直白的话：这一节是在告诉你“遇到 PhysX 与 articulation：动作怎么变成运动 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成一场舞台剧：Stage 是舞台，World 是每一拍的节奏，SimulationApp 是剧场电源。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">controllers/robot_controllers/trajectory_controller.py</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>LabUtopia 的 controller 输出 action 后，<span class="term">main.py</span> 调用 <span class="term">robot.get_articulation_controller().apply_action(action)</span>。这一步把高层 controller 的结果交给 Isaac Sim articulation controller，随后 World.step 推进物理和渲染。对于 Franka，项目还使用 <span class="term">RMPFlowController</span> 和 trajectory controller 来生成更平滑的末端运动。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

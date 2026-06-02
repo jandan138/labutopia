@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 8 · 扩展与 Debug · 8-1</div>
   <h1>新增一个 task 的最小路径</h1>
   <p class="lede">新增 task 不应该从复制整个 controller 开始，而应该从 contract 列表开始：config、asset、task class、controller class、factory、data shape、success condition。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>新增 task 不应该从复制整个 controller 开始，而应该从 contract 列表开始：config、asset、task class、controller class、factory、data shape、success condition。 换成更直白的话：这一节是在告诉你“遇到 新增一个 task 的最小路径 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成修机器：先听声音判断是哪一层坏了，再拆对应零件。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">config</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>最小路径是：选或建 USD scene；写 config 指定 task_type/controller_type/usd_path/robot/cameras/task params；新增 task class 继承 BaseTask 并返回稳定 state；新增 controller 继承 BaseController 并把 state 变成 action/done/is_success；在 factory 注册；跑 collect mode 生成少量 episode；检查 HDF5；再考虑 training。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

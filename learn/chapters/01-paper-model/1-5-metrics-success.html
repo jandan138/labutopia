@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 1 · 从论文模型建立 LabUtopia 心智地图 · 1-5</div>
   <h1>指标和成功条件：别把 reward 想得太早</h1>
   <p class="lede">有 RL 背景的读者容易立刻找 reward function，但 LabUtopia 里更直接的入口是 task success condition、episode completion 和 data collection outcome。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>有 RL 背景的读者容易立刻找 reward function，但 LabUtopia 里更直接的入口是 task success condition、episode completion 和 data collection outcome。 换成更直白的话：这一节是在告诉你“遇到 指标和成功条件：别把 reward 想得太早 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成给实验室贴标签：同一间房既可以从论文看，也可以从代码看，标签帮你不迷路。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">controllers/base_controller.py</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>在 collect mode 中，controller 根据 state 推动作，并在任务完成时把 success 传给 <span class="term">task.on_task_complete(is_success)</span>。<span class="term">BaseController</span> 维护 <span class="term">success_count</span>、<span class="term">_episode_num</span>、failure reason；<span class="term">BaseTask</span> 维护 reset flag、frame limit、object/material index。这些变量更像 benchmark bookkeeping，而不是 policy gradient 的 reward stream。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-9</div>
   <h1>Visual QA：资产迁移必须反复看真实渲染</h1>
   <p class="lede">资产比较不能只在文本里完成。LabUtopia 与 EBench 的迁移必须反复做 visual QA，因为材料、尺度、碰撞和 camera 可见性都会在渲染中暴露。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>资产比较不能只在文本里完成。LabUtopia 与 EBench 的迁移必须反复做 visual QA，因为材料、尺度、碰撞和 camera 可见性都会在渲染中暴露。 换成更直白的话：这一节是在告诉你“遇到 Visual QA：资产迁移必须反复看真实渲染 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成搬家：东西可以搬，但门锁、插座、电压和房间布局不同，不能原封不动就开工。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">learn/assets/js/widgets/book-widgets.js</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>最低限度的 visual QA 包括：目标 Isaac Sim 版本中场景是否加载完整；MDL/texture 是否丢失；物体是否过大过小；robot reachability 是否合理；camera 是否遮挡目标；透明/反光材料是否可读；episode reset 后物体是否漂浮或穿模；mobile base 是否能通过 navigation path。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

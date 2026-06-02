@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-4</div>
   <h1>Embodiment mismatch：Franka/ridgeback_franka 对 lift2</h1>
   <p class="lede">最硬的差异是 robot embodiment。LabUtopia 的主线是 Franka 与 ridgeback_franka；EBench 的评测 contract 是 lift2 dual-arm mobile base。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>最硬的差异是 robot embodiment。LabUtopia 的主线是 Franka 与 ridgeback_franka；EBench 的评测 contract 是 lift2 dual-arm mobile base。 换成更直白的话：这一节是在告诉你“遇到 Embodiment mismatch：Franka/ridgeback_franka 对 lift2 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成搬家：东西可以搬，但门锁、插座、电压和房间布局不同，不能原封不动就开工。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets/robots/Franka.usd</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>Embodiment mismatch 不只是外观不同。它改变 joint count、gripper layout、base motion、camera placement、reachable workspace、action vector 和 success predicate。EBench docs 中 observation 包含 <span class="term">state.joints</span>、<span class="term">state.gripper</span>、<span class="term">state.base</span>、<span class="term">state.ee_pose</span> 与多视角 video；action 则包含双臂关节/夹爪和 <span class="term">base_motion</span>。LabUtopia 的 Franka controller 和 RMPFlow contract 不等价。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

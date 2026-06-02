@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 6 · LabUtopia Assets · 6-3</div>
   <h1>Robots：Franka, ridgeback_franka, Fetch</h1>
   <p class="lede">LabUtopia 当前任务主要围绕 Franka 和 ridgeback_franka，Fetch 资产也存在，但本地 config 的主线是 Franka 桌面操作与 ridgebase 移动任务。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>LabUtopia 当前任务主要围绕 Franka 和 ridgeback_franka，Fetch 资产也存在，但本地 config 的主线是 Franka 桌面操作与 ridgebase 移动任务。 换成更直白的话：这一节是在告诉你“遇到 Robots：Franka, ridgeback_franka, Fetch 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成实验室仓库：不是所有瓶子都一样，位置、材质、碰撞和名字都会影响能不能用。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets/robots/Franka.usd</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p><span class="term">assets/robots/Franka.usd</span> 与 SubUSDs/panda_* 构成 Franka 机械臂资产；<span class="term">assets/robots/ridgeback_franka.usd</span> 与 schema/subUSD 负责移动底盘加机械臂；<span class="term">assets/fetch</span> 包含 URDF、USD 和 fixed camera variants。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

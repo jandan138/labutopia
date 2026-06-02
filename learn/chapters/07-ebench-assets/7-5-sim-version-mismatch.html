@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-5</div>
   <h1>Simulation version mismatch：Isaac Sim 5.1 对 4.1</h1>
   <p class="lede">LabUtopia README 明确 Isaac Sim 5.1；EBench/GenManip 文档口径是 Isaac Sim 4.1。资产能否打开、材料能否显示、physics 是否一致，都要在目标版本验证。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>LabUtopia README 明确 Isaac Sim 5.1；EBench/GenManip 文档口径是 Isaac Sim 4.1。资产能否打开、材料能否显示、physics 是否一致，都要在目标版本验证。 换成更直白的话：这一节是在告诉你“遇到 Simulation version mismatch：Isaac Sim 5.1 对 4.1 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成搬家：东西可以搬，但门锁、插座、电压和房间布局不同，不能原封不动就开工。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">README.md</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>USD 理论上用于跨工具交换，但真实工程里还有 Isaac Sim extension、MDL material、physics schema、RTX renderer、sensor API、Python binding 和 asset resolver 的版本差异。LabUtopia assets 中大量 MDL/JPG/PNG 与 USD reference，如果路径或 material implementation 在 4.1 中不兼容，就会出现可见但不正确的场景。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 5 · Data 与 Policy · 5-4</div>
   <h1>Diffusion Policy：连续动作分布的另一种写法</h1>
   <p class="lede">Diffusion Policy 把 robot action 看成条件生成问题：给定 image/state/language observation，逐步从噪声中生成连续 action trajectory。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>Diffusion Policy 把 robot action 看成条件生成问题：给定 image/state/language observation，逐步从噪声中生成连续 action trajectory。 换成更直白的话：这一节是在告诉你“遇到 Diffusion Policy：连续动作分布的另一种写法 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成给学生录示范视频：数据越清楚，后面训练出来的 policy 越不容易学偏。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">policy/config/train_diffusion_unet_image_workspace.yaml</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>LabUtopia 的 <span class="term">train_diffusion_unet_image_workspace.yaml</span> 配置了 noise_scheduler、multi image observation encoder、conditional UNet 以及训练参数。它不是 value-based RL，没有 Q function 或 Bellman target；训练目标是让模型复现 demonstration action distribution。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

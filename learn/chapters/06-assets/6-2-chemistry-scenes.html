@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 6 · LabUtopia Assets · 6-2</div>
   <h1>Chemistry lab scenes：lab_001, lab_003, hard_task</h1>
   <p class="lede">chemistry_lab 是 LabUtopia 最核心的资产目录，它把实验台、器材、设备和任务对象组织成可被 task config 引用的 USD 场景。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>chemistry_lab 是 LabUtopia 最核心的资产目录，它把实验台、器材、设备和任务对象组织成可被 task config 引用的 USD 场景。 换成更直白的话：这一节是在告诉你“遇到 Chemistry lab scenes：lab_001, lab_003, hard_task 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成实验室仓库：不是所有瓶子都一样，位置、材质、碰撞和名字都会影响能不能用。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets/chemistry_lab/lab_001/lab_001.usd</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p><span class="term">lab_001/lab_001.usd</span> 常用于 pick/place/open/close/pour/transport 等桌面任务；<span class="term">lab_003/lab_003.usd</span> 常用于 press、heat、shake、stir 等任务；<span class="term">hard_task/Scene1_hard.usd</span> 用于 CleanBeaker 等 long-horizon hard task。<span class="term">lab_003/clock.usd</span> 则出现在 LiquidMixing 相关配置中。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

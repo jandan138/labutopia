@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-3</div>
   <h1>资产 taxonomy：LabUtopia 与 EBench 的侧重点</h1>
   <p class="lede">LabUtopia assets 的 taxonomy 更像 scientific lab kit；EBench assets 的 taxonomy 更像 indoor mobile manipulation benchmark kit。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>LabUtopia assets 的 taxonomy 更像 scientific lab kit；EBench assets 的 taxonomy 更像 indoor mobile manipulation benchmark kit。 换成更直白的话：这一节是在告诉你“遇到 资产 taxonomy：LabUtopia 与 EBench 的侧重点 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成搬家：东西可以搬，但门锁、插座、电压和房间布局不同，不能原封不动就开工。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets/chemistry_lab</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>LabUtopia 侧重点是 chemistry lab scenes、scientific objects、materials、Franka/ridgeback_franka robot assets、navigation barrier map。它的任务名字也围绕 pick/place/pour/stir/shake/heat/clean beaker/device operation。EBench 侧重点是 household/indoor manipulation tasks、lift2 dual-arm mobile base、4-camera observation、long_horizon/simple_pnp/teleop_tasks 数据子集和 GenManip task assets。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>

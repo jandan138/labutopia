@@ -23,6 +23,26 @@
   <div class="eyebrow">Part 0 · 先把整座实验室看成一张图 · 0-3</div>
   <h1>本书目录如何组织</h1>
   <p class="lede">目录不是简单罗列文件，而是按“论文概念 → 仿真栈 → runtime → task/controller → data/policy → assets → EBench 对比”的依赖顺序展开。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>目录不是简单罗列文件，而是按“论文概念 → 仿真栈 → runtime → task/controller → data/policy → assets → EBench 对比”的依赖顺序展开。 换成更直白的话：这一节是在告诉你“遇到 本书目录如何组织 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>把它想成先画地图：你不是马上拧螺丝，而是先知道门、桌子、机器人、数据出口分别在哪里。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">learn/content.js</span>。</li>
+        <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+      </ul>
+    </section>
+  </div>
+
   <h2 id="why">为什么它在本项目里重要</h2>
   <p>前半部分解决“LabUtopia 是什么”。Part 1 从论文抽象层讲 <span class="term">LabSim</span>、<span class="term">LabScene</span>、<span class="term">LabBench</span>；Part 2 把它放回 <span class="term">Isaac Sim</span>、<span class="term">OpenUSD</span>、<span class="term">PhysX</span>、<span class="term">RTX Renderer</span> 的工程语境；Part 3 则从 <span class="term">main.py</span> 的 runtime loop 讲清实际运行。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
