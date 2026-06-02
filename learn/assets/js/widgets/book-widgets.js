@@ -70,36 +70,38 @@
     render();
   };
 
-  W["asset-inventory"] = el => {
+  W["lab-object-assets"] = el => {
     const rows = [
-      ["scene", "chemistry_lab/lab_001", "assets/chemistry_lab/lab_001/lab_001.usd", "31 files / 21.21 MiB / 409 prims / 5 articulations", "16 configs：pick、place、pour、open/close、DeviceOperation、OpenTransportPour"],
-      ["scene", "chemistry_lab/lab_003", "assets/chemistry_lab/lab_003/lab_003.usd", "175 files / 110.32 MiB / 1644 prims / no articulation", "8 configs：press、heat、shake、stir"],
-      ["scene", "chemistry_lab/lab_003 clock", "assets/chemistry_lab/lab_003/clock.usd", "1653 prims / 17 rigid bodies / 25 collisions", "1 config：LiquidMixing"],
-      ["scene", "chemistry_lab/hard_task", "assets/chemistry_lab/hard_task/Scene1_hard.usd", "164 files / 103.23 MiB / 1534 prims / 13 rigid bodies", "2 configs：CleanBeaker、CleanBeaker7Policy"],
-      ["scene", "SubUSD lab shell", "assets/chemistry_lab/*/SubUSDs/lab_015.usd", "static lab shell / 1245 prims / no Physics", "被 lab_003 与 hard_task entry USD 作为背景/空间引用"],
-      ["navigation", "navigation_lab", "assets/navigation_lab/navigation_lab_01/lab.usd", "77 files / 26.93 MiB / 871 prims", "Level5 Navigation 与 Mobile manipulation 的 scene entry"],
-      ["navigation", "barrier map", "assets/navigation/barrier/lab_1.png", "2D planning representation", "A* / navigation_assets.yaml 用它表示 obstacle map"],
-      ["robot", "ridgeback_franka", "assets/robots/ridgeback_franka.usd", "494 prims / 1 articulation / 19 joints / 12 drive APIs", "ridgebase wrapper 默认加载的本地 mobile manipulator"],
-      ["robot", "Franka local USD", "assets/robots/Franka.usd", "368 prims / 1 articulation / 12 joints / 9 drive APIs", "本地资产存在；franka wrapper 默认使用 Isaac Sim built-in Franka，除非传 usd_path"],
-      ["robot", "Fetch", "assets/fetch/fetch.usd + URDF + fixed camera variants", "5 files / 66.31 MiB / articulated robot", "资产存在；当前 config 主线没有使用 robot type Fetch"],
-      ["material", "MDL materials", "330 .mdl files", "主要分布在 chemistry_lab 与 navigation_lab", "MaterialBindingAPI、material variation、visual domain randomization 的基础"],
-      ["material", "Textures", "78 .jpg + 33 .png", "约 85.04 MiB", "支撑材质贴图、thumbnail 和 scene appearance"],
-      ["metadata", "chemical properties", "assets/properties.json", "properties list：compound_name、formula、density、melting/boiling point 等", "化学语义 metadata；不是 USD，但属于实验室知识资产"],
+      ["container", "烧杯 / beaker", "lab_001.usd: /World/beaker1, /World/beaker2, /World/beaker3; lab_003.usd/clock.usd: /World/target_beaker, /World/beaker_1..5, /World/beaker_03..05; Scene1_hard.usd: /World/target_beaker, /World/beaker_1..4, /World/beaker_hard_1, /World/beaker_hard_2; navigation lab: /World/beaker", "RigidBodyAPI + CollisionAPI on most movable beakers", "pick/place/pour/stir/shake/clean/mobile manipulation"],
+      ["container", "锥形瓶 / conical bottle", "lab_001.usd: /World/conical_bottle01..04; lab_003.usd/clock.usd: /World/conical_bottle01..04; Scene1_hard.usd: /World/conical_bottle01..04", "RigidBodyAPI + CollisionAPI", "pick/pour/LiquidMixing 相关任务和 distractor objects"],
+      ["container", "量筒 / graduated cylinder", "lab_001.usd: /World/graduated_cylinder_03", "RigidBodyAPI + CollisionAPI", "level3_PourLiquid 使用"],
+      ["tool", "玻璃棒 / glass rod", "lab_003.usd: /World/glass_rod, /World/glass_rod/Cylinder; Scene1_hard.usd: /World/glass_rod; OpenTransportPour 使用 /World/glass_rod/mesh", "CollisionAPI; pick controller 对 glass_rod 有专门 grasp path", "stir、StirGlassrod、OpenTransportPour"],
+      ["tool", "试管架 / test tube rack", "lab_003.usd: /World/test_tube_rack; Scene1_hard.usd: /World/test_tube_rack", "CollisionAPI; mostly support/static object", "stir reset 会摆放 rack；OpenTransportPour 配置引用"],
+      ["device", "干燥箱 / DryingBox", "lab_001.usd: /World/DryingBox_01, /World/DryingBox_02, /World/DryingBox_03, /World/DryingBox_04", "PhysicsArticulationRootAPI; door RevoluteJoint; DryingBox_01/04 also button PrismaticJoint", "open/close door、DeviceOperation；DryingBox_04 当前主要是可用但少被 config 引用"],
+      ["device", "马弗炉 / MuffleFurnace", "lab_001.usd: /World/MuffleFurnace", "PhysicsArticulationRootAPI; door RevoluteJoint; handle fixed to door; no thermal simulation", "level3_open、OpenTransportPour 的 open-door stage"],
+      ["device", "加热装置 / heat_device", "lab_003.usd and clock.usd: /World/heat_device, /World/heat_device/button, /World/heat_device/heat_device/heat_device/plat", "Rigid/Collision on button/device parts; no articulated joint found", "HeatLiquid、LiquidMixing 的 place-and-press target"],
+      ["button", "按钮组 / target and distractor buttons", "lab_003.usd and Scene1_hard.usd: /World/target_button, /World/target_button/button, /World/distractor_button_1, /World/distractor_button_2", "RigidBodyAPI + CollisionAPI; not USD articulated joints", "level1_press、level3_press、CleanBeaker scene objects"],
+      ["device", "仪器架/实验仪器 / instrument", "lab_003.usd and Scene1_hard.usd: /World/instrument", "Visual/static support object; no rigid body in scanned top prim", "press scene 中作为按钮装置/实验设备背景"],
+      ["furniture", "柜子/抽屉 / Cabinet", "lab_001.usd: /World/Cabinet_01, /World/Cabinet_02 plus drawer_handle_top", "External Omniverse payload: Sektion_Cabinet; local scan warns payload URL may not load offline", "open drawer / close drawer configs"],
+      ["furniture", "实验台和桌面 / table", "lab_001.usd: /World/table; lab_003.usd/clock.usd: /World/table; Scene1_hard.usd: /World/table_hard", "Static support surfaces with CollisionAPI on relevant table/surface prims", "object placement, material variation, CleanBeaker surfaces"],
+      ["furniture", "放置平台 / target platform", "lab_001.usd: /World/target_plat, /World/target_plat2; lab_003.usd: /World/target_plat; Scene1_hard.usd: /World/target_plat, /World/target_plat_1, /World/target_plat_2, /World/plat", "Support/target geometry; often static collision", "place/transport/clean success predicates"],
+      ["scene", "实验室空间 / lab shell", "lab_003.usd and Scene1_hard.usd: /World/lab_015 payload -> ./SubUSDs/lab_015.usd; navigation lab: /World/lab_001 payload -> ./lab_001/lab_001.usd", "Large static lab room/furniture shell; no task-level manipulation", "background, walls, benches, navigation scene context"],
     ];
     const filters = [
       ["all", "全部"],
-      ["scene", "Scene USD"],
-      ["robot", "Robot"],
-      ["material", "Material"],
-      ["navigation", "Navigation"],
-      ["metadata", "Metadata"],
+      ["container", "容器"],
+      ["device", "设备"],
+      ["tool", "工具"],
+      ["button", "按钮"],
+      ["furniture", "家具/平台"],
+      ["scene", "场景壳"],
     ];
     const labels = Object.fromEntries(filters);
     let active = "all";
     const render = () => {
       const shown = active === "all" ? rows : rows.filter(r => r[0] === active);
-      const message = `${labels[active]}：${shown.length} 组资产。优先看 evidence，再决定要不要打开具体 USD。`;
-      el.innerHTML = `<div class="widget">${help("按类别过滤 asset inventory；重点看哪些是 entry asset，哪些只是支撑文件。")}${feedback(message)}<div class="seg">${filters.map(([k, label]) => `<button data-widget-action="asset-inventory" class="${k === active ? "active" : ""}" data-k="${k}">${label}</button>`).join("")}</div><div class="table-scroll"><table><thead><tr><th>类别</th><th>资产</th><th>路径</th><th>证据</th><th>runtime 作用</th></tr></thead><tbody>${shown.map(r => `<tr><td>${esc(labels[r[0]])}</td><td><strong>${esc(r[1])}</strong></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div></div>`;
+      const message = `${labels[active]}：${shown.length} 类真实实验室物体。表里的路径都是 scene USD 内的 prim path。`;
+      el.innerHTML = `<div class="widget">${help("按真实物体类别过滤；这里列的是 object -> scene USD -> prim path，不是文件扩展名统计。")}${feedback(message)}<div class="seg">${filters.map(([k, label]) => `<button data-widget-action="lab-object-assets" class="${k === active ? "active" : ""}" data-k="${k}">${label}</button>`).join("")}</div><div class="table-scroll"><table><thead><tr><th>类别</th><th>真实物体</th><th>USD / prim path</th><th>物理状态</th><th>任务用途</th></tr></thead><tbody>${shown.map(r => `<tr><td>${esc(labels[r[0]])}</td><td><strong>${esc(r[1])}</strong></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div></div>`;
       el.querySelectorAll("[data-widget-action]").forEach(btn => btn.onclick = () => { active = btn.dataset.k; render(); });
     };
     render();

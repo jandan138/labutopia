@@ -244,9 +244,9 @@ window.LABUTOPIA_BOOK = {
         },
         {
           "id": "6-2",
-          "title": "Asset census：当前仓库到底有哪些资产",
+          "title": "Lab object assets：真实实验室物体对应哪些 USD",
           "file": "chapters/06-assets/6-2-asset-census.html",
-          "summary": "这一页是按当前 checkout 重新盘点的 asset inventory：哪些是 scene entry USD，哪些只是 subUSD/material/texture，哪些真的被 config 引用。"
+          "summary": "这一页只回答一个更具体的问题：实验室里真实出现的物体，分别落在哪个 scene USD 和哪个 /World prim path 上。"
         },
         {
           "id": "6-3",

@@ -496,16 +496,16 @@ PARTS = [
             ),
             sec(
                 "6-2",
-                "Asset census：当前仓库到底有哪些资产",
+                "Lab object assets：真实实验室物体对应哪些 USD",
                 "asset-census",
-                "这一页是按当前 checkout 重新盘点的 asset inventory：哪些是 scene entry USD，哪些只是 subUSD/material/texture，哪些真的被 config 引用。",
-                "LabUtopia 的 asset 不是一个平铺列表，而是几类 contract 叠在一起。文件级 census 显示 <span class=\"term\">assets</span> 目录共有 471 个文件，约 348.19 MiB：27 个 <span class=\"term\">.usd</span> 占主要体积，330 个 <span class=\"term\">.mdl</span> 和 111 个 image texture 文件支撑材质表现，另有 robot description、navigation barrier map 和 chemistry property metadata。runtime 级 census 则更窄：Hydra config 真正反复引用的是 <span class=\"term\">lab_001.usd</span>、<span class=\"term\">lab_003.usd</span>、<span class=\"term\">clock.usd</span>、<span class=\"term\">Scene1_hard.usd</span> 和 <span class=\"term\">navigation_lab/.../lab.usd</span>。",
-                "按用途看，<span class=\"term\">chemistry_lab/lab_001</span> 是桌面 manipulation 主场，承担 pick/place/pour/open/transport/device operation；<span class=\"term\">chemistry_lab/lab_003</span> 更偏 press/heat/shake/stir；<span class=\"term\">hard_task</span> 服务 CleanBeaker 这类 long-horizon task；<span class=\"term\">navigation_lab</span> 加上 <span class=\"term\">assets/navigation/barrier/lab_1.png</span> 服务 Level5 navigation/mobile manipulation。Robot 资产也要分清：<span class=\"term\">ridgebase</span> wrapper 默认加载本地 <span class=\"term\">assets/robots/ridgeback_franka.usd</span>；<span class=\"term\">franka</span> wrapper 默认加载 Isaac Sim 自带 Franka USD，除非显式传入本地 <span class=\"term\">assets/robots/Franka.usd</span>；<span class=\"term\">assets/fetch</span> 存在，但当前 config 没有主线使用 Fetch。",
-                "读 asset 时建议先从 entry USD 和 config 引用开始，不要从 330 个 MDL 文件开始。一个 MDL、JPG 或 subUSD 可能很重要，但它通常通过 scene entry USD 间接进入 runtime；一个 prim path 出现在 config 里，才意味着 task/controller 会在 episode 中读取它、移动它、采集它或判断它。如果你要改资产，先回答四个问题：它属于 scene、robot、material、navigation 还是 metadata？它是否被 config 直接引用？它有没有 Physics/Articulation schema？它改变 observation/action/success 的哪一部分？这个页面的交互表就是按这个顺序组织的。",
-                ["先分 file asset 与 runtime asset。", "被 config 引用的 entry USD 比散落的 texture/subUSD 更优先。", "Franka 本地 USD 存在，但默认 runtime 不一定加载它。"],
+                "这一页只回答一个更具体的问题：实验室里真实出现的物体，分别落在哪个 scene USD 和哪个 /World prim path 上。",
+                "先把误区说清楚：LabUtopia 的烧杯、锥形瓶、玻璃棒、干燥箱、马弗炉这些实验室物体，大多数没有单独的 <span class=\"term\">beaker.usd</span> 或 <span class=\"term\">glass_rod.usd</span> 文件。它们通常是嵌在 scene entry USD 里的 prim。正确的对应关系不是“物体名 → 单独 USD 文件”，而是“物体名 → scene USD → <span class=\"term\">/World/...</span> prim path”。少数例外是 scene shell 通过 local SubUSD payload 进入场景，柜子通过外部 Omniverse payload 进入场景。",
+                "核心 scene entry 有五个：<span class=\"term\">assets/chemistry_lab/lab_001/lab_001.usd</span> 包含通用桌面物体和可开门设备；<span class=\"term\">assets/chemistry_lab/lab_003/lab_003.usd</span> 包含 press/heat/stir/shake 相关物体；<span class=\"term\">assets/chemistry_lab/lab_003/clock.usd</span> 是 LiquidMixing 使用的 lab_003 变体；<span class=\"term\">assets/chemistry_lab/hard_task/Scene1_hard.usd</span> 包含 CleanBeaker 长任务物体；<span class=\"term\">assets/navigation_lab/navigation_lab_01/lab.usd</span> 包含移动任务场景和一个 beaker。",
+                "读这张表时，先看 <span class=\"term\">scene USD</span>，再看 <span class=\"term\">prim path</span>，最后看是否有 <span class=\"term\">RigidBodyAPI</span>、<span class=\"term\">CollisionAPI</span> 或 <span class=\"term\">PhysicsArticulationRootAPI</span>。比如 <span class=\"term\">DryingBox_01</span> 和 <span class=\"term\">MuffleFurnace</span> 是真的 articulated device；<span class=\"term\">beaker2</span> 是可抓取 rigid object；<span class=\"term\">target_plat</span> 更像任务用的放置平台；<span class=\"term\">lab_015</span> 是实验室背景空间，不是手要操作的小物体。",
+                ["真实物体多数是 scene USD 内的 prim，不是单独 USD 文件。", "最重要的定位格式是 scene USD + /World prim path。", "Articulated device 主要在 lab_001；press/heat/stir objects 主要在 lab_003。"],
                 ["assets", "config/*.yaml", "robots/franka/franka.py", "robots/ridgebase_franka/ridgebase.py"],
-                widget="asset-inventory",
-                code=("text", "Fresh local inventory", "assets total: 471 files, 348.19 MiB\nextensions: .usd 27 / .mdl 330 / .jpg 78 / .png 33 / .json 1 / .urdf 1 / .yaml 1\nentry USD used by config:\n  lab_001/lab_001.usd: 16 configs\n  lab_003/lab_003.usd: 8 configs\n  lab_003/clock.usd: 1 config\n  hard_task/Scene1_hard.usd: 2 configs\n  navigation_lab/navigation_lab_01/lab.usd: 3 configs"),
+                widget="lab-object-assets",
+                code=("text", "How to read the table", "object asset = scene USD + prim path\nexample:\n  DryingBox_01\n  scene USD: assets/chemistry_lab/lab_001/lab_001.usd\n  prim path: /World/DryingBox_01\n  physics: PhysicsArticulationRootAPI + RevoluteJoint + button PrismaticJoint\n\nnot every visible object has its own .usd file"),
             ),
             sec(
                 "6-3",
@@ -1478,36 +1478,38 @@ def widgets_js() -> str:
             render();
           };
 
-          W["asset-inventory"] = el => {
+          W["lab-object-assets"] = el => {
             const rows = [
-              ["scene", "chemistry_lab/lab_001", "assets/chemistry_lab/lab_001/lab_001.usd", "31 files / 21.21 MiB / 409 prims / 5 articulations", "16 configs：pick、place、pour、open/close、DeviceOperation、OpenTransportPour"],
-              ["scene", "chemistry_lab/lab_003", "assets/chemistry_lab/lab_003/lab_003.usd", "175 files / 110.32 MiB / 1644 prims / no articulation", "8 configs：press、heat、shake、stir"],
-              ["scene", "chemistry_lab/lab_003 clock", "assets/chemistry_lab/lab_003/clock.usd", "1653 prims / 17 rigid bodies / 25 collisions", "1 config：LiquidMixing"],
-              ["scene", "chemistry_lab/hard_task", "assets/chemistry_lab/hard_task/Scene1_hard.usd", "164 files / 103.23 MiB / 1534 prims / 13 rigid bodies", "2 configs：CleanBeaker、CleanBeaker7Policy"],
-              ["scene", "SubUSD lab shell", "assets/chemistry_lab/*/SubUSDs/lab_015.usd", "static lab shell / 1245 prims / no Physics", "被 lab_003 与 hard_task entry USD 作为背景/空间引用"],
-              ["navigation", "navigation_lab", "assets/navigation_lab/navigation_lab_01/lab.usd", "77 files / 26.93 MiB / 871 prims", "Level5 Navigation 与 Mobile manipulation 的 scene entry"],
-              ["navigation", "barrier map", "assets/navigation/barrier/lab_1.png", "2D planning representation", "A* / navigation_assets.yaml 用它表示 obstacle map"],
-              ["robot", "ridgeback_franka", "assets/robots/ridgeback_franka.usd", "494 prims / 1 articulation / 19 joints / 12 drive APIs", "ridgebase wrapper 默认加载的本地 mobile manipulator"],
-              ["robot", "Franka local USD", "assets/robots/Franka.usd", "368 prims / 1 articulation / 12 joints / 9 drive APIs", "本地资产存在；franka wrapper 默认使用 Isaac Sim built-in Franka，除非传 usd_path"],
-              ["robot", "Fetch", "assets/fetch/fetch.usd + URDF + fixed camera variants", "5 files / 66.31 MiB / articulated robot", "资产存在；当前 config 主线没有使用 robot type Fetch"],
-              ["material", "MDL materials", "330 .mdl files", "主要分布在 chemistry_lab 与 navigation_lab", "MaterialBindingAPI、material variation、visual domain randomization 的基础"],
-              ["material", "Textures", "78 .jpg + 33 .png", "约 85.04 MiB", "支撑材质贴图、thumbnail 和 scene appearance"],
-              ["metadata", "chemical properties", "assets/properties.json", "properties list：compound_name、formula、density、melting/boiling point 等", "化学语义 metadata；不是 USD，但属于实验室知识资产"],
+              ["container", "烧杯 / beaker", "lab_001.usd: /World/beaker1, /World/beaker2, /World/beaker3; lab_003.usd/clock.usd: /World/target_beaker, /World/beaker_1..5, /World/beaker_03..05; Scene1_hard.usd: /World/target_beaker, /World/beaker_1..4, /World/beaker_hard_1, /World/beaker_hard_2; navigation lab: /World/beaker", "RigidBodyAPI + CollisionAPI on most movable beakers", "pick/place/pour/stir/shake/clean/mobile manipulation"],
+              ["container", "锥形瓶 / conical bottle", "lab_001.usd: /World/conical_bottle01..04; lab_003.usd/clock.usd: /World/conical_bottle01..04; Scene1_hard.usd: /World/conical_bottle01..04", "RigidBodyAPI + CollisionAPI", "pick/pour/LiquidMixing 相关任务和 distractor objects"],
+              ["container", "量筒 / graduated cylinder", "lab_001.usd: /World/graduated_cylinder_03", "RigidBodyAPI + CollisionAPI", "level3_PourLiquid 使用"],
+              ["tool", "玻璃棒 / glass rod", "lab_003.usd: /World/glass_rod, /World/glass_rod/Cylinder; Scene1_hard.usd: /World/glass_rod; OpenTransportPour 使用 /World/glass_rod/mesh", "CollisionAPI; pick controller 对 glass_rod 有专门 grasp path", "stir、StirGlassrod、OpenTransportPour"],
+              ["tool", "试管架 / test tube rack", "lab_003.usd: /World/test_tube_rack; Scene1_hard.usd: /World/test_tube_rack", "CollisionAPI; mostly support/static object", "stir reset 会摆放 rack；OpenTransportPour 配置引用"],
+              ["device", "干燥箱 / DryingBox", "lab_001.usd: /World/DryingBox_01, /World/DryingBox_02, /World/DryingBox_03, /World/DryingBox_04", "PhysicsArticulationRootAPI; door RevoluteJoint; DryingBox_01/04 also button PrismaticJoint", "open/close door、DeviceOperation；DryingBox_04 当前主要是可用但少被 config 引用"],
+              ["device", "马弗炉 / MuffleFurnace", "lab_001.usd: /World/MuffleFurnace", "PhysicsArticulationRootAPI; door RevoluteJoint; handle fixed to door; no thermal simulation", "level3_open、OpenTransportPour 的 open-door stage"],
+              ["device", "加热装置 / heat_device", "lab_003.usd and clock.usd: /World/heat_device, /World/heat_device/button, /World/heat_device/heat_device/heat_device/plat", "Rigid/Collision on button/device parts; no articulated joint found", "HeatLiquid、LiquidMixing 的 place-and-press target"],
+              ["button", "按钮组 / target and distractor buttons", "lab_003.usd and Scene1_hard.usd: /World/target_button, /World/target_button/button, /World/distractor_button_1, /World/distractor_button_2", "RigidBodyAPI + CollisionAPI; not USD articulated joints", "level1_press、level3_press、CleanBeaker scene objects"],
+              ["device", "仪器架/实验仪器 / instrument", "lab_003.usd and Scene1_hard.usd: /World/instrument", "Visual/static support object; no rigid body in scanned top prim", "press scene 中作为按钮装置/实验设备背景"],
+              ["furniture", "柜子/抽屉 / Cabinet", "lab_001.usd: /World/Cabinet_01, /World/Cabinet_02 plus drawer_handle_top", "External Omniverse payload: Sektion_Cabinet; local scan warns payload URL may not load offline", "open drawer / close drawer configs"],
+              ["furniture", "实验台和桌面 / table", "lab_001.usd: /World/table; lab_003.usd/clock.usd: /World/table; Scene1_hard.usd: /World/table_hard", "Static support surfaces with CollisionAPI on relevant table/surface prims", "object placement, material variation, CleanBeaker surfaces"],
+              ["furniture", "放置平台 / target platform", "lab_001.usd: /World/target_plat, /World/target_plat2; lab_003.usd: /World/target_plat; Scene1_hard.usd: /World/target_plat, /World/target_plat_1, /World/target_plat_2, /World/plat", "Support/target geometry; often static collision", "place/transport/clean success predicates"],
+              ["scene", "实验室空间 / lab shell", "lab_003.usd and Scene1_hard.usd: /World/lab_015 payload -> ./SubUSDs/lab_015.usd; navigation lab: /World/lab_001 payload -> ./lab_001/lab_001.usd", "Large static lab room/furniture shell; no task-level manipulation", "background, walls, benches, navigation scene context"],
             ];
             const filters = [
               ["all", "全部"],
-              ["scene", "Scene USD"],
-              ["robot", "Robot"],
-              ["material", "Material"],
-              ["navigation", "Navigation"],
-              ["metadata", "Metadata"],
+              ["container", "容器"],
+              ["device", "设备"],
+              ["tool", "工具"],
+              ["button", "按钮"],
+              ["furniture", "家具/平台"],
+              ["scene", "场景壳"],
             ];
             const labels = Object.fromEntries(filters);
             let active = "all";
             const render = () => {
               const shown = active === "all" ? rows : rows.filter(r => r[0] === active);
-              const message = `${labels[active]}：${shown.length} 组资产。优先看 evidence，再决定要不要打开具体 USD。`;
-              el.innerHTML = `<div class="widget">${help("按类别过滤 asset inventory；重点看哪些是 entry asset，哪些只是支撑文件。")}${feedback(message)}<div class="seg">${filters.map(([k, label]) => `<button data-widget-action="asset-inventory" class="${k === active ? "active" : ""}" data-k="${k}">${label}</button>`).join("")}</div><div class="table-scroll"><table><thead><tr><th>类别</th><th>资产</th><th>路径</th><th>证据</th><th>runtime 作用</th></tr></thead><tbody>${shown.map(r => `<tr><td>${esc(labels[r[0]])}</td><td><strong>${esc(r[1])}</strong></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div></div>`;
+              const message = `${labels[active]}：${shown.length} 类真实实验室物体。表里的路径都是 scene USD 内的 prim path。`;
+              el.innerHTML = `<div class="widget">${help("按真实物体类别过滤；这里列的是 object -> scene USD -> prim path，不是文件扩展名统计。")}${feedback(message)}<div class="seg">${filters.map(([k, label]) => `<button data-widget-action="lab-object-assets" class="${k === active ? "active" : ""}" data-k="${k}">${label}</button>`).join("")}</div><div class="table-scroll"><table><thead><tr><th>类别</th><th>真实物体</th><th>USD / prim path</th><th>物理状态</th><th>任务用途</th></tr></thead><tbody>${shown.map(r => `<tr><td>${esc(labels[r[0]])}</td><td><strong>${esc(r[1])}</strong></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div></div>`;
               el.querySelectorAll("[data-widget-action]").forEach(btn => btn.onclick = () => { active = btn.dataset.k; render(); });
             };
             render();
