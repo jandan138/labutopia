@@ -3,10 +3,10 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>Navigation assets：barrier map 与移动任务 · LabUtopia Interactive Book</title>
+      <title>Robots：Franka, ridgeback_franka, Fetch · LabUtopia Interactive Book</title>
       <link rel="stylesheet" href="../../assets/css/book.css">
     </head>
-    <body data-root="../../" data-section="6-5">
+    <body data-root="../../" data-section="6-4">
       <div class="progress" id="progress"></div>
       <header class="topbar">
         <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
@@ -20,14 +20,14 @@
   <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
   <main class="content">
 <article class="prose">
-  <div class="eyebrow">Part 6 · LabUtopia Assets · 6-5</div>
-  <h1>Navigation assets：barrier map 与移动任务</h1>
-  <p class="lede">Level5 navigation 不只依赖 navigation_lab USD，还依赖 barrier image 和路径规划工具。这里的资产开始从纯 3D 场景扩展到 planning representation。</p>
+  <div class="eyebrow">Part 6 · LabUtopia Assets · 6-4</div>
+  <h1>Robots：Franka, ridgeback_franka, Fetch</h1>
+  <p class="lede">LabUtopia 当前任务主要围绕 Franka 和 ridgeback_franka，Fetch 资产也存在，但本地 config 的主线是 Franka 桌面操作与 ridgebase 移动任务。</p>
 
   <div class="plain-grid">
     <section class="plain-card">
       <h2 id="plain">先讲人话</h2>
-      <p>Level5 navigation 不只依赖 navigation_lab USD，还依赖 barrier image 和路径规划工具。这里的资产开始从纯 3D 场景扩展到 planning representation。 换成更直白的话：这一节是在告诉你“遇到 Navigation assets：barrier map 与移动任务 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+      <p>LabUtopia 当前任务主要围绕 Franka 和 ridgeback_franka，Fetch 资产也存在，但本地 config 的主线是 Franka 桌面操作与 ridgebase 移动任务。 换成更直白的话：这一节是在告诉你“遇到 Robots：Franka, ridgeback_franka, Fetch 时，应该先看哪一层，不要一上来被术语吓住”。</p>
     </section>
     <section class="plain-card">
       <h2 id="analogy">你可以这样想</h2>
@@ -37,29 +37,29 @@
       <h2 id="checkpoint">读完你应该能回答</h2>
       <ul>
         <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
-        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">config/navigation/navigation_assets.yaml</span>。</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets/robots/Franka.usd</span>。</li>
         <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
       </ul>
     </section>
   </div>
 
   <h2 id="why">为什么它在本项目里重要</h2>
-  <p><span class="term">config/navigation/navigation_assets.yaml</span> 指向 <span class="term">assets/navigation/barrier/lab_1.png</span>。Navigation task/controller 结合 A* 工具与 ridgebase controller，把机器人从一个位置移动到目标位置。barrier image 可以理解成给 planner 用的简化 occupancy 信息。</p>
+  <p><span class="term">assets/robots/Franka.usd</span> 与 SubUSDs/panda_* 构成 Franka 机械臂资产；<span class="term">assets/robots/ridgeback_franka.usd</span> 与 schema/subUSD 负责移动底盘加机械臂；<span class="term">assets/fetch</span> 包含 URDF、USD 和 fixed camera variants。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
   <h2 id="where">从代码和资产落地</h2>
-  <p>这提醒我们，资产不一定都是 USD。对于 navigation，2D barrier map、起终点、base controller 参数同样是 benchmark asset 的一部分。如果只复制 USD 而忽略 barrier map，mobile task 可能根本无法规划。</p>
-  <div class="path-grid"><div class="path">config/navigation/navigation_assets.yaml</div><div class="path">assets/navigation/barrier/lab_1.png</div><div class="path">tasks/navigation_task.py</div><div class="path">utils/a_star.py</div></div>
+  <p>Robot asset 不只是模型。它决定 joint naming、articulation root、gripper geometry、RMPFlow descriptor、action dimension 和 controller 能否工作。LabUtopia 的 BaseController 默认创建 FrankaRMPFlowController；Level5 则切换到 ridgebase controller。</p>
+  <div class="path-grid"><div class="path">assets/robots/Franka.usd</div><div class="path">assets/robots/ridgeback_franka.usd</div><div class="path">assets/fetch/fetch.usd</div><div class="path">robots/franka</div><div class="path">robots/ridgebase_franka</div></div>
 
 
     <div class="lab">
-      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Navigation assets：barrier map 与移动任务</span></div>
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Robots：Franka, ridgeback_franka, Fetch</span></div>
       <div class="lab-body" data-widget="asset-map"></div>
       <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
     </div>
 
   <h2 id="practice">读论文和跑实验时怎么用</h2>
-  <p>与 EBench 对比时，mobile manipulation 的场景资产、base motion schema、evaluation worker 和 dataset format 都要一起看，不能只比较是否有移动底盘。</p>
-  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Navigation asset 包括 USD 和 planning map。</li><li>Barrier image 是 task contract 的一部分。</li><li>Mobile task 的复用风险高于 table-top object asset。</li></ul></div>
+  <p>这也是和 EBench 最大差异之一：EBench 的本体是 <span class="term">lift2</span> dual-arm + mobile base，观测和动作 contract 都围绕它设计。LabUtopia 的 robot assets 不能直接替换 EBench 本体。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Robot asset 决定 control contract。</li><li>Franka 桌面任务和 ridgebase 移动任务要分开看。</li><li>Fetch 资产存在，不等于所有 runtime 都已围绕 Fetch 配好。</li></ul></div>
 
   <div id="pager" class="pager"></div>
 </article>

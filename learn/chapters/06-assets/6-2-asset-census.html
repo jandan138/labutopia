@@ -1,0 +1,90 @@
+<!doctype html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Asset census：当前仓库到底有哪些资产 · LabUtopia Interactive Book</title>
+          <link rel="stylesheet" href="../../assets/css/book.css">
+        </head>
+        <body data-root="../../" data-section="6-2">
+          <div class="progress" id="progress"></div>
+          <header class="topbar">
+            <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+            <div class="top-actions">
+              <button class="text-btn" data-search-open title="Search">Search</button>
+              <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+            </div>
+          </header>
+
+    <div class="book">
+      <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+      <main class="content">
+    <article class="prose">
+      <div class="eyebrow">Part 6 · LabUtopia Assets · 6-2</div>
+      <h1>Asset census：当前仓库到底有哪些资产</h1>
+      <p class="lede">这一页是按当前 checkout 重新盘点的 asset inventory：哪些是 scene entry USD，哪些只是 subUSD/material/texture，哪些真的被 config 引用。</p>
+
+      <div class="plain-grid">
+        <section class="plain-card">
+          <h2 id="plain">先讲人话</h2>
+          <p>这一页是按当前 checkout 重新盘点的 asset inventory：哪些是 scene entry USD，哪些只是 subUSD/material/texture，哪些真的被 config 引用。 换成更直白的话：这一节是在告诉你“遇到 Asset census：当前仓库到底有哪些资产 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="analogy">你可以这样想</h2>
+          <p>把它想成实验室仓库：不是所有瓶子都一样，位置、材质、碰撞和名字都会影响能不能用。</p>
+        </section>
+        <section class="plain-card">
+          <h2 id="checkpoint">读完你应该能回答</h2>
+          <ul>
+            <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
+            <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets</span>。</li>
+            <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
+          </ul>
+        </section>
+      </div>
+
+      <h2 id="why">为什么它在本项目里重要</h2>
+      <p>LabUtopia 的 asset 不是一个平铺列表，而是几类 contract 叠在一起。文件级 census 显示 <span class="term">assets</span> 目录共有 471 个文件，约 348.19 MiB：27 个 <span class="term">.usd</span> 占主要体积，330 个 <span class="term">.mdl</span> 和 111 个 image texture 文件支撑材质表现，另有 robot description、navigation barrier map 和 chemistry property metadata。runtime 级 census 则更窄：Hydra config 真正反复引用的是 <span class="term">lab_001.usd</span>、<span class="term">lab_003.usd</span>、<span class="term">clock.usd</span>、<span class="term">Scene1_hard.usd</span> 和 <span class="term">navigation_lab/.../lab.usd</span>。</p>
+      <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+      <h2 id="where">从代码和资产落地</h2>
+      <p>按用途看，<span class="term">chemistry_lab/lab_001</span> 是桌面 manipulation 主场，承担 pick/place/pour/open/transport/device operation；<span class="term">chemistry_lab/lab_003</span> 更偏 press/heat/shake/stir；<span class="term">hard_task</span> 服务 CleanBeaker 这类 long-horizon task；<span class="term">navigation_lab</span> 加上 <span class="term">assets/navigation/barrier/lab_1.png</span> 服务 Level5 navigation/mobile manipulation。Robot 资产也要分清：<span class="term">ridgebase</span> wrapper 默认加载本地 <span class="term">assets/robots/ridgeback_franka.usd</span>；<span class="term">franka</span> wrapper 默认加载 Isaac Sim 自带 Franka USD，除非显式传入本地 <span class="term">assets/robots/Franka.usd</span>；<span class="term">assets/fetch</span> 存在，但当前 config 没有主线使用 Fetch。</p>
+      <div class="path-grid"><div class="path">assets</div><div class="path">config/*.yaml</div><div class="path">robots/franka/franka.py</div><div class="path">robots/ridgebase_franka/ridgebase.py</div></div>
+
+    <div class="code" data-lang="text"><div class="code-h"><span class="fn">Fresh local inventory</span><button class="cp">复制</button></div><pre><code>assets total: 471 files, 348.19 MiB
+extensions: .usd 27 / .mdl 330 / .jpg 78 / .png 33 / .json 1 / .urdf 1 / .yaml 1
+entry USD used by config:
+  lab_001/lab_001.usd: 16 configs
+  lab_003/lab_003.usd: 8 configs
+  lab_003/clock.usd: 1 config
+  hard_task/Scene1_hard.usd: 2 configs
+  navigation_lab/navigation_lab_01/lab.usd: 3 configs</code></pre></div>
+
+
+        <div class="lab">
+          <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Asset census：当前仓库到底有哪些资产</span></div>
+          <div class="lab-body" data-widget="asset-inventory"></div>
+          <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+        </div>
+
+      <h2 id="practice">读论文和跑实验时怎么用</h2>
+      <p>读 asset 时建议先从 entry USD 和 config 引用开始，不要从 330 个 MDL 文件开始。一个 MDL、JPG 或 subUSD 可能很重要，但它通常通过 scene entry USD 间接进入 runtime；一个 prim path 出现在 config 里，才意味着 task/controller 会在 episode 中读取它、移动它、采集它或判断它。如果你要改资产，先回答四个问题：它属于 scene、robot、material、navigation 还是 metadata？它是否被 config 直接引用？它有没有 Physics/Articulation schema？它改变 observation/action/success 的哪一部分？这个页面的交互表就是按这个顺序组织的。</p>
+      <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>先分 file asset 与 runtime asset。</li><li>被 config 引用的 entry USD 比散落的 texture/subUSD 更优先。</li><li>Franka 本地 USD 存在，但默认 runtime 不一定加载它。</li></ul></div>
+
+      <div id="pager" class="pager"></div>
+    </article>
+    </main>
+      <aside class="rail" id="rail" aria-label="On this page"></aside>
+    </div>
+
+          <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+            <div class="search-box">
+              <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+              <div class="search-results" id="book-search-results"></div>
+              <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+            </div>
+          </div>
+          <script src="../../content.js"></script>
+          <script src="../../assets/js/widgets/book-widgets.js"></script>
+          <script src="../../assets/js/book.js"></script>
+        </body>
+        </html>

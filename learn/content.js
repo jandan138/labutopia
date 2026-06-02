@@ -244,26 +244,32 @@ window.LABUTOPIA_BOOK = {
         },
         {
           "id": "6-2",
-          "title": "Chemistry lab scenes：lab_001, lab_003, hard_task",
-          "file": "chapters/06-assets/6-2-chemistry-scenes.html",
-          "summary": "chemistry_lab 是 LabUtopia 最核心的资产目录，它把实验台、器材、设备和任务对象组织成可被 task config 引用的 USD 场景。"
+          "title": "Asset census：当前仓库到底有哪些资产",
+          "file": "chapters/06-assets/6-2-asset-census.html",
+          "summary": "这一页是按当前 checkout 重新盘点的 asset inventory：哪些是 scene entry USD，哪些只是 subUSD/material/texture，哪些真的被 config 引用。"
         },
         {
           "id": "6-3",
-          "title": "Robots：Franka, ridgeback_franka, Fetch",
-          "file": "chapters/06-assets/6-3-robots.html",
-          "summary": "LabUtopia 当前任务主要围绕 Franka 和 ridgeback_franka，Fetch 资产也存在，但本地 config 的主线是 Franka 桌面操作与 ridgebase 移动任务。"
+          "title": "Chemistry lab scenes：lab_001, lab_003, hard_task",
+          "file": "chapters/06-assets/6-3-chemistry-scenes.html",
+          "summary": "chemistry_lab 是 LabUtopia 最核心的资产目录，它把实验台、器材、设备和任务对象组织成可被 task config 引用的 USD 场景。"
         },
         {
           "id": "6-4",
-          "title": "Materials 与 MDL：视觉真实度背后的依赖",
-          "file": "chapters/06-assets/6-4-materials-mdl.html",
-          "summary": "LabUtopia assets 中 .mdl 文件数量很高，说明材料系统是 high-fidelity scene 的重要组成部分。材质迁移往往比 mesh 迁移更容易被低估。"
+          "title": "Robots：Franka, ridgeback_franka, Fetch",
+          "file": "chapters/06-assets/6-4-robots.html",
+          "summary": "LabUtopia 当前任务主要围绕 Franka 和 ridgeback_franka，Fetch 资产也存在，但本地 config 的主线是 Franka 桌面操作与 ridgebase 移动任务。"
         },
         {
           "id": "6-5",
+          "title": "Materials 与 MDL：视觉真实度背后的依赖",
+          "file": "chapters/06-assets/6-5-materials-mdl.html",
+          "summary": "LabUtopia assets 中 .mdl 文件数量很高，说明材料系统是 high-fidelity scene 的重要组成部分。材质迁移往往比 mesh 迁移更容易被低估。"
+        },
+        {
+          "id": "6-6",
           "title": "Navigation assets：barrier map 与移动任务",
-          "file": "chapters/06-assets/6-5-navigation-assets.html",
+          "file": "chapters/06-assets/6-6-navigation-assets.html",
           "summary": "Level5 navigation 不只依赖 navigation_lab USD，还依赖 barrier image 和路径规划工具。这里的资产开始从纯 3D 场景扩展到 planning representation。"
         }
       ]

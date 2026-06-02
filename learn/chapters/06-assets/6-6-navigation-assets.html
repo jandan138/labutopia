@@ -3,10 +3,10 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>Materials 与 MDL：视觉真实度背后的依赖 · LabUtopia Interactive Book</title>
+      <title>Navigation assets：barrier map 与移动任务 · LabUtopia Interactive Book</title>
       <link rel="stylesheet" href="../../assets/css/book.css">
     </head>
-    <body data-root="../../" data-section="6-4">
+    <body data-root="../../" data-section="6-6">
       <div class="progress" id="progress"></div>
       <header class="topbar">
         <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
@@ -20,14 +20,14 @@
   <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
   <main class="content">
 <article class="prose">
-  <div class="eyebrow">Part 6 · LabUtopia Assets · 6-4</div>
-  <h1>Materials 与 MDL：视觉真实度背后的依赖</h1>
-  <p class="lede">LabUtopia assets 中 .mdl 文件数量很高，说明材料系统是 high-fidelity scene 的重要组成部分。材质迁移往往比 mesh 迁移更容易被低估。</p>
+  <div class="eyebrow">Part 6 · LabUtopia Assets · 6-6</div>
+  <h1>Navigation assets：barrier map 与移动任务</h1>
+  <p class="lede">Level5 navigation 不只依赖 navigation_lab USD，还依赖 barrier image 和路径规划工具。这里的资产开始从纯 3D 场景扩展到 planning representation。</p>
 
   <div class="plain-grid">
     <section class="plain-card">
       <h2 id="plain">先讲人话</h2>
-      <p>LabUtopia assets 中 .mdl 文件数量很高，说明材料系统是 high-fidelity scene 的重要组成部分。材质迁移往往比 mesh 迁移更容易被低估。 换成更直白的话：这一节是在告诉你“遇到 Materials 与 MDL：视觉真实度背后的依赖 时，应该先看哪一层，不要一上来被术语吓住”。</p>
+      <p>Level5 navigation 不只依赖 navigation_lab USD，还依赖 barrier image 和路径规划工具。这里的资产开始从纯 3D 场景扩展到 planning representation。 换成更直白的话：这一节是在告诉你“遇到 Navigation assets：barrier map 与移动任务 时，应该先看哪一层，不要一上来被术语吓住”。</p>
     </section>
     <section class="plain-card">
       <h2 id="analogy">你可以这样想</h2>
@@ -37,29 +37,29 @@
       <h2 id="checkpoint">读完你应该能回答</h2>
       <ul>
         <li>这节和一次 episode、一个 asset 或一条数据有什么关系？</li>
-        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">assets/chemistry_lab</span>。</li>
+        <li>如果要在项目里找证据，第一眼应该打开 <span class="term">config/navigation/navigation_assets.yaml</span>。</li>
         <li>如果这里出错，后面的 task、controller、dataset 或 EBench 复用会受什么影响？</li>
       </ul>
     </section>
   </div>
 
   <h2 id="why">为什么它在本项目里重要</h2>
-  <p>在 task 运行时，<span class="term">BaseTask.apply_material_to_object</span> 用 <span class="term">UsdShade.MaterialBindingAPI</span> 把 material prim 绑定到 target prim。Level3 generalization 会通过 material_paths 在 episode 间切换材料。视觉上，这改变颜色、反射、透明度；学习上，它改变 image distribution。</p>
+  <p><span class="term">config/navigation/navigation_assets.yaml</span> 指向 <span class="term">assets/navigation/barrier/lab_1.png</span>。Navigation task/controller 结合 A* 工具与 ridgebase controller，把机器人从一个位置移动到目标位置。barrier image 可以理解成给 planner 用的简化 occupancy 信息。</p>
   <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
   <h2 id="where">从代码和资产落地</h2>
-  <p>MDL material 在不同 Isaac Sim/Omniverse 版本中的解析、依赖路径和渲染效果可能不同。把 LabUtopia asset 移到 EBench 的 Isaac Sim 4.1 环境时，材料是必须检查的迁移风险：能否加载、是否丢贴图、是否影响 RTX Renderer、是否需要转成更通用的 USD Preview Surface。</p>
-  <div class="path-grid"><div class="path">assets/chemistry_lab</div><div class="path">tasks/base_task.py</div></div>
+  <p>这提醒我们，资产不一定都是 USD。对于 navigation，2D barrier map、起终点、base controller 参数同样是 benchmark asset 的一部分。如果只复制 USD 而忽略 barrier map，mobile task 可能根本无法规划。</p>
+  <div class="path-grid"><div class="path">config/navigation/navigation_assets.yaml</div><div class="path">assets/navigation/barrier/lab_1.png</div><div class="path">tasks/navigation_task.py</div><div class="path">utils/a_star.py</div></div>
 
 
     <div class="lab">
-      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Materials 与 MDL：视觉真实度背后的依赖</span></div>
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Navigation assets：barrier map 与移动任务</span></div>
       <div class="lab-body" data-widget="asset-map"></div>
       <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
     </div>
 
   <h2 id="practice">读论文和跑实验时怎么用</h2>
-  <p>所以资产 QA 不只截图，还要检查 material binding log、texture path 和不同光照下的可读性。</p>
-  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>MDL 是 high-fidelity 的一部分，也是迁移风险。</li><li>Material variation 是 generalization 实验的一部分。</li><li>跨版本迁移可能需要 material conversion。</li></ul></div>
+  <p>与 EBench 对比时，mobile manipulation 的场景资产、base motion schema、evaluation worker 和 dataset format 都要一起看，不能只比较是否有移动底盘。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Navigation asset 包括 USD 和 planning map。</li><li>Barrier image 是 task contract 的一部分。</li><li>Mobile task 的复用风险高于 table-top object asset。</li></ul></div>
 
   <div id="pager" class="pager"></div>
 </article>

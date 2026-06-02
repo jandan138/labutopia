@@ -70,6 +70,41 @@
     render();
   };
 
+  W["asset-inventory"] = el => {
+    const rows = [
+      ["scene", "chemistry_lab/lab_001", "assets/chemistry_lab/lab_001/lab_001.usd", "31 files / 21.21 MiB / 409 prims / 5 articulations", "16 configs：pick、place、pour、open/close、DeviceOperation、OpenTransportPour"],
+      ["scene", "chemistry_lab/lab_003", "assets/chemistry_lab/lab_003/lab_003.usd", "175 files / 110.32 MiB / 1644 prims / no articulation", "8 configs：press、heat、shake、stir"],
+      ["scene", "chemistry_lab/lab_003 clock", "assets/chemistry_lab/lab_003/clock.usd", "1653 prims / 17 rigid bodies / 25 collisions", "1 config：LiquidMixing"],
+      ["scene", "chemistry_lab/hard_task", "assets/chemistry_lab/hard_task/Scene1_hard.usd", "164 files / 103.23 MiB / 1534 prims / 13 rigid bodies", "2 configs：CleanBeaker、CleanBeaker7Policy"],
+      ["scene", "SubUSD lab shell", "assets/chemistry_lab/*/SubUSDs/lab_015.usd", "static lab shell / 1245 prims / no Physics", "被 lab_003 与 hard_task entry USD 作为背景/空间引用"],
+      ["navigation", "navigation_lab", "assets/navigation_lab/navigation_lab_01/lab.usd", "77 files / 26.93 MiB / 871 prims", "Level5 Navigation 与 Mobile manipulation 的 scene entry"],
+      ["navigation", "barrier map", "assets/navigation/barrier/lab_1.png", "2D planning representation", "A* / navigation_assets.yaml 用它表示 obstacle map"],
+      ["robot", "ridgeback_franka", "assets/robots/ridgeback_franka.usd", "494 prims / 1 articulation / 19 joints / 12 drive APIs", "ridgebase wrapper 默认加载的本地 mobile manipulator"],
+      ["robot", "Franka local USD", "assets/robots/Franka.usd", "368 prims / 1 articulation / 12 joints / 9 drive APIs", "本地资产存在；franka wrapper 默认使用 Isaac Sim built-in Franka，除非传 usd_path"],
+      ["robot", "Fetch", "assets/fetch/fetch.usd + URDF + fixed camera variants", "5 files / 66.31 MiB / articulated robot", "资产存在；当前 config 主线没有使用 robot type Fetch"],
+      ["material", "MDL materials", "330 .mdl files", "主要分布在 chemistry_lab 与 navigation_lab", "MaterialBindingAPI、material variation、visual domain randomization 的基础"],
+      ["material", "Textures", "78 .jpg + 33 .png", "约 85.04 MiB", "支撑材质贴图、thumbnail 和 scene appearance"],
+      ["metadata", "chemical properties", "assets/properties.json", "properties list：compound_name、formula、density、melting/boiling point 等", "化学语义 metadata；不是 USD，但属于实验室知识资产"],
+    ];
+    const filters = [
+      ["all", "全部"],
+      ["scene", "Scene USD"],
+      ["robot", "Robot"],
+      ["material", "Material"],
+      ["navigation", "Navigation"],
+      ["metadata", "Metadata"],
+    ];
+    const labels = Object.fromEntries(filters);
+    let active = "all";
+    const render = () => {
+      const shown = active === "all" ? rows : rows.filter(r => r[0] === active);
+      const message = `${labels[active]}：${shown.length} 组资产。优先看 evidence，再决定要不要打开具体 USD。`;
+      el.innerHTML = `<div class="widget">${help("按类别过滤 asset inventory；重点看哪些是 entry asset，哪些只是支撑文件。")}${feedback(message)}<div class="seg">${filters.map(([k, label]) => `<button data-widget-action="asset-inventory" class="${k === active ? "active" : ""}" data-k="${k}">${label}</button>`).join("")}</div><div class="table-scroll"><table><thead><tr><th>类别</th><th>资产</th><th>路径</th><th>证据</th><th>runtime 作用</th></tr></thead><tbody>${shown.map(r => `<tr><td>${esc(labels[r[0]])}</td><td><strong>${esc(r[1])}</strong></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div></div>`;
+      el.querySelectorAll("[data-widget-action]").forEach(btn => btn.onclick = () => { active = btn.dataset.k; render(); });
+    };
+    render();
+  };
+
   W["dataset-flow"] = el => {
     const steps = [
       ["cache", "每步先攒 image、joint、language，不急着写文件。"],

@@ -496,6 +496,19 @@ PARTS = [
             ),
             sec(
                 "6-2",
+                "Asset census：当前仓库到底有哪些资产",
+                "asset-census",
+                "这一页是按当前 checkout 重新盘点的 asset inventory：哪些是 scene entry USD，哪些只是 subUSD/material/texture，哪些真的被 config 引用。",
+                "LabUtopia 的 asset 不是一个平铺列表，而是几类 contract 叠在一起。文件级 census 显示 <span class=\"term\">assets</span> 目录共有 471 个文件，约 348.19 MiB：27 个 <span class=\"term\">.usd</span> 占主要体积，330 个 <span class=\"term\">.mdl</span> 和 111 个 image texture 文件支撑材质表现，另有 robot description、navigation barrier map 和 chemistry property metadata。runtime 级 census 则更窄：Hydra config 真正反复引用的是 <span class=\"term\">lab_001.usd</span>、<span class=\"term\">lab_003.usd</span>、<span class=\"term\">clock.usd</span>、<span class=\"term\">Scene1_hard.usd</span> 和 <span class=\"term\">navigation_lab/.../lab.usd</span>。",
+                "按用途看，<span class=\"term\">chemistry_lab/lab_001</span> 是桌面 manipulation 主场，承担 pick/place/pour/open/transport/device operation；<span class=\"term\">chemistry_lab/lab_003</span> 更偏 press/heat/shake/stir；<span class=\"term\">hard_task</span> 服务 CleanBeaker 这类 long-horizon task；<span class=\"term\">navigation_lab</span> 加上 <span class=\"term\">assets/navigation/barrier/lab_1.png</span> 服务 Level5 navigation/mobile manipulation。Robot 资产也要分清：<span class=\"term\">ridgebase</span> wrapper 默认加载本地 <span class=\"term\">assets/robots/ridgeback_franka.usd</span>；<span class=\"term\">franka</span> wrapper 默认加载 Isaac Sim 自带 Franka USD，除非显式传入本地 <span class=\"term\">assets/robots/Franka.usd</span>；<span class=\"term\">assets/fetch</span> 存在，但当前 config 没有主线使用 Fetch。",
+                "读 asset 时建议先从 entry USD 和 config 引用开始，不要从 330 个 MDL 文件开始。一个 MDL、JPG 或 subUSD 可能很重要，但它通常通过 scene entry USD 间接进入 runtime；一个 prim path 出现在 config 里，才意味着 task/controller 会在 episode 中读取它、移动它、采集它或判断它。如果你要改资产，先回答四个问题：它属于 scene、robot、material、navigation 还是 metadata？它是否被 config 直接引用？它有没有 Physics/Articulation schema？它改变 observation/action/success 的哪一部分？这个页面的交互表就是按这个顺序组织的。",
+                ["先分 file asset 与 runtime asset。", "被 config 引用的 entry USD 比散落的 texture/subUSD 更优先。", "Franka 本地 USD 存在，但默认 runtime 不一定加载它。"],
+                ["assets", "config/*.yaml", "robots/franka/franka.py", "robots/ridgebase_franka/ridgebase.py"],
+                widget="asset-inventory",
+                code=("text", "Fresh local inventory", "assets total: 471 files, 348.19 MiB\nextensions: .usd 27 / .mdl 330 / .jpg 78 / .png 33 / .json 1 / .urdf 1 / .yaml 1\nentry USD used by config:\n  lab_001/lab_001.usd: 16 configs\n  lab_003/lab_003.usd: 8 configs\n  lab_003/clock.usd: 1 config\n  hard_task/Scene1_hard.usd: 2 configs\n  navigation_lab/navigation_lab_01/lab.usd: 3 configs"),
+            ),
+            sec(
+                "6-3",
                 "Chemistry lab scenes：lab_001, lab_003, hard_task",
                 "chemistry-scenes",
                 "chemistry_lab 是 LabUtopia 最核心的资产目录，它把实验台、器材、设备和任务对象组织成可被 task config 引用的 USD 场景。",
@@ -507,7 +520,7 @@ PARTS = [
                 widget="asset-map",
             ),
             sec(
-                "6-3",
+                "6-4",
                 "Robots：Franka, ridgeback_franka, Fetch",
                 "robots",
                 "LabUtopia 当前任务主要围绕 Franka 和 ridgeback_franka，Fetch 资产也存在，但本地 config 的主线是 Franka 桌面操作与 ridgebase 移动任务。",
@@ -519,7 +532,7 @@ PARTS = [
                 widget="asset-map",
             ),
             sec(
-                "6-4",
+                "6-5",
                 "Materials 与 MDL：视觉真实度背后的依赖",
                 "materials-mdl",
                 "LabUtopia assets 中 .mdl 文件数量很高，说明材料系统是 high-fidelity scene 的重要组成部分。材质迁移往往比 mesh 迁移更容易被低估。",
@@ -531,7 +544,7 @@ PARTS = [
                 widget="asset-map",
             ),
             sec(
-                "6-5",
+                "6-6",
                 "Navigation assets：barrier map 与移动任务",
                 "navigation-assets",
                 "Level5 navigation 不只依赖 navigation_lab USD，还依赖 barrier image 和路径规划工具。这里的资产开始从纯 3D 场景扩展到 planning representation。",
@@ -1460,6 +1473,41 @@ def widgets_js() -> str:
             const render = () => {
               const item = data[active];
               el.innerHTML = `<div class="widget">${help("点一个资产类别，看它在任务里到底影响什么。")}${feedback(`${item[0]}：${item[1]}`)}<div class="seg">${keys.map(k => `<button data-widget-action="asset" class="${k === active ? "active" : ""}" data-k="${k}">${k}</button>`).join("")}</div><div class="level-card"><strong>${active} · ${item[0]}</strong><p>${item[1]}</p></div></div>`;
+              el.querySelectorAll("[data-widget-action]").forEach(btn => btn.onclick = () => { active = btn.dataset.k; render(); });
+            };
+            render();
+          };
+
+          W["asset-inventory"] = el => {
+            const rows = [
+              ["scene", "chemistry_lab/lab_001", "assets/chemistry_lab/lab_001/lab_001.usd", "31 files / 21.21 MiB / 409 prims / 5 articulations", "16 configs：pick、place、pour、open/close、DeviceOperation、OpenTransportPour"],
+              ["scene", "chemistry_lab/lab_003", "assets/chemistry_lab/lab_003/lab_003.usd", "175 files / 110.32 MiB / 1644 prims / no articulation", "8 configs：press、heat、shake、stir"],
+              ["scene", "chemistry_lab/lab_003 clock", "assets/chemistry_lab/lab_003/clock.usd", "1653 prims / 17 rigid bodies / 25 collisions", "1 config：LiquidMixing"],
+              ["scene", "chemistry_lab/hard_task", "assets/chemistry_lab/hard_task/Scene1_hard.usd", "164 files / 103.23 MiB / 1534 prims / 13 rigid bodies", "2 configs：CleanBeaker、CleanBeaker7Policy"],
+              ["scene", "SubUSD lab shell", "assets/chemistry_lab/*/SubUSDs/lab_015.usd", "static lab shell / 1245 prims / no Physics", "被 lab_003 与 hard_task entry USD 作为背景/空间引用"],
+              ["navigation", "navigation_lab", "assets/navigation_lab/navigation_lab_01/lab.usd", "77 files / 26.93 MiB / 871 prims", "Level5 Navigation 与 Mobile manipulation 的 scene entry"],
+              ["navigation", "barrier map", "assets/navigation/barrier/lab_1.png", "2D planning representation", "A* / navigation_assets.yaml 用它表示 obstacle map"],
+              ["robot", "ridgeback_franka", "assets/robots/ridgeback_franka.usd", "494 prims / 1 articulation / 19 joints / 12 drive APIs", "ridgebase wrapper 默认加载的本地 mobile manipulator"],
+              ["robot", "Franka local USD", "assets/robots/Franka.usd", "368 prims / 1 articulation / 12 joints / 9 drive APIs", "本地资产存在；franka wrapper 默认使用 Isaac Sim built-in Franka，除非传 usd_path"],
+              ["robot", "Fetch", "assets/fetch/fetch.usd + URDF + fixed camera variants", "5 files / 66.31 MiB / articulated robot", "资产存在；当前 config 主线没有使用 robot type Fetch"],
+              ["material", "MDL materials", "330 .mdl files", "主要分布在 chemistry_lab 与 navigation_lab", "MaterialBindingAPI、material variation、visual domain randomization 的基础"],
+              ["material", "Textures", "78 .jpg + 33 .png", "约 85.04 MiB", "支撑材质贴图、thumbnail 和 scene appearance"],
+              ["metadata", "chemical properties", "assets/properties.json", "properties list：compound_name、formula、density、melting/boiling point 等", "化学语义 metadata；不是 USD，但属于实验室知识资产"],
+            ];
+            const filters = [
+              ["all", "全部"],
+              ["scene", "Scene USD"],
+              ["robot", "Robot"],
+              ["material", "Material"],
+              ["navigation", "Navigation"],
+              ["metadata", "Metadata"],
+            ];
+            const labels = Object.fromEntries(filters);
+            let active = "all";
+            const render = () => {
+              const shown = active === "all" ? rows : rows.filter(r => r[0] === active);
+              const message = `${labels[active]}：${shown.length} 组资产。优先看 evidence，再决定要不要打开具体 USD。`;
+              el.innerHTML = `<div class="widget">${help("按类别过滤 asset inventory；重点看哪些是 entry asset，哪些只是支撑文件。")}${feedback(message)}<div class="seg">${filters.map(([k, label]) => `<button data-widget-action="asset-inventory" class="${k === active ? "active" : ""}" data-k="${k}">${label}</button>`).join("")}</div><div class="table-scroll"><table><thead><tr><th>类别</th><th>资产</th><th>路径</th><th>证据</th><th>runtime 作用</th></tr></thead><tbody>${shown.map(r => `<tr><td>${esc(labels[r[0]])}</td><td><strong>${esc(r[1])}</strong></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div></div>`;
               el.querySelectorAll("[data-widget-action]").forEach(btn => btn.onclick = () => { active = btn.dataset.k; render(); });
             };
             render();
