@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>RTX Renderer 与 cameras：数据集里的 image 从哪里来 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="2-4">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 2 · Isaac Sim 与 OpenUSD 基础 · 2-4</div>
+  <h1>RTX Renderer 与 cameras：数据集里的 image 从哪里来</h1>
+  <p class="lede">LabUtopia 的 image observation 来自 Isaac Sim camera sensor，而不是事后截图。camera 配置决定了训练数据的视角、分辨率、image type 和可见信息。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p><span class="term">BaseTask.setup_cameras</span> 会按 YAML 中的 camera config 创建或绑定 camera prim，设置 resolution、focal_length、orientation 和 clipping range。随后 <span class="term">process_camera_image</span> 根据 image_type 取 rgb、depth、pointcloud、segmentation 等数据，并拆成 record data 与 display data。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>这对 policy 很关键。ACT/Diffusion Policy 的 observation encoder 不是抽象地“看世界”，而是吃具体 camera tensor。换 camera resolution、视角、image type，都会改变 dataset shape_meta 和模型输入分布。对 EBench 来说，lift2 固定有 top/left/right/overlook 等视角；LabUtopia 本地 config 多数是 3 个 camera，二者不能直接混用。</p>
+  <div class="path-grid"><div class="path">tasks/base_task.py</div><div class="path">utils/camera_utils.py</div><div class="path">policy/config/task/dp.yaml</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>因此 debug policy 时，第一件事不是调 learning rate，而是确认 camera 数据是否稳定、无遮挡、尺寸和训练配置一致。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Camera config 是 dataset contract 的一部分。</li><li>Display image 和 record image 在代码里分开处理。</li><li>跨 benchmark 复用数据时，view naming 和 tensor shape 必须重建。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://docs.isaacsim.omniverse.nvidia.com/latest/index.html" target="_blank" rel="noreferrer">Isaac Sim docs</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

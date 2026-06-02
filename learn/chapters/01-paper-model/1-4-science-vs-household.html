@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>科学实验任务和 household manipulation 的根本差异 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="1-4">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 1 · 从论文模型建立 LabUtopia 心智地图 · 1-4</div>
+  <h1>科学实验任务和 household manipulation 的根本差异</h1>
+  <p class="lede">LabUtopia 和 EBench 都在 Isaac Sim 语境里，但一个强调 scientific laboratory，一个强调 indoor/mobile manipulation。这个差异会一路影响资产、任务、动作和评测。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>科学实验任务通常要求器材身份、液体容器、加热/搅拌/清洗等步骤有明确语义。household manipulation 更强调家庭空间、日常物体、双臂移动操作和 VLA 对语言指令的泛化。二者都可视作 embodied agents benchmark，但它们不是同一批 assets 换名字。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>在 LabUtopia 本地仓库里，你会看到 beaker、glass rod、press、heat、clean 等 controller/task 命名；在 EBench 资料里，你会看到 <span class="term">long_horizon</span>、<span class="term">simple_pnp</span>、<span class="term">teleop_tasks</span>，以及 <span class="term">lift2</span> 的双臂移动本体和 4 个相机视角。</p>
+  <div class="path-grid"><div class="path">controllers/*beaker*.py</div><div class="path">/cpfs/shared/simulation/zhuzihou/dev/EBench/README.md</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>这个差异不是“谁更好”，而是 benchmark contract 不同。教程后面判断资产是否能复用时，会从 contract 出发，而不是从视觉相似度出发。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Scientific lab assets 更依赖器材语义和实验步骤。</li><li>Household/mobile benchmark 更依赖本体、导航、双臂协作和标准评测接口。</li><li>跨 benchmark 迁移时要先问 contract，而不是先问 mesh。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://github.com/InternRobotics/EBench" target="_blank" rel="noreferrer">EBench repository</a> · <a href="https://huggingface.co/datasets/InternRobotics/EBench-Dataset" target="_blank" rel="noreferrer">EBench-Dataset</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

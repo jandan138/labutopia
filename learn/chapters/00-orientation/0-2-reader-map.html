@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>读者画像：从 RL 和 USD 点选经验出发 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="0-2">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 0 · 先把整座实验室看成一张图 · 0-2</div>
+  <h1>读者画像：从 RL 和 USD 点选经验出发</h1>
+  <p class="lede">这本书假设你知道 reward、policy、trajectory 这些 RL 词，也知道 Isaac Sim 里可以点开 USD stage，但还没有把 benchmark、dataset、controller 串起来。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>RL 背景给你一个很有用的类比：每个 episode 都像一次 rollout，task 负责提供 observation 和 terminal condition，controller 或 learned policy 负责 action。区别是 LabUtopia 目前大量 collect mode 由 rule/controller 驱动，它更像 imitation learning pipeline 的数据工厂，而不是端到端 RL trainer。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>USD 点选经验也有用。你知道 prim path、material、camera、reference 的存在，就能理解为什么配置里大量出现 <span class="term">/World/...</span>、<span class="term">usd_path</span> 和 camera prim。LabUtopia 的难点在于这些路径不是装饰，它们直接影响 object lookup、success check、data collection 和可复用性。</p>
+  <div class="path-grid"><div class="path">config/*.yaml</div><div class="path">assets/chemistry_lab</div><div class="path">assets/robots</div><div class="path">policy/config</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>所以本教程会反复把同一件事讲三遍：先用直觉讲一遍，再用本地代码路径讲一遍，最后用“如果迁移到 EBench 会怎样”讲一遍。这样你不只是会运行命令，还能判断改动会撞到哪一层 contract。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>如果看到 unfamiliar term，先看 Appendix glossary，再回到当前章节。</li><li>如果看到文件路径，建议直接在 IDE 中打开；章节不是 API 文档，而是阅读路线。</li><li>如果你只关心资产迁移，可以先读 Part 6 和 Part 7。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

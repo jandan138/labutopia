@@ -1,0 +1,58 @@
+<!doctype html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>训练 workspace：Hydra 到 BaseWorkspace · LabUtopia Interactive Book</title>
+          <link rel="stylesheet" href="../../assets/css/book.css">
+        </head>
+        <body data-root="../../" data-section="5-5">
+          <div class="progress" id="progress"></div>
+          <header class="topbar">
+            <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+            <div class="top-actions">
+              <button class="text-btn" data-search-open title="Search">Search</button>
+              <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+            </div>
+          </header>
+
+    <div class="book">
+      <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+      <main class="content">
+    <article class="prose">
+      <div class="eyebrow">Part 5 · Data 与 Policy · 5-5</div>
+      <h1>训练 workspace：Hydra 到 BaseWorkspace</h1>
+      <p class="lede">训练入口 <span class="term">train.py</span> 很短，但它背后依赖 Hydra 根据配置实例化 workspace，再由 workspace 组织 dataset、policy、optimizer、checkpoint 和 validation。</p>
+      <h2 id="why">为什么它在本项目里重要</h2>
+      <p><span class="term">train.py</span> 读取 policy/config 下的 YAML，解析 <span class="term">cfg._target_</span>，用 <span class="term">hydra.utils.get_class</span> 找到 workspace class，并调用 <span class="term">workspace.run()</span>。这让 ACT 和 Diffusion Policy 可以共享训练入口，但使用不同 workspace。</p>
+      <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+      <h2 id="where">从代码和资产落地</h2>
+      <p>对初学者来说，训练报错通常不是 train.py 本身，而是 cfg 中的 dataset_path、shape_meta、policy target、obs key 与真实 HDF5 数据不一致。先用小 batch 打印 dataset sample，比盲目调模型更有效。</p>
+      <div class="path-grid"><div class="path">train.py</div><div class="path">policy/workspace</div><div class="path">policy/config/task/dp.yaml</div><div class="path">policy/config/task/act.yaml</div></div>
+
+    <div class="code" data-lang="bash"><div class="code-h"><span class="fn">Training entry</span><button class="cp">复制</button></div><pre><code>python train.py --config-name=train_diffusion_unet_image_workspace
+python train.py --config-name=train_act_image_workspace</code></pre></div>
+
+
+      <h2 id="practice">读论文和跑实验时怎么用</h2>
+      <p>把训练和 simulation 分开理解也很重要：main.py 负责生成/运行 episode，train.py 负责离线训练。infer mode 才把训练好的模型带回 simulation。</p>
+      <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>train.py 是 dispatcher，不是训练算法主体。</li><li>cfg._target_ 决定实际 workspace。</li><li>Dataset path 和 shape_meta 是最常见错配点。</li></ul></div>
+      <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://hydra.cc/docs/intro/" target="_blank" rel="noreferrer">Hydra docs</a></p></div>
+      <div id="pager" class="pager"></div>
+    </article>
+    </main>
+      <aside class="rail" id="rail" aria-label="On this page"></aside>
+    </div>
+
+          <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+            <div class="search-box">
+              <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+              <div class="search-results" id="book-search-results"></div>
+              <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+            </div>
+          </div>
+          <script src="../../content.js"></script>
+          <script src="../../assets/js/widgets/book-widgets.js"></script>
+          <script src="../../assets/js/book.js"></script>
+        </body>
+        </html>

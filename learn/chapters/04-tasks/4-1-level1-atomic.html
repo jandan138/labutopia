@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Level1 atomic skill：pick/place/pour/stir 的意义 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="4-1">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 4 · Tasks 与 Controllers · 4-1</div>
+  <h1>Level1 atomic skill：pick/place/pour/stir 的意义</h1>
+  <p class="lede">Level1 task 看似简单，却是理解所有高阶任务的基础。它们把一个动作技能拆到足够短，让你能定位 robot、object、camera、success condition 哪一层出错。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>本地 Level1 包含 pick、place、open/close door/drawer、pour、press、shake、stir 等配置。它们通常使用 Franka 和 chemistry lab 场景，episode horizon 较短，controller 逻辑也更直接。对初学者来说，先跑 <span class="term">level1_pick</span> 比直接跑 long-horizon task 更适合建立 debug 感。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>从 data perspective 看，atomic skill demonstration 是组合任务的素材。即使未来用 VLA 或 Diffusion Policy，也要知道模型学到的动作 chunk 其实来自这些低层数据分布。</p>
+  <div class="path-grid"><div class="path">config/level1_pick.yaml</div><div class="path">controllers/pick_controller.py</div><div class="path">tasks/pick_task.py</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Level1 atomic skill：pick/place/pour/stir 的意义</span></div>
+      <div class="lab-body" data-widget="task-levels"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>如果你想验证环境，建议先从 Level1 开始：camera 是否有图、robot 是否能动、object path 是否正确、HDF5 是否写出。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Atomic task 是 debugging unit。</li><li>短 horizon 降低 compounding error。</li><li>它们为组合技能提供动作和视觉分布。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

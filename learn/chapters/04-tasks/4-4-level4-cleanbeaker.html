@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Level4 long horizon：CleanBeaker 作为案例 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="4-4">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 4 · Tasks 与 Controllers · 4-4</div>
+  <h1>Level4 long horizon：CleanBeaker 作为案例</h1>
+  <p class="lede">Long-horizon task 最适合暴露 embodied agents 的真实短板：不是不会抓，而是步骤多、误差积累、状态切换和成功条件都更脆弱。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p><span class="term">level4_CleanBeaker.yaml</span> 使用 <span class="term">assets/chemistry_lab/hard_task/Scene1_hard.usd</span>，controller_type 是 cleanbeaker。它不是单一动作，而是科学实验语境中的连续过程：定位器材、拿取、移动、清洗或相关操作、判断完成。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>从 policy 角度，long horizon 会放大 covariate shift。ACT 的 action chunking 和 Diffusion Policy 的 receding horizon 都试图缓解这个问题，但前提是 demonstration 数据覆盖了合理的中间状态。</p>
+  <div class="path-grid"><div class="path">config/level4_CleanBeaker.yaml</div><div class="path">tasks/cleanbeaker_task.py</div><div class="path">controllers/cleanbeaker_controller.py</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>读 CleanBeaker controller 时，不要只看最终 success。要记录每个 phase 的进入条件、目标 prim、末端位姿和 failure reason，这些才是训练失败后能解释现象的线索。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Long horizon 的主要风险是 phase drift。</li><li>Hard task scene 与普通 lab scene 不同，asset path 也不同。</li><li>失败诊断要按阶段记录。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://arxiv.org/abs/2304.13705" target="_blank" rel="noreferrer">Action Chunking Transformer</a> · <a href="https://arxiv.org/abs/2303.04137" target="_blank" rel="noreferrer">Diffusion Policy</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

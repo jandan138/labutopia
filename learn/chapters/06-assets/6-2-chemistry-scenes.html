@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Chemistry lab scenes：lab_001, lab_003, hard_task · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="6-2">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 6 · LabUtopia Assets · 6-2</div>
+  <h1>Chemistry lab scenes：lab_001, lab_003, hard_task</h1>
+  <p class="lede">chemistry_lab 是 LabUtopia 最核心的资产目录，它把实验台、器材、设备和任务对象组织成可被 task config 引用的 USD 场景。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p><span class="term">lab_001/lab_001.usd</span> 常用于 pick/place/open/close/pour/transport 等桌面任务；<span class="term">lab_003/lab_003.usd</span> 常用于 press、heat、shake、stir 等任务；<span class="term">hard_task/Scene1_hard.usd</span> 用于 CleanBeaker 等 long-horizon hard task。<span class="term">lab_003/clock.usd</span> 则出现在 LiquidMixing 相关配置中。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>这些 scene 不是互换背景。它们的 prim path、object placement、device geometry、camera 可见性都会影响 task/controller。一个 controller 依赖某个 beaker path 或 target pose，如果换到另一个 scene，可能需要重写路径和 success predicate。</p>
+  <div class="path-grid"><div class="path">assets/chemistry_lab/lab_001/lab_001.usd</div><div class="path">assets/chemistry_lab/lab_003/lab_003.usd</div><div class="path">assets/chemistry_lab/hard_task/Scene1_hard.usd</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Chemistry lab scenes：lab_001, lab_003, hard_task</span></div>
+      <div class="lab-body" data-widget="asset-map"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>因此当你想“加一个新任务”时，先问：现有 scene 是否有合适 object 和 prim path？如果没有，是改 USD 还是新建 scene？这比先写 controller 更基础。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>lab_001 偏通用桌面操作。</li><li>lab_003 偏设备/press/heat/stir。</li><li>hard_task 承载长序列实验任务。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

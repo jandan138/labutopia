@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>一次 world.step 到底发生什么 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="3-4">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 3 · Runtime Architecture · 3-4</div>
+  <h1>一次 world.step 到底发生什么</h1>
+  <p class="lede">main loop 的每一轮都先 <span class="term">world.step(render=True)</span>，然后根据 world 状态、reset flag、task state 和 controller action 决定下一步。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>如果 world stopped，controller 需要 reset；如果 world playing，程序先检查 controller 或 task 是否需要 reset。reset 分支会释放 video writer、重置 controller、判断 episode 数是否达到 cfg.max_episodes、再重置 task。非 reset 分支才调用 <span class="term">task.step()</span> 取 state。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>拿到 state 后，controller 返回 <span class="term">action, done, is_success</span>。如果 action 存在，articulation controller 应用动作；如果 done，打印 failure reason 并调用 <span class="term">task.on_task_complete(is_success)</span>。最后，若开启视频，程序把 camera_display 拼成一张 OpenCV 画面并写入 mp4。</p>
+  <div class="path-grid"><div class="path">main.py</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">一次 world.step 到底发生什么</span></div>
+      <div class="lab-body" data-widget="runtime-loop"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>这条线解释了为什么一些 failure 看起来“延迟一帧”。物理、状态读取、动作应用、completion 标记不是同一瞬间发生，而是在 loop 的不同位置。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>先 step physics/render，再处理 task/controller。</li><li>reset branch 会跳过当前轮的 action。</li><li>video 写入使用 display data，不一定等同训练记录。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

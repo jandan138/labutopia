@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Level3 generalization：object/material/instruction 的变化 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="4-3">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 4 · Tasks 与 Controllers · 4-3</div>
+  <h1>Level3 generalization：object/material/instruction 的变化</h1>
+  <p class="lede">Level3 让任务不再只围绕一个固定对象或材质。它通过 object list、position range、material_paths、inference test material 等机制制造泛化压力。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p><span class="term">BaseTask.setup_objects</span> 会收集 cfg.task.obj_paths，<span class="term">update_object_and_material_indices</span> 在成功 episode 后轮换 object/material。<span class="term">setup_materials</span> 还区分 collect/infer 和 is_test_material，让测试时可以使用不同 material set。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>这对 policy training 很关键。模型如果只在一个颜色/材质/背景下训练，视觉 encoder 很容易学到捷径；Level3 的意义是让 data distribution 更接近 benchmark 对泛化的要求。</p>
+  <div class="path-grid"><div class="path">tasks/base_task.py</div><div class="path">config/level3_pick.yaml</div><div class="path">config/level3_HeatLiquid.yaml</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>从 USD 资产角度，material path 和 object path 一样都是 contract。材质不兼容、绑定失败或 test_materials 缺失，都会让所谓 generalization 实验失真。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Generalization 不只是换 prompt。</li><li>Material binding 使用 UsdShade，需要 target/material prim 都有效。</li><li>Train/test material split 要在 config 中显式表达。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

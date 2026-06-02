@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Local file map：从概念到文件 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="A-3">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Appendix · 查阅资料 · A-3</div>
+  <h1>Local file map：从概念到文件</h1>
+  <p class="lede">这页把概念映射到本地文件，方便你回到 IDE 中查证。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>Runtime：<span class="term">main.py</span>。Task base：<span class="term">tasks/base_task.py</span>。Controller base：<span class="term">controllers/base_controller.py</span>。Factory：<span class="term">factories/*.py</span>。Data：<span class="term">data_collectors/data_collector.py</span>。Policy training：<span class="term">train.py</span>、<span class="term">policy/workspace</span>、<span class="term">policy/config</span>。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>Assets：<span class="term">assets/chemistry_lab</span>、<span class="term">assets/navigation_lab</span>、<span class="term">assets/navigation/barrier/lab_1.png</span>、<span class="term">assets/robots/Franka.usd</span>、<span class="term">assets/robots/ridgeback_franka.usd</span>、<span class="term">assets/fetch</span>。</p>
+  <div class="path-grid"><div class="path">main.py</div><div class="path">config</div><div class="path">tasks</div><div class="path">controllers</div><div class="path">assets</div><div class="path">policy</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Local file map：从概念到文件</span></div>
+      <div class="lab-body" data-widget="asset-map"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>EBench reference：本地 EBench 的 learn 目录可作为交互教程结构参考；但 LabUtopia 的内容、资产关系和版本口径应以本 repo 与外部资料为准。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>先从 main.py 出发。</li><li>再按 config 找 task/controller。</li><li>资产路径要和 config 一起看。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

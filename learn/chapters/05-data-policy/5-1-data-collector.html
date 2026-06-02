@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>DataCollector：episode 如何写成 HDF5 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="5-1">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 5 · Data 与 Policy · 5-1</div>
+  <h1>DataCollector：episode 如何写成 HDF5</h1>
+  <p class="lede">LabUtopia 的 demonstration 数据不是随手存几张图，而是按 episode 写入 HDF5，并在 meta/episode.jsonl 中记录任务文本和长度。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p><span class="term">DataCollector</span> 初始化时根据 camera config 建立临时缓存；每个 step 缓存 camera image、joint angle 和 language instruction；episode 结束时用 ProcessPoolExecutor 异步写入 <span class="term">episode_0000.h5</span>。HDF5 中包含 camera dataset、<span class="term">agent_pose</span>、<span class="term">actions</span>、<span class="term">language_instruction</span> 和 <span class="term">task_properties</span>。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>注意 actions 的构造：代码用 agent_pose[1:] 加 final_joint_positions 形成下一步动作标签。这是一种 imitation learning 常见对齐方式，表示在当前 observation 后应该到达的下一状态/关节目标。</p>
+  <div class="path-grid"><div class="path">data_collectors/data_collector.py</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">DataCollector：episode 如何写成 HDF5</span></div>
+      <div class="lab-body" data-widget="dataset-flow"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>如果训练效果差，先检查数据文件：相机 dataset shape 是否一致，agent_pose/actions 长度是否匹配，language_instruction 是否写入，episode.jsonl 是否和 HDF5 文件对应。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>HDF5 是 LabUtopia 本地数据格式核心。</li><li>Camera dataset key 由 camera name 和 image_type 拼成。</li><li>异步写入提升性能，但 close 时必须等待 future 完成。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>ObjectUtils 与 scene query · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="3-5">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 3 · Runtime Architecture · 3-5</div>
+  <h1>ObjectUtils 与 scene query</h1>
+  <p class="lede">LabUtopia 很多任务都需要知道物体中心、尺寸、位置和可见性，这些 scene query 被集中在 ObjectUtils 和 task helper 中。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p><span class="term">ObjectUtils.get_instance(stage)</span> 在 main.py 中初始化，之后 task/controller 可以通过 singleton 访问 stage。<span class="term">BaseTask.get_basic_state_info</span> 用它读取 object geometry center 和 object size；<span class="term">randomize_object_position</span> 与 <span class="term">place_objects_with_visibility_management</span> 用它移动对象并管理可见性。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>这种设计让 task 可以处理 object variation 和 material variation。比如 generalization task 可以在 episode 之间切换 object/material，使 policy 不只记住一个固定物体。</p>
+  <div class="path-grid"><div class="path">utils/object_utils.py</div><div class="path">tasks/base_task.py</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>注意 singleton 带来的隐含依赖：如果 stage 没初始化，或迁移到另一个 runtime，ObjectUtils 的调用就可能失效。资产复用时也要重新验证 object center 计算是否适用于新 mesh/collision。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Scene query 是 success check 和 data record 的基础。</li><li>Object randomization 依赖 prim path 有效。</li><li>Singleton 方便，但也让 runtime stage 成为隐式依赖。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>新增一个 task 的最小路径 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="8-1">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 8 · 扩展与 Debug · 8-1</div>
+  <h1>新增一个 task 的最小路径</h1>
+  <p class="lede">新增 task 不应该从复制整个 controller 开始，而应该从 contract 列表开始：config、asset、task class、controller class、factory、data shape、success condition。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>最小路径是：选或建 USD scene；写 config 指定 task_type/controller_type/usd_path/robot/cameras/task params；新增 task class 继承 BaseTask 并返回稳定 state；新增 controller 继承 BaseController 并把 state 变成 action/done/is_success；在 factory 注册；跑 collect mode 生成少量 episode；检查 HDF5；再考虑 training。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>如果 task 涉及新物体，要先在 Isaac Sim 中确认 prim path、collision、geometry center、grasp pose。如果涉及新 camera，要同步修改 policy shape_meta。不要等模型训练失败后才发现 camera key 不存在。</p>
+  <div class="path-grid"><div class="path">config</div><div class="path">tasks</div><div class="path">controllers</div><div class="path">factories</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">新增一个 task 的最小路径</span></div>
+      <div class="lab-body" data-widget="task-boundary"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>这条路径看起来朴素，但能避免最常见的“能运行一次但无法收数据/无法训练/无法复现”。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>新增 task 的单元是 contract，不是单个 Python 文件。</li><li>先 collect 5 个 episode 检查数据，再扩大规模。</li><li>所有路径都应能从 config 追到 stage prim。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

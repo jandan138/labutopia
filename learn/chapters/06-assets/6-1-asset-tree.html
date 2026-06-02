@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>资产树总览：471 个文件如何服务任务 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="6-1">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 6 · LabUtopia Assets · 6-1</div>
+  <h1>资产树总览：471 个文件如何服务任务</h1>
+  <p class="lede">LabUtopia 本地 assets 不是巨型外部数据包，而是一组随 repo 管理的 USD/MDL/texture/robot/navigation 资产，直接被 config 引用。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>本地统计显示 <span class="term">assets</span> 目录约 471 个文件、0.34 GB，主要扩展名包括 <span class="term">.mdl</span>、<span class="term">.jpg</span>、<span class="term">.png</span>、<span class="term">.usd</span>、<span class="term">.urdf</span>、<span class="term">.yaml</span>。这说明 LabUtopia assets 的重点是 scene USD、materials/textures 和 robot descriptions，而不是像大型 benchmark asset hub 那样外置几 GB 数据。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>这些资产通过 config 的 usd_path 进入 runtime。绝大多数 manipulation task 使用 chemistry_lab 下的 lab_001 或 lab_003；Level4 使用 hard_task；Level5 使用 navigation_lab。机器人资产包含 Franka、ridgeback_franka 和 Fetch 相关文件。</p>
+  <div class="path-grid"><div class="path">assets</div><div class="path">assets/properties.json</div><div class="path">config/*.yaml</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">资产树总览：471 个文件如何服务任务</span></div>
+      <div class="lab-body" data-widget="asset-map"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>理解资产树后，读 config 就有画面感：看到 lab_003，你会想到 press/heat/stir 类任务；看到 navigation_lab，你会想到 ridgebase 和 barrier map。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>资产目录小而直接，和本地 config 强绑定。</li><li>MDL/JPG/PNG 表明材料系统在视觉真实性里占比很高。</li><li>USD root 文件数量不多，但每个承载不同 task family。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

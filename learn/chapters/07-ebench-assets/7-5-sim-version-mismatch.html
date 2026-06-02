@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Simulation version mismatch：Isaac Sim 5.1 对 4.1 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="7-5">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-5</div>
+  <h1>Simulation version mismatch：Isaac Sim 5.1 对 4.1</h1>
+  <p class="lede">LabUtopia README 明确 Isaac Sim 5.1；EBench/GenManip 文档口径是 Isaac Sim 4.1。资产能否打开、材料能否显示、physics 是否一致，都要在目标版本验证。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>USD 理论上用于跨工具交换，但真实工程里还有 Isaac Sim extension、MDL material、physics schema、RTX renderer、sensor API、Python binding 和 asset resolver 的版本差异。LabUtopia assets 中大量 MDL/JPG/PNG 与 USD reference，如果路径或 material implementation 在 4.1 中不兼容，就会出现可见但不正确的场景。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>所以 conversion workflow 的第一步不是写 task，而是在 Isaac Sim 4.1/GenManip 环境中加载 LabUtopia USD，记录 missing assets、material warnings、physics warnings、collision behavior 和 camera render。通过这个 gate 之后，再考虑 task binding。</p>
+  <div class="path-grid"><div class="path">README.md</div><div class="path">assets/chemistry_lab</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Simulation version mismatch：Isaac Sim 5.1 对 4.1</span></div>
+      <div class="lab-body" data-widget="version-bridge"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>这也是 visual QA 必须反复迭代的原因：有些问题不会在静态文件检查中暴露，只会在真实渲染/物理 step 中出现。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Isaac Sim 版本差异会影响 USD/MDL/physics/sensor。</li><li>先在目标 runtime 中打开资产，再改 benchmark。</li><li>Visual QA 与 physics QA 都是迁移步骤。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://docs.isaacsim.omniverse.nvidia.com/latest/index.html" target="_blank" rel="noreferrer">Isaac Sim docs</a> · <a href="https://internrobotics.github.io/EBench-doc/" target="_blank" rel="noreferrer">EBench docs</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

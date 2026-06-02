@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Level5 mobility：navigation 与 mobile manipulation · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="4-5">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 4 · Tasks 与 Controllers · 4-5</div>
+  <h1>Level5 mobility：navigation 与 mobile manipulation</h1>
+  <p class="lede">Level5 引入移动底盘，LabUtopia 从 table-top manipulation 进入 navigation/mobile manipulation，robot type 也从 Franka 切到 ridgebase。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p><span class="term">level5_Navigation.yaml</span> 使用 navigation lab USD，并通过 <span class="term">assets/navigation/barrier/lab_1.png</span> 表示障碍地图。<span class="term">NavigationTask</span> 与 <span class="term">NavigationController</span> 使用 A* 相关工具和 ridgebase controller，让 base motion 成为任务的一部分。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>Mobile manipulation 的难点在于 action space 和 observation 都变了。Franka 桌面任务主要关注 arm/gripper；ridgebase_franka 还要处理 base pose、路径规划和移动过程中的 camera distribution。这个变化与 EBench 的 lift2 mobile base 有概念关系，但本体和接口不同。</p>
+  <div class="path-grid"><div class="path">config/level5_Navigation.yaml</div><div class="path">tasks/navigation_task.py</div><div class="path">controllers/navigation_controller.py</div><div class="path">assets/navigation/barrier/lab_1.png</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Level5 mobility：navigation 与 mobile manipulation</span></div>
+      <div class="lab-body" data-widget="task-levels"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>因此不要把 LabUtopia Level5 直接等同于 EBench mobile_manip。二者都是 mobile manipulation，但 embodiment、camera、server/eval contract 完全不同。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Mobility 改变 action space 和 state distribution。</li><li>Barrier image 是 navigation 任务的资产之一。</li><li>与 EBench lift2 有概念相似性，但不能直接互换。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

@@ -1,0 +1,62 @@
+<!doctype html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Commands：常用命令速查 · LabUtopia Interactive Book</title>
+          <link rel="stylesheet" href="../../assets/css/book.css">
+        </head>
+        <body data-root="../../" data-section="A-2">
+          <div class="progress" id="progress"></div>
+          <header class="topbar">
+            <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+            <div class="top-actions">
+              <button class="text-btn" data-search-open title="Search">Search</button>
+              <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+            </div>
+          </header>
+
+    <div class="book">
+      <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+      <main class="content">
+    <article class="prose">
+      <div class="eyebrow">Appendix · 查阅资料 · A-2</div>
+      <h1>Commands：常用命令速查</h1>
+      <p class="lede">这里收集本书涉及的常用命令，方便你从阅读切到实践。</p>
+      <h2 id="why">为什么它在本项目里重要</h2>
+      <p>LabUtopia collection 使用 <span class="term">python main.py --config-name ...</span>；training 使用 <span class="term">python train.py --config-name=...</span>；Isaac Sim 环境安装按 README 使用 <span class="term">isaacsim[all,extscache]==5.1.0</span>。EBench assets/dataset 下载使用 huggingface-cli，评测使用 <span class="term">gmp submit</span>、<span class="term">gmp eval</span>、<span class="term">gmp status</span>。</p>
+      <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+      <h2 id="where">从代码和资产落地</h2>
+      <p>命令不是孤立记忆。每条命令背后都有 contract：config-name 决定 task；dataset_path 决定训练数据；gmp eval 依赖 server、run_id、worker_ids、lift2 contract。</p>
+
+
+    <div class="code" data-lang="bash"><div class="code-h"><span class="fn">Command sheet</span><button class="cp">复制</button></div><pre><code>python main.py --config-name level1_pick
+python main.py --config-name level5_Navigation --headless --no-video
+python train.py --config-name=train_act_image_workspace
+huggingface-cli download InternRobotics/EBench-Assets --local-dir saved --repo-type dataset
+gmp submit ebench/generalist/val_train --run_id my_run
+gmp eval -a r5a -g lift2 --worker_ids 0</code></pre></div>
+
+
+      <h2 id="practice">读论文和跑实验时怎么用</h2>
+      <p>执行前先确认当前工作目录、Python env、Isaac Sim version 和 GPU 是否满足要求。</p>
+      <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>命令要和配置一起读。</li><li>跨项目命令不要混用。</li><li>EBench 命令不能直接驱动 LabUtopia main.py。</li></ul></div>
+
+      <div id="pager" class="pager"></div>
+    </article>
+    </main>
+      <aside class="rail" id="rail" aria-label="On this page"></aside>
+    </div>
+
+          <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+            <div class="search-box">
+              <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+              <div class="search-results" id="book-search-results"></div>
+              <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+            </div>
+          </div>
+          <script src="../../content.js"></script>
+          <script src="../../assets/js/widgets/book-widgets.js"></script>
+          <script src="../../assets/js/book.js"></script>
+        </body>
+        </html>

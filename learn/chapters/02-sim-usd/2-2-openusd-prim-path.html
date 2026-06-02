@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>OpenUSD：prim path 为什么像 API · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="2-2">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 2 · Isaac Sim 与 OpenUSD 基础 · 2-2</div>
+  <h1>OpenUSD：prim path 为什么像 API</h1>
+  <p class="lede">在 LabUtopia 里，USD 的 prim path 不只是 UI 中的树节点名字，它实际承担了对象寻址、camera 初始化、material binding 和 success check 的 API 角色。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>OpenUSD 的核心是 stage/layer/prim/composition。你可以把 stage 想成场景数据库，把 prim path 想成数据库 key。LabUtopia 的 task config 把 object path、target path、camera prim path 写进 YAML，运行时用 <span class="term">stage.GetPrimAtPath</span> 查询它们是否存在，然后把位置、尺寸、语义或材质绑定到这些 prim 上。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>这解释了为什么同一个 mesh 换了路径，代码可能就坏。比如 <span class="term">BaseTask.setup_cameras</span> 会先检查 camera prim 是否有效；<span class="term">apply_material_to_object</span> 会用 target path 找 prim，再用 <span class="term">UsdShade.MaterialBindingAPI</span> 绑定材质。路径错了，不是视觉小问题，而是 runtime contract 断了。</p>
+  <div class="path-grid"><div class="path">tasks/base_task.py</div><div class="path">config/level1_pick.yaml</div><div class="path">assets/chemistry_lab/lab_001/lab_001.usd</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>资产迁移到 EBench 时也会遇到同样问题。EBench/GenManip 的 task config 和 scoring 期待另一套 scene semantics；LabUtopia 的 prim path 不能默认被对方理解。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Prim path 是 contract，不是标签。</li><li>Reference 到 /World 后，路径会影响所有 lookup。</li><li>迁移资产前先做 path inventory。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://openusd.org/release/intro.html" target="_blank" rel="noreferrer">OpenUSD introduction</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

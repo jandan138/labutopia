@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Factory pattern：字符串如何变成 class · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="3-2">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 3 · Runtime Architecture · 3-2</div>
+  <h1>Factory pattern：字符串如何变成 class</h1>
+  <p class="lede">配置里写的是 task_type 和 controller_type，但运行时需要具体 Python class。LabUtopia 用 factory 把这一步集中管理。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p><span class="term">create_robot</span>、<span class="term">create_task</span>、<span class="term">create_controller</span> 分别根据 cfg 的字符串创建对象。这样做的好处是 main loop 不需要知道 pick、pour、navigation、cleanbeaker 的细节；缺点是新任务如果没有注册到 factory，会在运行时才暴露。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>从阅读路线看，factory 是你查找具体实现的索引。看到 <span class="term">controller_type: "pickpour"</span>，就去 controller factory 找映射，再读 <span class="term">controllers/pickpour_controller.py</span>。看到 <span class="term">task_type: "navigation"</span>，就去 task factory 找到 <span class="term">tasks/navigation_task.py</span>。</p>
+  <div class="path-grid"><div class="path">factories/task_factory.py</div><div class="path">factories/controller_factory.py</div><div class="path">factories/robot_factory.py</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>这类模式在 benchmark 项目里很常见，因为任务数量多，但 runtime loop 应该稳定。你改 factory 就是在扩大支持的 task vocabulary。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Factory 让 main.py 不随 task 数量膨胀。</li><li>新增 task 要同时补 config、task class、controller class、factory mapping。</li><li>迁移到 EBench 时，GenManip 的 task registry 会成为对应位置。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

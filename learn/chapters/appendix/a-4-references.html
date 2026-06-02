@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>References：本书使用的公开资料 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="A-4">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Appendix · 查阅资料 · A-4</div>
+  <h1>References：本书使用的公开资料</h1>
+  <p class="lede">本书先收集公开资料，再结合本地代码和领域知识综合解释。下面是核心来源，便于你继续追原文。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>LabUtopia 来源包括 arXiv 论文、NeurIPS 2025 abstract、project page、Hugging Face dataset 和本地 README。EBench 来源包括 GitHub repo、EBench docs、Hugging Face EBench-Assets、EBench-Dataset 和 GenManip arXiv。底层技术来源包括 Isaac Sim docs、OpenUSD introduction、LeRobot docs、Hydra docs、Diffusion Policy 和 Action Chunking Transformer papers。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>阅读参考资料时要注意口径：论文常描述 benchmark design 和愿景，README 给安装与当前代码入口，docs 给运行契约，代码给真正的现状。本书的结论尤其是资产复用结论，基于这些来源的交叉核对。</p>
+
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>如果未来这些项目更新，建议重新检查 Isaac Sim 版本、dataset 格式、asset hosting 和 eval contract。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>所有来源链接也出现在 index 的 source panel。</li><li>资产复用结论依赖当前公开资料和本地代码。</li><li>版本更新后要重新评估。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://arxiv.org/abs/2505.22634" target="_blank" rel="noreferrer">LabUtopia arXiv</a> · <a href="https://proceedings.neurips.cc/paper_files/paper/2025/hash/313d6659e6532e6ba192dfb910d4261e-Abstract-Datasets_and_Benchmarks_Track.html" target="_blank" rel="noreferrer">LabUtopia NeurIPS 2025 abstract</a> · <a href="https://rui-li023.github.io/labutopia-site/" target="_blank" rel="noreferrer">LabUtopia project page</a> · <a href="https://huggingface.co/datasets/Ruinwalker/Labutopia-Dataset" target="_blank" rel="noreferrer">LabUtopia Dataset</a> · <a href="https://github.com/InternRobotics/EBench" target="_blank" rel="noreferrer">EBench repository</a> · <a href="https://internrobotics.github.io/EBench-doc/" target="_blank" rel="noreferrer">EBench docs</a> · <a href="https://huggingface.co/datasets/InternRobotics/EBench-Assets" target="_blank" rel="noreferrer">EBench-Assets</a> · <a href="https://huggingface.co/datasets/InternRobotics/EBench-Dataset" target="_blank" rel="noreferrer">EBench-Dataset</a> · <a href="https://arxiv.org/abs/2506.10966" target="_blank" rel="noreferrer">GenManip arXiv</a> · <a href="https://docs.isaacsim.omniverse.nvidia.com/latest/index.html" target="_blank" rel="noreferrer">Isaac Sim docs</a> · <a href="https://docs.isaacsim.omniverse.nvidia.com/5.1.0/installation/download.html" target="_blank" rel="noreferrer">Isaac Sim 5.1 docs</a> · <a href="https://openusd.org/release/intro.html" target="_blank" rel="noreferrer">OpenUSD introduction</a> · <a href="https://huggingface.co/docs/lerobot/main/en/index" target="_blank" rel="noreferrer">LeRobot docs</a> · <a href="https://hydra.cc/docs/intro/" target="_blank" rel="noreferrer">Hydra docs</a> · <a href="https://arxiv.org/abs/2303.04137" target="_blank" rel="noreferrer">Diffusion Policy</a> · <a href="https://arxiv.org/abs/2304.13705" target="_blank" rel="noreferrer">Action Chunking Transformer</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Embodiment mismatch：Franka/ridgeback_franka 对 lift2 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="7-4">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-4</div>
+  <h1>Embodiment mismatch：Franka/ridgeback_franka 对 lift2</h1>
+  <p class="lede">最硬的差异是 robot embodiment。LabUtopia 的主线是 Franka 与 ridgeback_franka；EBench 的评测 contract 是 lift2 dual-arm mobile base。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>Embodiment mismatch 不只是外观不同。它改变 joint count、gripper layout、base motion、camera placement、reachable workspace、action vector 和 success predicate。EBench docs 中 observation 包含 <span class="term">state.joints</span>、<span class="term">state.gripper</span>、<span class="term">state.base</span>、<span class="term">state.ee_pose</span> 与多视角 video；action 则包含双臂关节/夹爪和 <span class="term">base_motion</span>。LabUtopia 的 Franka controller 和 RMPFlow contract 不等价。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>这意味着 LabUtopia robot assets 不能直接拿去跑 EBench baseline。更现实的方案是保留 EBench 的 lift2，把 LabUtopia 的 lab props/scene 作为新环境素材；或者在 GenManip 中新建一个支持 Franka/ridgeback_franka 的 benchmark family，但那已不是直接复用。</p>
+  <div class="path-grid"><div class="path">assets/robots/Franka.usd</div><div class="path">assets/robots/ridgeback_franka.usd</div><div class="path">controllers/robot_controllers</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Embodiment mismatch：Franka/ridgeback_franka 对 lift2</span></div>
+      <div class="lab-body" data-widget="reuse-matrix"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>对于资产迁移，先问 robot 是否保持 EBench lift2。如果保持，LabUtopia 的桌面高度、object scale、collision、reachability 都要为 lift2 重新验证。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>embodiment mismatch 是直接复用的第一阻碍。</li><li>Robot asset 影响 action/observation schema。</li><li>建议先迁移 props/scene，而不是迁移 robot。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://internrobotics.github.io/EBench-doc/" target="_blank" rel="noreferrer">EBench docs</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

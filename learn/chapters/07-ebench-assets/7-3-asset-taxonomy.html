@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>资产 taxonomy：LabUtopia 与 EBench 的侧重点 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="7-3">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-3</div>
+  <h1>资产 taxonomy：LabUtopia 与 EBench 的侧重点</h1>
+  <p class="lede">LabUtopia assets 的 taxonomy 更像 scientific lab kit；EBench assets 的 taxonomy 更像 indoor mobile manipulation benchmark kit。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>LabUtopia 侧重点是 chemistry lab scenes、scientific objects、materials、Franka/ridgeback_franka robot assets、navigation barrier map。它的任务名字也围绕 pick/place/pour/stir/shake/heat/clean beaker/device operation。EBench 侧重点是 household/indoor manipulation tasks、lift2 dual-arm mobile base、4-camera observation、long_horizon/simple_pnp/teleop_tasks 数据子集和 GenManip task assets。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>关系上，二者都使用 Isaac Sim/OpenUSD 生态，都把 assets 放进 embodied benchmark，都服务 VLA/imitation learning。差异上，LabUtopia 更领域化、更科学实验；EBench 更标准化、更面向 VLA leaderboard 和 client-server eval。</p>
+  <div class="path-grid"><div class="path">assets/chemistry_lab</div><div class="path">assets/robots</div><div class="path">/cpfs/shared/simulation/zhuzihou/dev/EBench/learn/_AGENT_BRIEF.md</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">资产 taxonomy：LabUtopia 与 EBench 的侧重点</span></div>
+      <div class="lab-body" data-widget="asset-map"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>所以 LabUtopia 可以给 EBench 提供“新 scientific lab task family”的素材，但不是 EBench 原资产的 drop-in replacement。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>共同点：Isaac Sim/OpenUSD、embodied tasks、language-conditioned manipulation。</li><li>LabUtopia：scientific lab, Franka/ridgebase, in-repo assets。</li><li>EBench：indoor VLA benchmark, lift2, external assets/dataset。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://arxiv.org/abs/2505.22634" target="_blank" rel="noreferrer">LabUtopia arXiv</a> · <a href="https://internrobotics.github.io/EBench-doc/" target="_blank" rel="noreferrer">EBench docs</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

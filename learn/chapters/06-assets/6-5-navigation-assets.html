@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Navigation assets：barrier map 与移动任务 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="6-5">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 6 · LabUtopia Assets · 6-5</div>
+  <h1>Navigation assets：barrier map 与移动任务</h1>
+  <p class="lede">Level5 navigation 不只依赖 navigation_lab USD，还依赖 barrier image 和路径规划工具。这里的资产开始从纯 3D 场景扩展到 planning representation。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p><span class="term">config/navigation/navigation_assets.yaml</span> 指向 <span class="term">assets/navigation/barrier/lab_1.png</span>。Navigation task/controller 结合 A* 工具与 ridgebase controller，把机器人从一个位置移动到目标位置。barrier image 可以理解成给 planner 用的简化 occupancy 信息。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>这提醒我们，资产不一定都是 USD。对于 navigation，2D barrier map、起终点、base controller 参数同样是 benchmark asset 的一部分。如果只复制 USD 而忽略 barrier map，mobile task 可能根本无法规划。</p>
+  <div class="path-grid"><div class="path">config/navigation/navigation_assets.yaml</div><div class="path">assets/navigation/barrier/lab_1.png</div><div class="path">tasks/navigation_task.py</div><div class="path">utils/a_star.py</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">Navigation assets：barrier map 与移动任务</span></div>
+      <div class="lab-body" data-widget="asset-map"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>与 EBench 对比时，mobile manipulation 的场景资产、base motion schema、evaluation worker 和 dataset format 都要一起看，不能只比较是否有移动底盘。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Navigation asset 包括 USD 和 planning map。</li><li>Barrier image 是 task contract 的一部分。</li><li>Mobile task 的复用风险高于 table-top object asset。</li></ul></div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

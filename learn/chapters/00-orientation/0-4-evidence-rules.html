@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>资料口径：哪些是论文事实，哪些是本地事实 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="0-4">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 0 · 先把整座实验室看成一张图 · 0-4</div>
+  <h1>资料口径：哪些是论文事实，哪些是本地事实</h1>
+  <p class="lede">项目理解最怕把论文愿景、本地 README、外部 benchmark 文档和代码事实混成一句话。本书会把来源口径拆开。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>LabUtopia 的公开资料来自 arXiv、NeurIPS 2025 abstract、project page、Hugging Face dataset 和本地 README。它们告诉我们 LabUtopia 面向 scientific embodied agents，强调 high-fidelity simulation、hierarchical benchmark、scientific laboratory tasks，并在本地 README 中给出 <span class="term">Isaac Sim 5.1</span>、Python 3.11、Ubuntu 24.04 的环境要求。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>EBench 的公开资料来自 GitHub、EBench docs、Hugging Face <span class="term">EBench-Assets</span> 与 <span class="term">EBench-Dataset</span>，以及 <span class="term">GenManip</span> 论文。它们告诉我们 EBench 是基于 <span class="term">Isaac Sim 4.1</span> 与 GenManip server 的 indoor VLA manipulation benchmark，核心本体是 <span class="term">lift2</span> dual-arm mobile base。</p>
+  <div class="path-grid"><div class="path">README.md</div><div class="path">README_CN.md</div><div class="path">/cpfs/shared/simulation/zhuzihou/dev/EBench/README.md</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>本地代码事实优先用于解释 LabUtopia repo 现在怎么跑：例如 task/controller factory、HDF5 数据保存、RMPFlow controller、navigation barrier image。外部资料优先用于解释 benchmark relation，而不是替本地代码编不存在的接口。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>遇到版本冲突时，按“本地 README/代码事实”和“外部 EBench 文档事实”分别陈述。</li><li>资产复用结论必须同时检查 simulation version、embodiment、task/eval contract、dataset format。</li><li>所有外部来源统一放在 Appendix 参考资料。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://proceedings.neurips.cc/paper_files/paper/2025/hash/313d6659e6532e6ba192dfb910d4261e-Abstract-Datasets_and_Benchmarks_Track.html" target="_blank" rel="noreferrer">LabUtopia NeurIPS 2025 abstract</a> · <a href="https://github.com/InternRobotics/EBench" target="_blank" rel="noreferrer">EBench repository</a> · <a href="https://internrobotics.github.io/EBench-doc/" target="_blank" rel="noreferrer">EBench docs</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

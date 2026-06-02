@@ -1,0 +1,55 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>PhysX 与 articulation：动作怎么变成运动 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="2-3">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 2 · Isaac Sim 与 OpenUSD 基础 · 2-3</div>
+  <h1>PhysX 与 articulation：动作怎么变成运动</h1>
+  <p class="lede">你在 policy 里看到的是 action array，但 Isaac Sim 里真正动起来的是 robot articulation、joint target、gripper command 和 physics step。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>LabUtopia 的 controller 输出 action 后，<span class="term">main.py</span> 调用 <span class="term">robot.get_articulation_controller().apply_action(action)</span>。这一步把高层 controller 的结果交给 Isaac Sim articulation controller，随后 World.step 推进物理和渲染。对于 Franka，项目还使用 <span class="term">RMPFlowController</span> 和 trajectory controller 来生成更平滑的末端运动。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>从 GAMES103 看，articulation 是带约束的多刚体系统；从 RL 看，它是 action 被 environment 接收后的 dynamics。你不需要一开始就懂 PhysX SDK 的所有细节，但要知道：action 不是直接“瞬移物体”，而是作用在关节/末端控制接口上，经过物理和碰撞后才进入下一帧 state。</p>
+  <div class="path-grid"><div class="path">controllers/robot_controllers/trajectory_controller.py</div><div class="path">robots/franka/rmpflow_controller.py</div><div class="path">main.py</div></div>
+
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>这也是为什么资产 collision、scale、mass、joint limit 会影响 policy 数据质量。一个 USD 看起来正确，不代表 articulation 和 collision 都适合采集 demonstration。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>Action array 必须匹配 robot articulation/control mode。</li><li>Physics step 后 observation 才有意义。</li><li>资产 QA 要检查 collision 和 articulation，不只看 render。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://docs.isaacsim.omniverse.nvidia.com/latest/index.html" target="_blank" rel="noreferrer">Isaac Sim docs</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

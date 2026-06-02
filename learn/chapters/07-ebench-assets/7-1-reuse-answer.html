@@ -1,0 +1,61 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>先给结论：不能直接复用，但可以迁移改造 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="7-1">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-1</div>
+  <h1>先给结论：不能直接复用，但可以迁移改造</h1>
+  <p class="lede">LabUtopia assets 不能直接复用到 EBench；更准确地说，它们 not plug-and-play，但可作为 source assets 经过 conversion workflow、task/eval contract 重建和 visual QA 后进入 EBench/GenManip 风格任务。</p>
+  <h2 id="why">为什么它在本项目里重要</h2>
+  <p>直接复用失败的原因不是一个，而是一组 contract mismatch。LabUtopia 本地 assets 服务 Isaac Sim 5.1、Franka/ridgeback_franka、本地 Hydra config、BaseTask/BaseController、HDF5 数据格式；EBench assets 服务 Isaac Sim 4.1、GenManip server、lift2 dual-arm mobile base、gmp/EvalClient、LeRobot v2.1 dataset 和 EBench scoring。</p>
+  <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+  <h2 id="where">从代码和资产落地</h2>
+  <p>如果你的目标只是“把 LabUtopia 的某个 beaker 或 lab scene 在 EBench Isaac Sim server 里看见”，可行路径是资产迁移；如果目标是“成为 EBench benchmark 中可评测任务”，还要写 GenManip task definition、scoring predicate、language instruction、dataset/eval integration。</p>
+  <div class="path-grid"><div class="path">assets</div><div class="path">/cpfs/shared/simulation/zhuzihou/dev/EBench/README.md</div></div>
+
+
+    <div class="lab">
+      <div class="lab-h"><span class="lab-tag">interactive</span><span class="lab-t">先给结论：不能直接复用，但可以迁移改造</span></div>
+      <div class="lab-body" data-widget="reuse-matrix"></div>
+      <div class="lab-cap">拖动、切换或逐步播放，把本节概念映射到项目结构。</div>
+    </div>
+
+  <h2 id="practice">读论文和跑实验时怎么用</h2>
+  <p>因此本章的结论会分层：visual/static asset 可能复用；task concept 可以移植；robot/control/data/eval 不能直接复用。</p>
+  <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>直接复用答案：不能直接复用。</li><li>可迁移对象：部分 USD mesh/material/scene concept。</li><li>必须重建对象：embodiment、task/eval contract、dataset format、scoring。</li></ul></div>
+  <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://github.com/InternRobotics/EBench" target="_blank" rel="noreferrer">EBench repository</a> · <a href="https://huggingface.co/datasets/InternRobotics/EBench-Assets" target="_blank" rel="noreferrer">EBench-Assets</a> · <a href="https://huggingface.co/datasets/InternRobotics/EBench-Dataset" target="_blank" rel="noreferrer">EBench-Dataset</a></p></div>
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

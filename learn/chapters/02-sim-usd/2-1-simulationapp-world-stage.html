@@ -1,0 +1,60 @@
+<!doctype html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>SimulationApp, World, Stage 三件事 · LabUtopia Interactive Book</title>
+          <link rel="stylesheet" href="../../assets/css/book.css">
+        </head>
+        <body data-root="../../" data-section="2-1">
+          <div class="progress" id="progress"></div>
+          <header class="topbar">
+            <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+            <div class="top-actions">
+              <button class="text-btn" data-search-open title="Search">Search</button>
+              <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+            </div>
+          </header>
+
+    <div class="book">
+      <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+      <main class="content">
+    <article class="prose">
+      <div class="eyebrow">Part 2 · Isaac Sim 与 OpenUSD 基础 · 2-1</div>
+      <h1>SimulationApp, World, Stage 三件事</h1>
+      <p class="lede">LabUtopia 的第一行关键代码不是 robot，也不是 task，而是 <span class="term">SimulationApp</span>。它决定 Isaac Sim runtime 能否启动，后面的 World 与 Stage 都在它之后才有意义。</p>
+      <h2 id="why">为什么它在本项目里重要</h2>
+      <p><span class="term">SimulationApp</span> 是应用级入口，负责加载 Omniverse/Isaac Sim 扩展、渲染和物理 runtime。<span class="term">World</span> 是 Isaac Sim core API 里的 simulation wrapper，管理 physics step、reset、play/stop 状态。<span class="term">Stage</span> 则是 OpenUSD 场景图，里面有 prim、reference、material、camera、robot articulation。</p>
+      <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+      <h2 id="where">从代码和资产落地</h2>
+      <p>本地 <span class="term">main.py</span> 的顺序正好体现这个关系：先创建 SimulationApp，再 import Isaac Sim 相关模块，之后创建 World，获取 stage，然后用 <span class="term">add_reference_to_stage</span> 把配置里的 USD 加到 <span class="term">/World</span>。这也是很多 Isaac Sim 项目要求“先启动 SimulationApp 再 import omni”的原因。</p>
+      <div class="path-grid"><div class="path">main.py</div></div>
+
+    <div class="code" data-lang="python"><div class="code-h"><span class="fn">main.py</span><button class="cp">复制</button></div><pre><code>simulation_app = SimulationApp(simulation_config)
+world = World(stage_units_in_meters=1.0, physics_prim_path=&quot;/physicsScene&quot;, backend=&quot;numpy&quot;)
+stage = omni.usd.get_context().get_stage()
+add_reference_to_stage(usd_path=os.path.abspath(cfg.usd_path), prim_path=&quot;/World&quot;)</code></pre></div>
+
+
+      <h2 id="practice">读论文和跑实验时怎么用</h2>
+      <p>从 GAMES103 看，World.step 就像推进一次物理系统；从 USD 看，Stage 是状态的可编辑数据库；从 policy 看，二者共同产生下一步 observation。</p>
+      <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>SimulationApp 是应用 runtime。</li><li>World 是 simulation stepping wrapper。</li><li>Stage 是 USD scene graph。</li></ul></div>
+      <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://docs.isaacsim.omniverse.nvidia.com/latest/index.html" target="_blank" rel="noreferrer">Isaac Sim docs</a> · <a href="https://openusd.org/release/intro.html" target="_blank" rel="noreferrer">OpenUSD introduction</a></p></div>
+      <div id="pager" class="pager"></div>
+    </article>
+    </main>
+      <aside class="rail" id="rail" aria-label="On this page"></aside>
+    </div>
+
+          <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+            <div class="search-box">
+              <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+              <div class="search-results" id="book-search-results"></div>
+              <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+            </div>
+          </div>
+          <script src="../../content.js"></script>
+          <script src="../../assets/js/widgets/book-widgets.js"></script>
+          <script src="../../assets/js/book.js"></script>
+        </body>
+        </html>

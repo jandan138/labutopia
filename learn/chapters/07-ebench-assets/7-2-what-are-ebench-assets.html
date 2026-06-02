@@ -1,0 +1,58 @@
+<!doctype html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>EBench assets 是什么：外部 Hugging Face 资产包 · LabUtopia Interactive Book</title>
+          <link rel="stylesheet" href="../../assets/css/book.css">
+        </head>
+        <body data-root="../../" data-section="7-2">
+          <div class="progress" id="progress"></div>
+          <header class="topbar">
+            <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+            <div class="top-actions">
+              <button class="text-btn" data-search-open title="Search">Search</button>
+              <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+            </div>
+          </header>
+
+    <div class="book">
+      <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+      <main class="content">
+    <article class="prose">
+      <div class="eyebrow">Part 7 · LabUtopia Assets 与 EBench Assets 深度对比 · 7-2</div>
+      <h1>EBench assets 是什么：外部 Hugging Face 资产包</h1>
+      <p class="lede">EBench entry repo 本身并不把 benchmark assets 全部放在 Git 里；它把前门、baselines、scripts 留在 GitHub，把核心 assets 和 dataset 放到 Hugging Face。</p>
+      <h2 id="why">为什么它在本项目里重要</h2>
+      <p>EBench README 与 docs 指向 <span class="term">InternRobotics/EBench-Assets</span> 和 <span class="term">InternRobotics/EBench-Dataset</span>。这说明 EBench assets 是 benchmark runtime 的外部依赖，而不是像 LabUtopia 本地 assets 那样随 repo 直接出现。EBench 的 server 端来自 <span class="term">GenManip</span>，client 侧用 <span class="term">genmanip-client</span> 和 <span class="term">gmp</span> 命令提交/评测。</p>
+      <div class="bridge rl"><div class="c-h"><span class="tag">从 RL 看</span> 把概念落到 trajectory</div><p>这里的关键不是把术语背下来，而是看它怎样改变 episode、observation、action、success 和 dataset distribution。</p></div>
+      <h2 id="where">从代码和资产落地</h2>
+      <p>资产内容服务的是 EBench 的 26 tasks、3 tracks/splits、本体 lift2 和 LeRobot 数据格式。它和 baselines 的 openpi/X-VLA/InternVLA-A1 通过统一 observation/action contract 对接。</p>
+      <div class="path-grid"><div class="path">/cpfs/shared/simulation/zhuzihou/dev/EBench/README.md</div></div>
+
+    <div class="code" data-lang="bash"><div class="code-h"><span class="fn">EBench asset download</span><button class="cp">复制</button></div><pre><code>huggingface-cli download InternRobotics/EBench-Assets --local-dir saved --repo-type dataset
+huggingface-cli download InternRobotics/EBench-Dataset --local-dir saved/dataset --repo-type dataset</code></pre></div>
+
+
+      <h2 id="practice">读论文和跑实验时怎么用</h2>
+      <p>所以比较两边 assets 时，不能只比较文件扩展名。要比较“谁管理资产、谁加载资产、谁定义 task、谁记录数据、谁评分”。</p>
+      <div class="callout warn"><div class="c-h">本节要记住</div><ul class="note-list"><li>EBench assets 外置在 Hugging Face。</li><li>Entry repo 不是完整 runtime。</li><li>Assets 与 GenManip server、gmp eval、LeRobot dataset 是一套系统。</li></ul></div>
+      <div class="callout note"><div class="c-h">Source trail</div><p><a href="https://github.com/InternRobotics/EBench" target="_blank" rel="noreferrer">EBench repository</a> · <a href="https://huggingface.co/datasets/InternRobotics/EBench-Assets" target="_blank" rel="noreferrer">EBench-Assets</a> · <a href="https://huggingface.co/datasets/InternRobotics/EBench-Dataset" target="_blank" rel="noreferrer">EBench-Dataset</a></p></div>
+      <div id="pager" class="pager"></div>
+    </article>
+    </main>
+      <aside class="rail" id="rail" aria-label="On this page"></aside>
+    </div>
+
+          <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+            <div class="search-box">
+              <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+              <div class="search-results" id="book-search-results"></div>
+              <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+            </div>
+          </div>
+          <script src="../../content.js"></script>
+          <script src="../../assets/js/widgets/book-widgets.js"></script>
+          <script src="../../assets/js/book.js"></script>
+        </body>
+        </html>
