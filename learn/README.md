@@ -2,7 +2,7 @@
 
 这是一份多章节 HTML 教程，面向已经有一点 RL、Isaac Sim 和 USD 资产基础的读者，目标是把 LabUtopia 项目从论文概念、runtime、task/controller、data/policy、assets 到 EBench 资产复用判断讲清楚。
 
-- 章节数：55
+- 章节数：56
 - 入口：`learn/index.html`
 - 目录源：`learn/content.js`
 - 样式：`learn/assets/css/book.css`

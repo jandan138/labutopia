@@ -1,6 +1,36 @@
 import os
+import sys
 import argparse
+import importlib.util
 from isaacsim import SimulationApp
+
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
+def ensure_project_root_on_path():
+    sys.path[:] = [path for path in sys.path if path != PROJECT_ROOT]
+    sys.path.insert(0, PROJECT_ROOT)
+
+
+def ensure_project_utils_package():
+    package_dir = os.path.join(PROJECT_ROOT, "utils")
+    init_path = os.path.join(package_dir, "__init__.py")
+    current = sys.modules.get("utils")
+    current_file = os.path.abspath(getattr(current, "__file__", "")) if current else ""
+    if current_file == os.path.abspath(init_path):
+        return
+
+    spec = importlib.util.spec_from_file_location(
+        "utils",
+        init_path,
+        submodule_search_locations=[package_dir],
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["utils"] = module
+    spec.loader.exec_module(module)
+
+
+ensure_project_root_on_path()
 
 # Parse command line arguments
 def parse_args():
@@ -10,9 +40,11 @@ def parse_args():
                        help='Backend choice: numpy (CPU) or gpu')
     parser.add_argument('--headless', action='store_true', 
                        help='Run in headless mode (default is with GUI)')
-    parser.add_argument('--no-video', action='store_true', 
+    parser.add_argument('--no-video', action='store_true',
                        help='Disable video display and saving')
-    parser.add_argument('--config-name', type=str, default='level3_Heat_Liquid',
+    parser.add_argument('--video-dir', type=str, default=None,
+                       help='Directory for saved episode videos (default: <run_dir>/video)')
+    parser.add_argument('--config-name', type=str, default='level3_HeatLiquid',
                        help='Configuration file name (without .yaml extension)')
     parser.add_argument('--config-dir', type=str, default='config',
                        help='Configuration directory path (default: config)')
@@ -23,15 +55,19 @@ args = parse_args()
 
 # Set up simulation app based on arguments
 simulation_config = {
-    "headless": False,
+    "headless": args.headless,
     "extra_args": ["--/rtx/raytracing/fractionalCutoutOpacity=true"],
 }
 
 simulation_app = SimulationApp(simulation_config)
 
+ensure_project_root_on_path()
+
 import hydra
 from omegaconf import OmegaConf
 import cv2
+ensure_project_root_on_path()
+ensure_project_utils_package()
 import numpy as np
 
 import omni
@@ -68,7 +104,8 @@ def main():
         show_video = False
     else:
         save_video = True
-        show_video = True
+        show_video = not args.headless
+    video_output_dir = args.video_dir or os.path.join(cfg.multi_run.run_dir, "video")
 
     robot = create_robot(
         cfg.robot.type,
@@ -149,9 +186,8 @@ def main():
                         cv2.imshow('Camera Views', combined_img)
                         cv2.waitKey(1)
                     if save_video:
-                        output_dir = os.path.join(cfg.multi_run.run_dir, "video")
-                        os.makedirs(output_dir, exist_ok=True)
-                        output_path = os.path.join(output_dir, f"episode_{task_controller._episode_num}.mp4")
+                        os.makedirs(video_output_dir, exist_ok=True)
+                        output_path = os.path.join(video_output_dir, f"episode_{task_controller._episode_num}.mp4")
                         if video_writer is None:
                             height, width = combined_img.shape[:2]
                             fourcc = cv2.VideoWriter_fourcc(*'mp4v')

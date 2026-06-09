@@ -178,7 +178,7 @@ class CleanBeaker7PolicyTaskController(BaseController):
             action = self.pick_beaker2.forward(
                 picking_position=state['beaker_2_position'],
                 current_joint_positions=state['joint_positions'],
-                object_size=state['object_size'],
+                object_size=state.get('beaker_2_size', state.get('object_size', state['target_size'])),
                 object_name="beaker_2",
                 gripper_control=self.gripper_control,
                 gripper_position=state['gripper_position'],
@@ -248,7 +248,7 @@ class CleanBeaker7PolicyTaskController(BaseController):
             action = self.pick_beaker1.forward(
                 picking_position=state['beaker_1_position'],
                 current_joint_positions=state['joint_positions'],
-                object_size=state['object_size'],
+                object_size=state.get('beaker_1_size', state.get('object_size', state['target_size'])),
                 object_name="beaker1",
                 gripper_control=self.gripper_control,
                 gripper_position=state['gripper_position'],

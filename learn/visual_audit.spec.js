@@ -11,6 +11,7 @@ const routes = [
   "/learn/chapters/06-assets/6-2-asset-census.html",
   "/learn/chapters/07-ebench-assets/7-1-reuse-answer.html",
   "/learn/chapters/07-ebench-assets/7-8-conversion-workflow.html",
+  "/learn/chapters/08-extension-debug/8-6-run-locally.html",
   "/learn/chapters/appendix/a-4-references.html",
 ];
 

@@ -1,0 +1,261 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>新手跑起来：环境、踩坑和 expert 视频 · LabUtopia Interactive Book</title>
+      <link rel="stylesheet" href="../../assets/css/book.css">
+    </head>
+    <body data-root="../../" data-section="8-6">
+      <div class="progress" id="progress"></div>
+      <header class="topbar">
+        <a class="brand" href="../../index.html"><span class="brand-mark">LU</span><span>LabUtopia Interactive Book</span></a>
+        <div class="top-actions">
+          <button class="text-btn" data-search-open title="Search">Search</button>
+          <button class="icon-btn" data-theme-toggle title="Theme">◐</button>
+        </div>
+      </header>
+
+<div class="book">
+  <nav class="sidebar" id="sidebar" aria-label="Book navigation"></nav>
+  <main class="content">
+<article class="prose">
+  <div class="eyebrow">Part 8 · 扩展与 Debug · 8-6</div>
+  <h1>新手跑起来：环境、踩坑和 expert 视频</h1>
+  <p class="lede">这一节不讲大理论，只回答一个很实际的问题：一个第一次接手 LabUtopia 的人，怎样确认环境没跑偏、怎样启动一个任务、怎样只录 expert 轨迹视频，以及失败时先看哪里。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h2 id="plain">先讲人话</h2>
+      <p>“跑起来”先不要理解成训练模型，也不要理解成完整生产 dataset。最稳的第一步是让 Isaac Sim 启动，跑一个短 expert episode，并看到任务成功或视频输出。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="analogy">你可以这样想</h2>
+      <p>Conda env 是工具箱，Isaac Sim 是大型实验室机器，Hydra config 是实验说明书。你要先确认拿的是同一个工具箱，再按同一份说明书开机器。</p>
+    </section>
+    <section class="plain-card">
+      <h2 id="checkpoint">读完你应该能回答</h2>
+      <ul>
+        <li>应该用哪个 Python 跑 LabUtopia？</li>
+        <li>为什么每次要先 <span class="term">unset OMNI_SERVER</span>？</li>
+        <li>怎么区分“有视频”和“expert 成功”？</li>
+      </ul>
+    </section>
+  </div>
+
+  <h2 id="what-worked">这次我们到底跑通了什么</h2>
+  <p>本机已经能跑 LabUtopia expert 轨迹，并完成了全量视频批跑。准确口径如下：</p>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>项目</th><th>结果</th><th>新手怎么理解</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>主 config 数量</td><td>29</td><td>仓库里有 29 个主要任务入口。</td></tr>
+        <tr><td>可读视频</td><td>29/29</td><td>每个任务都至少录到了一个 mp4。</td></tr>
+        <tr><td>expert 成功</td><td>28/29</td><td>绝大多数任务完成了 expert rollout。</td></tr>
+        <tr><td>video-only</td><td><span class="term">level4_CleanBeaker7Policy</span></td><td>它有视频，但没有成功完成，不能算成功轨迹。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="c-h">不要把两个概念混起来</div>
+    <p>“视频存在”只能说明仿真器至少跑到了一段画面；“expert 成功”还需要日志里看到成功状态、进程正常退出、summary 标记为 <span class="term">ok</span>。本次应该写成 29 个视频齐全，28 个 expert 成功。</p>
+  </div>
+
+  <h2 id="step-1">第一步：确认自己站在正确目录，用正确 Python</h2>
+  <p>LabUtopia 这类项目最常见的低级错误是：代码目录对了，但 Python 环境错了；或者 Python 环境对了，但跑到了另一个项目的 Isaac。先做这三个检查。</p>
+
+  <div class="code" data-lang="bash"><div class="code-h"><span class="fn">确认目录、GPU、Python</span><button class="cp">复制</button></div><pre><code>pwd
+nvidia-smi
+/cpfs/user/zhuzihou/conda-managed/envs/labutopia-py311/bin/python -V</code></pre></div>
+
+  <p>当前已经验证过的 Python 是：</p>
+  <div class="path-grid">
+    <div class="path">/cpfs/user/zhuzihou/conda-managed/envs/labutopia-py311/bin/python</div>
+    <div class="path">Python 3.11.15</div>
+    <div class="path">Isaac Sim 5.1 pip installation</div>
+    <div class="path">Torch 2.9.0+cu126</div>
+  </div>
+
+  <p>当前 driver 是 <span class="term">570.153.02</span>。它已经能完成短流程和本次视频批跑，但低于 Isaac Sim 5.1 文档中本次调研看到的 Linux tested driver <span class="term">580.65.06</span>。所以它是“本机能用”，不是“长期基线完全没风险”。</p>
+
+  <h2 id="step-2">第二步：每次启动前先清掉旧 Isaac 影响</h2>
+  <p>Isaac Sim 会读很多环境变量和 Omniverse cache。我们之前遇到过旧 <span class="term">OMNI_SERVER</span> 指向旧内容，导致当前项目可能被旧 Isaac 资产污染。新手最稳的做法是每次运行前固定执行这三行。</p>
+
+  <div class="code" data-lang="bash"><div class="code-h"><span class="fn">每次运行前的固定三行</span><button class="cp">复制</button></div><pre><code>unset OMNI_SERVER
+export OMNI_KIT_ACCEPT_EULA=YES
+export PYTHONUNBUFFERED=1</code></pre></div>
+
+  <div class="plain-card">
+    <h3>这三行分别在干什么</h3>
+    <ul>
+      <li><span class="term">unset OMNI_SERVER</span>：不要再连旧 Nucleus 或旧 Isaac 内容。</li>
+      <li><span class="term">OMNI_KIT_ACCEPT_EULA=YES</span>：headless 运行时不要卡在许可确认。</li>
+      <li><span class="term">PYTHONUNBUFFERED=1</span>：日志实时输出，方便判断是卡住还是正在加载。</li>
+    </ul>
+  </div>
+
+  <h2 id="step-3">第三步：先跑最小 smoke，不要一上来全量跑</h2>
+  <p>第一次验证环境时，不建议直接跑 29 个任务。先跑一个短任务，看 Isaac 能否启动、config 能否加载、controller 能否完成、程序能否正常退出。</p>
+
+  <div class="code" data-lang="bash"><div class="code-h"><span class="fn">最小 smoke</span><button class="cp">复制</button></div><pre><code>unset OMNI_SERVER
+export OMNI_KIT_ACCEPT_EULA=YES
+export PYTHONUNBUFFERED=1
+
+/cpfs/user/zhuzihou/conda-managed/envs/labutopia-py311/bin/python \
+  main.py \
+  --config-dir docs/tmp/labutopia_smoke \
+  --config-name level1_pick_smoke \
+  --headless \
+  --no-video</code></pre></div>
+
+  <p>你希望看到类似结果：</p>
+
+  <div class="code" data-lang="text"><div class="code-h"><span class="fn">成功信号</span><button class="cp">复制</button></div><pre><code>Success Rate = 1/1 (100.00%)</code></pre></div>
+
+  <p>如果 smoke 都跑不起来，先不要调 task 逻辑。先回到环境层：Python 是否正确、driver 是否可见、Isaac package 是否在这个 env 里、旧 <span class="term">OMNI_SERVER</span> 是否清掉。</p>
+
+  <h2 id="step-4">第四步：只录 expert 视频，不写大 H5</h2>
+  <p>正式数据采集会写 HDF5，慢且占空间。我们这次讨论的目标只是“跑 expert 轨迹并录视频”，所以使用 <span class="term">mock_collector</span>。它的意思很简单：让 episode 正常推进，但不要真的写大 dataset。</p>
+
+  <div class="code" data-lang="bash"><div class="code-h"><span class="fn">单任务录视频模板</span><button class="cp">复制</button></div><pre><code>unset OMNI_SERVER
+export OMNI_KIT_ACCEPT_EULA=YES
+export PYTHONUNBUFFERED=1
+
+/cpfs/user/zhuzihou/conda-managed/envs/labutopia-py311/bin/python \
+  main.py \
+  --config-dir docs/tmp/expert_video_configs/20260609_002039 \
+  --config-name level1_pick \
+  --headless \
+  --video-dir artifacts/videos/manual/level1_pick</code></pre></div>
+
+  <p>这里每个参数的含义：</p>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>参数</th><th>作用</th><th>为什么新手要关心</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="term">--config-dir</span></td><td>告诉 Hydra 去哪里找临时 config。</td><td>视频 config 和正式 config 要分开。</td></tr>
+        <tr><td><span class="term">--config-name</span></td><td>选择要跑的任务。</td><td>比如 <span class="term">level1_pick</span>、<span class="term">level5_Navigation</span>。</td></tr>
+        <tr><td><span class="term">--headless</span></td><td>不打开 GUI 窗口。</td><td>服务器上通常必须这样跑。</td></tr>
+        <tr><td><span class="term">--video-dir</span></td><td>指定 mp4 输出位置。</td><td>否则视频会散在 Hydra output 目录里。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="step-5">第五步：看结果时只看三件事</h2>
+  <p>新手不要被 Isaac 日志里大量 warning 吓住。第一轮只判断三件事：</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h3>1. 进程是否正常退出</h3>
+      <p>退出码是 0，通常说明这次任务没有 crash。</p>
+    </section>
+    <section class="plain-card">
+      <h3>2. 是否看到 success</h3>
+      <p>日志里出现成功率或 summary 里 <span class="term">success_seen=True</span>，才算 expert 成功。</p>
+    </section>
+    <section class="plain-card">
+      <h3>3. mp4 是否可读</h3>
+      <p>视频能打开，只说明有画面；它不能替代 success 判断。</p>
+    </section>
+  </div>
+
+  <div class="code" data-lang="bash"><div class="code-h"><span class="fn">检查视频是否可读</span><button class="cp">复制</button></div><pre><code>ffprobe artifacts/videos/expert_trajectories/20260609_002039_final/level1_pick/episode_0.mp4</code></pre></div>
+
+  <h2 id="pitfalls">新手最容易踩的坑</h2>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>症状</th><th>最可能原因</th><th>先做什么</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>一启动就找不到 Isaac/omni 模块</td><td>Python env 用错了。</td><td>显式使用 <span class="term">labutopia-py311/bin/python</span>。</td></tr>
+        <tr><td>加载到旧资产或旧服务器</td><td><span class="term">OMNI_SERVER</span> 或 cache 污染。</td><td>运行前 <span class="term">unset OMNI_SERVER</span>。</td></tr>
+        <tr><td>headless 卡住或退出很早</td><td>EULA 或显示相关设置不对。</td><td>设置 <span class="term">OMNI_KIT_ACCEPT_EULA=YES</span>，使用 <span class="term">--headless</span>。</td></tr>
+        <tr><td>视频窗口相关错误</td><td>服务器无显示，但代码尝试 show video。</td><td>headless 下只保存视频，不调用 GUI 显示。</td></tr>
+        <tr><td><span class="term">utils</span> import 很奇怪</td><td>Isaac/cv2 路径里的顶层 <span class="term">utils</span> 抢占了项目包。</td><td>确认 project root 在 <span class="term">sys.path</span> 前面，且项目有 <span class="term">utils/__init__.py</span>。</td></tr>
+        <tr><td>日志里有 MDL/texture warning</td><td>材质或贴图缺失。</td><td>先判断任务是否成功；如果做 showcase，再修 asset。</td></tr>
+        <tr><td>有视频但 summary 不是 ok</td><td>任务中途失败或 controller bug。</td><td>按 <span class="term">video_only</span> 记录，不要算成功。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="artifacts">文件应该放哪，哪些不能提交</h2>
+  <p>视频、临时 config、Hydra output 和 H5 数据都可能很大。它们可以留在本机讨论，但不应该直接进 git。</p>
+
+  <div class="path-grid">
+    <div class="path">artifacts/videos/</div>
+    <div class="path">docs/tmp/</div>
+    <div class="path">outputs/</div>
+  </div>
+
+  <p>这些路径已经在 <span class="term">.gitignore</span> 中。提交前可以这样确认：</p>
+
+  <div class="code" data-lang="bash"><div class="code-h"><span class="fn">确认大产物被 ignore</span><button class="cp">复制</button></div><pre><code>git check-ignore artifacts/videos/expert_trajectories/20260609_002039_final/final_summary.csv
+git check-ignore docs/tmp/expert_video_configs/20260609_002039/level1_pick.yaml
+git check-ignore outputs/smoke/collect/2026.06.08/19.07.57_Level1_pick_smoke/dataset/episode_0000.h5</code></pre></div>
+
+  <h2 id="all-experts">如果要全量跑 29 个 expert</h2>
+  <p>全量批跑的正确流程应该是脚本化的：生成临时 config，逐个运行，记录日志，生成 summary，再做视频 QA。本次已经人工完成了一轮，最终结果在：</p>
+
+  <div class="path-grid">
+    <div class="path">artifacts/videos/expert_trajectories/20260609_002039_final/final_summary.csv</div>
+    <div class="path">artifacts/videos/expert_trajectories/20260609_002039_final/final_summary.json</div>
+  </div>
+
+  <div class="callout warn">
+    <div class="c-h">当前唯一非成功配置</div>
+    <p><span class="term">level4_CleanBeaker7Policy</span> 录到了视频，但 controller 调用了 <span class="term">PourController.forward(target_name=...)</span>，而底层接口不接受这个参数。修复 controller/state contract 后，需要单独重跑这个 config。</p>
+  </div>
+
+  <h2 id="make-standard">下一步怎样变成真正规范流程</h2>
+  <p>现在的状态是“本机能跑起来，并且有完整视频证据”。如果要让新同学或新机器稳定复现，还要补四件事。</p>
+
+  <div class="plain-grid">
+    <section class="plain-card">
+      <h3>环境锁定</h3>
+      <p>把 Python、Isaac Sim、Torch、CUDA wheel、driver 建成 lock 或容器说明。</p>
+    </section>
+    <section class="plain-card">
+      <h3>批跑脚本</h3>
+      <p>新增 <span class="term">scripts/record_expert_videos.py</span>，不要靠手工复制命令。</p>
+    </section>
+    <section class="plain-card">
+      <h3>视频验证脚本</h3>
+      <p>新增 <span class="term">scripts/validate_expert_videos.py</span>，自动生成 summary 和 QA 状态。</p>
+    </section>
+  </div>
+
+  <div class="callout note">
+    <div class="c-h">本节要记住</div>
+    <ul class="note-list">
+      <li>先 smoke，再单任务视频，最后才全量批跑。</li>
+      <li>每次 Isaac 运行前先清 <span class="term">OMNI_SERVER</span>，并显式设置 EULA。</li>
+      <li>视频存在不等于 expert 成功，summary 状态才是最终口径。</li>
+      <li>视频和 H5 是本机 artifact，不是应该提交的源码。</li>
+    </ul>
+  </div>
+
+  <div id="pager" class="pager"></div>
+</article>
+</main>
+  <aside class="rail" id="rail" aria-label="On this page"></aside>
+</div>
+
+      <div class="search-overlay" id="book-search" role="dialog" aria-label="Book search">
+        <div class="search-box">
+          <input id="book-search-input" placeholder="搜索章节、术语或路径，例如 BaseTask / EBench-Assets / Isaac Sim">
+          <div class="search-results" id="book-search-results"></div>
+          <div style="padding:10px;border-top:1px solid var(--line);text-align:right"><button class="text-btn" data-search-close>关闭</button></div>
+        </div>
+      </div>
+      <script src="../../content.js"></script>
+      <script src="../../assets/js/widgets/book-widgets.js"></script>
+      <script src="../../assets/js/book.js"></script>
+    </body>
+    </html>

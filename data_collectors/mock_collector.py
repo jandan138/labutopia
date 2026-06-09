@@ -1,6 +1,5 @@
-import os
 import numpy as np
-from typing import List, Optional
+from typing import List
 from .data_collector import DataCollector
 
 class MockCollector(DataCollector):
@@ -17,14 +16,15 @@ class MockCollector(DataCollector):
             max_workers (int): Maximum number of parallel processes (ignored in mock)
             compression: Compression method for image data (ignored in mock)
         """
-        # Call parent constructor but don't create directories or process pool
-        super().__init__(camera_configs, save_dir, max_episodes, max_workers, compression)
-        
-        # Override to not create directories
-        self.session_dir = os.path.join(save_dir, "dataset")
-        # Don't create the directory in mock mode
-        
-    def cache_step(self, camera_images: dict = None, joint_angles: np.ndarray = None, language_instruction=None):
+        self.save_dir = save_dir
+        self.max_episodes = max_episodes
+        self.compression = compression
+        self.episode_count = 0
+        self.camera_configs = camera_configs
+        self.task_instructions = None
+        self.temp_task_properties = {}
+
+    def cache_step(self, camera_images: dict = None, joint_angles: np.ndarray = None, language_instruction=None, *args, **kwargs):
         """Mock cache step - does nothing
         
         Args:
@@ -35,7 +35,7 @@ class MockCollector(DataCollector):
         # Override parent method to not actually cache anything
         pass
         
-    def write_cached_data(self, final_joint_positions = None):
+    def write_cached_data(self, final_joint_positions = None, *args, **kwargs):
         """Mock write cached data - does nothing
         
         Args:
@@ -46,7 +46,7 @@ class MockCollector(DataCollector):
         self.episode_count += 1
         pass
 
-    def clear_cache(self):
+    def clear_cache(self, *args, **kwargs):
         """Mock clear cache - does nothing"""
         # Do nothing - this is a mock collector
         # Override parent method to not actually clear anything
@@ -57,4 +57,4 @@ class MockCollector(DataCollector):
         """Mock close - does nothing"""
         # Do nothing - this is a mock collector
         # Override parent method to not actually close anything
-        pass 
+        pass

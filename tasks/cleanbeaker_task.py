@@ -63,6 +63,8 @@ class CleanBeakerTask(BaseTask):
 
         beaker_1_position = self.object_utils.get_geometry_center(object_path=self.beaker_1)
         beaker_2_position = self.object_utils.get_geometry_center(object_path=self.beaker_2)
+        beaker_1_size = self.object_utils.get_object_size(object_path=self.beaker_1)
+        beaker_2_size = self.object_utils.get_object_size(object_path=self.beaker_2)
 
         plat_1_position = self.object_utils.get_geometry_center(object_path=self.plat_1)
         plat_2_position = self.object_utils.get_geometry_center(object_path=self.plat_2)
@@ -79,6 +81,9 @@ class CleanBeakerTask(BaseTask):
             'target_name': self.target_beaker,
             'beaker_1_position': beaker_1_position,
             'beaker_2_position': beaker_2_position,
+            'beaker_1_size': beaker_1_size,
+            'beaker_2_size': beaker_2_size,
+            'object_size': beaker_2_size,
             'plat_1_position': plat_1_position,
             'plat_2_position': plat_2_position,
             'camera_data': camera_data,

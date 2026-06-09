@@ -369,6 +369,12 @@ window.LABUTOPIA_BOOK = {
           "title": "Capstone：把一个小实验跑完整",
           "file": "chapters/08-extension-debug/8-5-capstone.html",
           "summary": "最后，用一个小实验把整本书串起来：选择 level1_pick，确认 assets，collect 少量 episode，检查 HDF5，再用训练配置理解输入输出。"
+        },
+        {
+          "id": "8-6",
+          "title": "新手跑起来：环境、踩坑和 expert 视频",
+          "file": "chapters/08-extension-debug/8-6-run-locally.html",
+          "summary": "面向第一次接手项目的人，用通俗步骤解释当前可用环境、Isaac Sim 启动前检查、smoke run、expert 视频录制、常见坑和 29 个视频批跑的正确口径。"
         }
       ]
     },
