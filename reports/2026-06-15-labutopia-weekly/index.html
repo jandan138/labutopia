@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LabUtopia 6.15 周报：Expert 轨迹口径说明</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7f8;
+      --paper: #ffffff;
+      --paper-2: #eef5f2;
+      --ink: #142126;
+      --muted: #5f7078;
+      --line: #d7e0de;
+      --green: #0f766e;
+      --amber: #b45309;
+      --red: #be123c;
+      --warn: #fff4d6;
+      --shadow: 0 12px 34px rgba(20, 33, 38, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      line-height: 1.62;
+      letter-spacing: 0;
+    }
+    main { max-width: 1160px; margin: 0 auto; padding: 34px 22px 56px; }
+    .hero, .card, .flow, .note {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+      gap: 24px;
+      padding: 30px;
+      margin-bottom: 18px;
+    }
+    .eyebrow {
+      color: var(--amber);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 850;
+    }
+    h1 { margin: 8px 0 12px; font-size: clamp(32px, 5vw, 58px); line-height: 1.06; letter-spacing: 0; }
+    h2 { margin: 0 0 12px; font-size: 22px; }
+    h3 { margin: 0 0 6px; font-size: 17px; }
+    p { margin: 0 0 12px; }
+    .lede { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .metric {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper-2);
+      min-height: 88px;
+    }
+    .metric strong { display: block; color: var(--green); font-size: 32px; line-height: 1; }
+    .metric span { color: var(--muted); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0; }
+    .card { padding: 18px; }
+    .card ul { margin: 0; padding-left: 18px; }
+    .card li { margin: 7px 0; }
+    .tag {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 850;
+    }
+    .tag.warn { color: var(--amber); background: var(--warn); }
+    .tag.bad { color: var(--red); background: #ffe4e8; }
+    .flow {
+      padding: 18px;
+      margin: 18px 0;
+    }
+    .flow-track {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .step {
+      min-height: 112px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper-2);
+      position: relative;
+    }
+    .step strong { display: block; margin-bottom: 6px; color: var(--green); }
+    .step span { color: var(--muted); font-size: 13px; }
+    .step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -10px;
+      top: 42%;
+      color: var(--amber);
+      font-weight: 900;
+    }
+    .answer {
+      border-left: 4px solid var(--green);
+      background: var(--paper-2);
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+    .note {
+      padding: 16px 18px;
+      background: var(--warn);
+      border-color: #efd58d;
+      margin-top: 18px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.95em;
+    }
+    a { color: var(--green); text-underline-offset: 0.18em; }
+    .footer {
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      margin-top: 20px;
+    }
+    @media (max-width: 980px) {
+      .hero, .grid, .two { grid-template-columns: 1fr; }
+      .flow-track { grid-template-columns: 1fr; }
+      .step:not(:last-child)::after {
+        content: "↓";
+        right: 14px;
+        top: auto;
+        bottom: -18px;
+      }
+    }
+    @media (max-width: 540px) {
+      main { padding: 22px 14px 42px; }
+      .hero { padding: 22px; }
+      .metrics { grid-template-columns: 1fr; }
+      h1 { font-size: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">LabUtopia weekly report · 2026-06-15</div>
+        <h1>Expert 轨迹不是人采的，是程序在线算出来的</h1>
+        <p class="lede">本周主要把上周复现结果的“轨迹口径”讲清楚：repo 里没有预置 29 条人类 demo，repo 提供的是任务、场景和 expert controller。我们运行这些 controller 后，在 Isaac Sim 中现场生成了轨迹和视频。</p>
+      </div>
+      <div class="metrics" aria-label="关键数字">
+        <div class="metric"><strong>29</strong><span>主任务配置 config</span></div>
+        <div class="metric"><strong>29</strong><span>本次生成的视频轨迹</span></div>
+        <div class="metric"><strong>28</strong><span>成功 expert rollout</span></div>
+        <div class="metric"><strong>1</strong><span>video-only 失败样例</span></div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="管理层结论">
+      <article class="card">
+        <h2>汇报结论</h2>
+        <p>LabUtopia 的 expert 轨迹是 controller 计算产生的，不是真人遥操作、motion capture 或 repo 自带轨迹文件。</p>
+        <span class="tag">computed trajectory</span><span class="tag bad">非真人采集</span>
+      </article>
+      <article class="card">
+        <h2>本次规模</h2>
+        <p>我们跑的是 29 个主 config。为了快速验证，每个 config 设置 <code>max_episodes=1</code>，所以本次是 29 条 episode 级视频轨迹。</p>
+        <span class="tag">29 config</span><span class="tag">1 episode/config</span>
+      </article>
+      <article class="card">
+        <h2>不要误读</h2>
+        <p>“每个任务只有一条轨迹”只描述本次复现设置，不是项目能力上限。正式采集时可以提高 episode 数，生成更多轨迹。</p>
+        <span class="tag warn">本次设置</span><span class="tag">可扩展采集</span>
+      </article>
+    </section>
+
+    <section class="flow" aria-label="expert controller 工作流">
+      <h2>Expert controller 怎么算轨迹</h2>
+      <p>它不是回放一串固定关节角，而是一个在线闭环规则控制器：每一步先看当前仿真状态，再算下一步机器人动作。</p>
+      <div class="flow-track">
+        <div class="step"><strong>1. 选择 config</strong><span>决定任务、场景、机器人、camera 和 controller。</span></div>
+        <div class="step"><strong>2. task 读状态</strong><span>读取物体位置、尺寸、关节、夹爪和相机信息。</span></div>
+        <div class="step"><strong>3. expert 分阶段</strong><span>例如 pick：到上方、下降、夹取、抬起。</span></div>
+        <div class="step"><strong>4. 算目标位姿</strong><span>atomic controller 给出末端或夹爪目标。</span></div>
+        <div class="step"><strong>5. 转成关节动作</strong><span>RMPFlow / cspace controller 输出 ArticulationAction。</span></div>
+        <div class="step"><strong>6. Isaac 执行</strong><span>仿真器推进一步，下一帧再根据新状态计算。</span></div>
+      </div>
+    </section>
+
+    <section class="two" aria-label="问答说明">
+      <article class="card">
+        <h2>Q1：repo 到底自带了什么？</h2>
+        <div class="answer">
+          <p><strong>repo 自带的是“生成轨迹的规则和程序”。</strong></p>
+          <p>包括 <code>config/*.yaml</code>、USD 场景资产、task 逻辑、scripted expert controller、DataCollector 和视频保存逻辑。</p>
+        </div>
+        <p>repo 不自带我们本周生成的 29 条视频，也不自带这些 episode 的逐步 joint trajectory 文件。那些是运行后产生的 artifact。</p>
+      </article>
+
+      <article class="card">
+        <h2>Q2：每次跑都会一样吗？</h2>
+        <div class="answer">
+          <p><strong>相同条件下会很接近，但不承诺逐帧完全一致。</strong></p>
+          <p>因为 Isaac/PhysX/GPU 仿真、任务 reset 随机性、材质/对象采样和 controller 阶段切换都可能带来细微差异。</p>
+        </div>
+        <p>正确口径是：它是可复现的 scripted rollout 流程，不是 bit-level deterministic replay。</p>
+      </article>
+    </section>
+
+    <section class="two" aria-label="数据口径">
+      <article class="card">
+        <h2>Q3：29 个任务怎么理解？</h2>
+        <ul>
+          <li>更准确叫 <strong>29 个主 config</strong>，不是 29 个完全不同的 task class。</li>
+          <li>这些 config 覆盖 level1 到 level5，背后注册了 21 个 controller/expert 类型。</li>
+          <li>本次结果是：29 个视频可读，28 个成功，1 个 <code>level4_CleanBeaker7Policy</code> 是 video-only。</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>Q4：正式数据采集会记录什么？</h2>
+        <ul>
+          <li>正式 DataCollector 会写 camera images、<code>agent_pose</code>、<code>actions</code>、language instruction 和 task properties。</li>
+          <li>本周视频验证为了节省 H5 开销，主要用了 mock collector，只保留视频和运行状态证据。</li>
+          <li>因此本周产物适合说明“能跑通和轨迹来源”，不是正式训练数据包。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="note">
+      <strong>本周对外口径：</strong>
+      LabUtopia 已经可以用 repo 自带 expert controller 在 Isaac Sim 里在线生成轨迹；本次为了复现验证，对 29 个主配置各跑 1 条轨迹，得到 28 条成功 expert rollout 和 1 条失败但有视频的 partial trace。后续如果要形成正式 dataset，需要脚本化批跑、提高每个 config 的 episode 数，并固化随机种子、环境版本和验证标准。
+    </section>
+
+    <div class="footer">
+      <span>相关页面：</span>
+      <a href="../2026-06-12-labutopia-weekly/">6.12 复现结果与视频周报</a>
+      <a href="../../docs/runs/2026-06-09-expert-videos.md">expert 视频批跑记录</a>
+      <a href="../../docs/task-config-matrix.md">29 config 状态矩阵</a>
+      <a href="../../docs/reproduction.md">环境复现记录</a>
+    </div>
+  </main>
+</body>
+</html>
