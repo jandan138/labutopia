@@ -73,6 +73,8 @@
     .task-summary { margin: 18px 0; padding: 18px; }
     .task-summary table { min-width: 1040px; }
     .task-summary td:first-child { width: 210px; }
+    .migration-summary { margin: 18px 0; padding: 18px; }
+    .migration-summary table { min-width: 940px; }
     .table-scroll { overflow-x: auto; margin-top: 12px; }
     table { width: 100%; min-width: 840px; border-collapse: collapse; }
     th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
@@ -462,6 +464,72 @@
           </tbody>
         </table>
       </div>
+    </section>
+
+    <section class="card migration-summary" aria-label="迁移到 EBench 的可行性判断">
+      <h2>LabUtopia 接入 EBench：可行性判断</h2>
+      <p>结论：方向可行，推荐形态是把 LabUtopia 做成 <strong>EBench/GenManip 的实验室任务包</strong>，而不是把 LabUtopia 运行时整体塞进 EBench。这样 EBench 仍然负责统一 reset、step、观测、动作接口和评分，LabUtopia 贡献实验室资产、任务语义和可参考的 expert 轨迹。</p>
+      <section class="grid" aria-label="EBench 接入结论卡片">
+        <article class="card">
+          <h3>推荐接法</h3>
+          <p>按 EBench server 侧的 <code>SceneConfig</code> 和 task package 规范接入：资产进入 EBench-Assets/GenManip 资产目录，任务进入 GenManip 的 task config。</p>
+          <span class="tag">任务包化</span><span class="tag">保持 EBench 评测口径</span>
+        </article>
+        <article class="card">
+          <h3>不要误接</h3>
+          <p>LabUtopia 的 expert controller 适合做冒烟验证和参考答案，不适合作为 EBench 正式评测接口。正式评测要让模型通过 EvalClient 输出标准 action，由 EBench 判分。</p>
+          <span class="tag warn">不是简单复制配置</span><span class="tag">评测口径重建</span>
+        </article>
+        <article class="card">
+          <h3>先做 POC</h3>
+          <p>建议先选 <code>level1_pick</code>、<code>level1_place</code>、<code>level1_press/open_door</code> 三类代表任务，跑通资产加载、动作接口和评分闭环后再扩展 29 个配置。</p>
+          <span class="tag">3 个代表任务</span><span class="tag">再批量扩展</span>
+        </article>
+      </section>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>接入环节</th>
+              <th>需要确认的事情</th>
+              <th>产品侧影响</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>资产加载</td>
+              <td>LabUtopia 的 USD、MDL、贴图、门/抽屉/按钮 articulation 要放进 GenManip/EBench 的资产目录，并修正相对路径和材质环境变量。</td>
+              <td>决定实验室场景能不能稳定进入 EBench，而不是只在 LabUtopia 自己的入口里可见。</td>
+            </tr>
+            <tr>
+              <td>任务配置</td>
+              <td>LabUtopia 的 <code>task_type/controller_type</code> 要翻译成 EBench 使用的 <code>SceneConfig</code>：<code>usd_name</code>、<code>table_uid</code>、<code>object_config</code>、camera、episode 步数和指令。</td>
+              <td>决定这些任务能否像 EBench 原生任务一样被排队、reset 和批量评测。</td>
+            </tr>
+            <tr>
+              <td>评分逻辑</td>
+              <td>LabUtopia expert 的“完成”要改写成 EBench metric，例如对象到位、按钮按下、门开合状态、容器转运完成等；倒液、搅拌、清洗类任务需要更细的代理指标。</td>
+              <td>决定 leaderboard 和诊断报告能否公平解释结果，而不是只得到一段视频。</td>
+            </tr>
+            <tr>
+              <td>动作接口</td>
+              <td>EBench 侧模型输出的是标准 action dict/向量，当前基线主要按 fixed-base 16 维或 mobile 19 维处理；LabUtopia 的 Franka/Ridgebase 控制口径需要对齐。</td>
+              <td>决定现有 EBench baseline 能不能直接评 LabUtopia 任务。</td>
+            </tr>
+            <tr>
+              <td>环境版本</td>
+              <td>LabUtopia 本周跑通的是 Isaac Sim 5.1；EBench/GenManip 当前文档和代码口径偏 Isaac Sim 4.1 风格。USD 多数可迁，但 API、材质、physics 和 articulation 要逐项冒烟验证。</td>
+              <td>决定接入后是否稳定，尤其是长程任务和设备交互任务。</td>
+            </tr>
+            <tr>
+              <td>发布方式</td>
+              <td>最终更像一个 <code>labutopia-lab-tasks</code> 扩展包：包含资产、任务配置、metric、版本说明和最小回归用例。</td>
+              <td>便于以后作为 EBench 新任务族维护，也便于对外解释“实验室操作能力”这一维度。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="answer"><strong>建议推进口径：</strong>先证明 3 个代表任务能在 EBench server 中完成 reset、step、score（重置、执行一步、打分），再把 29 个 LabUtopia config 分批接入。优先级建议是 pick/place/press/open 这类清晰任务在前，pour/stir/shake/clean beaker 这类长程实验任务在后。</p>
     </section>
 
     <section class="flow" aria-label="expert controller 工作流">
