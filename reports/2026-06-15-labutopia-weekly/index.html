@@ -70,6 +70,9 @@
     .card ul { margin: 0; padding-left: 18px; }
     .card li { margin: 7px 0; }
     .asset-summary { margin: 18px 0; padding: 18px; }
+    .task-summary { margin: 18px 0; padding: 18px; }
+    .task-summary table { min-width: 1040px; }
+    .task-summary td:first-child { width: 210px; }
     .table-scroll { overflow-x: auto; margin-top: 12px; }
     table { width: 100%; min-width: 840px; border-collapse: collapse; }
     th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
@@ -262,6 +265,199 @@
               <td><code>assets/properties.json</code> 含 291 条化合物属性。</td>
               <td>支撑材料/液体/化学语义扩展，不直接等同于 3D 物体。</td>
               <td>适合作为任务文本、材料随机化和科学语义增强的候选资源。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card task-summary" aria-label="29 个任务一句话说明">
+      <h2>29 个 expert 任务各做什么</h2>
+      <p>口径：每一行对应一个本周批跑的主 <code>config/*.yaml</code>。这里用产品经理能读懂的一句话描述机器人动作目标；技术追溯仍以 config 名、task type 和 controller 为准。</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Config</th>
+              <th>一句话说明</th>
+              <th>产品能力</th>
+              <th>本次结果</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>level1_close_door</code></td>
+              <td>机械臂关闭干燥箱 <code>DryingBox_03</code> 的门。</td>
+              <td>基础关门 / 设备门交互</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level1_close_drawer</code></td>
+              <td>机械臂关闭柜体 <code>Cabinet_02</code> 的抽屉。</td>
+              <td>基础关抽屉 / 家具交互</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level1_open_door</code></td>
+              <td>机械臂打开干燥箱 <code>DryingBox_01</code> 的门。</td>
+              <td>基础开门 / 设备门交互</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level1_open_drawer</code></td>
+              <td>机械臂打开柜体 <code>Cabinet_01</code> 的抽屉。</td>
+              <td>基础开抽屉 / 家具交互</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level1_pick</code></td>
+              <td>机械臂从实验台上抓起一个锥形瓶。</td>
+              <td>基础抓取</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level1_place</code></td>
+              <td>机械臂抓起烧杯并放到指定目标平台。</td>
+              <td>抓取 + 放置</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level1_pour</code></td>
+              <td>机械臂拿起一个烧杯，把液体倒入另一个烧杯。</td>
+              <td>倒液 / 容器对准</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level1_press</code></td>
+              <td>机械臂移动到仪器面板并按下目标按钮。</td>
+              <td>按钮操作</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level1_shake</code></td>
+              <td>机械臂抓起烧杯并执行摇晃动作。</td>
+              <td>容器摇晃 / 混合前置动作</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level1_stir</code></td>
+              <td>机械臂拿起玻璃棒，在烧杯中完成搅拌。</td>
+              <td>工具使用 / 搅拌</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level2_HeatLiquid</code></td>
+              <td>机械臂把烧杯放到加热设备上，并按按钮启动加热。</td>
+              <td>放置 + 按钮 + 加热流程</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level2_PourLiquid</code></td>
+              <td>机械臂用组合 controller 完成抓取烧杯和倒液。</td>
+              <td>组合倒液流程</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level2_ShakeBeaker</code></td>
+              <td>机械臂用烧杯专用 controller 抓起烧杯并摇匀。</td>
+              <td>容器专用摇晃</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level2_StirGlassrod</code></td>
+              <td>机械臂抓取玻璃棒，并在目标烧杯中搅拌。</td>
+              <td>工具抓取 + 搅拌</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level2_TransportBeaker</code></td>
+              <td>机械臂把烧杯搬运到目标平台。</td>
+              <td>容器转运</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level2_openclose</code></td>
+              <td>机械臂对同一个柜体抽屉完成打开再关闭。</td>
+              <td>连续开合 / 状态切换</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level3_HeatLiquid</code></td>
+              <td>机械臂在更复杂配置下完成“放烧杯到加热器并按按钮”。</td>
+              <td>多步骤加热任务</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level3_PourLiquid</code></td>
+              <td>机械臂在量筒、锥形瓶、烧杯等多容器场景中完成倒液。</td>
+              <td>多对象倒液 / 目标容器选择</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level3_TransportBeaker</code></td>
+              <td>机械臂在更高等级配置下搬运烧杯到目标平台。</td>
+              <td>高等级容器转运</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level3_open</code></td>
+              <td>机械臂在多个可开设备中执行开门动作。</td>
+              <td>多设备开门 / 目标泛化</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level3_pick</code></td>
+              <td>机械臂在多个锥形瓶候选中抓取目标瓶子。</td>
+              <td>多对象抓取</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level3_press</code></td>
+              <td>机械臂在目标按钮和干扰按钮之间选择并按下目标按钮。</td>
+              <td>按钮选择 / 抗干扰操作</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level4_CleanBeaker</code></td>
+              <td>机械臂在 hard task 场景中用两个烧杯完成倒液、摇晃和放置的清洗流程。</td>
+              <td>长程实验操作</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level4_CleanBeaker7Policy</code></td>
+              <td>同一清洗烧杯任务的 7-policy 版本，本次暴露了 controller 参数不匹配问题。</td>
+              <td>长程策略拆分验证</td>
+              <td>video-only，未算成功轨迹</td>
+            </tr>
+            <tr>
+              <td><code>level4_DeviceOperation</code></td>
+              <td>机械臂打开设备门、放入两个烧杯，并按下设备按钮。</td>
+              <td>设备操作长程流程</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level4_LiquidMixing</code></td>
+              <td>机械臂连续抓取多个容器倒液混合，最后按按钮完成流程。</td>
+              <td>多容器混合 / 长程组合任务</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level4_OpenTransportPour</code></td>
+              <td>机械臂组合执行开门、搬运烧杯、倒液和再放置。</td>
+              <td>开门 + 转运 + 倒液组合</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level5_Mobile_manipulation</code></td>
+              <td>移动底盘先导航到目标附近，再用机械臂抓取烧杯。</td>
+              <td>移动操作 / mobile manipulation</td>
+              <td>成功</td>
+            </tr>
+            <tr>
+              <td><code>level5_Navigation</code></td>
+              <td>移动机器人沿导航路径从起点移动到目标点。</td>
+              <td>移动导航</td>
+              <td>成功</td>
             </tr>
           </tbody>
         </table>
