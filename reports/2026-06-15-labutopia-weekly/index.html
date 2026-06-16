@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LabUtopia 6.15 周报：Expert 轨迹口径说明</title>
+  <link rel="icon" href="data:,">
   <style>
     :root {
       color-scheme: light;
@@ -68,6 +69,13 @@
     .card { padding: 18px; }
     .card ul { margin: 0; padding-left: 18px; }
     .card li { margin: 7px 0; }
+    .asset-summary { margin: 18px 0; padding: 18px; }
+    .table-scroll { overflow-x: auto; margin-top: 12px; }
+    table { width: 100%; min-width: 840px; border-collapse: collapse; }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--paper-2); color: var(--ink); }
+    td { background: #fff; }
+    td:first-child { font-weight: 800; color: var(--green); width: 150px; }
     .tag {
       display: inline-block;
       margin: 0 6px 6px 0;
@@ -185,6 +193,79 @@
         <p>“每个任务只有一条轨迹”只描述本次复现设置，不是项目能力上限。正式采集时可以提高 episode 数，生成更多轨迹。</p>
         <span class="tag warn">本次设置</span><span class="tag">可扩展采集</span>
       </article>
+    </section>
+
+    <section class="card asset-summary" aria-label="资产种类汇总">
+      <h2>资产种类汇总（产品视角）</h2>
+      <p>口径：文件层面统计 <code>assets/</code>，业务层面按 29 个主 config 实际引用的 <code>/World/...</code> prim。这里的数量是“任务里出现的资产角色/资源包”，不等同于底层 mesh 零件数。</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>资产种类</th>
+              <th>当前规模 / 代表对象</th>
+              <th>支撑的产品能力</th>
+              <th>复用判断</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>实验室场景</td>
+              <td>5 个主场景：<code>lab_001</code>、<code>lab_003</code>、<code>hard_task</code>、<code>clock</code>、<code>navigation_lab</code>。</td>
+              <td>桌面操作、长程清洗任务、液体混合、移动导航。</td>
+              <td>可作为 LabUtopia 的核心场景底座；跨 benchmark 使用需要重新适配任务接口。</td>
+            </tr>
+            <tr>
+              <td>容器类</td>
+              <td>8 个烧杯相关角色：<code>beaker</code>、<code>beaker1</code>、<code>beaker2</code>、<code>beaker3</code>、<code>beaker_2</code>、<code>beaker_hard_1</code>、<code>beaker_hard_2</code>、<code>target_beaker</code>；另有 3 个锥形瓶和 1 个量筒。</td>
+              <td>pick、place、pour、shake、transport、clean beaker 等核心实验动作。</td>
+              <td>最高复用价值资产；数量口径是 prim/角色名，不是不同物理模型数。</td>
+            </tr>
+            <tr>
+              <td>操作工具</td>
+              <td><code>glass_rod</code>、<code>test_tube_rack</code>。</td>
+              <td>搅拌、工具抓取、组合任务中的中间操作对象。</td>
+              <td>当前种类偏少，但很适合扩展更多实验工具。</td>
+            </tr>
+            <tr>
+              <td>仪器设备</td>
+              <td>6 类：<code>DryingBox_01/02/03</code>、<code>MuffleFurnace</code>、<code>heat_device</code>、<code>instrument</code>。</td>
+              <td>开关门、加热、按钮操作、设备操作、长程任务。</td>
+              <td>产品展示价值高；showcase 前要重点检查材质、贴图和相机视角。</td>
+            </tr>
+            <tr>
+              <td>家具交互件</td>
+              <td>2 个柜体/抽屉：<code>Cabinet_01</code>、<code>Cabinet_02</code>；3 类桌面；4 类目标平台；5 类按钮角色。</td>
+              <td>开抽屉、放置、按按钮、任务目标区域定义。</td>
+              <td>适合做基础 manipulation 能力评测，但需要统一命名和交互语义。</td>
+            </tr>
+            <tr>
+              <td>机器人与相机</td>
+              <td>实际使用：<code>Franka</code>、<code>Ridgebase</code>；另有 <code>Fetch</code> 资产存在但本次 29 个主 config 未使用。相机包含固定视角、腕部相机、移动底盘相机。</td>
+              <td>桌面机械臂操作、移动操作、导航、多视角观察。</td>
+              <td>Franka/Ridgebase 是当前主线；Fetch 可作为后续扩展候选。</td>
+            </tr>
+            <tr>
+              <td>材质与贴图</td>
+              <td>全 repo 约 330 个 MDL 材质、110 个图片贴图；化学实验室资产包占大头。</td>
+              <td>视觉真实度、对象可辨识度、视频展示效果。</td>
+              <td>可复用，但需要 asset QA；本周视频中已见少量 MDL/texture warning。</td>
+            </tr>
+            <tr>
+              <td>导航资产</td>
+              <td><code>navigation_lab</code> 场景、<code>barrier/lab_1.png</code> 障碍地图、导航配置。</td>
+              <td>Level5 navigation 和 mobile manipulation。</td>
+              <td>可作为移动任务基础；和桌面实验资产不是同一套任务接口。</td>
+            </tr>
+            <tr>
+              <td>化学属性库</td>
+              <td><code>assets/properties.json</code> 含 291 条化合物属性。</td>
+              <td>支撑材料/液体/化学语义扩展，不直接等同于 3D 物体。</td>
+              <td>适合作为任务文本、材料随机化和科学语义增强的候选资源。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="flow" aria-label="expert controller 工作流">
