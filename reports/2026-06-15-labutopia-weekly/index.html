@@ -73,6 +73,8 @@
     .task-summary { margin: 18px 0; padding: 18px; }
     .task-summary table { min-width: 1040px; }
     .task-summary td:first-child { width: 210px; }
+    .generalization-summary { margin: 18px 0; padding: 18px; }
+    .generalization-summary table { min-width: 980px; }
     .migration-summary { margin: 18px 0; padding: 18px; }
     .migration-summary table { min-width: 940px; }
     .table-scroll { overflow-x: auto; margin-top: 12px; }
@@ -464,6 +466,85 @@
           </tbody>
         </table>
       </div>
+    </section>
+
+    <section class="card generalization-summary" aria-label="LabUtopia 当前泛化能力盘点">
+      <h2>LabUtopia 当前泛化能力盘点</h2>
+      <p>结论：LabUtopia 不是完全没有泛化，它已经有<strong>任务内局部泛化</strong>，主要发生在固定实验室场景里的物体位置、目标物体、材质、按钮干扰和导航起终点上。但它还不是 EBench 那种按 <code>val_train / val_unseen / test</code>、对象/背景/指令等维度组织的 benchmark 级泛化。</p>
+      <section class="grid" aria-label="泛化统计卡片">
+        <article class="card">
+          <h3>覆盖最广的是位置随机</h3>
+          <p>29 个主配置里，20 个写了物体或目标 <code>position_range</code>。这是当前最稳定、最普遍的泛化能力。</p>
+          <span class="tag">20 / 29 configs</span><span class="tag">桌面内扰动</span>
+        </article>
+        <article class="card">
+          <h3>level3 是主要泛化层</h3>
+          <p>level3 的 pick、open、pour、press、transport 等任务引入多目标、材质池、按钮颜色和 train/test 材质设计。</p>
+          <span class="tag">level3 泛化配置</span><span class="tag">小规模 OOD</span>
+        </article>
+        <article class="card">
+          <h3>还不是 EBench 式泛化</h3>
+          <p>当前没有标准 split、泛化轴、对象库采样、背景随机、指令改写和诊断报告。迁到 EBench 后，这些需要重建。</p>
+          <span class="tag warn">不是分轴 benchmark</span><span class="tag">需要补评测口径</span>
+        </article>
+      </section>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>泛化维度</th>
+              <th>LabUtopia 已做到什么</th>
+              <th>代表任务</th>
+              <th>产品侧理解</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>物体/目标位置</td>
+              <td>多数任务在 reset 时从 <code>position_range</code> 里随机采样位置；pick、place、pour、transport、device operation 等任务都用到。</td>
+              <td><code>level1_pick</code>、<code>level1_place</code>、<code>level2_TransportBeaker</code>、<code>level4_DeviceOperation</code></td>
+              <td>模型不能只记住一个固定坐标；但扰动范围主要还在同一张实验台或同一套设备附近。</td>
+            </tr>
+            <tr>
+              <td>目标物体切换</td>
+              <td>部分 level3 配置在固定 USD 里预放多个对象，当前目标显示，其他目标隐藏或移远。</td>
+              <td><code>level3_pick</code>、<code>level3_open</code>、<code>level3_PourLiquid</code></td>
+              <td>已经能验证“同类任务换一个实验器具”的适应性；但不是从大规模对象库里动态抽样。</td>
+            </tr>
+            <tr>
+              <td>材质/外观</td>
+              <td>5 个配置有材质池和 <code>test_materials</code> 设计；其中 <code>level3_PourLiquid</code>、<code>level3_press</code> 配置了 test 材质。</td>
+              <td><code>level3_pick</code>、<code>level3_open</code>、<code>level3_PourLiquid</code>、<code>level3_press</code>、<code>level3_TransportBeaker</code></td>
+              <td>有小规模外观 OOD 设计；但这次 expert 复现主要跑 collect/video，不等于已经系统评过材质泛化。</td>
+            </tr>
+            <tr>
+              <td>按钮与干扰目标</td>
+              <td>press 类任务会随机打乱目标按钮和干扰按钮的位置；level3 还会扩展按钮颜色数量。</td>
+              <td><code>level1_press</code>、<code>level3_press</code>、<code>level3_HeatLiquid</code></td>
+              <td>能测试模型是否找对按钮，而不是只记住固定按钮位置；level3 比 level1 更接近泛化测试。</td>
+            </tr>
+            <tr>
+              <td>移动导航</td>
+              <td>导航任务会在 free space 中随机生成起点/终点，或随机起点后导航到抓取目标附近。</td>
+              <td><code>level5_Navigation</code>、<code>level5_Mobile_manipulation</code></td>
+              <td>已经包含移动场景下的路径变化；但目前主要在一个 navigation lab 场景内变化。</td>
+            </tr>
+            <tr>
+              <td>长程任务</td>
+              <td>level4/level5 把开门、搬运、倒液、清洗、设备操作等动作串成多阶段流程，局部对象位置也会扰动。</td>
+              <td><code>level4_CleanBeaker</code>、<code>level4_OpenTransportPour</code>、<code>level4_DeviceOperation</code></td>
+              <td>这是 LabUtopia 的强项：实验室长程操作语义比较有价值；但“长程”本身不等于 benchmark 级泛化。</td>
+            </tr>
+            <tr>
+              <td>尚未系统做到</td>
+              <td>没有标准 train/unseen/test split；没有对象/背景/指令/Mixed 泛化轴；没有相机、光照、房间级随机化；没有指令多措辞评测。</td>
+              <td>当前 29 个主配置整体</td>
+              <td>如果接入 EBench，LabUtopia 更适合作为“实验室任务族”的资产和任务来源，泛化评测体系需要按 EBench 口径补齐。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="answer"><strong>一句话汇报：</strong>LabUtopia 当前做到的是“固定实验室场景内的小范围泛化”，价值在真实实验器具和长程科学操作；如果要变成 EBench 式泛化评测，需要把这些任务重新组织成 split、对象池、layout 随机、metric 和诊断报告。</p>
     </section>
 
     <section class="card migration-summary" aria-label="迁移到 EBench 的可行性判断">
