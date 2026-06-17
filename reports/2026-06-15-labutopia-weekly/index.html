@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LabUtopia 6.15 周报：Expert 轨迹口径说明</title>
+  <title>LabUtopia 6.15 周报：复现、资产、任务与泛化评估</title>
   <link rel="icon" href="data:,">
   <style>
     :root {
@@ -173,32 +173,42 @@
     <section class="hero">
       <div>
         <div class="eyebrow">LabUtopia weekly report · 2026-06-15</div>
-        <h1>Expert 轨迹不是人采的，是程序在线算出来的</h1>
-        <p class="lede">本周主要把上周复现结果的“轨迹口径”讲清楚：repo 里没有预置 29 条人类 demo，repo 提供的是任务、场景和 expert controller。我们运行这些 controller 后，在 Isaac Sim 中现场生成了轨迹和视频。</p>
+        <h1>LabUtopia 复现结果：资产、任务、泛化与 Expert 轨迹</h1>
+        <p class="lede">本周把 LabUtopia 跑通后的结果从几个平行维度重新梳理：哪些实验室资产可以复用、29 个任务分别覆盖什么能力、当前泛化做到什么程度、expert 轨迹到底怎么产生，以及后续接入 EBench 的判断。</p>
       </div>
       <div class="metrics" aria-label="关键数字">
+        <div class="metric"><strong>5</strong><span>核心实验室 / 导航场景</span></div>
         <div class="metric"><strong>29</strong><span>主任务配置 config</span></div>
-        <div class="metric"><strong>29</strong><span>本次生成的视频轨迹</span></div>
+        <div class="metric"><strong>20/29</strong><span>配置含位置随机</span></div>
         <div class="metric"><strong>28</strong><span>成功 expert rollout</span></div>
-        <div class="metric"><strong>1</strong><span>video-only 失败样例</span></div>
       </div>
     </section>
 
     <section class="grid" aria-label="管理层结论">
       <article class="card">
-        <h2>汇报结论</h2>
-        <p>LabUtopia 的 expert 轨迹是 controller 计算产生的，不是真人遥操作、motion capture 或 repo 自带轨迹文件。</p>
+        <h2>资产维度</h2>
+        <p>LabUtopia 的价值不只在轨迹，核心还包括实验室场景、容器、仪器、家具交互件、机器人和材质贴图资产。</p>
+        <span class="tag">5 个主场景</span><span class="tag">实验室资产族</span>
+      </article>
+      <article class="card">
+        <h2>任务维度</h2>
+        <p>本周确认 29 个主 config，覆盖 pick、place、pour、press、open/close、clean、device operation、navigation 等任务。</p>
+        <span class="tag">29 config</span><span class="tag">多层任务族</span>
+      </article>
+      <article class="card">
+        <h2>泛化维度</h2>
+        <p>当前主要是任务内局部泛化：物体/目标位置随机、小规模目标切换、材质池、按钮干扰和导航起终点随机。</p>
+        <span class="tag">20 / 29 有位置随机</span><span class="tag warn">不是分轴 benchmark</span>
+      </article>
+      <article class="card">
+        <h2>Expert 维度</h2>
+        <p>轨迹是 repo 的 expert controller 在线计算出来的，不是真人遥操作或 repo 自带的人类 demo；本次 28 条成功，1 条失败样例有视频。</p>
         <span class="tag">computed trajectory</span><span class="tag bad">非真人采集</span>
       </article>
       <article class="card">
-        <h2>本次规模</h2>
-        <p>我们跑的是 29 个主 config。为了快速验证，每个 config 设置 <code>max_episodes=1</code>，所以本次是 29 条 episode 级视频轨迹。</p>
-        <span class="tag">29 config</span><span class="tag">1 episode/config</span>
-      </article>
-      <article class="card">
-        <h2>不要误读</h2>
-        <p>“每个任务只有一条轨迹”只描述本次复现设置，不是项目能力上限。正式采集时可以提高 episode 数，生成更多轨迹。</p>
-        <span class="tag warn">本次设置</span><span class="tag">可扩展采集</span>
+        <h2>接入判断</h2>
+        <p>LabUtopia 适合作为 EBench/GenManip 的实验室任务包来源，但需要按 EBench 口径补 task config、metric、split 和验证闭环。</p>
+        <span class="tag">可迁移</span><span class="tag warn">需重建评测口径</span>
       </article>
     </section>
 
@@ -276,7 +286,7 @@
     </section>
 
     <section class="card task-summary" aria-label="29 个任务一句话说明">
-      <h2>29 个 expert 任务各做什么</h2>
+      <h2>29 个主任务各做什么</h2>
       <p>口径：每一行对应一个本周批跑的主 <code>config/*.yaml</code>。这里用产品经理能读懂的一句话描述机器人动作目标；技术追溯仍以 config 名、task type 和 controller 为准。</p>
       <div class="table-scroll">
         <table>
@@ -614,7 +624,7 @@
     </section>
 
     <section class="flow" aria-label="expert controller 工作流">
-      <h2>Expert controller 怎么算轨迹</h2>
+      <h2>Expert controller 是怎么产生轨迹的？</h2>
       <p>它不是回放一串固定关节角，而是一个在线闭环规则控制器：每一步先看当前仿真状态，再算下一步机器人动作。</p>
       <div class="flow-track">
         <div class="step"><strong>1. 选择 config</strong><span>决定任务、场景、机器人、camera 和 controller。</span></div>
@@ -668,7 +678,7 @@
 
     <section class="note">
       <strong>本周对外口径：</strong>
-      LabUtopia 已经可以用 repo 自带 expert controller 在 Isaac Sim 里在线生成轨迹；本次为了复现验证，对 29 个主配置各跑 1 条轨迹，得到 28 条成功 expert rollout 和 1 条失败但有视频的 partial trace。后续如果要形成正式 dataset，需要脚本化批跑、提高每个 config 的 episode 数，并固化随机种子、环境版本和验证标准。
+      LabUtopia 本周已经完成一次可复现跑通和能力盘点：确认 5 个核心实验室/导航场景、29 个主任务配置、较完整的实验室资产族，以及任务内局部泛化能力。本次对 29 个主配置各跑 1 条 expert 视频，得到 28 条成功 rollout 和 1 条失败但有视频的 partial trace。后续如果要形成正式 dataset 或接入 EBench，需要脚本化批跑、补齐 split/metric/诊断口径，并固化随机种子、环境版本和验证标准。
     </section>
 
     <div class="footer">
