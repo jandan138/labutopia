@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task 1 调研：原生 DryingBox_01 能否接入 EBench</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7f8;
+      --paper: #ffffff;
+      --paper-2: #eef5f2;
+      --ink: #142126;
+      --muted: #5f7078;
+      --line: #d7e0de;
+      --green: #0f766e;
+      --amber: #b45309;
+      --red: #be123c;
+      --blue: #2563eb;
+      --warn: #fff4d6;
+      --bad: #ffe4e8;
+      --shadow: 0 14px 36px rgba(20, 33, 38, 0.08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      line-height: 1.66;
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+    main { max-width: 1180px; margin: 0 auto; padding: 34px 22px 58px; }
+    .topline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    a { color: var(--green); text-underline-offset: 0.18em; }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--green);
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .hero, .panel, .note, .flow, .mini, .summary-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+      gap: 24px;
+      padding: 30px;
+      margin-bottom: 18px;
+    }
+    .eyebrow {
+      color: var(--amber);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 850;
+    }
+    h1 {
+      margin: 8px 0 12px;
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+    h2 { margin: 0 0 12px; font-size: 22px; line-height: 1.2; }
+    h3 { margin: 0 0 8px; font-size: 17px; line-height: 1.28; }
+    p { margin: 0 0 12px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.94em;
+    }
+    .lede { max-width: 780px; color: var(--muted); font-size: 18px; }
+    .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .metric {
+      min-height: 92px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper-2);
+    }
+    .metric strong { display: block; color: var(--green); font-size: 32px; line-height: 1; }
+    .metric span { color: var(--muted); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0; }
+    .panel { padding: 18px; }
+    .panel ul { margin: 0; padding-left: 18px; }
+    .panel li { margin: 7px 0; }
+    .tag {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 850;
+    }
+    .tag.warn { color: var(--amber); background: var(--warn); }
+    .tag.bad { color: var(--red); background: var(--bad); }
+    .tag.blue { color: var(--blue); background: #e8f0ff; }
+    .answer {
+      border-left: 4px solid var(--green);
+      background: var(--paper-2);
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+    .summary-box {
+      padding: 18px;
+      margin: 18px 0;
+      background: #f8fbfa;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .summary-item {
+      min-height: 132px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+    }
+    .summary-item strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--green);
+      font-size: 17px;
+    }
+    .summary-item span { color: var(--muted); }
+    .warning {
+      border-left-color: var(--amber);
+      background: var(--warn);
+    }
+    .danger {
+      border-left-color: var(--red);
+      background: var(--bad);
+    }
+    .table-scroll {
+      contain: paint;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      margin-top: 12px;
+    }
+    table { width: 100%; min-width: 860px; border-collapse: collapse; }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--paper-2); color: var(--ink); }
+    td { background: #fff; }
+    td:first-child { font-weight: 800; color: var(--green); width: 210px; }
+    .strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .mini {
+      box-shadow: none;
+      padding: 13px;
+      background: var(--paper-2);
+      min-height: 116px;
+      overflow-wrap: anywhere;
+    }
+    .mini strong { display: block; color: var(--green); margin-bottom: 6px; }
+    .flow {
+      padding: 18px;
+      margin: 18px 0;
+    }
+    .flow-track {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .step {
+      min-height: 132px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper-2);
+      position: relative;
+      overflow-wrap: anywhere;
+    }
+    .step strong { display: block; color: var(--green); margin-bottom: 6px; }
+    .step span { color: var(--muted); font-size: 13px; }
+    .step.done { background: #e6f7ef; border-color: #a9d7c6; }
+    .step.next { background: var(--warn); border-color: #efd58d; }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 14px;
+    }
+    .tabs button {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--paper);
+      color: var(--ink);
+      padding: 7px 10px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] {
+      border-color: var(--green);
+      background: var(--paper-2);
+      color: var(--green);
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .path {
+      margin: 10px 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f7faf9;
+      overflow-wrap: anywhere;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+    .cmd {
+      margin: 10px 0 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e5eef6;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+    }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f7faf9;
+      padding: 12px 14px;
+      margin: 10px 0;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 850;
+      color: var(--green);
+    }
+    details p { margin-top: 10px; }
+    .note {
+      padding: 16px 18px;
+      background: var(--warn);
+      border-color: #efd58d;
+      margin-top: 18px;
+      box-shadow: none;
+    }
+    .footer {
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      margin-top: 20px;
+    }
+    @media (max-width: 980px) {
+      .hero, .grid, .two { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow-track { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      main { padding: 22px 14px 42px; }
+      .hero { padding: 22px; }
+      .hero, .panel, .note, .flow, .mini, .summary-box { box-shadow: none; }
+      .metrics, .strip { grid-template-columns: 1fr; }
+      h1 { font-size: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topline">
+      <a class="back" href="./index.html">返回 6.15 周报</a>
+      <span class="tag blue">Task 1 · Native Asset Audit</span>
+    </div>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">EBench native DryingBox · 2026-06-24</div>
+        <h1>Task 1 调研：原生 DryingBox_01 到底能不能直接接入 EBench？</h1>
+        <p class="lede">结论很明确：原生 <code>DryingBox_01</code> 不是“导入失败”的死资产，它的 USD hierarchy、门关节、handle candidate 和 articulation root 都能被读出来；但它也不是 plug-and-play。Task 1 查到 8 类、15 条风险 entry，集中在 <code>scale</code>、<code>joint body target</code>、<code>mass/inertia</code> 和多 DOF 语义上，必须先过 native-only smoke，再进入 EBench wrapper。</p>
+      </div>
+      <div class="metrics" aria-label="Task 1 关键数字">
+        <div class="metric"><strong>54</strong><span>native prims under <code>/World/DryingBox_01</code></span></div>
+        <div class="metric"><strong>4</strong><span>rigid bodies / joints each</span></div>
+        <div class="metric"><strong>2</strong><span>handle candidates</span></div>
+        <div class="metric"><strong>8/15</strong><span>risk classes / entries before EBench claim</span></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="读者导览">
+      <h2>这页给谁看？怎么读？</h2>
+      <div class="strip">
+        <div class="mini">
+          <strong>产品经理先看结论</strong>
+          <span>重点看“能不能接入”“现在卡在哪里”“为什么不能直接说 lift2 可评”。</span>
+        </div>
+        <div class="mini">
+          <strong>实习生先看证据</strong>
+          <span>重点看 <code>audit.json</code>、prim path、joint relationship 和风险表，学会从 USD 事实推工程判断。</span>
+        </div>
+        <div class="mini">
+          <strong>工程推进看 gate</strong>
+          <span>Task 1 只负责静态审计；后面必须按 smoke、wrapper、override、readback 逐关验证。</span>
+        </div>
+        <div class="mini">
+          <strong>对外汇报守边界</strong>
+          <span>可以说“原生资产结构可审计，door joint 和 handle candidate 存在”；不能说“已完成 EBench 官方评测”。</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="summary-box" aria-label="管理层摘要">
+      <h2>先给产品经理的结论</h2>
+      <p>Task 1 的作用是回答一个关键问题：我们这次是不是一定要继续用“临时 cube 门”，还是可以回到 LabUtopia 原生复杂干燥箱。答案是：可以回到原生 <code>DryingBox_01</code>，但要按 gate 推进，不能直接把静态调研等同于 EBench 官方可评。</p>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <strong>能确定什么</strong>
+          <span>原生资产的 native hierarchy 可枚举，door joint、handle candidate 和 <code>PhysicsArticulationRootAPI</code> 都存在。它不是空壳，也不是我们自己用 cube 重新拼出来的 surrogate。</span>
+        </div>
+        <div class="summary-item">
+          <strong>还不能确定什么</strong>
+          <span>Task 1 没有启动 Isaac runtime，没有进入 EBench wrapper，也没有跑 lift2 baseline。它只能证明“值得继续接”，不能证明“已经可评”。</span>
+        </div>
+        <div class="summary-item">
+          <strong>下一步要过哪一关</strong>
+          <span>先做 native-only Isaac smoke：只加载原生 DryingBox，跑 60 到 120 个 physics steps，确认 root pose、handle pose 和 joint positions 都是 finite。</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="给产品经理的结论">
+      <article class="panel">
+        <h2>给产品的一句话</h2>
+        <p>我们已经确认原生复杂干燥箱不是空壳，真实门、把手、按钮和 articulation 都存在；但要把它变成 EBench 可评测资产，还需要先修物理契约。</p>
+        <span class="tag">可继续推进</span><span class="tag warn">不能直接宣称可评</span>
+      </article>
+      <article class="panel">
+        <h2>给实习生的一句话</h2>
+        <p>不要只看 render。一个 USD 看起来像干燥箱，不代表 Isaac/PhysX 能稳定理解它的关节、质量、惯量和碰撞关系。</p>
+        <span class="tag">看 USD schema</span><span class="tag">看 physics contract</span>
+      </article>
+      <article class="panel">
+        <h2>当前边界</h2>
+        <p>Task 1 是 read-only audit，只负责把原生资产的真实结构查清楚。它还没有证明 Isaac runtime 稳定，也没有证明 EBench/lift2 baseline 可评。</p>
+        <span class="tag bad">不是最终验收</span><span class="tag">下一步 Task 2</span>
+      </article>
+    </section>
+
+    <section class="panel" aria-label="这次到底查了什么">
+      <h2>这次到底查了什么？</h2>
+      <p>Task 1 没有改资产，也没有把 surrogate cube 当成结果。它直接打开 LabUtopia 原始场景里的 <code>/World/DryingBox_01</code>，逐项读取 prim、applied API schema、xformOps、rigid body、joint、handle candidate 和风险标记。</p>
+      <div class="path">source stage: /cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd</div>
+      <div class="path">source prim: /World/DryingBox_01</div>
+      <div class="path">diagnostic artifact: saved/diagnostics/native_dryingbox_audit_20260624_043622/audit.json (GenManip EBench POC worktree)</div>
+      <div class="path">stage_sha256: 26212d40a78cd28f2bc3a38b2e06f05875b3096501c7d6dd5ccbe9a6e9019983</div>
+      <details>
+        <summary>工程复核用完整路径</summary>
+        <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-ebench-poc/saved/diagnostics/native_dryingbox_audit_20260624_043622/audit.json</div>
+      </details>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>证据字段</th>
+              <th>Task 1 结果</th>
+              <th>为什么要记录</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>stage_sha256</code></td>
+              <td><code>26212d40a78cd28f2bc3a38b2e06f05875b3096501c7d6dd5ccbe9a6e9019983</code></td>
+              <td>保证后续讨论的是同一份源 USD，不是不同机器上另一个版本的资产。</td>
+            </tr>
+            <tr>
+              <td><code>prims</code></td>
+              <td>54 个 native prim under <code>/World/DryingBox_01</code></td>
+              <td>说明这是复杂嵌套设备，不是一个单 mesh 或临时几何体。</td>
+            </tr>
+            <tr>
+              <td><code>rigid_bodies</code></td>
+              <td>4 个 prim 带 <code>PhysicsRigidBodyAPI</code></td>
+              <td>PhysX 只能对有物理 schema 的对象建立刚体和约束，不能只看 render 外观。</td>
+            </tr>
+            <tr>
+              <td><code>joints</code></td>
+              <td>4 个 joint，其中门是 <code>PhysicsRevoluteJoint</code>，按钮是 <code>PhysicsPrismaticJoint</code></td>
+              <td>证明门确实有 articulation，但也提示 metric 不能误读按钮 DOF。</td>
+            </tr>
+            <tr>
+              <td><code>risk_flags</code></td>
+              <td>8 类风险 key、15 条 entry，分布在 scale、joint target、mass/inertia、COM、principal axes、unexpected joint type 和 DOF 语义上</td>
+              <td>把“为什么不能直接说可评”落到可复核证据，而不是主观判断。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="risk flag artifact 对账表">
+      <h2>artifact 对账表：8 类 risk，15 条 entry</h2>
+      <p>这张表给实习生逐项复核用。页面里的“15”不是 15 类问题，而是 <code>audit.json</code> 里 8 个 <code>risk_flags</code> key 合计 15 条 entry。</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th><code>risk_flags</code> key</th>
+              <th>entry 数</th>
+              <th>关键 path / 含义</th>
+              <th>后续 gate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>non_identity_root_scale</code></td>
+              <td>1</td>
+              <td><code>/World/DryingBox_01</code> root scale 约 <code>[0.001, 0.001, 0.001]</code>。</td>
+              <td>Task 2 smoke 先确认 runtime pose finite；Task 4 固化 unit policy。</td>
+            </tr>
+            <tr>
+              <td><code>invalid_joint_body_target</code></td>
+              <td>1</td>
+              <td><code>FixedJoint_01 physics:body0</code> 指向 <code>/World/DryingBox_01/Group_02/group/mesh</code>，但 target 缺少 <code>RigidBodyAPI</code>。</td>
+              <td>Task 4 additive override 修 joint target 或隔离无效约束。</td>
+            </tr>
+            <tr>
+              <td><code>zero_mass</code></td>
+              <td>2</td>
+              <td><code>door mesh</code> 和 <code>handle/mesh</code> 的 mass 为 0。</td>
+              <td>Task 2 观察 PhysX 行为；Task 4 补合理 mass override。</td>
+            </tr>
+            <tr>
+              <td><code>zero_inertia</code></td>
+              <td>3</td>
+              <td><code>door mesh</code>、<code>body/body/mesh</code>、<code>handle/mesh</code> 的 diagonal inertia 为 0。</td>
+              <td>Task 4 补 inertia override，避免 physics 数值风险。</td>
+            </tr>
+            <tr>
+              <td><code>invalid_com</code></td>
+              <td>3</td>
+              <td><code>door mesh</code>、<code>body/body/mesh</code>、<code>handle/mesh</code> 的 center of mass 出现 invalid value。</td>
+              <td>Task 4 补 center of mass override。</td>
+            </tr>
+            <tr>
+              <td><code>invalid_principal_axes</code></td>
+              <td>3</td>
+              <td><code>door mesh</code>、<code>body/body/mesh</code>、<code>handle/mesh</code> 的 principal axes 无效。</td>
+              <td>Task 4 补 principal axes / inertia policy。</td>
+            </tr>
+            <tr>
+              <td><code>unexpected_joint_type</code></td>
+              <td>1</td>
+              <td><code>/World/DryingBox_01/button/PrismaticJoint</code> 是按钮 DOF，不是门开合 DOF。</td>
+              <td>Task 3/5 明确 metric 绑定 <code>RevoluteJoint</code>。</td>
+            </tr>
+            <tr>
+              <td><code>multiple_active_dofs</code></td>
+              <td>1</td>
+              <td>门的 <code>RevoluteJoint</code> 与按钮的 <code>PrismaticJoint</code> 同时存在。</td>
+              <td>Task 5 readback 中记录 joint name、joint position 和 metric source。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="two" aria-label="Task 1 做了什么和没做什么">
+      <article class="panel">
+        <h2>Task 1 已经做了什么</h2>
+        <ul>
+          <li>只读打开 LabUtopia 原始 <code>lab_001.usd</code>，定位 <code>/World/DryingBox_01</code>。</li>
+          <li>枚举所有子 prim、applied API schema、xformOps 和 visibility。</li>
+          <li>检查 <code>RigidBodyAPI</code>、<code>MassAPI</code>、joint body relationship 和 handle candidate。</li>
+          <li>输出可追溯 <code>audit.json</code>，并用 hash 固定源资产版本。</li>
+        </ul>
+      </article>
+      <article class="panel">
+        <h2>Task 1 还没有做什么</h2>
+        <ul>
+          <li>没有运行 Isaac physics step，所以还没证明仿真稳定。</li>
+          <li>没有把资产放进 EBench wrapper，所以还没证明 reset/readback/metric 可用。</li>
+          <li>没有给 lift2 跑 official baseline，所以还不能对外宣称 lift2 baseline 可评。</li>
+          <li>没有修改原始 LabUtopia 资产；后续如需修 physics，只能走 additive USD override。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="panel" aria-label="Task 1 调研结果总表">
+      <h2>Task 1 调研结果总表</h2>
+      <p>下面这张表把 <code>audit.json</code> 里的技术事实翻译成产品和实习生都能对齐的判断。它的作用是防止团队只凭一张 render 图判断“资产能不能用”。</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>调研项</th>
+              <th>查到的事实</th>
+              <th>通俗解释</th>
+              <th>当前结论</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>资产是否真实存在</td>
+              <td><code>/World/DryingBox_01</code> 下有 54 个 native prim，且 source stage hash 已记录。</td>
+              <td>这不是空壳，也不是我们临时用 cube 拼出来的门；它是 LabUtopia 原始场景里的复杂设备。</td>
+              <td><span class="tag">通过静态审计</span></td>
+            </tr>
+            <tr>
+              <td>门关节和 handle candidate 是否存在</td>
+              <td>发现 2 个 handle candidates；<code>handle/mesh</code> 带 <code>RigidBodyAPI</code>、<code>CollisionAPI</code>、<code>MassAPI</code>。</td>
+              <td>抓取目标有 native candidate path，后面可以围绕原生 handle 继续验证 metric，而不是直接重新造一个假把手。</td>
+              <td><span class="tag">后续接入候选</span></td>
+            </tr>
+            <tr>
+              <td>门关节是否存在</td>
+              <td><code>RevoluteJoint</code> 连接 body mesh 和 door mesh，axis 为 <code>Y</code>，limit 为 <code>0..120</code>。</td>
+              <td>USD 里确实有“门绕轴旋转”的物理定义，open_door 不需要从零发明关节。</td>
+              <td><span class="tag">方向成立</span></td>
+            </tr>
+            <tr>
+              <td>是否只有一个 DOF</td>
+              <td>除门的 <code>RevoluteJoint</code> 外，还有按钮的 <code>PrismaticJoint</code>，limit 约 <code>0..0.01</code>。</td>
+              <td>评分时不能粗暴读取第一个 joint，否则可能把按钮行程误当成开门进度。</td>
+              <td><span class="tag warn">需要 DOF 过滤</span></td>
+            </tr>
+            <tr>
+              <td>物理定义是否干净</td>
+              <td>发现 zero mass、zero inertia、invalid centerOfMass、invalid principalAxes，以及一个 fixed joint target 缺少 <code>RigidBodyAPI</code>。</td>
+              <td>静态看得见设备，不代表 PhysX 跑起来一定稳定；这类问题可能导致 warning、约束异常或数值不稳定。</td>
+              <td><span class="tag bad">不能直接宣称可评</span></td>
+            </tr>
+            <tr>
+              <td>是否已经等于 EBench 接入完成</td>
+              <td>Task 1 没有启动 Isaac runtime，也没有进入 EBench wrapper、EvalClient 或 lift2 baseline。</td>
+              <td>它只是把“原生资产能不能继续推进”这件事查清楚；真正能不能评测要看后续 smoke 和 readback。</td>
+              <td><span class="tag warn">进入 Task 2</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="two" aria-label="原生资产和旧 surrogate 的区别">
+      <article class="panel">
+        <h2>原生复杂资产是什么？</h2>
+        <p>原生 <code>DryingBox_01</code> 是 LabUtopia 场景里的复杂设备资产。它有嵌套 mesh、native handle path candidate、门的 <code>PhysicsRevoluteJoint</code>，还有按钮的 <code>PhysicsPrismaticJoint</code>。</p>
+        <div class="answer">
+          <p><strong>这就是用户要求的方向：</strong>后续要保留原生 visual、hierarchy 和 handle，而不是继续只用 cube 拼一个简化门。</p>
+        </div>
+      </article>
+      <article class="panel">
+        <h2>旧 surrogate 为什么简单？</h2>
+        <p>旧 P1 调试版是用 <code>Cube</code> 几何体和手写 joint 规则拼出来的 surrogate。它适合证明 EBench wrapper 和 render pipeline 能跑，但不能代表真实干燥箱资产。</p>
+        <div class="answer warning">
+          <p><strong>产品口径：</strong>surrogate 是工程基线，不是最终资产验收。原生资产接入必须重新做 audit、smoke、validator 和 render readback。</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel" aria-label="风险解释">
+      <h2>Task 1 查到的主要风险</h2>
+      <p>下面这些不是“页面不好看”的问题，而是 EBench/Isaac runtime 可能无法稳定 reset、step、score 的问题。每一项都要在后续 task 里被关闭或显式隔离。</p>
+      <div class="tabs" role="tablist" aria-label="风险分类">
+        <button type="button" role="tab" aria-selected="true" aria-controls="risk-scale" data-tab="risk-scale">Scale</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="risk-joint" data-tab="risk-joint">Joint</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="risk-mass" data-tab="risk-mass">Mass</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="risk-dof" data-tab="risk-dof">DOF</button>
+      </div>
+
+      <div id="risk-scale" class="tab-pane active">
+        <div class="answer warning">
+          <p><strong>Root scale 不是 1：</strong><code>/World/DryingBox_01</code> 根节点有 <code>xformOp:scale=[0.001, 0.001, 0.001]</code>。这说明原生资产内部可能以毫米或其他单位建模，再通过根节点缩放到米制世界。</p>
+          <p>这不一定是错误，但在 EBench wrapper 中必须明确 unit policy。否则门轴、把手位置、碰撞体和机器人 reachability 都可能因为尺度解释不同而出问题。</p>
+        </div>
+      </div>
+
+      <div id="risk-joint" class="tab-pane">
+        <div class="answer danger">
+          <p><strong>有一个 fixed joint 指向了非 rigid body：</strong><code>/World/DryingBox_01/FixedJoint_01</code> 的 <code>physics:body0</code> 指向 <code>/World/DryingBox_01/Group_02/group/mesh</code>，但 audit 发现该 target 没有 <code>PhysicsRigidBodyAPI</code>。</p>
+          <p>对产品来说，这相当于“图纸上有一颗螺丝连接到不存在的受力零件”。在静态 render 里可能看不出来，但进入 PhysX 后可能导致 warning、漂移或约束失效。</p>
+        </div>
+      </div>
+
+      <div id="risk-mass" class="tab-pane">
+        <div class="answer danger">
+          <p><strong>部分刚体质量和惯量无效：</strong>door mesh、body mesh、handle mesh 出现 <code>zero_inertia</code>、无效 <code>centerOfMass</code> 或零四元数 <code>principalAxes</code>；door 和 handle 的 <code>mass</code> 是 0。</p>
+          <p>这会影响 native-only smoke。我们不能只说“USD 能打开”，还要证明 60 到 120 个 physics steps 后 root pose、handle pose、joint positions 都是 finite。</p>
+        </div>
+      </div>
+
+      <div id="risk-dof" class="tab-pane">
+        <div class="answer warning">
+          <p><strong>不是只有门一个 active DOF：</strong>门是 <code>PhysicsRevoluteJoint</code>，axis 是 <code>Y</code>，limit 是 <code>0..120</code>；按钮还有 <code>PhysicsPrismaticJoint</code>，axis 也是 <code>Y</code>，limit 约 <code>0..0.01</code>。</p>
+          <p>这说明后续 metric 不能简单取“第一个 joint”或假设只有一个 DOF。EBench open_door 评分要明确绑定门的 <code>RevoluteJoint</code>，按钮 DOF 要隔离或显式忽略。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="关节和把手结构">
+      <h2>关节和把手到底长什么样？</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>结构</th>
+              <th>Task 1 查到的事实</th>
+              <th>为什么重要</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>articulation root</td>
+              <td><code>/World/DryingBox_01</code> 是 <code>Xform</code>，带 <code>PhysicsArticulationRootAPI</code>，root scale 约 <code>0.001</code>。</td>
+              <td>EBench wrapper 需要保持 root contract，同时处理单位和固定基座问题。</td>
+            </tr>
+            <tr>
+              <td>door joint</td>
+              <td><code>/World/DryingBox_01/RevoluteJoint</code>，axis <code>Y</code>，limit <code>0..120</code>，连接 body mesh 和 door mesh。</td>
+              <td>这是 open_door metric 应该绑定的核心 DOF，不能沿用 surrogate 的假设。</td>
+            </tr>
+            <tr>
+              <td>button joint</td>
+              <td><code>/World/DryingBox_01/button/PrismaticJoint</code>，axis <code>Y</code>，limit 约 <code>0..0.01</code>。</td>
+              <td>它会改变 DOF 数量和顺序，必须防止 scoring 误读成门关节。</td>
+            </tr>
+            <tr>
+              <td>handle candidates</td>
+              <td>候选有 <code>/World/DryingBox_01/handle</code> 和 <code>/World/DryingBox_01/handle/mesh</code>，其中 <code>handle/mesh</code> 有 <code>RigidBodyAPI</code>、<code>CollisionAPI</code> 和 <code>MassAPI</code>。</td>
+              <td>抓取和可视化应该优先围绕这个 native nested handle path candidate 验证，而不是手写一个新把手。</td>
+            </tr>
+            <tr>
+              <td>invalid fixed joint</td>
+              <td><code>FixedJoint_01</code> 的 <code>body0</code> target 存在，但没有 <code>RigidBodyAPI</code>。</td>
+              <td>这是后续 additive physics override 必须处理的明确问题。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="实习生阅读路线">
+      <h2>实习生应该怎么读这份结果？</h2>
+      <div class="strip">
+        <div class="mini">
+          <strong>1. 先看 prim path</strong>
+          <span>确认要操作的是 <code>/World/DryingBox_01</code>，不是 wrapper 后的新名字，也不是 surrogate cube。</span>
+        </div>
+        <div class="mini">
+          <strong>2. 再看 API schema</strong>
+          <span>找 <code>PhysicsArticulationRootAPI</code>、<code>PhysicsRigidBodyAPI</code>、<code>PhysicsMassAPI</code> 和 joint schema。</span>
+        </div>
+        <div class="mini">
+          <strong>3. 再看 joint rel</strong>
+          <span>每个 joint 的 <code>physics:body0</code> 和 <code>physics:body1</code> 必须指向存在且有 rigid body 的 prim。</span>
+        </div>
+        <div class="mini">
+          <strong>4. 最后看 runtime</strong>
+          <span>静态 USD audit 只是第一关，Task 2 需要 Isaac physics steps 证明不会漂、不会 NaN、不会乱报 DOF。</span>
+        </div>
+      </div>
+      <div class="answer">
+        <p><strong>复核命令：</strong>在 GenManip 的 EBench POC worktree 里重新生成一份 audit，然后对比新的 <code>audit.json</code> 是否仍然包含同样的 root、joint、handle 和 risk flag。</p>
+        <div class="cmd">cd /root/.config/superpowers/worktrees/GenManip/labutopia-ebench-poc
+python3 standalone_tools/labutopia_poc/audit_native_dryingbox.py \
+  --labutopia-root /cpfs/shared/simulation/zhuzihou/dev/LabUtopia \
+  --source-prim-path /World/DryingBox_01 \
+  --output-root saved/diagnostics/native_dryingbox_audit_$(date -u +%Y%m%d_%H%M%S)
+python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
+        <p>重跑后要核对 <code>summary.risk_count == 15</code>，<code>set(risk_flags)</code> 等于上表 8 类，并确认 <code>FixedJoint_01 physics:body0</code> 指向的 <code>/World/DryingBox_01/Group_02/group/mesh</code> 缺少 <code>RigidBodyAPI</code>。</p>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="实习生小词典">
+      <h2>实习生小词典：读 USD articulation 时先搞懂这些词</h2>
+      <details open>
+        <summary><code>prim</code>：USD 里的一个节点</summary>
+        <p>可以把 <code>prim</code> 理解成场景树里的一个对象节点。它可能只是分组 <code>Xform</code>，也可能是可见 <code>Mesh</code>，还可能带 physics schema。Task 1 先数清楚 54 个 prim，是为了确认我们面对的是原生复杂设备。</p>
+      </details>
+      <details>
+        <summary><code>PhysicsArticulationRootAPI</code>：告诉 PhysX 这是一组有关节的结构</summary>
+        <p>如果没有 articulation root，门、按钮和刚体就很难被当作一个关节系统管理。Task 1 发现 root 在 <code>/World/DryingBox_01</code>，这是继续接入的好信号。</p>
+      </details>
+      <details>
+        <summary><code>joint relationship</code>：关节连接到哪两个刚体</summary>
+        <p><code>physics:body0</code> 和 <code>physics:body1</code> 必须指向存在且有 <code>PhysicsRigidBodyAPI</code> 的 prim。Task 1 发现 <code>FixedJoint_01</code> 有一个 target 缺少 rigid body，这是后续必须处理的明确风险。</p>
+      </details>
+      <details>
+        <summary><code>DOF</code>：评分时到底读哪个自由度</summary>
+        <p>原生 DryingBox 同时有门的 <code>RevoluteJoint</code> 和按钮的 <code>PrismaticJoint</code>。因此 open_door metric 必须显式绑定门 joint，不能简单读取第一个 joint position。</p>
+      </details>
+    </section>
+
+    <section class="panel" aria-label="风险到解决动作">
+      <h2>这些风险后面怎么解决？</h2>
+      <p>Task 1 的价值不只是“发现问题”，更重要的是把问题转成后续可验证的工程动作。下面这张表是当前推进路线的翻译版。</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Task 1 发现的问题</th>
+              <th>如果不解决会怎样</th>
+              <th>后续处理方式</th>
+              <th>验收证据</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>root scale 为 <code>0.001</code></td>
+              <td>资产可能在视觉上对了，但碰撞、门轴和机器人 reachability 的尺度解释错了。</td>
+              <td>Task 2 先在 native-only stage 跑物理；Task 4 再用 additive USD override 固化 unit policy。</td>
+              <td><code>smoke.json</code> 中 pose/joint finite，后续 readback 图中尺寸合理。</td>
+            </tr>
+            <tr>
+              <td><code>FixedJoint_01</code> 指向非 rigid body</td>
+              <td>PhysX 可能把约束接到错误对象上，导致 warning 或门体/箱体关系不稳定。</td>
+              <td>Task 4 只加 override，不改原始资产；修正 body target 或隔离无效约束。</td>
+              <td>PhysX warning 被记录，修复后 warning 降级或消失。</td>
+            </tr>
+            <tr>
+              <td>door / body / handle 存在 mass、inertia、COM、principal axes 风险</td>
+              <td>仿真可能能打开 USD，但物理步里出现 NaN、抖动或不可控运动。</td>
+              <td>Task 2 先确认当前 runtime 行为；Task 4 再补 mass/inertia override。</td>
+              <td>60 到 120 个 physics steps 后 root pose、handle pose、joint positions 仍为 finite。</td>
+            </tr>
+            <tr>
+              <td>门和按钮形成多个 active DOF</td>
+              <td>metric 可能把按钮位移误判成开门结果，导致分数看起来有了但语义错了。</td>
+              <td>Task 3/5 在 EBench wrapper 和 metric 中显式绑定 <code>RevoluteJoint</code>，按钮 DOF 单独隔离。</td>
+              <td>readback JSON 里能看到门 joint name、角度和 metric source。</td>
+            </tr>
+            <tr>
+              <td>handle 必须保留在 drying box hierarchy 下</td>
+              <td>如果把 handle 单独 payload 到顶层，它会丢父级 transform，位置和 bbox 会严重异常。</td>
+              <td>Task 3 使用 native wrapper，把 <code>obj_DryingBox_01_handle</code> 暴露为 articulation part，而不是另造顶层 handle。</td>
+              <td>runtime scene 没有独立顶层 handle payload，render/readback 能定位 nested handle。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="flow" aria-label="七个 task 怎么衔接">
+      <h2>后续七个 task 分别干什么？</h2>
+      <p>这七步是 gate，不是简单任务清单。每一步都要产出可追溯证据，前一步不过就不应该把后一步的产品结论写满。</p>
+      <div class="flow-track">
+        <div class="step done"><strong>1. Asset Audit</strong><span>只读检查原生 USD，列出 hierarchy、joint、handle 和风险。当前已完成。</span></div>
+        <div class="step next"><strong>2. Isaac Smoke</strong><span>最小 stage 只放原生 DryingBox，跑 60 到 120 步，确认 pose/joint 有限且 physics stable。</span></div>
+        <div class="step"><strong>3. Native Wrapper</strong><span>把原生资产包装进 EBench 路径，保留 native visual/hierarchy/handle，同时保留 surrogate baseline。</span></div>
+        <div class="step"><strong>4. Physics Override</strong><span>只做 additive USD overrides，修 scale、mass、inertia、joint target、DOF filtering 和 fixed-base。</span></div>
+        <div class="step"><strong>5. Eval Readback</strong><span>跑 open_door readback，确认 render、joint、handle、metric 都能被 EBench 侧读到。</span></div>
+        <div class="step"><strong>6. Docs Evidence</strong><span>把 old failed、P1 surrogate、P2 native readback、JSON hash 和 claim boundary 写进周报/教程。</span></div>
+        <div class="step"><strong>7. Lift2 Gate</strong><span>进入 lift2 candidate 和 official baseline discovery。只有这里通过后，才重新讨论 official_baseline_evaluable。</span></div>
+      </div>
+    </section>
+
+    <section class="note">
+      <strong>当前对外口径：</strong>
+      Task 1 静态审计已确认原生 <code>DryingBox_01</code> 的结构可审计，door joint、handle candidate 和 articulation root 存在，并明确列出会影响 EBench 接入的 physics/articulation 风险。下一步不是直接接入 lift2，而是先做 Task 2 native-only Isaac smoke，确认原生资产在目标 Isaac runtime 中能稳定跑物理步。
+    </section>
+
+    <div class="footer">
+      <span>相关入口：</span>
+      <a href="./index.html">6.15 LabUtopia 周报</a>
+      <a href="../../learn/chapters/07-ebench-assets/7-8-conversion-workflow.html">Conversion workflow</a>
+      <a href="../../learn/chapters/02-sim-usd/2-3-physx-articulation.html">PhysX 与 articulation</a>
+      <a href="../../learn/chapters/06-assets/6-2-asset-census.html">Lab object assets</a>
+    </div>
+  </main>
+
+  <script>
+    const buttons = document.querySelectorAll("[data-tab]");
+    const panes = document.querySelectorAll(".tab-pane");
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        const id = button.dataset.tab;
+        buttons.forEach(item => item.setAttribute("aria-selected", String(item === button)));
+        panes.forEach(pane => pane.classList.toggle("active", pane.id === id));
+      });
+    });
+  </script>
+</body>
+</html>

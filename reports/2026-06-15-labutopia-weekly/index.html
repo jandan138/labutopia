@@ -113,6 +113,7 @@
       border-radius: 8px;
       background: var(--paper-2);
       position: relative;
+      overflow-wrap: anywhere;
     }
     .step strong { display: block; margin-bottom: 6px; color: var(--green); }
     .step span { color: var(--muted); font-size: 13px; }
@@ -209,6 +210,12 @@
         <h2>接入判断</h2>
         <p>LabUtopia 适合作为 EBench/GenManip 的实验室任务包来源，但需要按 EBench 口径补 task config、metric、split 和验证闭环。</p>
         <span class="tag">可迁移</span><span class="tag warn">需重建评测口径</span>
+      </article>
+      <article class="card">
+        <h2>DryingBox 专题</h2>
+        <p>Task 1 已把原生 <code>DryingBox_01</code> 的结构查清楚：native hierarchy 可枚举，门关节、handle candidate 和 articulation root 存在；但它仍需要通过 Isaac smoke 和 EBench wrapper gate，不能直接宣称 lift2 可评。</p>
+        <span class="tag">调研结果已入页</span><span class="tag warn">可推进但未验收</span>
+        <p><a href="native-dryingbox-task1.html">查看 Task 1 调研结果</a></p>
       </article>
     </section>
 
@@ -678,11 +685,12 @@
 
     <section class="note">
       <strong>本周对外口径：</strong>
-      LabUtopia 本周已经完成一次可复现跑通和能力盘点：确认 5 个核心实验室/导航场景、29 个主任务配置、较完整的实验室资产族，以及任务内局部泛化能力。本次对 29 个主配置各跑 1 条 expert 视频，得到 28 条成功 rollout 和 1 条失败但有视频的 partial trace。后续如果要形成正式 dataset 或接入 EBench，需要脚本化批跑、补齐 split/metric/诊断口径，并固化随机种子、环境版本和验证标准。
+      LabUtopia 本周已经在原生 LabUtopia 入口下完成一次可复现跑通和能力盘点：确认 5 个核心实验室/导航场景、29 个主任务配置、较完整的实验室资产族，以及任务内局部泛化能力。本次对 29 个主配置各跑 1 条 expert 视频，得到 28 条成功 rollout 和 1 条失败但有视频的 partial trace。后续如果要形成正式 dataset 或接入 EBench，需要脚本化批跑、补齐 split/metric/诊断口径，并固化随机种子、环境版本和验证标准。
     </section>
 
     <div class="footer">
       <span>相关页面：</span>
+      <a href="native-dryingbox-task1.html">Task 1 原生 DryingBox 调研</a>
       <a href="../2026-06-12-labutopia-weekly/">6.12 复现结果与视频周报</a>
       <a href="../../docs/runs/2026-06-09-expert-videos.md">expert 视频批跑记录</a>
       <a href="../../docs/task-config-matrix.md">29 config 状态矩阵</a>
