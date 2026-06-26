@@ -10,6 +10,23 @@
 
 ---
 
+## 2026-06-26 Supersession Note
+
+This original POC plan remains useful for the broad LabUtopia task-package structure, metric tests, Franka smoke, and `lift2_candidate` readiness framing. Its early open-door sketch treated `/World/DryingBox_01/handle` like a separate runtime object and allowed a surrogate-style `handle_displacement` path.
+
+That older handle path is now superseded for native complex `DryingBox_01` acceptance. The current direction is documented in:
+
+```text
+docs/superpowers/plans/2026-06-23-labutopia-ebench-p1-asset-layout-closure.md
+docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-ebench-gates.md
+```
+
+Use this rule going forward:
+
+```text
+Do not claim native DryingBox success from an independent top-level handle payload or a surrogate cube door. Native success requires the real DryingBox hierarchy, nested handle articulation part, door RevoluteJoint readback, render validation, eval readback, and Lift2 contract gate evidence.
+```
+
 ## Repository Roots
 
 Use these absolute paths throughout the implementation:

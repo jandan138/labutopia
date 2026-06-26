@@ -80,6 +80,23 @@ Static validation must fail before Isaac runtime if:
 - any Franka task lacks `labutopia_render_validation`;
 - camera names in validation metadata do not exist in the configured camera YAML.
 
+## Native DryingBox Extension
+
+The P1 layout work is necessary but not sufficient for native complex `DryingBox_01` acceptance. Native acceptance must additionally fail fast if:
+
+- any native `reference` or `payload` dependency is unresolved;
+- required native `material:binding` targets are unresolved and no explicit fallback display policy is recorded;
+- `PhysicsScene` is missing or duplicated in the composed runtime stage;
+- `PhysicsArticulationRootAPI` is lost after wrapper composition;
+- any active joint `physics:body0` or `physics:body1` target lacks `RigidBodyAPI`;
+- active rigid bodies have invalid mass, diagonal inertia, center of mass, or principal axes;
+- collision shapes become invalid after root scale or wrapper transform composition;
+- the door `RevoluteJoint` cannot be distinguished from the button `PrismaticJoint`;
+- `open_door` scoring reads the first DOF blindly instead of the verified door joint;
+- the required camera/light prims are absent or the reset frame is visible but not task-readable.
+
+The native gate sequence is tracked in `docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-ebench-gates.md`.
+
 ## Runtime Acceptance
 
 P1 is complete only when fresh eval-path diagnostics produce three non-black, visually readable reset frames:
@@ -89,3 +106,5 @@ P1 is complete only when fresh eval-path diagnostics produce three non-black, vi
 - `level1_open_door`: drying box, door face, and handle are visible with the handle under the drying-box hierarchy.
 
 Until all three pass visual review, PM-facing wording must remain: integration and diagnostics are progressing, but final render/layout acceptance is still open.
+
+Native `DryingBox_01` runtime acceptance is stricter than P1 render acceptance. It requires native-only Isaac smoke, additive physics override evidence, eval-path render and state readback, and a claim boundary that still separates Franka/native success from official Lift2 baseline readiness.
