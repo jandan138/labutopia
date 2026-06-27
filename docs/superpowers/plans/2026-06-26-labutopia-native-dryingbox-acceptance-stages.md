@@ -1,10 +1,10 @@
-# LabUtopia Native DryingBox EBench Gates Implementation Plan
+# LabUtopia Native DryingBox EBench Acceptance Stages Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make LabUtopia native complex `DryingBox_01` usable in the EBench/GenManip `level1_open_door` lane without overstating official Lift2 baseline readiness.
 
-**Architecture:** Keep the existing P1 surrogate/render-layout lane as a debugging baseline, and run a separate native DryingBox gate lane. The native lane must pass USD asset audit, native-only Isaac smoke, EBench wrapper composition, additive physics/articulation closure, eval readback, evidence packaging, and Lift2 contract gate in order. Every gate writes machine-readable evidence before the next product-facing claim is upgraded.
+**Architecture:** Keep the existing P1 surrogate/render-layout lane as a debugging baseline, and run a separate native DryingBox acceptance-stage lane. The native lane must pass USD asset audit, native-only Isaac smoke, EBench wrapper composition, additive physics/articulation closure, eval readback, evidence packaging, and Lift2 contract check in order. Every acceptance stage writes machine-readable evidence before the next product-facing claim is upgraded.
 
 **Tech Stack:** Python 3.10, USD Python APIs (`pxr.Usd`, `pxr.UsdPhysics`, `pxr.UsdGeom`), Isaac Sim 4.1 runtime, GenManip/EBench task configs, `pytest`, `gmp submit/eval/status`, static HTML/docs evidence.
 
@@ -26,28 +26,28 @@ Run implementation work in the GenManip `labutopia-ebench-poc` branch. Keep LabU
 
 | View | Decision |
 | --- | --- |
-| Product / PM | The seven steps should be written as gates with evidence, not as a vague to-do list. `Franka smoke` and `Lift2/R5a official baseline readiness` must remain separate claims. |
+| Product / PM | The seven steps should be written as acceptance stages with evidence, not as a vague to-do list. `Franka smoke` and `Lift2/R5a official baseline readiness` must remain separate claims. |
 | USD / Isaac Sim | P1 render/layout closure does not prove native `DryingBox_01` articulated acceptance. The door must pass `native-only Isaac smoke`, additive `USD` physics override, and joint/drive/collision readback. |
-| EBench baseline | The final gate must verify `EvalClient` observation/action/reward/logging contracts. Copying Franka YAML and replacing robot/camera names is not enough for official Lift2 baseline readiness. |
+| EBench baseline | The final acceptance stage must verify `EvalClient` observation/action/reward/logging contracts. Copying Franka YAML and replacing robot/camera names is not enough for official Lift2 baseline readiness. |
 
 ## Claim Boundary
 
-Allowed after Task 1:
+Allowed after Acceptance Stage 1:
 
 ```text
 Native DryingBox_01 is a real LabUtopia asset with auditable hierarchy, door joint, handle candidate, and articulation root.
 ```
 
-Allowed after Task 5:
+Allowed after Acceptance Stage 5:
 
 ```text
 Native DryingBox_01 can be loaded through the GenManip/EBench eval path and produces readback evidence for render, joint, handle, and metric state.
 ```
 
-Allowed only after Task 7:
+Allowed only after Acceptance Stage 7:
 
 ```text
-The LabUtopia lift2_candidate lane has passed a local official-baseline-style contract gate for observation, action, camera, reward/success, and logging shape.
+The LabUtopia lift2_candidate lane has passed a local official-baseline-style contract check for observation, action, camera, reward/success, and logging shape.
 ```
 
 Not allowed from this plan alone:
@@ -71,13 +71,13 @@ official EBench score release
 | `standalone_tools/labutopia_poc/capture_eval_render_diagnostics.py` | Eval-path reset/readback diagnostics, render validation, and native evidence linkage. |
 | `configs/tasks/ebench/labutopia_lab_poc/common/assets_manifest.json` | Records native strategy metadata, source hashes, wrapper contract, material policy, and part paths. |
 | `configs/tasks/ebench/labutopia_lab_poc/franka_poc/level1_open_door.yml` | Franka native open-door task: object config, articulation part, metric source, render validation. |
-| `configs/tasks/ebench/labutopia_lab_poc/lift2_candidate/*.yml` | Lift2 candidate tasks; updated only after Franka native gate evidence is valid. |
-| `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_<timestamp>.json` | Machine-readable evidence bundle for each gate. |
+| `configs/tasks/ebench/labutopia_lab_poc/lift2_candidate/*.yml` | Lift2 candidate tasks; updated only after Franka native acceptance-stage evidence is valid. |
+| `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_<timestamp>.json` | Machine-readable evidence bundle for each acceptance stage. |
 | `reports/2026-06-15-labutopia-weekly/native-dryingbox-task1.html` | PM/intern-readable status and teaching page. |
 
-## Gate Summary
+## Acceptance Stage Summary
 
-| Gate | Product meaning | Evidence required before moving on |
+| Acceptance Stage | Product meaning | Evidence required before moving on |
 | --- | --- | --- |
 | 1. Asset Audit | We know what the real DryingBox contains. | `audit.json`, source USD hash, prim/joint/handle list, risk flags. |
 | 2. Isaac Smoke | The native asset can survive physics stepping by itself. | `smoke.json`, Isaac log, 60-120 step root/handle/joint trace, finite checks. |
@@ -85,11 +85,13 @@ official EBench score release
 | 4. Physics Override | Door physics is repaired additively and reads the right DOF. | override manifest, before/after warnings, mass/inertia/body target checks, door trace. |
 | 5. Eval Readback | GenManip/EBench can reset, render, step, and score native open-door evidence. | diagnostics JSON, reset obs schema, step response, metric raw output, frame hashes. |
 | 6. Evidence Package | PM, interns, and reviewers can reproduce the claim boundary. | evidence manifest with git SHAs, env vars, commands, run ids, paths, screenshots. |
-| 7. Lift2 Gate | The lane is checked against official baseline data contracts. | `gmp` logs, observation/action schema probe, relative/absolute base action probes. |
+| 7. Lift2 Contract Check | The lane is checked against official baseline data contracts. | `gmp` logs, observation/action schema probe, relative/absolute base action probes. |
+
+Use `Acceptance Stage` for this seven-stage native DryingBox acceptance lane. Reserve `Task` for concrete engineering work items that may be added under a stage later.
 
 ---
 
-### Task 1: Native Asset Audit
+### Acceptance Stage 1: Native Asset Audit
 
 **Files:**
 - Modify: `standalone_tools/labutopia_poc/audit_native_dryingbox.py`
@@ -133,9 +135,9 @@ Expected: exit `0` and write `audit.json`.
 
 - [ ] **Step 4: Record PM wording**
 
-Update the PM note only to say: native `DryingBox_01` is worth continuing, but Task 1 alone does not prove EBench/Lift2 evaluability.
+Update the PM note only to say: native `DryingBox_01` is worth continuing, but Acceptance Stage 1 alone does not prove EBench/Lift2 evaluability.
 
-### Task 2: Native-Only Isaac Smoke
+### Acceptance Stage 2: Native-Only Isaac Smoke
 
 **Files:**
 - Modify: `standalone_tools/labutopia_poc/run_native_dryingbox_smoke.py`
@@ -167,9 +169,9 @@ Expected: exit `0`, `runtime_physics_stable=true`, finite root pose, finite hand
 
 - [ ] **Step 3: Enforce stop condition**
 
-If `smoke.json` contains `runtime_physics_stable=false`, NaN/Inf pose values, or unexplained joint drift, stop before Task 3. Preserve the artifact and add the blocker to the evidence manifest.
+If `smoke.json` contains `runtime_physics_stable=false`, NaN/Inf pose values, or unexplained joint drift, stop before Acceptance Stage 3. Preserve the artifact and add the blocker to the evidence manifest.
 
-### Task 3: Native Wrapper Composition
+### Acceptance Stage 3: Native Wrapper Composition
 
 **Files:**
 - Modify: `standalone_tools/labutopia_poc/build_asset_overlay.py`
@@ -204,7 +206,7 @@ python -m pytest tests/labutopia_poc/test_build_asset_overlay.py -q
 python standalone_tools/labutopia_poc/validate_task_package.py
 ```
 
-Expected: tests pass. If validator fails because Task 4 native physics checks are not implemented yet, record the exact failure and do not call wrapper work complete.
+Expected: tests pass. If validator fails because Acceptance Stage 4 native physics checks are not implemented yet, record the exact failure and do not call wrapper work complete.
 
 - [ ] **Step 4: Check material and camera prerequisites**
 
@@ -216,7 +218,7 @@ The wrapper manifest must record:
 - wrapper bbox, source scale, axis/up-axis, and workspace translation;
 - camera/light prim names expected by task YAML.
 
-### Task 4: Additive Physics Override And Articulation Closure
+### Acceptance Stage 4: Additive Physics Override And Articulation Closure
 
 **Files:**
 - Modify: `standalone_tools/labutopia_poc/build_asset_overlay.py`
@@ -257,7 +259,7 @@ python standalone_tools/labutopia_poc/validate_task_package.py
 
 Expected: PASS and `LabUtopia task package validation OK`.
 
-### Task 5: Eval Readback And Render Validation
+### Acceptance Stage 5: Eval Readback And Render Validation
 
 **Files:**
 - Modify: `standalone_tools/labutopia_poc/capture_eval_render_diagnostics.py`
@@ -276,7 +278,7 @@ Expected: PASS.
 
 - [ ] **Step 2: Run eval-path open-door readback**
 
-Use the latest Task 1 `audit.json` and Task 2 `smoke.json` paths explicitly:
+Use the latest Acceptance Stage 1 `audit.json` and Acceptance Stage 2 `smoke.json` paths explicitly:
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -317,10 +319,10 @@ Expected: writes `diagnostics.json` plus reset frame(s) and records the exact au
 
 Reject frames that are black, flat gray, missing the drying box, missing the door face, missing the handle, or dominated by wall/ceiling geometry. A passing PM-facing frame must show the box body, door edge, and handle clearly enough to explain the task.
 
-### Task 6: Evidence Package And PM Claim Boundary
+### Acceptance Stage 6: Evidence Package And PM Claim Boundary
 
 **Files:**
-- Create: `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_gate_<utc_timestamp>.json`
+- Create: `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_acceptance_<utc_timestamp>.json`
 - Modify: `docs/records/2026-06-22-labutopia-ebench-weekly-report.md`
 - Modify: `docs/records/evidence/2026-06-22-labutopia-ebench-weekly-report/index.html`
 - Modify: `reports/2026-06-15-labutopia-weekly/native-dryingbox-task1.html`
@@ -332,7 +334,7 @@ The manifest must include:
 - GenManip git SHA and LabUtopia git SHA;
 - conda environment path;
 - `ASSET_OVERLAY_ROOT`;
-- every command used in Tasks 1-5;
+- every command used in Acceptance Stages 1-5;
 - run id, worker id, seed, task name, and result paths;
 - `audit.json`, `smoke.json`, `diagnostics.json`, frame hashes, and log paths;
 - visual review verdict;
@@ -340,23 +342,23 @@ The manifest must include:
 
 - [ ] **Step 2: Update PM-facing wording**
 
-Use this wording if Tasks 1-5 pass:
+Use this wording if Acceptance Stages 1-5 pass:
 
 ```text
-原生 DryingBox_01 已经通过 EBench/GenManip eval path 的 native open-door readback：资产不是 surrogate cube，门、把手、joint 和画面都有证据。但这仍然只是 Franka/native gate，不等于 official Lift2 baseline 已通过。
+原生 DryingBox_01 已经通过 EBench/GenManip eval path 的 native open-door readback：资产不是 surrogate cube，门、把手、joint 和画面都有证据。但这仍然只是 Franka/native acceptance stage，不等于 official Lift2 baseline 已通过。
 ```
 
-Use this wording if any Task 1-5 gate fails:
+Use this wording if any Acceptance Stage 1-5 check fails:
 
 ```text
-原生 DryingBox_01 的接入正在推进，但当前 blocker 仍在 native asset / physics / wrapper / readback 中的一个具体 gate；不能宣称 official baseline 可评。
+原生 DryingBox_01 的接入正在推进，但当前 blocker 仍在 native asset / physics / wrapper / readback 中的一个具体验收阶段；不能宣称 official baseline 可评。
 ```
 
 - [ ] **Step 3: Keep evidence and product page aligned**
 
 The HTML page must link to the exact evidence manifest and explain old image issues in plain language: camera view mismatch, unresolved native `material:binding`, top-level handle payload risk, and the difference between surrogate and native complex asset.
 
-### Task 7: Lift2 Official-Baseline Contract Gate
+### Acceptance Stage 7: Lift2 Official-Baseline Contract Check
 
 **Files:**
 - Modify: `standalone_tools/labutopia_poc/validate_task_package.py`
@@ -421,7 +423,7 @@ It must check:
 - command outputs for `gmp submit`, `gmp eval`, `gmp status`, and `lift2_eval_contract_probe`;
 - per-task rows for `level1_pick`, `level1_place`, and `level1_open_door`;
 - columns `Reset`, `Step`, `Reachability`, `Camera Framing`, `Metric`, and `Finding`, using only `PASS`, `FAIL`, or `BLOCKED`;
-- a clear statement that Franka/native gate pass does not imply official baseline readiness unless Task 7 passes.
+- a clear statement that Franka/native acceptance-stage pass does not imply official baseline readiness unless Acceptance Stage 7 passes.
 
 ## Final Verification
 
@@ -434,4 +436,4 @@ python standalone_tools/labutopia_poc/validate_task_package.py
 git diff --check
 ```
 
-Then check the evidence manifest contains non-empty paths for audit, smoke, diagnostics, render frames, and Lift2 readiness if Task 7 was attempted.
+Then check the evidence manifest contains non-empty paths for audit, smoke, diagnostics, render frames, and Lift2 readiness if Acceptance Stage 7 was attempted.

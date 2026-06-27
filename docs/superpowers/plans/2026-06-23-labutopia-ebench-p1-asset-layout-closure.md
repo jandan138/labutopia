@@ -10,26 +10,26 @@
 
 ---
 
-## 2026-06-26 Native DryingBox Gate Update
+## 2026-06-26 Native DryingBox Acceptance Stage Update
 
 Multi-agent review split the work into two layers:
 
 - This P1 plan closes render/layout and wrapper contract for the LabUtopia POC.
-- Native complex `DryingBox_01` articulated acceptance is tracked in `docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-ebench-gates.md`.
+- Native complex `DryingBox_01` articulated acceptance is tracked in `docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-acceptance-stages.md`.
 
-Important boundary: P1 render/layout closure does not prove official Lift2 baseline readiness. It also does not prove native `DryingBox_01` physics is complete until the native-only Isaac smoke, additive `USD` physics override, eval readback, and Lift2 contract gates pass.
+Important boundary: P1 render/layout closure does not prove official Lift2 baseline readiness. It also does not prove native `DryingBox_01` physics is complete until the native-only Isaac smoke, additive `USD` physics override, eval readback, and Lift2 contract checks pass.
 
 Plain-language PM wording:
 
 ```text
-P1 is about getting the scene into a readable EBench/GenManip runtime layout. The real DryingBox door still needs a separate native asset gate, because a USD file can be visible while its material, joint, collision, handle, camera, or Lift2 action contract is still wrong.
+P1 is about getting the scene into a readable EBench/GenManip runtime layout. The real DryingBox door still needs a separate native asset acceptance stage, because a USD file can be visible while its material, joint, collision, handle, camera, or Lift2 action contract is still wrong.
 ```
 
 Do not use the older independent top-level handle payload as acceptance evidence for native DryingBox. The accepted direction is: keep the handle under native `DryingBox_01`, expose it as an articulation part, and bind `open_door` scoring to the door `RevoluteJoint`, not the button `PrismaticJoint` and not a surrogate-only handle displacement.
 
-### Native Follow-Up Gates
+### Native Follow-Up Acceptance Stages
 
-| Gate | What it proves | Required evidence |
+| Acceptance Stage | What it proves | Required evidence |
 | --- | --- | --- |
 | Asset Audit | The real LabUtopia `DryingBox_01` hierarchy, door joint, handle candidate, and articulation root are present. | `audit.json`, source USD hash, prim/joint/handle list, risk flags. |
 | Native-only Isaac Smoke | The native asset can run physics steps without NaN/Inf or unexplained drift. | `smoke.json`, root/handle pose trace, joint position trace, PhysX warning log. |
@@ -37,7 +37,7 @@ Do not use the older independent top-level handle payload as acceptance evidence
 | Physics Override | Door physics is repaired additively and the metric reads the door DOF. | override manifest, body target checks, mass/inertia checks, door joint trace. |
 | Eval Readback | GenManip/EBench can reset, render, step, and score native open-door evidence. | diagnostics JSON, reset frame, pre/post joint angle, handle pose, metric raw output. |
 | Evidence Package | PM and reviewers can reproduce what is and is not claimed. | evidence manifest with commands, SHAs, env vars, run ids, hashes, visual QA. |
-| Lift2 Gate | The lane matches official-baseline observation/action/reward/logging shape. | `gmp` logs, obs/action schema probe, relative/absolute base action probes. |
+| Lift2 Contract Check | The lane matches official-baseline observation/action/reward/logging shape. | `gmp` logs, obs/action schema probe, relative/absolute base action probes. |
 
 ### Task 1: Lock P1 Overlay Contracts With Failing Tests
 
@@ -185,9 +185,9 @@ Write an evidence manifest with source frame paths, sha256 hashes, frame stats, 
 
 Run code/static review after tests and runtime evidence are available. Fix Critical and Important findings before calling P1 complete.
 
-- [ ] **Step 5: Hand off to native DryingBox gate**
+- [ ] **Step 5: Hand off to native DryingBox acceptance stages**
 
-After P1 render/layout evidence is accepted, continue with `docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-ebench-gates.md`.
+After P1 render/layout evidence is accepted, continue with `docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-acceptance-stages.md`.
 
 Expected boundary:
 

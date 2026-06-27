@@ -95,7 +95,7 @@ The P1 layout work is necessary but not sufficient for native complex `DryingBox
 - `open_door` scoring reads the first DOF blindly instead of the verified door joint;
 - the required camera/light prims are absent or the reset frame is visible but not task-readable.
 
-The native gate sequence is tracked in `docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-ebench-gates.md`.
+The native acceptance-stage sequence is tracked in `docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-acceptance-stages.md`.
 
 ## Runtime Acceptance
 

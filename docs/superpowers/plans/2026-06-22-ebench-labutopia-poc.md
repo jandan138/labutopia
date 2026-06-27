@@ -18,13 +18,13 @@ That older handle path is now superseded for native complex `DryingBox_01` accep
 
 ```text
 docs/superpowers/plans/2026-06-23-labutopia-ebench-p1-asset-layout-closure.md
-docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-ebench-gates.md
+docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-acceptance-stages.md
 ```
 
 Use this rule going forward:
 
 ```text
-Do not claim native DryingBox success from an independent top-level handle payload or a surrogate cube door. Native success requires the real DryingBox hierarchy, nested handle articulation part, door RevoluteJoint readback, render validation, eval readback, and Lift2 contract gate evidence.
+Do not claim native DryingBox success from an independent top-level handle payload or a surrogate cube door. Native success requires the real DryingBox hierarchy, nested handle articulation part, door RevoluteJoint readback, render validation, eval readback, and Lift2 contract evidence.
 ```
 
 ## Repository Roots
