@@ -833,8 +833,12 @@ Runtime attempt boundary:
 - A long Isaac eval server was not started because preflight still reports missing Lift2 composite assets:
   - `saved/assets/robot_usds/lift2/robot.usd`
   - `saved/assets/miscs/curobo/R5a/r5a_left_arm.yml`
-  - `saved/tasks/ebench/labutopia_lab_poc/lift2_candidate/level1_pick/meta_info.pkl`
   - overlay `robot_usds/lift2/robot.usd`
+
+`meta_info.pkl` was absent in the preflight snapshot, but this is a watch item
+rather than the current hard blocker: GenManip's LabUtopia POC reset path calls
+`load_or_build_labutopia_poc_meta_info`, so fallback metadata can be built from
+the live scene. Verify that during the first live Lift2 reset.
 
 Stage 7 schema matrix:
 
@@ -854,7 +858,7 @@ lift2_contract_ready=false
 official_baseline_evaluable=false
 ```
 
-Next engineering step: build the composite Lift2 asset root by combining the LabUtopia overlay with default `robot_usds/lift2` and `miscs/curobo/R5a`, generate or locate the required `meta_info.pkl` seeds, then rerun the isolated eval server plus `gmp submit/eval/status` and `lift2_eval_contract_probe --live`.
+Next engineering step: build the composite Lift2 asset root by combining the LabUtopia overlay with default `robot_usds/lift2` and `miscs/curobo/R5a`, then rerun the isolated eval server plus `gmp submit/eval/status` and `lift2_eval_contract_probe --live`. Treat `meta_info.pkl` as a live-reset watch item covered by the LabUtopia POC fallback, not as the primary asset-root blocker.
 
 ## Final Verification
 

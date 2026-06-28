@@ -328,7 +328,7 @@
       <div>
         <div class="eyebrow">EBench native DryingBox · 2026-06-28</div>
         <h1>原生 DryingBox_01 验收进展：Stage 7 已尝试，但被 Lift2 资产卡住</h1>
-        <p class="lede">结论更新：原生 <code>DryingBox_01</code> 已通过 Acceptance Stage 1-5，Stage 6 evidence package 也已经生成；Stage 7 已经尝试验证 Lift2 official-baseline-style contract。我们已经证明它不是 surrogate cube，能单独跑 native-only smoke，能进入 EBench/GenManip runtime wrapper，也能通过 Franka/native <code>open_door</code> eval-path reset/render/step/metric/readback。Stage 7 目前不是通过，而是 <code>attempted, blocked</code>：缺默认 Lift2 robot/curobo 资产和 seed <code>meta_info.pkl</code>，没有 live reset/step 证据。边界仍要写清楚：这还不是 official Lift2 baseline 可评；<code>Aluminum_Anodized_Charcoal.mdl</code> 仍是 explicit waiver，所以 full native MDL/texture material closure 仍 open。</p>
+        <p class="lede">结论更新：原生 <code>DryingBox_01</code> 已通过 Acceptance Stage 1-5，Stage 6 evidence package 也已经生成；Stage 7 已经尝试验证 Lift2 official-baseline-style contract。我们已经证明它不是 surrogate cube，能单独跑 native-only smoke，能进入 EBench/GenManip runtime wrapper，也能通过 Franka/native <code>open_door</code> eval-path reset/render/step/metric/readback。Stage 7 目前不是通过，而是 <code>attempted, blocked</code>：composite asset root 还没合入默认 Lift2 robot/curobo 资产，所以没有 live reset/step 证据。<code>meta_info.pkl</code> 已有 LabUtopia POC runtime fallback，后续作为 live reset watch item 复核。边界仍要写清楚：这还不是 official Lift2 baseline 可评；<code>Aluminum_Anodized_Charcoal.mdl</code> 仍是 explicit waiver，所以 full native MDL/texture material closure 仍 open。</p>
       </div>
       <div class="metrics" aria-label="Task 1 关键数字">
         <div class="metric"><strong>54</strong><span>native prims under <code>/World/DryingBox_01</code></span></div>
@@ -377,7 +377,7 @@
         </div>
         <div class="summary-item">
           <strong>下一步要过哪一关</strong>
-          <span>先补 Lift2 composite asset root：默认 <code>robot_usds/lift2</code>、<code>miscs/curobo/R5a</code>、seed <code>meta_info.pkl</code>。补齐后再启动隔离 eval server，重跑 <code>gmp submit/eval/status</code> 和 probe。</span>
+          <span>先补 Lift2 composite asset root：默认 <code>robot_usds/lift2</code>、<code>miscs/curobo/R5a</code> 和 LabUtopia overlay 合成一个资产根目录。<code>meta_info.pkl</code> 用 runtime fallback 复核。补齐后再启动隔离 eval server，重跑 <code>gmp submit/eval/status</code> 和 probe。</span>
         </div>
       </div>
     </section>
@@ -875,7 +875,7 @@ python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
         <div class="step done"><strong>4. Physics Override</strong><span>additive USD override 已固化 scale、mass、inertia、joint target、DOF filtering 和 fixed-base；Aluminum waiver 在这里登记。</span></div>
         <div class="step done"><strong>5. Eval Readback</strong><span>open_door readback 已确认 render、joint、handle、metric 都能被 EBench 侧读到。</span></div>
         <div class="step done"><strong>6. Docs Evidence</strong><span>Stage 6 acceptance manifest 已记录 artifact/hash、frame hash、waiver 和 claim boundary；PM 页面同步更新。</span></div>
-        <div class="step next"><strong>7. Lift2 Contract Check</strong><span>已尝试：action dialect 静态契约 PASS；live observation/camera/reward/logging BLOCKED，因为缺 Lift2 robot/curobo 复合资产和 seed meta_info。只有这里全 PASS 后，才重新讨论 official_baseline_evaluable。</span></div>
+        <div class="step next"><strong>7. Lift2 Contract Check</strong><span>已尝试：action dialect 静态契约 PASS；live observation/camera/reward/logging BLOCKED，因为缺 Lift2 robot/curobo 复合资产根目录。meta_info 走 runtime fallback，作为 live reset watch item。只有这里全 PASS 后，才重新讨论 official_baseline_evaluable。</span></div>
       </div>
     </section>
 
