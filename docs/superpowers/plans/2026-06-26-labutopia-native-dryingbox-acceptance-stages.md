@@ -210,7 +210,7 @@ Completion evidence, 2026-06-28:
 - Verification: `python -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q` -> `3 passed`
 - Verification: `python -m pytest tests/labutopia_poc -q` -> `93 passed, 1 skipped`
 - Material audit summary: 32 meshes, 29 bound meshes, 29 out-of-source-subtree material bindings, 3 MDL dependencies, 17 helper MDL dependencies, 1 texture dependency, and machine-readable fallback/material risk flags.
-- PM note: `reports/2026-06-15-labutopia-weekly/native-dryingbox-task1.html` now says Stage 1 proves the native asset is worth continuing, but does not prove EBench wrapper, Isaac runtime, or Lift2 baseline readiness.
+- Stage 1 PM-note snapshot: `reports/2026-06-15-labutopia-weekly/native-dryingbox-task1.html` said Stage 1 proved the native asset was worth continuing, but did not prove EBench wrapper, Isaac runtime, or Lift2 baseline readiness.
 
 ### Acceptance Stage 2: Native-Only Isaac Smoke
 
@@ -300,7 +300,7 @@ Passed evidence, 2026-06-28:
 - Modify: `configs/tasks/ebench/labutopia_lab_poc/common/assets_manifest.json`
 - Test: `tests/labutopia_poc/test_build_asset_overlay.py`
 
-- [ ] **Step 1: Add wrapper assertions**
+- [x] **Step 1: Add wrapper assertions**
 
 `tests/labutopia_poc/test_build_asset_overlay.py` must assert:
 
@@ -311,7 +311,7 @@ Passed evidence, 2026-06-28:
 - `source_payload_used=true`;
 - `surrogate_kept_for_debug_baseline=true`.
 
-- [ ] **Step 2: Generate native wrapper**
+- [x] **Step 2: Generate native wrapper**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -320,7 +320,7 @@ python standalone_tools/labutopia_poc/build_asset_overlay.py --drying-box-strate
 
 Expected: generated overlay keeps one top-level `obj_DryingBox_01` wrapper and no independent top-level handle payload.
 
-- [ ] **Step 3: Verify composition contract**
+- [x] **Step 3: Verify composition contract**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -330,7 +330,7 @@ python standalone_tools/labutopia_poc/validate_task_package.py
 
 Expected: tests pass. If validator fails because Acceptance Stage 4 native physics checks are not implemented yet, record the exact failure and do not call wrapper work complete.
 
-- [ ] **Step 4: Check material and camera prerequisites**
+- [x] **Step 4: Check material and camera prerequisites**
 
 The wrapper manifest must record:
 
@@ -347,7 +347,7 @@ The wrapper manifest must record:
 - wrapper bbox, source scale, axis/up-axis, and workspace translation;
 - camera/light prim names expected by task YAML.
 
-- [ ] **Step 5: Enforce wrapper stop condition**
+- [x] **Step 5: Enforce wrapper stop condition**
 
 Stop before Acceptance Stage 4 if any of these are true:
 
@@ -359,6 +359,20 @@ Stop before Acceptance Stage 4 if any of these are true:
 - material subtree copying drops shader connections, `subIdentifier`, helper MDL imports, or texture dependencies;
 - camera/light metadata required by task YAML is missing;
 - composed-stage wrapper evidence cannot be opened and re-read by the validator.
+
+Passed evidence, 2026-06-28:
+
+- GenManip branch: `labutopia-stage3-native-wrapper`.
+- Generated overlay: `/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Overlay/labutopia_level1_poc/assets/scene_usds/labutopia/level1_poc/lab_001/scene.usda`.
+- Generated manifest: `/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Overlay/labutopia_level1_poc/assets/manifests/labutopia_level1_poc.json`.
+- Wrapper topology: one top-level native wrapper at `/World/labutopia_level1_poc/obj_obj_DryingBox_01`, payload target `scene.usd</World/DryingBox_01>`, nested handle path `/World/labutopia_level1_poc/obj_obj_DryingBox_01/handle`, and no top-level `obj_obj_DryingBox_01_handle` payload.
+- Material policy: `material_scope_policy=preserve_owned_world_looks`, `material_policy=owned_world_looks_payload_with_wrapper_local_rebind`, `material_status=mixed_native_and_fallback`. The source `/World/Looks` scope is payloaded under the DryingBox wrapper as wrapper-owned `Looks`, and all 32 recorded task-visible `material:binding` records rebind to `/World/labutopia_level1_poc/obj_obj_DryingBox_01/Looks/...`.
+- Runtime material readback: validator opens the composed USD stage and calls `UsdShade.MaterialBindingAPI.ComputeBoundMaterial`; result is `bound_material_count=32`, `unresolved_binding_target_count=0`, `stale_source_binding_paths=[]`, `expected_mismatch_paths=[]`, `runtime_rebind_map_mismatch_paths=[]`, `unresolved_authored_binding_paths=[]`, `unexpected_unbound_mesh_paths=[]`, and no authored `/World/Looks` binding remains inside the wrapper subtree.
+- Known material fallback boundary: three Stage 2 source material gaps remain explicitly labelled and use `displayColor` readability fallback only: `/World/labutopia_level1_poc/obj_obj_DryingBox_01/button`, `/World/labutopia_level1_poc/obj_obj_DryingBox_01/Group/_900_1`, and `/World/labutopia_level1_poc/obj_obj_DryingBox_01/panel`. This is not native MDL/texture material closure.
+- Dependency report: local MDL files `material_11.mdl`, `material_08.mdl`, and `material_09.mdl` are recorded with hashes; recursive helper MDL imports are recorded with local paths, hashes, and byte sizes; `material_08.mdl` records `SubUSDs/textures/image4.jpg`; `material_09.mdl` records `SubUSDs/textures/image1.JPG`; worker `MDL_SYSTEM_PATH` is recorded as `/isaac-sim/materials/:{ASSETS_DIR}/scene_usds/labutopia/level1_poc/lab_001/SubUSDs/materials:{ASSETS_DIR}/miscs/mdl/labutopia/mdl`. `Aluminum_Anodized_Charcoal.mdl` remains an external remote URL dependency, so later stages must either mirror it locally or carry an explicit waiver before claiming full material closure.
+- Camera/light prerequisites: wrapper manifest records task camera names `camera1`, `camera2`, primary evidence camera `camera2`, and deterministic light `/World/labutopia_level1_poc/DeterministicDomeLight`.
+- Verification: `python -m pytest tests/labutopia_poc/test_validate_task_package.py::test_drying_box_material_readback_reports_runtime_rebind_map_drift tests/labutopia_poc/test_validate_task_package.py::test_drying_box_material_readback_does_not_whitelist_fallback_descendants tests/labutopia_poc/test_validate_task_package.py::test_drying_box_material_readback_reports_unresolved_authored_bindings -q` -> `3 passed`; `python standalone_tools/labutopia_poc/validate_task_package.py` -> `LabUtopia task package validation OK`; `python -m pytest tests/labutopia_poc -q` -> `120 passed, 1 skipped`.
+- Product boundary: Acceptance Stage 3 proves the EBench/GenManip wrapper composition is now structurally valid and material bindings are wrapper-local/readable. It still does not prove Acceptance Stage 4 additive physics/articulation closure, Acceptance Stage 5 eval readback, or Acceptance Stage 7 official Lift2 baseline readiness.
 
 ### Acceptance Stage 4: Additive Physics Override And Articulation Closure
 
