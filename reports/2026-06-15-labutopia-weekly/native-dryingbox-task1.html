@@ -338,14 +338,15 @@
     <section class="summary-box" aria-label="管理层摘要">
       <h2>先给产品经理的结论</h2>
       <p>Task 1 的作用是回答一个关键问题：我们这次是不是一定要继续用“临时 cube 门”，还是可以回到 LabUtopia 原生复杂干燥箱。答案是：可以回到原生 <code>DryingBox_01</code>，但要按 gate 推进，不能直接把静态调研等同于 EBench 官方可评。</p>
+      <p><strong>2026-06-28 补充：</strong>Stage 1 audit 已扩展到 material closure：现在不仅能看到 prim、joint 和 handle，还能逐个 mesh 记录 <code>material:binding</code>、<code>ComputeBoundMaterial</code>、MDL source/subIdentifier、helper MDL、texture hash、remote/local 状态和 <code>displayColor</code> fallback。这个结果说明原生 <code>DryingBox_01</code> 值得继续接入，但 Stage 1 仍然只是 read-only audit，不能证明 EBench wrapper、Isaac runtime、Lift2 baseline 已经可评。</p>
       <div class="summary-grid">
         <div class="summary-item">
           <strong>能确定什么</strong>
-          <span>原生资产的 native hierarchy 可枚举，door joint、handle candidate 和 <code>PhysicsArticulationRootAPI</code> 都存在。它不是空壳，也不是我们自己用 cube 重新拼出来的 surrogate。</span>
+          <span>原生资产的 native hierarchy 可枚举，door joint、handle candidate、<code>PhysicsArticulationRootAPI</code> 和材质依赖都能被审计。它不是空壳，也不是我们自己用 cube 重新拼出来的 surrogate。</span>
         </div>
         <div class="summary-item">
           <strong>还不能确定什么</strong>
-          <span>Task 1 没有启动 Isaac runtime，没有进入 EBench wrapper，也没有跑 lift2 baseline。它只能证明“值得继续接”，不能证明“已经可评”。</span>
+          <span>Task 1 没有启动 Isaac runtime，没有进入 EBench wrapper，也没有跑 lift2 baseline。材质审计发现的 <code>/World/Looks</code>、remote MDL 和 fallback 风险也还没有被 wrapper 闭环。它只能证明“值得继续接”，不能证明“已经可评”。</span>
         </div>
         <div class="summary-item">
           <strong>下一步要过哪一关</strong>
@@ -781,7 +782,7 @@ python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
 
     <section class="note">
       <strong>当前对外口径：</strong>
-      Task 1 静态审计已确认原生 <code>DryingBox_01</code> 的结构可审计，door joint、handle candidate 和 articulation root 存在，并明确列出会影响 EBench 接入的 physics/articulation 风险。下一步不是直接接入 lift2，而是先做 Task 2 native-only Isaac smoke，确认原生资产在目标 Isaac runtime 中能稳定跑物理步。
+      Task 1 静态审计已确认原生 <code>DryingBox_01</code> 的结构和材质依赖都可审计，door joint、handle candidate、articulation root、mesh material binding、MDL/texture dependency 和 displayColor fallback 状态都有机器可读记录，并明确列出会影响 EBench 接入的 physics/articulation/material 风险。下一步不是直接接入 lift2，而是先做 Task 2 native-only Isaac smoke，确认原生资产在目标 Isaac runtime 中能稳定跑物理步。
     </section>
 
     <div class="footer">
