@@ -399,7 +399,7 @@ Passed evidence, 2026-06-28:
 - Test: `tests/labutopia_poc/test_validate_task_package.py`
 - Output: `saved/diagnostics/native_dryingbox_physics_override_<utc_timestamp>/physics_override.json`
 
-- [ ] **Step 1: Add validator checks**
+- [x] **Step 1: Add validator checks**
 
 `validate_task_package.py` must fail if:
 
@@ -422,7 +422,7 @@ Passed evidence, 2026-06-28:
 - door `RevoluteJoint` cannot be distinguished from button `PrismaticJoint`;
 - camera/light names in validation metadata are missing.
 
-- [ ] **Step 2: Record Remote Aluminum disposition**
+- [x] **Step 2: Record Remote Aluminum disposition**
 
 Stage 4 must record exactly one of these material dependency outcomes:
 
@@ -475,7 +475,7 @@ The generated manifest or `physics_override.json` must include a machine-readabl
 
 This step may pass Stage 4 with an explicit waiver, because Stage 4 is an engineering dependency-disposition gate. It must not upgrade the material status to `resolved_native_material`.
 
-- [ ] **Step 3: Implement additive USD override**
+- [x] **Step 3: Implement additive USD override**
 
 Use only additive override opinions in the generated overlay. Do not edit the original LabUtopia USD. The override may fix or isolate invalid `FixedJoint_01` body targets, add finite mass/inertia where required, stabilize fixed-base behavior, and record `drive target`, `stiffness`, `damping`, and `maxForce` units.
 
@@ -493,11 +493,11 @@ Write `physics_override.json` with:
 
 Acceptance Stage 4 is a static additive-override closure stage. Runtime stability after the wrapper and override is confirmed in Acceptance Stage 5, not assumed here.
 
-- [ ] **Step 4: Bind metric to the door DOF**
+- [x] **Step 4: Bind metric to the door DOF**
 
 `level1_open_door.yml` must bind scoring to the actual door `RevoluteJoint` readback. It must not read the first DOF blindly, and it must not use the button `PrismaticJoint` as the open-door metric source.
 
-- [ ] **Step 5: Verify static closure**
+- [x] **Step 5: Verify static closure**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -506,6 +506,23 @@ python standalone_tools/labutopia_poc/validate_task_package.py
 ```
 
 Expected: PASS and `LabUtopia task package validation OK`.
+
+Completion evidence, 2026-06-29:
+
+- GenManip branch: `labutopia-stage4-physics-override`
+- GenManip commit: `02f330e feat: close LabUtopia DryingBox stage 4`
+- Physics override artifact: `saved/diagnostics/native_dryingbox_physics_override_20260628_172756/physics_override.json`
+- Packaged override artifact: `/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Overlay/labutopia_level1_poc/assets/manifests/native_dryingbox_physics_override.json`
+- Verification: `python -m pytest tests/labutopia_poc/test_validate_task_package.py tests/labutopia_poc/test_build_asset_overlay.py -q` -> `47 passed`
+- Verification: `python standalone_tools/labutopia_poc/validate_task_package.py` -> `LabUtopia task package validation OK`
+- Verification: `python -m pytest tests/labutopia_poc -q` -> `126 passed, 1 skipped`
+- Verification: `git diff --check` -> clean.
+- Static physics closure: the wrapper authors exactly one `PhysicsScene`; `PhysicsArticulationRootAPI` is preserved; every active rigid body has finite mass, inertia, `centerOfMass`, and `principalAxes`; active rigid bodies are required to carry `PhysicsCollisionAPI`; and the validator checks the exact `physics:body0/body1` matrix for `FixedJoint_01`, door `RevoluteJoint`, and button `PrismaticJoint`.
+- Metric closure: open-door scoring is bound to the door `RevoluteJoint`; the button `PrismaticJoint` is explicitly recorded as ignored by the open-door metric.
+- Material dependency disposition: `remote_aluminum_disposition=explicit_waiver`, waiver id `ALUMINUM_REMOTE_MDL_001`, and `material_closure_kept_open=true`. This passes Stage 4 as an engineering dependency-disposition gate, but it does not allow `resolved_native_material` wording.
+- Material boundary carried forward: full native MDL/texture material closure remains open until Stage 5 runtime readback and Stage 6 evidence wording prove a stronger status.
+- Review closure: first spec review found four Stage 4 gaps, covering `PhysicsScene`/collision validation, saved diagnostics wiring, joint target strictness, and future `local_mirror` validation; all were fixed with tests. Second spec review reported no Stage 4 blockers.
+- Deferred by design: runtime PhysX warning diff and eval-path material readback are Stage 5 responsibilities, not Stage 4 completion criteria.
 
 ### Acceptance Stage 5: Eval Readback And Render Validation
 
