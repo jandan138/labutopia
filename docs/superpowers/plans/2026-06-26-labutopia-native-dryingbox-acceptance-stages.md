@@ -41,6 +41,25 @@ The material and stage rules below incorporate a three-angle review before Stage
 | EBench / Lift2 readiness | `attempted` is not `passed`. Any `FAIL` or `BLOCKED` row in reset, step, reachability, camera framing, metric, schema, action dialect, reward/success, or logging blocks Lift2 readiness wording. Stage 2/3/4/5 now have explicit stop conditions and evidence fields. |
 | Product / intern explanation | PM-facing HTML must explain why LabUtopia full-scene loading can work while EBench wrapper packaging can fail, why `/World/Looks` is normal but unsafe as an implicit wrapper dependency, and why default blue or `displayColor` fallback proves readability only, not native material closure. |
 
+## 2026-06-28 Stage 2 Execution Norm Addendum
+
+Stage 2 is a native-only Isaac smoke, not an EBench wrapper pass. The smoke stage may reference the source `/World` so the native DryingBox keeps its original LabUtopia scene context, especially `/World/Looks` material prims. It must still isolate task physics: only the target `DryingBox_01`, required source material scope, required `PhysicsScene`, and explicitly recorded lighting/camera helpers may remain active. Other `/World` children must be deactivated or explicitly listed as active with a reason.
+
+The stage generator must not silently skip isolation. In the target conda environment, `pxr` is not importable before `SimulationApp` or the Isaac Python environment is initialized. Therefore any USD child discovery must use a valid USD runtime, for example `/isaac-sim/python.sh` or a post-`SimulationApp` inspection path. If child discovery is unavailable, the tool must record `world_child_discovery_status=unavailable` or an equivalent error field and the stage must remain `attempted` or `blocked`; it must not emit a wrapper with no inactive overrides and then call the isolation complete.
+
+Stage 2 evidence must be self-describing. `smoke.json` must record `stage2_status`, `stage2_passed`, and `stage2_validation_errors`. Downstream docs must not infer a pass from `runtime_physics_stable=true` alone.
+
+Stage 2 material notes must distinguish these cases:
+
+- `task_mesh_count` and `bound_task_mesh_count`: total task-visible meshes and meshes for which `ComputeBoundMaterial` returns a valid material.
+- `unbound_task_mesh_count` and paths: task-visible meshes with no authored material binding and no computed material. This is a visibility/readability risk, not the same as a broken binding.
+- `empty_authored_binding_count` and paths: authored `material:binding` exists but its target list is empty. This is a source-authored material gap and must not be misreported as a broken target.
+- `unresolved_binding_target_count` and paths: authored task-visible `material:binding` has non-empty targets, but the targets do not resolve to a valid `UsdShade.Material`. This blocks `passed` unless there is a written, accepted waiver for a non-visible surface.
+- `used_material_count` and paths: unique materials actually resolved by the task-visible meshes.
+- `fallback_status`: fallback or preview color can make a frame readable, but it is not native material closure. It must be recorded separately from resolved MDL/texture material.
+
+Every non-zero material count must include path lists, not only totals, so the next engineer can fix the exact mesh, `GeomSubset`, inherited Xform binding, collection binding, empty binding, or material target.
+
 ## Claim Boundary
 
 Allowed after Acceptance Stage 1:
@@ -61,7 +80,15 @@ Allowed only after Acceptance Stage 7:
 The LabUtopia lift2_candidate lane has passed a local official-baseline-style contract check for observation, action, camera, reward/success, and logging shape.
 ```
 
-Acceptance Stage 7 has two different outcomes:
+Acceptance stages use these status words consistently:
+
+- `not_started`: no command has been run and no stage-specific evidence exists.
+- `attempted`: the command ran and produced concrete evidence, but at least one required subcheck is not yet accepted.
+- `blocked`: a prerequisite, environment issue, missing dependency, missing evidence field, or known asset/wrapper blocker prevents upgrading the claim. A blocker is not a project failure; it is the next engineering item to close.
+- `failed`: the stage ran to completion and a required acceptance check produced an invalid result, for example non-finite physics trace, unresolved task-visible material, or missing metric readback.
+- `passed`: every required acceptance check for that stage is `PASS`, with machine-readable evidence and no blocking waiver.
+
+Acceptance Stage 7 has two additional reporting outcomes:
 
 - `attempted`: `gmp` or the schema probe ran and produced concrete evidence, but at least one row is `FAIL` or `BLOCKED`;
 - `passed`: every required `level1_pick`, `level1_place`, and `level1_open_door` row is `PASS` for reset, step, reachability, camera framing, metric, observation schema, action schema, reward/success, and logging.
@@ -217,12 +244,20 @@ Expected: exit `0`, `runtime_physics_stable=true`, finite root pose, finite hand
 
 `smoke.json` must include:
 
+- `stage2_status`, one of `attempted`, `blocked`, `failed`, or `passed`;
+- `stage2_passed=false` unless every Stage 2 stop condition is closed;
+- `stage2_validation_errors`, written into the JSON by the smoke tool itself, not only printed to stdout;
+- `native_stage_mode=full_source_world`, `used_ebench_wrapper=false`, and `used_franka_shortcut=false`;
+- `world_child_discovery_status`, `active_world_children`, and `inactive_world_children`; if sibling deactivation cannot be computed, the status is not `passed`;
 - `step_count=120` and a per-step trace for root pose, handle pose, door joint angle, button joint position, and any other active DOF;
-- `finite_trace=true` only if all recorded numeric pose/joint values are finite for all steps;
+- `finite_trace=true` only if all recorded numeric pose/joint values are finite for all steps; the validator must recompute this from `step_trace` instead of trusting the top-level boolean alone;
+- a monotonic step sequence from `1..120`, with per-step finite root pose, handle pose, and joint positions;
 - `max_root_translation_drift_m`, `max_root_rotation_drift_deg`, `max_handle_translation_drift_m`, `door_joint_angle_min_deg`, `door_joint_angle_max_deg`, `button_joint_position_min_m`, and `button_joint_position_max_m`;
+- `door_joint_path`, `door_joint_index`, `source_door_joint_limits_deg`, `source_door_joint_limits_source`, `button_joint_path`, and `button_joint_index`; the door limits must come from the source `RevoluteJoint` evidence or an explicit recorded fallback, not from an unexplained hard-coded assumption;
 - `non_door_dof_drift_within_tolerance=true` only when non-door DOFs remain inside the configured tolerance, default `1e-4` meters or radians unless the script records a task-specific value;
-- `physx_warning_allowlist`, `physx_warning_denylist`, and `unclassified_physx_warnings`;
-- full-source material-runtime notes: `/World/Looks` present or absent, unresolved task material count, remote material dependency count, and material compiler warnings filtered to DryingBox materials when Isaac exposes them.
+- `physx_warning_allowlist`, `physx_warning_denylist`, and `unclassified_physx_warnings`; the validator must fail on any non-empty denylist or unclassified list and must verify the three lists partition `physx_warnings`;
+- `physx_warning_scope`, so warnings from inactive or non-target siblings such as `/World/DryingBox_02` cannot be mistaken for target DryingBox evidence;
+- full-source material-runtime notes: `/World/Looks` present or absent, material collection status, task mesh count, bound mesh count, unbound task mesh count and paths, empty authored binding count and paths, unresolved non-empty binding target count and paths, used material count and paths, remote material dependency count and paths, fallback status, and material compiler warnings filtered to DryingBox materials when Isaac exposes them.
 
 Acceptance Stage 2 proves full-source native physics smoke only. It does not prove EBench wrapper packaging, material rebinding, or Lift2 readiness.
 
@@ -235,10 +270,26 @@ Stop before Acceptance Stage 3 if any of these are true:
 - root or handle drift exceeds the explicit tolerance recorded in `smoke.json`;
 - door angle leaves the physically allowed range from the source `RevoluteJoint` plus the configured tolerance;
 - non-door DOF drift exceeds the configured tolerance without a written explanation;
+- `physx_warning_denylist` is non-empty;
 - `unclassified_physx_warnings` is non-empty;
-- full-source material-runtime notes show unresolved task-visible materials that would prevent a readable smoke frame.
+- PhysX classification fields do not exactly partition the captured `physx_warnings`;
+- world-child discovery failed, or non-target source siblings remain active without an explicit reason;
+- material collection reports `collection_error` or does not prove whether task-visible bindings were resolved;
+- full-source material-runtime notes show non-empty authored material targets that fail to resolve;
+- full-source material-runtime notes show unbound meshes or empty authored bindings that would prevent a readable smoke frame and have no explicit fallback evidence.
 
 Preserve the artifact and add the blocker to the evidence manifest.
+
+Attempted evidence, 2026-06-28:
+
+- GenManip branch: `labutopia-stage2-native-smoke`
+- Smoke artifact: `saved/diagnostics/native_dryingbox_smoke_20260628_110718/smoke.json`
+- Generated stage: `saved/diagnostics/native_dryingbox_smoke_20260628_110718/native_dryingbox.usda`
+- Positive physics signal: `runtime_physics_stable=true`, `finite_trace=true`, `step_count=120`, root/handle drift `0.0`, and joint readback for `RevoluteJoint` plus `PrismaticJoint`.
+- Material finding: current code reports `unresolved_task_material_count=2`, but USD review shows those two are explicit empty `material:binding` targets; the actual non-empty unresolved binding target count should be separated from empty authored bindings. Current review counts: 29 meshes with valid `ComputeBoundMaterial`, 2 empty authored bindings, and 1 unbound mesh.
+- Stage isolation finding: the generated `native_dryingbox.usda` references source `/World` but contains no `active=false` opinions, so non-target siblings such as `DryingBox_02`, `Cabinet_01`, and `Cabinet_02` remain active. This blocks Stage 2 `passed`.
+- Environment finding: the target conda Python cannot import `pxr` before Isaac/Kit initialization; `/isaac-sim/python.sh` can read the source `/World` children. Stage generation must not rely on pre-`SimulationApp` `pxr` availability without recording failure.
+- Current status: `attempted`, not `passed`. Do not advance product wording to EBench wrapper readiness or Lift2 readiness from this artifact.
 
 ### Acceptance Stage 3: Native Wrapper Composition
 

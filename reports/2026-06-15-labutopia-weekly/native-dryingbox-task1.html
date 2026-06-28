@@ -345,6 +345,7 @@
       <p>Task 1 的作用是回答一个关键问题：我们这次是不是一定要继续用“临时 cube 门”，还是可以回到 LabUtopia 原生复杂干燥箱。答案是：可以回到原生 <code>DryingBox_01</code>，但要按 acceptance stage 推进，不能直接把静态调研等同于 EBench 官方可评。</p>
       <p><strong>2026-06-28 补充：</strong>Stage 1 audit 已扩展到 material closure：现在不仅能看到 prim、joint 和 handle，还能逐个 mesh 记录 <code>material:binding</code>、<code>ComputeBoundMaterial</code>、MDL source/subIdentifier、helper MDL、texture hash、remote/local 状态和 <code>displayColor</code> fallback。这个结果说明原生 <code>DryingBox_01</code> 值得继续接入，但 Stage 1 仍然只是 read-only audit，不能证明 EBench wrapper、Isaac runtime、Lift2 baseline 已经可评。</p>
       <p><strong>材质口径补充：</strong>如果后续渲染图里出现默认蓝色、统一色块或 <code>displayColor</code> fallback，只能说明“画面有可读性”，不能说明 native MDL/texture material 已闭环。真正闭环要看 runtime wrapper 里 <code>material:binding</code> 能解析、<code>ComputeBoundMaterial</code> 成功、MDL/texture/helper MDL 都有本地或明确镜像证据。</p>
+      <p><strong>2026-06-28 Stage 2 状态：</strong>native-only Isaac smoke 已出现正向物理信号：<code>runtime_physics_stable=true</code>、120-step trace 可写出、root/handle/joint 没有立即崩溃。但 Stage 2 还不能标成 <code>passed</code>。原因不是“原生材质全坏了”，而是两个工程口径还没闭环：一是 material notes 需要把 <code>unbound</code>、空 <code>material:binding</code> targets、真正 unresolved target 分开；二是 stage isolation 曾因为 pre-<code>SimulationApp</code> 环境读不到 <code>pxr</code> 而没有写出 sibling deactivation。当前应写作：<code>attempted</code>，physics subcheck 正向，material audit 口径和 stage-isolation blocker 未关闭。</p>
       <div class="summary-grid">
         <div class="summary-item">
           <strong>能确定什么</strong>
@@ -356,7 +357,7 @@
         </div>
         <div class="summary-item">
           <strong>下一步要过哪一关</strong>
-          <span>先做 native-only Isaac smoke：只加载原生 DryingBox，跑 120 个 physics steps，确认 root pose、handle pose 和 joint positions 都是 finite。</span>
+          <span>先把 Stage 2 contract 补严：记录 <code>stage2_status</code>、validator errors、world-child isolation、PhysX denylist/unclassified partition，并把 material notes 拆成 unbound、empty binding、unresolved target。</span>
         </div>
       </div>
     </section>
@@ -364,7 +365,7 @@
     <section class="grid" aria-label="给产品经理的结论">
       <article class="panel">
         <h2>给产品的一句话</h2>
-        <p>我们已经确认原生复杂干燥箱不是空壳，真实门、把手、按钮和 articulation 都存在；但要把它变成 EBench 可评测资产，还需要先修物理契约。</p>
+        <p>我们已经确认原生复杂干燥箱不是空壳，真实门、把手、按钮和 articulation 都存在；但要把它变成 EBench 可评测资产，还需要先把 Stage 2 smoke contract、stage isolation 和 material notes 证据补严。</p>
         <span class="tag">可继续推进</span><span class="tag warn">不能直接宣称可评</span>
       </article>
       <article class="panel">
@@ -374,8 +375,8 @@
       </article>
       <article class="panel">
         <h2>当前边界</h2>
-        <p>Task 1 是 read-only audit，只负责把原生资产的真实结构查清楚。它还没有证明 Isaac runtime 稳定，也没有证明 EBench/lift2 baseline 可评。</p>
-        <span class="tag bad">不是最终验收</span><span class="tag">下一步 Stage 2</span>
+        <p>Stage 2 已经有正向 physics smoke 信号，但当前仍是 <code>attempted</code>。它还没有证明 EBench wrapper 或 lift2 baseline 可评。</p>
+        <span class="tag bad">不是最终验收</span><span class="tag">Stage 2 attempted</span>
       </article>
     </section>
 
@@ -399,6 +400,23 @@
       <div class="answer warning">
         <p><strong>当前规范：</strong>packaged EBench wrapper 优先使用 <code>wrapper_local_looks_rebind</code>，把 task-visible surface 用到的 <code>UsdShade.Material</code>、Shader、MDL、helper MDL 和 texture 证据搬到 wrapper 自己拥有的路径下；只有这样，后面才能讨论 native material closure。否则只能说画面 readable，不能说材质闭环。</p>
       </div>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <strong><code>material:binding</code></strong>
+          <span>mesh 指向材质的地址。它可以写在 mesh 本身，也可能继承自父级 Xform、collection 或 <code>GeomSubset</code>。</span>
+        </div>
+        <div class="summary-item">
+          <strong><code>ComputeBoundMaterial</code></strong>
+          <span>USD/Isaac 实际计算“这个 mesh 最后用哪个材质”。比只看一条关系更可靠。</span>
+        </div>
+        <div class="summary-item">
+          <strong>empty binding</strong>
+          <span>有 <code>material:binding</code> 这条关系，但 targets 是空的。它是材质缺口，不等于“指向了一个不存在的材质”。</span>
+        </div>
+      </div>
+      <div class="answer">
+        <p><strong>这次 Stage 2 material 复核的新结论：</strong>29 个 task mesh 能算到有效 material；另有 2 个 mesh 是显式空 binding targets，1 个 mesh 完全没有 authored binding。也就是说，当前 <code>unresolved_task_material_count=2</code> 更像统计口径误分类，不是两个非空 material target 真的丢了。后续代码要把它拆成 <code>unbound_task_mesh_count</code>、<code>empty_authored_binding_count</code> 和 <code>unresolved_binding_target_count</code>。</p>
+      </div>
     </section>
 
     <section class="panel" aria-label="这次到底查了什么">
@@ -408,11 +426,14 @@
       <div class="path">source prim: /World/DryingBox_01</div>
       <div class="path">physics/articulation audit artifact: saved/diagnostics/native_dryingbox_audit_20260624_043622/audit.json (GenManip EBench POC worktree)</div>
       <div class="path">latest material closure audit artifact: saved/diagnostics/native_dryingbox_audit_20260628_102604/audit.json (GenManip branch labutopia-stage1-material-audit)</div>
+      <div class="path">Stage 2 attempted smoke artifact: saved/diagnostics/native_dryingbox_smoke_20260628_110718/smoke.json (GenManip branch labutopia-stage2-native-smoke)</div>
       <div class="path">stage_sha256: 26212d40a78cd28f2bc3a38b2e06f05875b3096501c7d6dd5ccbe9a6e9019983</div>
       <details>
         <summary>工程复核用完整路径</summary>
         <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-ebench-poc/saved/diagnostics/native_dryingbox_audit_20260624_043622/audit.json</div>
         <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-stage1-material-audit/saved/diagnostics/native_dryingbox_audit_20260628_102604/audit.json</div>
+        <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-stage2-native-smoke/saved/diagnostics/native_dryingbox_smoke_20260628_110718/smoke.json</div>
+        <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-stage2-native-smoke/saved/diagnostics/native_dryingbox_smoke_20260628_110718/native_dryingbox.usda</div>
       </details>
       <div class="table-scroll">
         <table>
@@ -661,7 +682,8 @@
       <div id="risk-material" class="tab-pane">
         <div class="answer warning">
           <p><strong><code>/World/Looks</code> 正常，但 wrapper 里不能隐式依赖它：</strong>LabUtopia 原生场景里很多 mesh binding 指向 scene-level material library。整份场景打开时这没问题；但 EBench wrapper 如果只带走 <code>/World/DryingBox_01</code>，这些 binding 可能指向 wrapper 外部。</p>
-          <p><strong>蓝色或默认色不是 native material closure：</strong>它最多说明可见性 fallback 生效。Stage 3 要把 material subtree、Shader、MDL source/subIdentifier、helper MDL 和 texture dependency 包进 wrapper；Stage 5 要在 runtime readback 里证明 <code>ComputeBoundMaterial</code> 和 MDL/texture resolution 都成功。</p>
+          <p><strong>蓝色不能只凭肉眼定性：</strong>如果 runtime readback 证明 native material 已 resolved，蓝色可能就是原始材质；如果 readback 显示 <code>displayColor</code> 或 default fallback，蓝色只是兜底色。Stage 3 要把 material subtree、Shader、MDL source/subIdentifier、helper MDL 和 texture dependency 包进 wrapper；Stage 5 要在 runtime readback 里证明 <code>ComputeBoundMaterial</code> 和 MDL/texture resolution 都成功。</p>
+          <p><strong>这次要修的是统计口径：</strong>Stage 2 里两个 mesh 是显式空 <code>material:binding</code> targets，另一个 mesh 没有 authored binding。它们要分别记为 <code>empty_authored_binding</code> 和 <code>unbound</code>，不能混进真正的 <code>unresolved_binding_target</code>。</p>
         </div>
       </div>
     </section>
@@ -814,7 +836,7 @@ python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
       <p>这七步是验收阶段，不是简单任务清单。每一步都要产出可追溯证据，前一步不过就不应该把后一步的产品结论写满。</p>
       <div class="flow-track">
         <div class="step done"><strong>1. Asset Audit</strong><span>只读检查原生 USD，列出 hierarchy、joint、handle 和风险。当前已完成。</span></div>
-        <div class="step next"><strong>2. Isaac Smoke</strong><span>最小 stage 只放原生 DryingBox，跑 120 步，确认 pose/joint 有限且 physics stable。</span></div>
+        <div class="step next"><strong>2. Isaac Smoke</strong><span>full-source native stage 跑 120 步，确认 pose/joint 有限、physics stable，并修正 stage isolation 与 material note 口径。</span></div>
         <div class="step"><strong>3. Native Wrapper</strong><span>把原生资产包装进 EBench 路径，保留 native visual/hierarchy/handle，同时保留 surrogate baseline。</span></div>
         <div class="step"><strong>4. Physics Override</strong><span>只做 additive USD overrides，修 scale、mass、inertia、joint target、DOF filtering 和 fixed-base。</span></div>
         <div class="step"><strong>5. Eval Readback</strong><span>跑 open_door readback，确认 render、joint、handle、metric 都能被 EBench 侧读到。</span></div>
@@ -823,9 +845,27 @@ python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
       </div>
     </section>
 
+    <section class="panel" aria-label="Acceptance Stage 状态词">
+      <h2>状态词怎么理解？</h2>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <strong><code>attempted</code></strong>
+          <span>已经跑过，有证据，但至少一个必要子项还没被接受。当前 Stage 2 就是这个状态。</span>
+        </div>
+        <div class="summary-item">
+          <strong><code>blocked</code></strong>
+          <span>有前置条件、环境入口、资产包装或证据字段没闭环。它不是“项目失败”，只是下一步要解决的 blocker。</span>
+        </div>
+        <div class="summary-item">
+          <strong><code>passed</code></strong>
+          <span>该 stage 的必要字段都 PASS，且 JSON、log、截图或 readback 证据能复现。只有 passed 才能升级产品口径。</span>
+        </div>
+      </div>
+    </section>
+
     <section class="note">
       <strong>当前对外口径：</strong>
-      Task 1 静态审计已确认原生 <code>DryingBox_01</code> 的结构和材质依赖都可审计，door joint、handle candidate、articulation root、mesh material binding、MDL/texture dependency 和 displayColor fallback 状态都有机器可读记录，并明确列出会影响 EBench 接入的 physics/articulation/material 风险。下一步不是直接接入 lift2，而是先做 Acceptance Stage 2 native-only Isaac smoke，确认原生资产在目标 Isaac runtime 中能稳定跑物理步。
+      Task 1 静态审计已确认原生 <code>DryingBox_01</code> 的结构和材质依赖都可审计。Stage 2 已经看到正向 physics smoke 信号，但当前仍是 <code>attempted</code>，不是 <code>passed</code>：接下来要修正 material note 分类、补齐 <code>stage2_status</code>/<code>stage2_validation_errors</code>、确保非目标 <code>/World</code> sibling 被隔离，再决定是否进入 Native Wrapper。
     </section>
 
     <div class="footer">

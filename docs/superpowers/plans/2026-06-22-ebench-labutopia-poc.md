@@ -27,6 +27,15 @@ Use this rule going forward:
 Do not claim native DryingBox success from an independent top-level handle payload or a surrogate cube door. Native success requires the real DryingBox hierarchy, nested handle articulation part, door RevoluteJoint readback, render validation, eval readback, and Lift2 contract evidence.
 ```
 
+## 2026-06-28 Native DryingBox Norm Pointer
+
+For native complex `DryingBox_01`, this POC plan is no longer the source of truth for material, stage-isolation, or Lift2 readiness wording. Use `docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-acceptance-stages.md` for:
+
+- `attempted`, `blocked`, `failed`, and `passed` status vocabulary;
+- Stage 2 native-only smoke evidence fields, including `stage2_status`, `stage2_validation_errors`, `world_child_discovery_status`, PhysX warning partition, and material collection status;
+- `/World/Looks`, `wrapper_local_looks_rebind`, native `material:binding`, MDL/helper-MDL/texture closure, and fallback policy;
+- the rule that `runtime_physics_stable=true` or a readable blue/default-color frame is not enough to claim native material closure, EBench wrapper pass, or Lift2 official-baseline readiness.
+
 ## Repository Roots
 
 Use these absolute paths throughout the implementation:
