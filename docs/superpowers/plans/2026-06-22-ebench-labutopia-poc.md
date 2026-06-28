@@ -930,6 +930,8 @@ evaluation_configs:
 
 - [ ] **Step 6: Add the lift2 candidate YAMLs**
 
+Current warning, 2026-06-28: this older step is only a historical scaffold. Do not treat "copy Franka YAML and replace robot/camera names" as Lift2 readiness. For native `DryingBox_01`, follow `docs/superpowers/plans/2026-06-26-labutopia-native-dryingbox-acceptance-stages.md`: the native wrapper, material closure, physics override, eval readback, and Acceptance Stage 7 schema/action/camera contract must pass before any Lift2 readiness wording is allowed.
+
 Create three lift2 candidate YAMLs by copying the three Franka YAMLs into `/cpfs/shared/simulation/zhuzihou/dev/GenManip/configs/tasks/ebench/labutopia_lab_poc/lift2_candidate/` and applying these exact replacements in each file:
 
 ```yaml
@@ -1190,6 +1192,8 @@ Expected result: a docs commit with the smoke outcome.
 ---
 
 ### Task 7: Document Lift2 Candidate Readiness
+
+Current warning, 2026-06-28: this task name is retained for historical POC continuity. For the current native DryingBox lane, a Lift2 candidate run that records blockers is only `attempted`, not `passed`. Any `FAIL` or `BLOCKED` row in reset, step, reachability, camera framing, metric, observation schema, action dialect, reward/success, or logging prevents Lift2 readiness wording.
 
 **Files:**
 - Create: `/cpfs/shared/simulation/zhuzihou/dev/GenManip/docs/labutopia_lab_poc/lift2_readiness.md`

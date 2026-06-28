@@ -82,6 +82,8 @@
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.94em;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .lede { max-width: 780px; color: var(--muted); font-size: 18px; }
     .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -97,6 +99,7 @@
     .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0; }
     .panel { padding: 18px; }
+    .panel, .answer, .summary-item { overflow-wrap: anywhere; }
     .panel ul { margin: 0; padding-left: 18px; }
     .panel li { margin: 7px 0; }
     .tag {
@@ -243,11 +246,13 @@
       border-radius: 8px;
       background: #0f172a;
       color: #e5eef6;
+      max-width: 100%;
       overflow-x: auto;
+      overflow-wrap: anywhere;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 13px;
       line-height: 1.55;
-      white-space: pre;
+      white-space: pre-wrap;
     }
     details {
       border: 1px solid var(--line);
@@ -303,13 +308,13 @@
       <div>
         <div class="eyebrow">EBench native DryingBox · 2026-06-24</div>
         <h1>Task 1 调研：原生 DryingBox_01 到底能不能直接接入 EBench？</h1>
-        <p class="lede">结论很明确：原生 <code>DryingBox_01</code> 不是“导入失败”的死资产，它的 USD hierarchy、门关节、handle candidate 和 articulation root 都能被读出来；但它也不是 plug-and-play。Task 1 查到 8 类、15 条风险 entry，集中在 <code>scale</code>、<code>joint body target</code>、<code>mass/inertia</code> 和多 DOF 语义上，必须先过 native-only smoke，再进入 EBench wrapper。</p>
+        <p class="lede">结论很明确：原生 <code>DryingBox_01</code> 不是“导入失败”的死资产，它的 USD hierarchy、门关节、handle candidate 和 articulation root 都能被读出来；但它也不是 plug-and-play。Task 1 查到 8 类、15 条 physics/articulation 风险 entry，2026-06-28 又补齐了 material closure audit；必须先过 native-only smoke，再进入 EBench wrapper。</p>
       </div>
       <div class="metrics" aria-label="Task 1 关键数字">
         <div class="metric"><strong>54</strong><span>native prims under <code>/World/DryingBox_01</code></span></div>
         <div class="metric"><strong>4</strong><span>rigid bodies / joints each</span></div>
         <div class="metric"><strong>2</strong><span>handle candidates</span></div>
-        <div class="metric"><strong>8/15</strong><span>risk classes / entries before EBench claim</span></div>
+        <div class="metric"><strong>29</strong><span>mesh bindings point outside the source subtree</span></div>
       </div>
     </section>
 
@@ -325,7 +330,7 @@
           <span>重点看 <code>audit.json</code>、prim path、joint relationship 和风险表，学会从 USD 事实推工程判断。</span>
         </div>
         <div class="mini">
-          <strong>工程推进看 gate</strong>
+          <strong>工程推进看验收阶段</strong>
           <span>Task 1 只负责静态审计；后面必须按 smoke、wrapper、override、readback 逐关验证。</span>
         </div>
         <div class="mini">
@@ -337,8 +342,9 @@
 
     <section class="summary-box" aria-label="管理层摘要">
       <h2>先给产品经理的结论</h2>
-      <p>Task 1 的作用是回答一个关键问题：我们这次是不是一定要继续用“临时 cube 门”，还是可以回到 LabUtopia 原生复杂干燥箱。答案是：可以回到原生 <code>DryingBox_01</code>，但要按 gate 推进，不能直接把静态调研等同于 EBench 官方可评。</p>
+      <p>Task 1 的作用是回答一个关键问题：我们这次是不是一定要继续用“临时 cube 门”，还是可以回到 LabUtopia 原生复杂干燥箱。答案是：可以回到原生 <code>DryingBox_01</code>，但要按 acceptance stage 推进，不能直接把静态调研等同于 EBench 官方可评。</p>
       <p><strong>2026-06-28 补充：</strong>Stage 1 audit 已扩展到 material closure：现在不仅能看到 prim、joint 和 handle，还能逐个 mesh 记录 <code>material:binding</code>、<code>ComputeBoundMaterial</code>、MDL source/subIdentifier、helper MDL、texture hash、remote/local 状态和 <code>displayColor</code> fallback。这个结果说明原生 <code>DryingBox_01</code> 值得继续接入，但 Stage 1 仍然只是 read-only audit，不能证明 EBench wrapper、Isaac runtime、Lift2 baseline 已经可评。</p>
+      <p><strong>材质口径补充：</strong>如果后续渲染图里出现默认蓝色、统一色块或 <code>displayColor</code> fallback，只能说明“画面有可读性”，不能说明 native MDL/texture material 已闭环。真正闭环要看 runtime wrapper 里 <code>material:binding</code> 能解析、<code>ComputeBoundMaterial</code> 成功、MDL/texture/helper MDL 都有本地或明确镜像证据。</p>
       <div class="summary-grid">
         <div class="summary-item">
           <strong>能确定什么</strong>
@@ -350,7 +356,7 @@
         </div>
         <div class="summary-item">
           <strong>下一步要过哪一关</strong>
-          <span>先做 native-only Isaac smoke：只加载原生 DryingBox，跑 60 到 120 个 physics steps，确认 root pose、handle pose 和 joint positions 都是 finite。</span>
+          <span>先做 native-only Isaac smoke：只加载原生 DryingBox，跑 120 个 physics steps，确认 root pose、handle pose 和 joint positions 都是 finite。</span>
         </div>
       </div>
     </section>
@@ -369,8 +375,30 @@
       <article class="panel">
         <h2>当前边界</h2>
         <p>Task 1 是 read-only audit，只负责把原生资产的真实结构查清楚。它还没有证明 Isaac runtime 稳定，也没有证明 EBench/lift2 baseline 可评。</p>
-        <span class="tag bad">不是最终验收</span><span class="tag">下一步 Task 2</span>
+        <span class="tag bad">不是最终验收</span><span class="tag">下一步 Stage 2</span>
       </article>
+    </section>
+
+    <section class="panel" aria-label="LabUtopia 和 EBench wrapper 的差异">
+      <h2>为什么 LabUtopia 原生能打开，但 EBench wrapper 可能失败？</h2>
+      <p>因为这两个入口组合 USD 的方式不同。LabUtopia 原生场景通常是整份 <code>lab_001.usd</code> 一起打开，<code>/World/DryingBox_01</code>、<code>/World/Looks</code>、MDL 文件、贴图和灯光都在同一个大场景语境里。EBench wrapper 往往只把任务需要的对象包进自己的 runtime 路径；如果只引用 <code>/World/DryingBox_01</code>，mesh 的材质绑定还可能指向外面的 <code>/World/Looks/...</code>，这时画面可能退回默认色或 fallback。</p>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <strong>LabUtopia 原生打开</strong>
+          <span>像打开完整实验室工程：资产、材质库、贴图相对路径和场景上下文都在，很多跨 subtree 的引用天然可见。</span>
+        </div>
+        <div class="summary-item">
+          <strong>EBench wrapper 打开</strong>
+          <span>像把其中一个设备搬进标准评测箱：wrapper 必须显式拥有引用、材质、贴图、joint、camera 和 metric contract。</span>
+        </div>
+        <div class="summary-item">
+          <strong>不能只看 render</strong>
+          <span>默认蓝色或 <code>displayColor</code> 能让物体被看见，但不等于 native MDL/texture 成功；必须看 runtime readback 字段。</span>
+        </div>
+      </div>
+      <div class="answer warning">
+        <p><strong>当前规范：</strong>packaged EBench wrapper 优先使用 <code>wrapper_local_looks_rebind</code>，把 task-visible surface 用到的 <code>UsdShade.Material</code>、Shader、MDL、helper MDL 和 texture 证据搬到 wrapper 自己拥有的路径下；只有这样，后面才能讨论 native material closure。否则只能说画面 readable，不能说材质闭环。</p>
+      </div>
     </section>
 
     <section class="panel" aria-label="这次到底查了什么">
@@ -378,11 +406,13 @@
       <p>Task 1 没有改资产，也没有把 surrogate cube 当成结果。它直接打开 LabUtopia 原始场景里的 <code>/World/DryingBox_01</code>，逐项读取 prim、applied API schema、xformOps、rigid body、joint、handle candidate 和风险标记。</p>
       <div class="path">source stage: /cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd</div>
       <div class="path">source prim: /World/DryingBox_01</div>
-      <div class="path">diagnostic artifact: saved/diagnostics/native_dryingbox_audit_20260624_043622/audit.json (GenManip EBench POC worktree)</div>
+      <div class="path">physics/articulation audit artifact: saved/diagnostics/native_dryingbox_audit_20260624_043622/audit.json (GenManip EBench POC worktree)</div>
+      <div class="path">latest material closure audit artifact: saved/diagnostics/native_dryingbox_audit_20260628_102604/audit.json (GenManip branch labutopia-stage1-material-audit)</div>
       <div class="path">stage_sha256: 26212d40a78cd28f2bc3a38b2e06f05875b3096501c7d6dd5ccbe9a6e9019983</div>
       <details>
         <summary>工程复核用完整路径</summary>
         <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-ebench-poc/saved/diagnostics/native_dryingbox_audit_20260624_043622/audit.json</div>
+        <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-stage1-material-audit/saved/diagnostics/native_dryingbox_audit_20260628_102604/audit.json</div>
       </details>
       <div class="table-scroll">
         <table>
@@ -419,6 +449,11 @@
               <td>8 类风险 key、15 条 entry，分布在 scale、joint target、mass/inertia、COM、principal axes、unexpected joint type 和 DOF 语义上</td>
               <td>把“为什么不能直接说可评”落到可复核证据，而不是主观判断。</td>
             </tr>
+            <tr>
+              <td><code>material_closure</code></td>
+              <td>32 个 mesh、29 个 bound mesh、29 个 out-of-source-subtree material binding、3 个 MDL dependency、17 个 helper MDL dependency、1 个 texture dependency。</td>
+              <td>说明材质问题不是“颜色不好看”，而是 wrapper 是否拥有材质库、MDL 和贴图依赖的问题。</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -434,7 +469,7 @@
               <th><code>risk_flags</code> key</th>
               <th>entry 数</th>
               <th>关键 path / 含义</th>
-              <th>后续 gate</th>
+              <th>后续验收阶段</th>
             </tr>
           </thead>
           <tbody>
@@ -442,49 +477,49 @@
               <td><code>non_identity_root_scale</code></td>
               <td>1</td>
               <td><code>/World/DryingBox_01</code> root scale 约 <code>[0.001, 0.001, 0.001]</code>。</td>
-              <td>Task 2 smoke 先确认 runtime pose finite；Task 4 固化 unit policy。</td>
+              <td>Stage 2 smoke 先确认 runtime pose finite；Stage 4 固化 unit policy。</td>
             </tr>
             <tr>
               <td><code>invalid_joint_body_target</code></td>
               <td>1</td>
               <td><code>FixedJoint_01 physics:body0</code> 指向 <code>/World/DryingBox_01/Group_02/group/mesh</code>，但 target 缺少 <code>RigidBodyAPI</code>。</td>
-              <td>Task 4 additive override 修 joint target 或隔离无效约束。</td>
+              <td>Stage 4 additive override 修 joint target 或隔离无效约束。</td>
             </tr>
             <tr>
               <td><code>zero_mass</code></td>
               <td>2</td>
               <td><code>door mesh</code> 和 <code>handle/mesh</code> 的 mass 为 0。</td>
-              <td>Task 2 观察 PhysX 行为；Task 4 补合理 mass override。</td>
+              <td>Stage 2 观察 PhysX 行为；Stage 4 补合理 mass override。</td>
             </tr>
             <tr>
               <td><code>zero_inertia</code></td>
               <td>3</td>
               <td><code>door mesh</code>、<code>body/body/mesh</code>、<code>handle/mesh</code> 的 diagonal inertia 为 0。</td>
-              <td>Task 4 补 inertia override，避免 physics 数值风险。</td>
+              <td>Stage 4 补 inertia override，避免 physics 数值风险。</td>
             </tr>
             <tr>
               <td><code>invalid_com</code></td>
               <td>3</td>
               <td><code>door mesh</code>、<code>body/body/mesh</code>、<code>handle/mesh</code> 的 center of mass 出现 invalid value。</td>
-              <td>Task 4 补 center of mass override。</td>
+              <td>Stage 4 补 center of mass override。</td>
             </tr>
             <tr>
               <td><code>invalid_principal_axes</code></td>
               <td>3</td>
               <td><code>door mesh</code>、<code>body/body/mesh</code>、<code>handle/mesh</code> 的 principal axes 无效。</td>
-              <td>Task 4 补 principal axes / inertia policy。</td>
+              <td>Stage 4 补 principal axes / inertia policy。</td>
             </tr>
             <tr>
               <td><code>unexpected_joint_type</code></td>
               <td>1</td>
               <td><code>/World/DryingBox_01/button/PrismaticJoint</code> 是按钮 DOF，不是门开合 DOF。</td>
-              <td>Task 3/5 明确 metric 绑定 <code>RevoluteJoint</code>。</td>
+              <td>Stage 3/5 明确 metric 绑定 <code>RevoluteJoint</code>。</td>
             </tr>
             <tr>
               <td><code>multiple_active_dofs</code></td>
               <td>1</td>
               <td>门的 <code>RevoluteJoint</code> 与按钮的 <code>PrismaticJoint</code> 同时存在。</td>
-              <td>Task 5 readback 中记录 joint name、joint position 和 metric source。</td>
+              <td>Stage 5 readback 中记录 joint name、joint position 和 metric source。</td>
             </tr>
           </tbody>
         </table>
@@ -560,7 +595,7 @@
               <td>是否已经等于 EBench 接入完成</td>
               <td>Task 1 没有启动 Isaac runtime，也没有进入 EBench wrapper、EvalClient 或 lift2 baseline。</td>
               <td>它只是把“原生资产能不能继续推进”这件事查清楚；真正能不能评测要看后续 smoke 和 readback。</td>
-              <td><span class="tag warn">进入 Task 2</span></td>
+              <td><span class="tag warn">进入 Stage 2</span></td>
             </tr>
           </tbody>
         </table>
@@ -586,12 +621,13 @@
 
     <section class="panel" aria-label="风险解释">
       <h2>Task 1 查到的主要风险</h2>
-      <p>下面这些不是“页面不好看”的问题，而是 EBench/Isaac runtime 可能无法稳定 reset、step、score 的问题。每一项都要在后续 task 里被关闭或显式隔离。</p>
+      <p>下面这些不是“页面不好看”的问题，而是 EBench/Isaac runtime 可能无法稳定 reset、step、score 或正确加载 native material 的问题。每一项都要在后续 acceptance stage 里被关闭或显式隔离。</p>
       <div class="tabs" role="tablist" aria-label="风险分类">
         <button type="button" role="tab" aria-selected="true" aria-controls="risk-scale" data-tab="risk-scale">Scale</button>
         <button type="button" role="tab" aria-selected="false" aria-controls="risk-joint" data-tab="risk-joint">Joint</button>
         <button type="button" role="tab" aria-selected="false" aria-controls="risk-mass" data-tab="risk-mass">Mass</button>
         <button type="button" role="tab" aria-selected="false" aria-controls="risk-dof" data-tab="risk-dof">DOF</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="risk-material" data-tab="risk-material">Material</button>
       </div>
 
       <div id="risk-scale" class="tab-pane active">
@@ -611,7 +647,7 @@
       <div id="risk-mass" class="tab-pane">
         <div class="answer danger">
           <p><strong>部分刚体质量和惯量无效：</strong>door mesh、body mesh、handle mesh 出现 <code>zero_inertia</code>、无效 <code>centerOfMass</code> 或零四元数 <code>principalAxes</code>；door 和 handle 的 <code>mass</code> 是 0。</p>
-          <p>这会影响 native-only smoke。我们不能只说“USD 能打开”，还要证明 60 到 120 个 physics steps 后 root pose、handle pose、joint positions 都是 finite。</p>
+          <p>这会影响 native-only smoke。我们不能只说“USD 能打开”，还要证明 120 个 physics steps 后 root pose、handle pose、joint positions 都是 finite。</p>
         </div>
       </div>
 
@@ -619,6 +655,13 @@
         <div class="answer warning">
           <p><strong>不是只有门一个 active DOF：</strong>门是 <code>PhysicsRevoluteJoint</code>，axis 是 <code>Y</code>，limit 是 <code>0..120</code>；按钮还有 <code>PhysicsPrismaticJoint</code>，axis 也是 <code>Y</code>，limit 约 <code>0..0.01</code>。</p>
           <p>这说明后续 metric 不能简单取“第一个 joint”或假设只有一个 DOF。EBench open_door 评分要明确绑定门的 <code>RevoluteJoint</code>，按钮 DOF 要隔离或显式忽略。</p>
+        </div>
+      </div>
+
+      <div id="risk-material" class="tab-pane">
+        <div class="answer warning">
+          <p><strong><code>/World/Looks</code> 正常，但 wrapper 里不能隐式依赖它：</strong>LabUtopia 原生场景里很多 mesh binding 指向 scene-level material library。整份场景打开时这没问题；但 EBench wrapper 如果只带走 <code>/World/DryingBox_01</code>，这些 binding 可能指向 wrapper 外部。</p>
+          <p><strong>蓝色或默认色不是 native material closure：</strong>它最多说明可见性 fallback 生效。Stage 3 要把 material subtree、Shader、MDL source/subIdentifier、helper MDL 和 texture dependency 包进 wrapper；Stage 5 要在 runtime readback 里证明 <code>ComputeBoundMaterial</code> 和 MDL/texture resolution 都成功。</p>
         </div>
       </div>
     </section>
@@ -682,7 +725,7 @@
         </div>
         <div class="mini">
           <strong>4. 最后看 runtime</strong>
-          <span>静态 USD audit 只是第一关，Task 2 需要 Isaac physics steps 证明不会漂、不会 NaN、不会乱报 DOF。</span>
+          <span>静态 USD audit 只是第一关，Stage 2 需要 Isaac physics steps 证明不会漂、不会 NaN、不会乱报 DOF。</span>
         </div>
       </div>
       <div class="answer">
@@ -734,31 +777,31 @@ python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
             <tr>
               <td>root scale 为 <code>0.001</code></td>
               <td>资产可能在视觉上对了，但碰撞、门轴和机器人 reachability 的尺度解释错了。</td>
-              <td>Task 2 先在 native-only stage 跑物理；Task 4 再用 additive USD override 固化 unit policy。</td>
+              <td>Stage 2 先在 native-only stage 跑物理；Stage 4 再用 additive USD override 固化 unit policy。</td>
               <td><code>smoke.json</code> 中 pose/joint finite，后续 readback 图中尺寸合理。</td>
             </tr>
             <tr>
               <td><code>FixedJoint_01</code> 指向非 rigid body</td>
               <td>PhysX 可能把约束接到错误对象上，导致 warning 或门体/箱体关系不稳定。</td>
-              <td>Task 4 只加 override，不改原始资产；修正 body target 或隔离无效约束。</td>
+              <td>Stage 4 只加 override，不改原始资产；修正 body target 或隔离无效约束。</td>
               <td>PhysX warning 被记录，修复后 warning 降级或消失。</td>
             </tr>
             <tr>
               <td>door / body / handle 存在 mass、inertia、COM、principal axes 风险</td>
               <td>仿真可能能打开 USD，但物理步里出现 NaN、抖动或不可控运动。</td>
-              <td>Task 2 先确认当前 runtime 行为；Task 4 再补 mass/inertia override。</td>
-              <td>60 到 120 个 physics steps 后 root pose、handle pose、joint positions 仍为 finite。</td>
+              <td>Stage 2 先确认当前 runtime 行为；Stage 4 再补 mass/inertia override。</td>
+              <td>120 个 physics steps 后 root pose、handle pose、joint positions 仍为 finite。</td>
             </tr>
             <tr>
               <td>门和按钮形成多个 active DOF</td>
               <td>metric 可能把按钮位移误判成开门结果，导致分数看起来有了但语义错了。</td>
-              <td>Task 3/5 在 EBench wrapper 和 metric 中显式绑定 <code>RevoluteJoint</code>，按钮 DOF 单独隔离。</td>
+              <td>Stage 3/5 在 EBench wrapper 和 metric 中显式绑定 <code>RevoluteJoint</code>，按钮 DOF 单独隔离。</td>
               <td>readback JSON 里能看到门 joint name、角度和 metric source。</td>
             </tr>
             <tr>
               <td>handle 必须保留在 drying box hierarchy 下</td>
               <td>如果把 handle 单独 payload 到顶层，它会丢父级 transform，位置和 bbox 会严重异常。</td>
-              <td>Task 3 使用 native wrapper，把 <code>obj_DryingBox_01_handle</code> 暴露为 articulation part，而不是另造顶层 handle。</td>
+              <td>Stage 3 使用 native wrapper，把 <code>obj_DryingBox_01_handle</code> 暴露为 articulation part，而不是另造顶层 handle。</td>
               <td>runtime scene 没有独立顶层 handle payload，render/readback 能定位 nested handle。</td>
             </tr>
           </tbody>
@@ -766,23 +809,23 @@ python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
       </div>
     </section>
 
-    <section class="flow" aria-label="七个 task 怎么衔接">
-      <h2>后续七个 task 分别干什么？</h2>
-      <p>这七步是 gate，不是简单任务清单。每一步都要产出可追溯证据，前一步不过就不应该把后一步的产品结论写满。</p>
+    <section class="flow" aria-label="七个 Acceptance Stage 怎么衔接">
+      <h2>后续七个 Acceptance Stage 分别干什么？</h2>
+      <p>这七步是验收阶段，不是简单任务清单。每一步都要产出可追溯证据，前一步不过就不应该把后一步的产品结论写满。</p>
       <div class="flow-track">
         <div class="step done"><strong>1. Asset Audit</strong><span>只读检查原生 USD，列出 hierarchy、joint、handle 和风险。当前已完成。</span></div>
-        <div class="step next"><strong>2. Isaac Smoke</strong><span>最小 stage 只放原生 DryingBox，跑 60 到 120 步，确认 pose/joint 有限且 physics stable。</span></div>
+        <div class="step next"><strong>2. Isaac Smoke</strong><span>最小 stage 只放原生 DryingBox，跑 120 步，确认 pose/joint 有限且 physics stable。</span></div>
         <div class="step"><strong>3. Native Wrapper</strong><span>把原生资产包装进 EBench 路径，保留 native visual/hierarchy/handle，同时保留 surrogate baseline。</span></div>
         <div class="step"><strong>4. Physics Override</strong><span>只做 additive USD overrides，修 scale、mass、inertia、joint target、DOF filtering 和 fixed-base。</span></div>
         <div class="step"><strong>5. Eval Readback</strong><span>跑 open_door readback，确认 render、joint、handle、metric 都能被 EBench 侧读到。</span></div>
         <div class="step"><strong>6. Docs Evidence</strong><span>把 old failed、P1 surrogate、P2 native readback、JSON hash 和 claim boundary 写进周报/教程。</span></div>
-        <div class="step"><strong>7. Lift2 Gate</strong><span>进入 lift2 candidate 和 official baseline discovery。只有这里通过后，才重新讨论 official_baseline_evaluable。</span></div>
+        <div class="step"><strong>7. Lift2 Contract Check</strong><span>进入 lift2 candidate 和 official baseline discovery。只有这里通过后，才重新讨论 official_baseline_evaluable。</span></div>
       </div>
     </section>
 
     <section class="note">
       <strong>当前对外口径：</strong>
-      Task 1 静态审计已确认原生 <code>DryingBox_01</code> 的结构和材质依赖都可审计，door joint、handle candidate、articulation root、mesh material binding、MDL/texture dependency 和 displayColor fallback 状态都有机器可读记录，并明确列出会影响 EBench 接入的 physics/articulation/material 风险。下一步不是直接接入 lift2，而是先做 Task 2 native-only Isaac smoke，确认原生资产在目标 Isaac runtime 中能稳定跑物理步。
+      Task 1 静态审计已确认原生 <code>DryingBox_01</code> 的结构和材质依赖都可审计，door joint、handle candidate、articulation root、mesh material binding、MDL/texture dependency 和 displayColor fallback 状态都有机器可读记录，并明确列出会影响 EBench 接入的 physics/articulation/material 风险。下一步不是直接接入 lift2，而是先做 Acceptance Stage 2 native-only Isaac smoke，确认原生资产在目标 Isaac runtime 中能稳定跑物理步。
     </section>
 
     <div class="footer">

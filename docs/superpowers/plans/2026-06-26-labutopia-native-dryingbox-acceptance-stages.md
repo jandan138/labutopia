@@ -31,6 +31,16 @@ Run implementation work in the GenManip `labutopia-ebench-poc` branch. Keep LabU
 | EBench baseline | The final acceptance stage must verify `EvalClient` observation/action/reward/logging contracts. Copying Franka YAML and replacing robot/camera names is not enough for official Lift2 baseline readiness. |
 | Material packaging | `/World/Looks` is a valid scene-level USD convention, but EBench does not require that path specifically. Native DryingBox packaging must prove USD `material:binding` resolution, MDL source/subIdentifier resolution, texture dependency resolution, and an explicit fallback boundary. |
 
+## 2026-06-28 Norm Review Addendum
+
+The material and stage rules below incorporate a three-angle review before Stage 2 execution:
+
+| Review angle | Norm added to this plan |
+| --- | --- |
+| USD / Isaac material composition | Material closure must cover direct mesh, inherited Xform, collection, and `GeomSubset` bindings; `wrapper_local_looks_rebind` must copy full `UsdShade.Material` subtrees, shader connections, MDL source/subIdentifier, recursive helper MDL imports, and case-sensitive texture dependencies. |
+| EBench / Lift2 readiness | `attempted` is not `passed`. Any `FAIL` or `BLOCKED` row in reset, step, reachability, camera framing, metric, schema, action dialect, reward/success, or logging blocks Lift2 readiness wording. Stage 2/3/4/5 now have explicit stop conditions and evidence fields. |
+| Product / intern explanation | PM-facing HTML must explain why LabUtopia full-scene loading can work while EBench wrapper packaging can fail, why `/World/Looks` is normal but unsafe as an implicit wrapper dependency, and why default blue or `displayColor` fallback proves readability only, not native material closure. |
+
 ## Claim Boundary
 
 Allowed after Acceptance Stage 1:
@@ -50,6 +60,13 @@ Allowed only after Acceptance Stage 7:
 ```text
 The LabUtopia lift2_candidate lane has passed a local official-baseline-style contract check for observation, action, camera, reward/success, and logging shape.
 ```
+
+Acceptance Stage 7 has two different outcomes:
+
+- `attempted`: `gmp` or the schema probe ran and produced concrete evidence, but at least one row is `FAIL` or `BLOCKED`;
+- `passed`: every required `level1_pick`, `level1_place`, and `level1_open_door` row is `PASS` for reset, step, reachability, camera framing, metric, observation schema, action schema, reward/success, and logging.
+
+Only `passed` allows Lift2 readiness wording. A recorded blocker is useful engineering evidence, but it is not a Lift2 pass.
 
 Not allowed from this plan alone:
 
@@ -85,23 +102,28 @@ The native DryingBox lane therefore uses this policy:
 
 - EBench readiness means USD-resolvable bindings plus packaged MDL/texture dependencies, not the presence of a specific `Looks` path.
 - For full-source native smoke, preserving `/World/Looks` is acceptable because the goal is fidelity to the original LabUtopia scene.
-- For packaged EBench wrapper composition, prefer `wrapper_local_looks_rebind`: copy only task-used material prims into an owned wrapper-local `Looks` scope, then reauthor `material:binding` to those runtime-local material paths.
+- The audit and wrapper must cover every authored `material:binding` relationship that contributes to task-visible surfaces: direct mesh bindings, inherited Xform bindings, collection bindings, and `GeomSubset` bindings. Mesh-only checks are insufficient.
+- For packaged EBench wrapper composition, prefer `wrapper_local_looks_rebind`: copy every task-used `UsdShade.Material` into an owned wrapper-local scope, then reauthor `material:binding` to those runtime-local material paths.
+- The wrapper-local material path is `/World/labutopia_level1_poc/obj_DryingBox_01/Looks/<materialName>` unless the generated wrapper root is renamed; if renamed, the path must remain under the DryingBox wrapper root and be recorded in the manifest.
+- `wrapper_local_looks_rebind` must copy the complete material closure, not only the material prim: material subtree, shader prims, `outputs:mdl:*` connections, shader inputs, internal connection targets, asset attributes, and authored binding strength/purpose when present. After rebind, no task-visible surface may retain a stale `/World/Looks/...` target.
 - `preserve_owned_world_looks` is allowed only if the overlay explicitly owns the required `/World/Looks` prims, avoids name collisions, and proves all runtime bindings resolve there.
-- Preserve MDL `sourceAsset` and `subIdentifier` exactly during rebasing. Do not derive the subIdentifier from the MDL filename.
-- The material closure report must cover binding target validity, `ComputeBoundMaterial` result, MDL source asset, MDL subIdentifier, resolved MDL path, helper MDL imports, texture references, hashes, remote/local status, and worker `MDL_SYSTEM_PATH`.
-- `displayColor` is degraded fallback only. It must be distinct, non-black, and high-contrast enough for body, door, and handle readability, but it cannot be counted as native material closure.
+- Preserve `info:mdl:sourceAsset:subIdentifier` exactly during rebasing. `info:mdl:sourceAsset` may be rebased to a package-relative asset only when the resolved MDL hash matches the source evidence. Do not derive the subIdentifier from the MDL filename.
+- The material closure report must cover binding target validity, `ComputeBoundMaterial` result, binding strength/purpose, MDL implementation source, MDL source asset, MDL subIdentifier, resolved MDL path, recursive helper MDL imports, case-sensitive texture references, hashes, remote/local status, and worker `MDL_SYSTEM_PATH`.
+- `MDL_SYSTEM_PATH` is for MDL module resolution. Texture paths need separate resolved path and hash evidence; do not treat an MDL path as proof that textures resolve.
+- Remote-only MDL is not `resolved_native_material` unless it is mirrored locally, hashed, and resolvable in the worker environment. Otherwise it must be explicitly waived as degraded/non-closure.
+- `displayColor` is degraded fallback only. It must be recorded per mesh/subset plus as an aggregate status. `resolved_native_material` requires every task-visible surface to resolve native MDL/texture. Mixed surfaces must be reported as `mixed_native_and_fallback`; displayColor-only readability is `degraded_fallback`. Fallback authoring may use `primvars:displayColor` or explicit preview fallback, but it must not remove native bindings.
 
 ## Acceptance Stage Summary
 
 | Acceptance Stage | Product meaning | Evidence required before moving on |
 | --- | --- | --- |
 | 1. Asset Audit | We know what the real DryingBox contains. | `audit.json`, source USD hash, prim/joint/handle list, material closure audit, risk flags. |
-| 2. Isaac Smoke | The native asset can survive physics stepping by itself. | `smoke.json`, Isaac log, 60-120 step root/handle/joint trace, finite checks. |
+| 2. Isaac Smoke | The native asset can survive physics stepping by itself in the full source scene. | `smoke.json`, Isaac log, 120-step root/handle/joint trace, finite checks, PhysX warning classification, full-source material-runtime risk notes. |
 | 3. Native Wrapper | EBench can see the real box without breaking hierarchy. | overlay `scene.usda`, manifest, no top-level handle payload, explicit `material_scope_policy`, material/reference report. |
-| 4. Physics Override | Door physics is repaired additively and reads the right DOF. | override manifest, before/after warnings, mass/inertia/body target checks, material validator checks, door trace. |
-| 5. Eval Readback | GenManip/EBench can reset, render, step, and score native open-door evidence. | diagnostics JSON, reset obs schema, step response, metric raw output, material readback, frame hashes. |
+| 4. Physics Override | Static additive override closure is defined and validated; runtime stability is rechecked in Stage 5. | `physics_override.json`, override layer path, before/after warnings, mass/inertia/body target checks, material validator checks, DOF map. |
+| 5. Eval Readback | GenManip/EBench can reset, render, step, and score native open-door evidence through the wrapper. | diagnostics JSON, reset obs schema, step response, metric raw output, material readback, frame hashes, stdout/stderr/result paths. |
 | 6. Evidence Package | PM, interns, and reviewers can reproduce the claim boundary. | evidence manifest with git SHAs, env vars, commands, run ids, material closure report, paths, screenshots. |
-| 7. Lift2 Contract Check | The lane is checked against official baseline data contracts. | `gmp` logs, observation/action schema probe, relative/absolute base action probes. |
+| 7. Lift2 Contract Check | The lane is checked against official baseline-style data contracts; attempted is not the same as passed. | `gmp` logs, observation/action schema probe, camera-key matrix, action-dialect matrix, all rows `PASS` before readiness wording. |
 
 Use `Acceptance Stage` for this seven-stage native DryingBox acceptance lane. Reserve `Task` for concrete engineering work items that may be added under a stage later.
 
@@ -193,9 +215,30 @@ conda run -p /cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-ev
 
 Expected: exit `0`, `runtime_physics_stable=true`, finite root pose, finite handle pose, finite joint positions, and a captured PhysX warning list.
 
+`smoke.json` must include:
+
+- `step_count=120` and a per-step trace for root pose, handle pose, door joint angle, button joint position, and any other active DOF;
+- `finite_trace=true` only if all recorded numeric pose/joint values are finite for all steps;
+- `max_root_translation_drift_m`, `max_root_rotation_drift_deg`, `max_handle_translation_drift_m`, `door_joint_angle_min_deg`, `door_joint_angle_max_deg`, `button_joint_position_min_m`, and `button_joint_position_max_m`;
+- `non_door_dof_drift_within_tolerance=true` only when non-door DOFs remain inside the configured tolerance, default `1e-4` meters or radians unless the script records a task-specific value;
+- `physx_warning_allowlist`, `physx_warning_denylist`, and `unclassified_physx_warnings`;
+- full-source material-runtime notes: `/World/Looks` present or absent, unresolved task material count, remote material dependency count, and material compiler warnings filtered to DryingBox materials when Isaac exposes them.
+
+Acceptance Stage 2 proves full-source native physics smoke only. It does not prove EBench wrapper packaging, material rebinding, or Lift2 readiness.
+
 - [ ] **Step 3: Enforce stop condition**
 
-If `smoke.json` contains `runtime_physics_stable=false`, NaN/Inf pose values, or unexplained joint drift, stop before Acceptance Stage 3. Preserve the artifact and add the blocker to the evidence manifest.
+Stop before Acceptance Stage 3 if any of these are true:
+
+- `runtime_physics_stable=false`;
+- `finite_trace=false`, or any NaN/Inf appears in root, handle, or joint traces;
+- root or handle drift exceeds the explicit tolerance recorded in `smoke.json`;
+- door angle leaves the physically allowed range from the source `RevoluteJoint` plus the configured tolerance;
+- non-door DOF drift exceeds the configured tolerance without a written explanation;
+- `unclassified_physx_warnings` is non-empty;
+- full-source material-runtime notes show unresolved task-visible materials that would prevent a readable smoke frame.
+
+Preserve the artifact and add the blocker to the evidence manifest.
 
 ### Acceptance Stage 3: Native Wrapper Composition
 
@@ -240,14 +283,29 @@ The wrapper manifest must record:
 
 - `material_scope_policy`, either `wrapper_local_looks_rebind` or `preserve_owned_world_looks`;
 - source and runtime `material:binding` targets for every task-visible mesh;
+- source and runtime binding records for inherited Xform, collection, and `GeomSubset` bindings that affect task-visible surfaces;
 - runtime rebind map if any source target leaves the wrapped subtree, especially `/World/Looks/...`;
 - resolved/unresolved binding targets, `ComputeBoundMaterial` results, and stale source binding checks;
-- MDL source assets, MDL subIdentifiers, helper MDL imports, texture paths, hashes, and remote/local status;
+- copied material paths, shader paths, `outputs:mdl:*` connections, shader inputs, and internal connection targets;
+- MDL source assets, MDL subIdentifiers, recursive helper MDL imports, case-sensitive texture paths, hashes, and remote/local status;
 - the exact worker `MDL_SYSTEM_PATH` required for LabUtopia materials;
-- fallback `displayColor` policy for task-visible meshes, labeled as `material_status=degraded_fallback` when used;
+- fallback `displayColor` policy for task-visible meshes/subsets, labeled as `material_status=degraded_fallback` or `material_status=mixed_native_and_fallback` when used;
 - payload dependency report;
 - wrapper bbox, source scale, axis/up-axis, and workspace translation;
 - camera/light prim names expected by task YAML.
+
+- [ ] **Step 5: Enforce wrapper stop condition**
+
+Stop before Acceptance Stage 4 if any of these are true:
+
+- native `reference` or `payload` dependencies are unresolved in the composed wrapper stage;
+- the nested handle is missing under the DryingBox wrapper;
+- any independent top-level handle payload exists;
+- `wrapper_local_looks_rebind` leaves stale task-visible `/World/Looks/...` bindings;
+- `preserve_owned_world_looks` is selected but the overlay does not explicitly own every required `/World/Looks` material;
+- material subtree copying drops shader connections, `subIdentifier`, helper MDL imports, or texture dependencies;
+- camera/light metadata required by task YAML is missing;
+- composed-stage wrapper evidence cannot be opened and re-read by the validator.
 
 ### Acceptance Stage 4: Additive Physics Override And Articulation Closure
 
@@ -257,17 +315,19 @@ The wrapper manifest must record:
 - Modify: `configs/tasks/ebench/labutopia_lab_poc/common/assets_manifest.json`
 - Modify: `configs/tasks/ebench/labutopia_lab_poc/franka_poc/level1_open_door.yml`
 - Test: `tests/labutopia_poc/test_validate_task_package.py`
+- Output: `saved/diagnostics/native_dryingbox_physics_override_<utc_timestamp>/physics_override.json`
 
 - [ ] **Step 1: Add validator checks**
 
 `validate_task_package.py` must fail if:
 
 - native `reference` or `payload` dependencies are unresolved;
-- required post-rebind runtime `material:binding` targets are unresolved, or `ComputeBoundMaterial` fails for any task-visible mesh;
+- required post-rebind runtime `material:binding` targets are unresolved, or `ComputeBoundMaterial` fails for any task-visible mesh/subset;
 - a runtime rebind map is missing when source bindings leave the wrapped subtree. The map is required evidence, but it does not by itself satisfy material closure;
-- required MDL source assets, subIdentifiers, helper MDL imports, or texture dependencies are unresolved, unhashed, remote-only, or absent from the worker `MDL_SYSTEM_PATH` without an explicit waiver;
+- required MDL source assets, subIdentifiers, recursive helper MDL imports, or texture dependencies are unresolved, unhashed, remote-only, or absent from the worker `MDL_SYSTEM_PATH` without an explicit waiver;
 - wrapper-local objects keep stale out-of-scope `/World/Looks/...` bindings after `wrapper_local_looks_rebind`;
-- fallback `displayColor` is absent, black, low contrast, or used without recording `material_status=degraded_fallback`;
+- fallback `displayColor` is absent, black, low contrast, or used without recording `material_status=degraded_fallback` or `material_status=mixed_native_and_fallback`;
+- remote-only MDL is labeled `resolved_native_material` without local mirror, hash, worker resolution evidence, or a waiver that explicitly keeps material closure open;
 - `PhysicsScene` is missing or duplicated;
 - `PhysicsArticulationRootAPI` is lost after wrapping;
 - any joint `physics:body0/body1` target lacks `RigidBodyAPI`;
@@ -279,6 +339,20 @@ The wrapper manifest must record:
 - [ ] **Step 2: Implement additive USD override**
 
 Use only additive override opinions in the generated overlay. Do not edit the original LabUtopia USD. The override may fix or isolate invalid `FixedJoint_01` body targets, add finite mass/inertia where required, stabilize fixed-base behavior, and record `drive target`, `stiffness`, `damping`, and `maxForce` units.
+
+Write `physics_override.json` with:
+
+- override layer path and generated wrapper stage path;
+- source USD path and source USD hash;
+- before/after `physics:body0/body1` targets for every joint;
+- active rigid body list with mass, inertia, `centerOfMass`, and `principalAxes`;
+- collision API changes and any scale-compensation assumptions;
+- DOF map that names the door `RevoluteJoint`, button `PrismaticJoint`, ignored DOFs, and metric DOF;
+- drive parameters with units: target, stiffness, damping, maxForce, and whether they are authored or inherited;
+- material validator summary, including unresolved, remote-only, fallback, and waiver counts;
+- before/after PhysX warning diff if the validator or smoke harness can collect it.
+
+Acceptance Stage 4 is a static additive-override closure stage. Runtime stability after the wrapper and override is confirmed in Acceptance Stage 5, not assumed here.
 
 - [ ] **Step 3: Bind metric to the door DOF**
 
@@ -340,25 +414,47 @@ Expected: writes `diagnostics.json` plus reset frame(s) and records the exact au
 `diagnostics.json` must show:
 
 - `readback_visible` or a concrete render blocker;
-- `native_complex_dryingbox_ready=true`;
+- `native_eval_readback_ready=true`;
+- `native_material_closure_status`, one of `resolved_native_material`, `mixed_native_and_fallback`, `degraded_fallback`, or `blocked`;
+- `lift2_contract_ready=false` unless Acceptance Stage 7 has passed separately;
 - `runtime_physics_stable=true`;
 - `object_config.obj_DryingBox_01` registered as `existed_object`;
 - `articulation_info.part.handle=/handle`;
 - `obj_DryingBox_01_handle` registered from the nested handle path;
 - pre/post door joint angle and joint name;
+- proof that reward/success and metric raw output read the door `RevoluteJoint`, not the button `PrismaticJoint` and not the first arbitrary DOF;
+- raw reward/success fields from GenManip/EBench metric output;
 - handle world pose;
 - drive target and collision warnings;
-- render validation using required object visibility, not just non-black pixels.
-- material readback after reset, including source binding target, runtime binding target, material status, MDL source asset, subIdentifier, and any material compiler warnings.
+- render validation using required object visibility, not just non-black pixels;
+- result directory, frame paths, frame hashes, stdout log path, stderr log path, run id, worker id, episode id, and seed;
+- material readback after reset at runtime wrapper paths.
+
+Runtime material readback must include, for every task-visible mesh/subset:
+
+- authored binding relationship path and authored target;
+- runtime binding target and `ComputeBoundMaterial` result;
+- binding purpose and binding strength when authored or inferable;
+- copied Material path and Shader path;
+- shader `info:implementationSource`;
+- shader `info:mdl:sourceAsset`, `info:mdl:sourceAsset:subIdentifier`, resolved MDL path, and MDL hash;
+- recursive helper MDL imports with resolved path, hash, and remote/local status;
+- texture references with exact case, resolved path, hash, and remote/local status;
+- material compiler warnings filtered to DryingBox materials;
+- `displayColor`/preview fallback status without deleting native material bindings.
 
 Material readback has two separate outcomes:
 
-- `material_status=resolved_native_material`: required for claiming native material closure. Runtime binding targets resolve, `ComputeBoundMaterial` succeeds, required MDL/texture dependencies resolve, and material compiler warnings are absent or explicitly waived.
+- `material_status=resolved_native_material`: required for claiming native material closure. Runtime binding targets resolve, `ComputeBoundMaterial` succeeds, all required MDL/helper-MDL/texture dependencies resolve locally or via an explicit approved mirror, all task-visible surfaces resolve native material, and material compiler warnings are absent or explicitly waived.
+- `material_status=mixed_native_and_fallback`: some task-visible surfaces resolve native material and others rely on fallback. It may support task readability, but native material closure remains open.
 - `material_status=degraded_fallback`: acceptable only for task-readability evidence. It may pass the eval readback stage if physics, hierarchy, and render readability are otherwise valid, but PM wording must say native material closure is still open.
+- `material_status=blocked`: runtime material readback cannot be collected or required task-visible materials are missing/unresolved.
 
 - [ ] **Step 4: Retake camera if needed**
 
 Reject frames that are black, flat gray, missing the drying box, missing the door face, missing the handle, or dominated by wall/ceiling geometry. A passing PM-facing frame must show the box body, door edge, and handle clearly enough to explain the task. If the frame uses `displayColor` fallback rather than resolved native MDL materials, the diagnostics and PM note must say so explicitly.
+
+Stop before Acceptance Stage 6 if `native_eval_readback_ready` is not true, if metric evidence does not read the door `RevoluteJoint`, if result/log paths are missing, or if material readback cannot distinguish `resolved_native_material` from fallback.
 
 ### Acceptance Stage 6: Evidence Package And PM Claim Boundary
 
@@ -449,17 +545,22 @@ gmp status --run_id labutopia_lift2_schema_smoke
 
 Expected: each task either reaches reset/step/metric with saved results or records a concrete blocker such as camera framing, reachability, base collision, missing object, missing asset, action schema mismatch, or blank camera.
 
+This step by itself records a Lift2 candidate attempt. It is not a pass unless every required task reaches reset, step, metric, camera framing, reward/success, and logging without `FAIL` or `BLOCKED`.
+
 - [ ] **Step 4: Run `lift2_eval_contract_probe`**
 
-The probe must reset one task, dump observation schema, then send three action shapes:
+The probe must reset one task, dump observation schema, then send an action-dialect matrix:
 
 - zero action;
-- OpenPI/InternVLA-style relative `base_motion`;
-- X-VLA-style absolute `base_motion`.
+- OpenPI-style relative `base_motion`;
+- X-VLA-style absolute `base_motion`;
+- InternVLA-A1 single-step relative `base_motion` if supported by the local client;
+- InternVLA-A1 chunk absolute `base_motion` if supported by the local client.
 
 It must check:
 
-- observation keys: `instruction`, `state.joints`, `state.gripper`, `state.base`, `state.ee_pose`, `video.overlook_camera_view`, `video.left_camera_view`, `video.right_camera_view`, `timestep`, `reset`, and `robot_id` if provided;
+- camera config keys separately from baseline input keys. The task config may contain `top_camera`, but the baseline input probe must explicitly check the keys consumed by the target baseline, including `video.overlook_camera_view`, `video.left_camera_view`, and `video.right_camera_view`;
+- observation keys: `instruction`, `state.joints`, `state.gripper`, `state.base`, `state.ee_pose`, required `video.*` camera keys, `timestep`, `reset`, and `robot_id` if provided;
 - action keys: `action` with shape `(16,)`, `base_motion` with shape `(3,)`, `control_type="joint_position"`, `is_rel`, and `base_is_rel`;
 - reward/success fields from GenManip/EBench metric output, not LabUtopia expert controller `done`;
 - logging fields: `run_id`, `worker_id`, `episode_id`, `seed`, result path, stdout/stderr, and exception stack when present.
@@ -471,7 +572,9 @@ It must check:
 - command outputs for `gmp submit`, `gmp eval`, `gmp status`, and `lift2_eval_contract_probe`;
 - per-task rows for `level1_pick`, `level1_place`, and `level1_open_door`;
 - columns `Reset`, `Step`, `Reachability`, `Camera Framing`, `Metric`, and `Finding`, using only `PASS`, `FAIL`, or `BLOCKED`;
+- schema rows for observation keys, camera input keys, action dialects, reward/success fields, and logging fields, using only `PASS`, `FAIL`, or `BLOCKED`;
 - a clear statement that Franka/native acceptance-stage pass does not imply official baseline readiness unless Acceptance Stage 7 passes.
+- a clear statement that any `FAIL` or `BLOCKED` row means Stage 7 was attempted, not passed, and Lift2 readiness wording is not allowed.
 
 ## Final Verification
 
@@ -485,3 +588,11 @@ git diff --check
 ```
 
 Then check the evidence manifest contains non-empty paths for audit, smoke, diagnostics, render frames, and Lift2 readiness if Acceptance Stage 7 was attempted.
+
+If Acceptance Stage 7 was attempted, final reporting must say one of:
+
+- `Stage 7 passed`: every readiness row is `PASS`;
+- `Stage 7 attempted, blocked`: at least one row is `BLOCKED`;
+- `Stage 7 attempted, failed`: at least one row is `FAIL`.
+
+Only `Stage 7 passed` permits the local official-baseline-style Lift2 readiness claim.
