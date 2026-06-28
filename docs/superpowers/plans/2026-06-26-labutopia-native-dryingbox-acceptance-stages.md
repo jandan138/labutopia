@@ -41,6 +41,21 @@ The material and stage rules below incorporate a three-angle review before Stage
 | EBench / Lift2 readiness | `attempted` is not `passed`. Any `FAIL` or `BLOCKED` row in reset, step, reachability, camera framing, metric, schema, action dialect, reward/success, or logging blocks Lift2 readiness wording. Stage 2/3/4/5 now have explicit stop conditions and evidence fields. |
 | Product / intern explanation | PM-facing HTML must explain why LabUtopia full-scene loading can work while EBench wrapper packaging can fail, why `/World/Looks` is normal but unsafe as an implicit wrapper dependency, and why default blue or `displayColor` fallback proves readability only, not native material closure. |
 
+## 2026-06-29 Remote Aluminum / Material Closure Stage Boundary
+
+Remote `Aluminum_Anodized_Charcoal.mdl` is not a Stage 3 blocker because Stage 3 proves wrapper composition, wrapper-local material rebinding, dependency reporting, and readable fallback boundaries. It becomes a closure item before runtime eval claims.
+
+Use this split:
+
+- **Acceptance Stage 4 owns the engineering disposition.** The package must choose exactly one path for remote Aluminum:
+  - `local_mirror`: mirror the MDL into the asset package, record package-relative path, sha256, byte size, source URL, and worker `MDL_SYSTEM_PATH` coverage;
+  - `explicit_waiver`: record waiver id, reason, affected material paths, affected task-visible surfaces, and `material_closure_kept_open=true`.
+- **Acceptance Stage 5 owns the runtime material-closure verdict.** Eval-path diagnostics may classify material state as `resolved_native_material`, `mixed_native_and_fallback`, `degraded_fallback`, `open_remote_dependency_waived`, or `blocked`. `resolved_native_material` is allowed only when no remote waiver remains open and no task-visible surface relies on `displayColor` or preview fallback.
+- **Acceptance Stage 6 owns the PM/evidence wording.** If Stage 5 passes eval readback while a waiver or fallback remains, the product page may say task readability and eval readback passed, but must say native MDL/texture material closure remains open.
+- **Acceptance Stage 7 does not own material closure.** It checks Lift2 official-baseline-style observation/action/camera/reward/logging contracts. It can consume Stage 5/6 material evidence, but cannot upgrade a material-closure claim by itself.
+
+This prevents three common mistakes: treating a visible frame as material closure, hiding a remote MDL behind wrapper success, or mixing Lift2 readiness with material packaging readiness.
+
 ## 2026-06-28 Stage 2 Execution Norm Addendum
 
 Stage 2 is a native-only Isaac smoke, not an EBench wrapper pass. The smoke stage may reference the source `/World` so the native DryingBox keeps its original LabUtopia scene context, especially `/World/Looks` material prims. It must still isolate task physics: only the target `DryingBox_01`, required source material scope, required `PhysicsScene`, and explicitly recorded lighting/camera helpers may remain active. Other `/World` children must be deactivated or explicitly listed as active with a reason.
@@ -137,7 +152,7 @@ The native DryingBox lane therefore uses this policy:
 - Preserve `info:mdl:sourceAsset:subIdentifier` exactly during rebasing. `info:mdl:sourceAsset` may be rebased to a package-relative asset only when the resolved MDL hash matches the source evidence. Do not derive the subIdentifier from the MDL filename.
 - The material closure report must cover binding target validity, `ComputeBoundMaterial` result, binding strength/purpose, MDL implementation source, MDL source asset, MDL subIdentifier, resolved MDL path, recursive helper MDL imports, case-sensitive texture references, hashes, remote/local status, and worker `MDL_SYSTEM_PATH`.
 - `MDL_SYSTEM_PATH` is for MDL module resolution. Texture paths need separate resolved path and hash evidence; do not treat an MDL path as proof that textures resolve.
-- Remote-only MDL is not `resolved_native_material` unless it is mirrored locally, hashed, and resolvable in the worker environment. Otherwise it must be explicitly waived as degraded/non-closure.
+- Remote-only MDL is not `resolved_native_material` unless it is mirrored locally, hashed, and resolvable in the worker environment. Otherwise it must be explicitly waived as `open_remote_dependency_waived`, which keeps native MDL/texture closure open without implying `displayColor` fallback.
 - `displayColor` is degraded fallback only. It must be recorded per mesh/subset plus as an aggregate status. `resolved_native_material` requires every task-visible surface to resolve native MDL/texture. Mixed surfaces must be reported as `mixed_native_and_fallback`; displayColor-only readability is `degraded_fallback`. Fallback authoring may use `primvars:displayColor` or explicit preview fallback, but it must not remove native bindings.
 
 ## Acceptance Stage Summary
@@ -147,9 +162,9 @@ The native DryingBox lane therefore uses this policy:
 | 1. Asset Audit | We know what the real DryingBox contains. | `audit.json`, source USD hash, prim/joint/handle list, material closure audit, risk flags. |
 | 2. Isaac Smoke | The native asset can survive physics stepping by itself in the full source scene. | `smoke.json`, Isaac log, 120-step root/handle/joint trace, finite checks, PhysX warning classification, full-source material-runtime risk notes. |
 | 3. Native Wrapper | EBench can see the real box without breaking hierarchy. | overlay `scene.usda`, manifest, no top-level handle payload, explicit `material_scope_policy`, material/reference report. |
-| 4. Physics Override | Static additive override closure is defined and validated; runtime stability is rechecked in Stage 5. | `physics_override.json`, override layer path, before/after warnings, mass/inertia/body target checks, material validator checks, DOF map. |
-| 5. Eval Readback | GenManip/EBench can reset, render, step, and score native open-door evidence through the wrapper. | diagnostics JSON, reset obs schema, step response, metric raw output, material readback, frame hashes, stdout/stderr/result paths. |
-| 6. Evidence Package | PM, interns, and reviewers can reproduce the claim boundary. | evidence manifest with git SHAs, env vars, commands, run ids, material closure report, paths, screenshots. |
+| 4. Physics Override | Static additive override closure is defined and validated; runtime stability is rechecked in Stage 5. Remote Aluminum must be mirrored locally or explicitly waived here. | `physics_override.json`, override layer path, before/after warnings, mass/inertia/body target checks, remote Aluminum disposition, material validator checks, DOF map. |
+| 5. Eval Readback | GenManip/EBench can reset, render, step, and score native open-door evidence through the wrapper. Runtime material closure is classified here, not inferred from Stage 4. | diagnostics JSON, reset obs schema, step response, metric raw output, material readback, material closure verdict, frame hashes, stdout/stderr/result paths. |
+| 6. Evidence Package | PM, interns, and reviewers can reproduce the claim boundary. Material closure wording must match Stage 5 verdict and any Stage 4 waiver. | evidence manifest with git SHAs, env vars, commands, run ids, remote Aluminum disposition, material closure report, paths, screenshots. |
 | 7. Lift2 Contract Check | The lane is checked against official baseline-style data contracts; attempted is not the same as passed. | `gmp` logs, observation/action schema probe, camera-key matrix, action-dialect matrix, all rows `PASS` before readiness wording. |
 
 Use `Acceptance Stage` for this seven-stage native DryingBox acceptance lane. Reserve `Task` for concrete engineering work items that may be added under a stage later.
@@ -395,6 +410,10 @@ Passed evidence, 2026-06-28:
 - wrapper-local objects keep stale out-of-scope `/World/Looks/...` bindings after `wrapper_local_looks_rebind`;
 - fallback `displayColor` is absent, black, low contrast, or used without recording `material_status=degraded_fallback` or `material_status=mixed_native_and_fallback`;
 - remote-only MDL is labeled `resolved_native_material` without local mirror, hash, worker resolution evidence, or a waiver that explicitly keeps material closure open;
+- `Aluminum_Anodized_Charcoal.mdl` has neither `remote_aluminum_disposition=local_mirror` nor `remote_aluminum_disposition=explicit_waiver`;
+- `remote_aluminum_disposition=local_mirror` is missing package-relative path, source URL, sha256, byte size, and worker `MDL_SYSTEM_PATH` coverage evidence;
+- `remote_aluminum_disposition=explicit_waiver` is missing waiver id, reason, affected material path, affected task-visible surfaces, and `material_closure_kept_open=true`;
+- `remote_aluminum_disposition=explicit_waiver` is combined with `material_status=resolved_native_material`;
 - `PhysicsScene` is missing or duplicated;
 - `PhysicsArticulationRootAPI` is lost after wrapping;
 - any joint `physics:body0/body1` target lacks `RigidBodyAPI`;
@@ -403,7 +422,60 @@ Passed evidence, 2026-06-28:
 - door `RevoluteJoint` cannot be distinguished from button `PrismaticJoint`;
 - camera/light names in validation metadata are missing.
 
-- [ ] **Step 2: Implement additive USD override**
+- [ ] **Step 2: Record Remote Aluminum disposition**
+
+Stage 4 must record exactly one of these material dependency outcomes:
+
+`local_mirror` outcome:
+
+- `remote_aluminum_disposition=local_mirror`;
+- original source URL;
+- package-relative mirrored MDL path;
+- sha256 and byte size of the mirrored MDL;
+- worker `MDL_SYSTEM_PATH` entry that can resolve the mirrored MDL;
+- evidence that the mirrored source still matches `info:mdl:sourceAsset:subIdentifier=Aluminum_Anodized_Charcoal`.
+
+`explicit_waiver` outcome:
+
+- `remote_aluminum_disposition=explicit_waiver`;
+- waiver id, reason, owner, and date;
+- affected material path: `/World/labutopia_level1_poc/obj_obj_DryingBox_01/Looks/Aluminum_Anodized_Charcoal`;
+- affected task-visible surfaces or a generated list path;
+- `material_closure_kept_open=true`;
+- PM wording requirement: "remote Aluminum remains waived; native MDL/texture material closure remains open."
+
+The generated manifest or `physics_override.json` must include a machine-readable gate like:
+
+```json
+{
+  "static_material_dependency_gate": {
+    "status": "passed",
+    "remote_dependency_policy": "local_mirror_required_or_explicit_waiver",
+    "remote_unmirrored_unwaived_count": 0,
+    "remote_waiver_count": 1,
+    "local_mirror_count": 0,
+    "remote_dependency_records": [
+      {
+        "material_name": "Aluminum_Anodized_Charcoal",
+        "source_material_path": "/World/Looks/Aluminum_Anodized_Charcoal",
+        "runtime_material_path": "/World/labutopia_level1_poc/obj_obj_DryingBox_01/Looks/Aluminum_Anodized_Charcoal",
+        "resolution_mode": "local_mirror|explicit_waiver|blocked",
+        "local_mirror_path": null,
+        "local_mirror_sha256": null,
+        "local_mirror_bytes": null,
+        "worker_resolved_path": null,
+        "waiver_id": "ALUMINUM_REMOTE_MDL_001",
+        "waiver_reason": "remote source is intentionally not mirrored in this package revision",
+        "closure_claim_allowed": false
+      }
+    ]
+  }
+}
+```
+
+This step may pass Stage 4 with an explicit waiver, because Stage 4 is an engineering dependency-disposition gate. It must not upgrade the material status to `resolved_native_material`.
+
+- [ ] **Step 3: Implement additive USD override**
 
 Use only additive override opinions in the generated overlay. Do not edit the original LabUtopia USD. The override may fix or isolate invalid `FixedJoint_01` body targets, add finite mass/inertia where required, stabilize fixed-base behavior, and record `drive target`, `stiffness`, `damping`, and `maxForce` units.
 
@@ -416,16 +488,16 @@ Write `physics_override.json` with:
 - collision API changes and any scale-compensation assumptions;
 - DOF map that names the door `RevoluteJoint`, button `PrismaticJoint`, ignored DOFs, and metric DOF;
 - drive parameters with units: target, stiffness, damping, maxForce, and whether they are authored or inherited;
-- material validator summary, including unresolved, remote-only, fallback, and waiver counts;
+- material validator summary, including unresolved, remote-only, fallback, waiver counts, `remote_aluminum_disposition`, and whether native material closure remains open;
 - before/after PhysX warning diff if the validator or smoke harness can collect it.
 
 Acceptance Stage 4 is a static additive-override closure stage. Runtime stability after the wrapper and override is confirmed in Acceptance Stage 5, not assumed here.
 
-- [ ] **Step 3: Bind metric to the door DOF**
+- [ ] **Step 4: Bind metric to the door DOF**
 
 `level1_open_door.yml` must bind scoring to the actual door `RevoluteJoint` readback. It must not read the first DOF blindly, and it must not use the button `PrismaticJoint` as the open-door metric source.
 
-- [ ] **Step 4: Verify static closure**
+- [ ] **Step 5: Verify static closure**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -482,7 +554,10 @@ Expected: writes `diagnostics.json` plus reset frame(s) and records the exact au
 
 - `readback_visible` or a concrete render blocker;
 - `native_eval_readback_ready=true`;
-- `native_material_closure_status`, one of `resolved_native_material`, `mixed_native_and_fallback`, `degraded_fallback`, or `blocked`;
+- `remote_aluminum_disposition`, copied from Stage 4 evidence;
+- `material_closure_eligible=true` only when `remote_aluminum_disposition=local_mirror`, the mirrored MDL resolves in the worker, and no waiver remains open;
+- `native_material_closure_status`, one of `resolved_native_material`, `mixed_native_and_fallback`, `degraded_fallback`, `open_remote_dependency_waived`, or `blocked`;
+- `runtime_material_dependency_status`, one of `closed_local_or_mirrored`, `open_waived`, or `blocked`;
 - `lift2_contract_ready=false` unless Acceptance Stage 7 has passed separately;
 - `runtime_physics_stable=true`;
 - `object_config.obj_DryingBox_01` registered as `existed_object`;
@@ -510,18 +585,21 @@ Runtime material readback must include, for every task-visible mesh/subset:
 - material compiler warnings filtered to DryingBox materials;
 - `displayColor`/preview fallback status without deleting native material bindings.
 
-Material readback has two separate outcomes:
+Material readback has five separate outcomes:
 
-- `material_status=resolved_native_material`: required for claiming native material closure. Runtime binding targets resolve, `ComputeBoundMaterial` succeeds, all required MDL/helper-MDL/texture dependencies resolve locally or via an explicit approved mirror, all task-visible surfaces resolve native material, and material compiler warnings are absent or explicitly waived.
+- `material_status=resolved_native_material`: required for claiming native material closure. Runtime binding targets resolve, `ComputeBoundMaterial` succeeds, all required MDL/helper-MDL/texture dependencies resolve locally or via an explicit approved mirror, `remote_aluminum_disposition=local_mirror`, no remote waiver remains open, all task-visible surfaces resolve native material, no task-visible surface relies on `displayColor` or preview fallback, and material compiler warnings are absent or explicitly waived.
 - `material_status=mixed_native_and_fallback`: some task-visible surfaces resolve native material and others rely on fallback. It may support task readability, but native material closure remains open.
 - `material_status=degraded_fallback`: acceptable only for task-readability evidence. It may pass the eval readback stage if physics, hierarchy, and render readability are otherwise valid, but PM wording must say native material closure is still open.
+- `material_status=open_remote_dependency_waived`: task-visible surfaces may bind native materials at USD level, but a required MDL dependency remains remote and explicitly waived. It may support task readability and eval readback, but native MDL/texture closure remains open.
 - `material_status=blocked`: runtime material readback cannot be collected or required task-visible materials are missing/unresolved.
+
+If `remote_aluminum_disposition=explicit_waiver`, Stage 5 may still pass `native_eval_readback_ready=true` for task-readability and metric evidence, but it must set `native_material_closure_status=open_remote_dependency_waived` unless a stronger blocker forces `blocked`; it must not set `resolved_native_material`.
 
 - [ ] **Step 4: Retake camera if needed**
 
 Reject frames that are black, flat gray, missing the drying box, missing the door face, missing the handle, or dominated by wall/ceiling geometry. A passing PM-facing frame must show the box body, door edge, and handle clearly enough to explain the task. If the frame uses `displayColor` fallback rather than resolved native MDL materials, the diagnostics and PM note must say so explicitly.
 
-Stop before Acceptance Stage 6 if `native_eval_readback_ready` is not true, if metric evidence does not read the door `RevoluteJoint`, if result/log paths are missing, or if material readback cannot distinguish `resolved_native_material` from fallback.
+Stop before Acceptance Stage 6 if `native_eval_readback_ready` is not true, if metric evidence does not read the door `RevoluteJoint`, if result/log paths are missing, or if material readback cannot distinguish `resolved_native_material`, fallback-driven readability, `open_remote_dependency_waived`, and `blocked`.
 
 ### Acceptance Stage 6: Evidence Package And PM Claim Boundary
 
@@ -541,7 +619,9 @@ The manifest must include:
 - every command used in Acceptance Stages 1-5;
 - run id, worker id, seed, task name, and result paths;
 - `audit.json`, `smoke.json`, `diagnostics.json`, frame hashes, and log paths;
-- material closure report, including `material_scope_policy`, worker `MDL_SYSTEM_PATH`, MDL compiler warnings, unresolved dependency list, waiver list, and fallback status;
+- material closure report, including `material_scope_policy`, worker `MDL_SYSTEM_PATH`, `remote_aluminum_disposition`, mirrored MDL path/hash or waiver id, MDL compiler warnings, unresolved dependency list, waiver list, and fallback status;
+- `claim_boundary.native_material_closure_claim_allowed`, derived from Stage 5 `native_material_closure_status`;
+- `claim_boundary.material_closure_blocker`, one of `none`, `remote_aluminum_explicit_waiver`, `fallback_surfaces`, `unresolved_material_dependency`, or `material_readback_blocked`;
 - visual review verdict;
 - current claim boundary.
 
@@ -559,6 +639,24 @@ Append this sentence when `material_status=degraded_fallback` or `material_statu
 当前画面可读性至少部分依赖 displayColor fallback，native MDL/texture material closure 仍是单独未闭环项，不能宣称原生材质已经完全接入。
 ```
 
+Append this sentence when `remote_aluminum_disposition=explicit_waiver`:
+
+```text
+Aluminum_Anodized_Charcoal.mdl 当前采用 waiver 记录为 remote dependency，Stage 5 可以继续证明任务可读性和 eval readback，但不能宣称 full native MDL/texture material closure。
+```
+
+Use this wording when Stage 5 reports `material_status=open_remote_dependency_waived`:
+
+```text
+原生 DryingBox_01 的 eval readback 和画面可读性可以汇报为通过；但 Aluminum 材质仍保留 remote dependency waiver，native MDL/texture material closure 继续保持 open，不能说原生材质已经完全接入。
+```
+
+Use this sentence only when Stage 5 reports `material_status=resolved_native_material`:
+
+```text
+原生材质闭环已通过 runtime readback：task-visible material binding、MDL/helper-MDL/texture 依赖、本地 mirrored Aluminum、材质编译状态和 fallback 边界都有机器可复验证据。
+```
+
 Use this wording if any Acceptance Stage 1-5 check fails:
 
 ```text
@@ -570,6 +668,8 @@ Use this wording if any Acceptance Stage 1-5 check fails:
 The HTML page must link to the exact evidence manifest and explain old image issues in plain language: camera view mismatch, unresolved native `material:binding`, top-level handle payload risk, and the difference between surrogate and native complex asset.
 
 ### Acceptance Stage 7: Lift2 Official-Baseline Contract Check
+
+Stage 7 consumes the material status produced by Stages 4-6; it does not resolve, waive, or newly claim native material closure. Passing Stage 7 only supports the Lift2 official-baseline-style contract claim.
 
 **Files:**
 - Modify: `standalone_tools/labutopia_poc/validate_task_package.py`
