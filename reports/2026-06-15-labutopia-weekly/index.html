@@ -213,8 +213,8 @@
       </article>
       <article class="card">
         <h2>DryingBox 专题</h2>
-        <p>原生 <code>DryingBox_01</code> 已推进到 Acceptance Stage 7 attempt：native asset audit、native-only Isaac smoke、EBench wrapper、additive physics override、Franka/native eval-path readback 和 Stage 6 evidence package 都已有证据。Stage 7 已尝试 Lift2 contract check，但卡在 Lift2 composite asset root：还没把默认 <code>robot_usds/lift2</code>、<code>miscs/curobo/R5a</code> 和 LabUtopia overlay 合成一个可启动的资产根目录，所以没有 live reset/step 证据，不能说 official Lift2 baseline 可评。</p>
-        <span class="tag">Stage 7 attempted</span><span class="tag warn">Lift2 assets blocked</span>
+        <p>原生 <code>DryingBox_01</code> 已完成 Acceptance Stage 1-7 的本地合同验收：native asset audit、native-only Isaac smoke、EBench wrapper、additive physics override、Franka/native eval-path readback、Stage 6 evidence package 和 Lift2 official-baseline-style contract 都有证据。Stage 7 已用 composite asset root 跑通三条 <code>lift2_candidate</code> 任务的 reset/step/result_info/metric logging，并分别验证 observation、camera、action、reward/success 和 logging schema。边界仍要保留：这不是 official leaderboard 复现，当前三任务 score 仍为 <code>0.0</code>，Aluminum material closure 仍 open。</p>
+        <span class="tag">Stage 7 passed</span><span class="tag warn">0% score; not leaderboard</span>
         <p><a href="native-dryingbox-task1.html">查看 DryingBox 验收进展</a></p>
       </article>
     </section>
@@ -579,9 +579,9 @@
           <span class="tag warn">不是简单复制配置</span><span class="tag">评测口径重建</span>
         </article>
         <article class="card">
-          <h3>先做 POC</h3>
-          <p>建议先选 <code>level1_pick</code>、<code>level1_place</code>、<code>level1_press/open_door</code> 三类代表任务，跑通资产加载、动作接口和评分闭环后再扩展 29 个配置。</p>
-          <span class="tag">3 个代表任务</span><span class="tag">再批量扩展</span>
+          <h3>三任务 POC 已跑通</h3>
+          <p><code>level1_pick</code>、<code>level1_place</code>、<code>level1_open_door</code> 已在 Lift2 candidate 配置中完成 reset、step、result_info 和 metric logging；下一步才是扩大任务面与提升策略得分。</p>
+          <span class="tag">3 个代表任务已验证</span><span class="tag">下一步批量扩展</span>
         </article>
       </section>
       <div class="table-scroll">
@@ -627,7 +627,7 @@
           </tbody>
         </table>
       </div>
-      <p class="answer"><strong>建议推进口径：</strong>先证明 3 个代表任务能在 EBench server 中完成 reset、step、score（重置、执行一步、打分），再把 29 个 LabUtopia config 分批接入。优先级建议是 pick/place/press/open 这类清晰任务在前，pour/stir/shake/clean beaker 这类长程实验任务在后。</p>
+      <p class="answer"><strong>建议推进口径：</strong>3 个代表任务已经证明能在 EBench server 中完成 reset、step、score/result_info logging（重置、执行一步、打分记录）。后续工作应转向两条线：一是把 29 个 LabUtopia config 按 pick/place/press/open 到 pour/stir/shake/clean beaker 的难度顺序分批接入；二是用官方 baseline 或更强 policy 做真正的策略得分提升。</p>
     </section>
 
     <section class="flow" aria-label="expert controller 工作流">

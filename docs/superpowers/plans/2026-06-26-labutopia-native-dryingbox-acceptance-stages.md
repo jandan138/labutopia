@@ -715,7 +715,7 @@ The HTML page must link to the exact evidence manifest and explain old image iss
 - PM wording now says: native `DryingBox_01` passed Franka/native eval-path readback; metric reads the door `RevoluteJoint`; this does not prove official Lift2 baseline readiness.
 - Material wording now says: `remote_aluminum_disposition=explicit_waiver`, waiver id `ALUMINUM_REMOTE_MDL_001`, `native_material_closure_status=open_remote_dependency_waived`, `native_material_closure_claim_allowed=false`; full native MDL/texture material closure remains open.
 - Visual wording now says: Stage 5 image is diagnostic machine evidence with `WARN`, not a polished PM showcase. DryingBox body, blue door edge, and handle are identifiable, but the current camera is dominated by table/overhead geometry; retake is recommended before using it as a showcase screenshot.
-- Stage 6 completion does not change Stage 7 status. `lift2_contract_ready=false` and `official_baseline_evaluable=false` remain the active boundary.
+- As of the 2026-06-28 Stage 6 evidence, Stage 6 completion did not change Stage 7 status: `lift2_contract_ready=false` and `official_baseline_evaluable=false` were still the active boundary. This historical boundary is superseded by the 2026-06-29 Stage 7 completion evidence below, where the local Lift2 contract becomes ready while official leaderboard/baseline evaluation remains unclaimed.
 
 ### Acceptance Stage 7: Lift2 Official-Baseline Contract Check
 
@@ -740,24 +740,34 @@ git diff --check
 
 Expected: all commands pass.
 
-- [x] **Step 2: Start eval server with explicit assets (preflight-blocked; server not started)**
+- [x] **Step 2: Start eval server with explicit composite assets**
 
 ```bash
-cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
-ASSETS_DIR=/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Overlay/labutopia_level1_poc/assets \
-python ray_eval_server.py --host 0.0.0.0 --port 8087 --no_save_process
+cd /root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback
+LABUTOPIA_POC_ASSETS_OVERLAY_ROOT=/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/saved/assets \
+PYTHONPATH=/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src:/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src:$PWD \
+/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python \
+  ray_eval_server.py --host 127.0.0.1 --port 18188 \
+  --run_id labutopia_lift2_composite_20260629_0404 \
+  --no_save_process --episode_recorder_save_every 0 \
+  --reset_timeout 1200 --step_timeout 1200 --load_config_timeout 300 --create_timeout 1200
 ```
 
-Expected: server starts with the LabUtopia asset root and no missing Lift2 robot/curobo asset errors.
+Expected: server starts with the LabUtopia plus Lift2 composite asset root and no missing Lift2 robot/curobo asset errors.
 
-- [x] **Step 3: Run Lift2 candidate smoke (client commands attempted; blocked before reset)**
+- [x] **Step 3: Run Lift2 candidate smoke/eval**
 
 ```bash
-cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
-gmp submit ebench/labutopia_lab_poc/lift2_candidate --run_id labutopia_lift2_schema_smoke
-GENMANIP_RESULT_DIR=/tmp/labutopia_lift2_schema_client_results \
-gmp eval -a r5a -g lift2 --worker_ids 0 --run_id labutopia_lift2_schema_smoke --frame_save_interval 10
-gmp status --run_id labutopia_lift2_schema_smoke
+cd /root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback
+gmp submit ebench/labutopia_lab_poc/lift2_candidate \
+  --run_id labutopia_lift2_composite_20260629_0404 \
+  --host 127.0.0.1 --port 18188
+gmp eval -a r5a -g lift2 --worker_ids 0 \
+  --run_id labutopia_lift2_composite_20260629_0404 \
+  --host 127.0.0.1 --port 18188 \
+  --no_save_process --frame_save_interval 0 --chunk_size 1
+gmp status --run_id labutopia_lift2_composite_20260629_0404 \
+  --host 127.0.0.1 --port 18188
 ```
 
 Expected: each task either reaches reset/step/metric with saved results or records a concrete blocker such as camera framing, reachability, base collision, missing object, missing asset, action schema mismatch, or blank camera.
@@ -858,7 +868,70 @@ lift2_contract_ready=false
 official_baseline_evaluable=false
 ```
 
-Next engineering step: build the composite Lift2 asset root by combining the LabUtopia overlay with default `robot_usds/lift2` and `miscs/curobo/R5a`, then rerun the isolated eval server plus `gmp submit/eval/status` and `lift2_eval_contract_probe --live`. Treat `meta_info.pkl` as a live-reset watch item covered by the LabUtopia POC fallback, not as the primary asset-root blocker.
+Historical next engineering step from this 2026-06-28 attempt: build the composite Lift2 asset root by combining the LabUtopia overlay with default `robot_usds/lift2` and `miscs/curobo/R5a`, then rerun the isolated eval server plus `gmp submit/eval/status` and `lift2_eval_contract_probe --live`. This item was resolved by the 2026-06-29 completion evidence below. Treat `meta_info.pkl` as a live-reset watch item covered by the LabUtopia POC fallback, not as the primary asset-root blocker.
+
+#### Acceptance Stage 7 Completion Evidence - 2026-06-29
+
+Result: `Stage 7 passed` for the local official-baseline-style Lift2 contract.
+
+GenManip artifacts:
+
+- Readiness report: `docs/labutopia_lab_poc/lift2_readiness.md`
+- Stage 7 manifest: `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_stage7_lift2_contract_20260629_0404.json`
+- Probe bundle: `docs/labutopia_lab_poc/evidence_manifests/lift2_contract_probe_20260629_0404/`
+- Full eval logs: `gmp_submit.txt`, `gmp_eval.txt`, `gmp_status.txt`, and `result_info_summary.txt` inside the probe bundle.
+- Per-task live probes: `probe_level1_pick.json`, `probe_level1_place.json`, and `probe.json` for `level1_open_door`.
+
+Resolved blocker:
+
+- Composite asset root is now present at `/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets`.
+- The GenManip worktree `saved/assets` symlink points to that composite root.
+- Preflight confirms `robot_usds/lift2/robot.usd`, `miscs/curobo/R5a/r5a_left_arm.yml`, LabUtopia `scene.usda`, LabUtopia manifest, native physics override manifest, and LabUtopia mesh data exist.
+- `curobo` imports from `/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src`.
+
+Runtime evidence:
+
+- Full eval run id: `labutopia_lift2_composite_20260629_0404`
+- Isolated port: `18188`; port `8087` was left untouched for another task.
+- `gmp status` reports complete, `completed=3`, `in_progress=0`, and no active workers.
+- `level1_pick`, `level1_place`, and `level1_open_door` all wrote `result_info.json` with `metric_score`, `score=0.0`, and `success_rate=0`.
+- The eval server on `18188` was shut down after evidence collection; `8087` remained open as an external task lane.
+
+Stage 7 task matrix:
+
+| Task | Reset | Step | Reachability | Camera Framing | Metric | Finding |
+| --- | --- | --- | --- | --- | --- | --- |
+| `level1_pick` | `PASS` | `PASS` | `PASS` | `PASS` | `PASS` | Full eval reached result logging; live probe returned reset observation, image-shaped cameras, and step responses for every action dialect. |
+| `level1_place` | `PASS` | `PASS` | `PASS` | `PASS` | `PASS` | Full eval reached result logging; live probe returned reset observation, image-shaped cameras, and step responses for every action dialect. |
+| `level1_open_door` | `PASS` | `PASS` | `PASS` | `PASS` | `PASS` | Full eval reached result logging; live probe returned reset observation, image-shaped cameras, and step responses for every action dialect. |
+
+Stage 7 schema matrix:
+
+| Row | Status | Finding |
+| --- | --- | --- |
+| observation keys | `PASS` | all three live probes expose required Lift2 baseline inputs |
+| camera input keys | `PASS` | all three live probes expose `video.overlook_camera_view`, `video.left_camera_view`, and `video.right_camera_view` as image-shaped arrays |
+| action dialects | `PASS` | 16D Lift2 joint-position action plus 3D `base_motion` matrix produced live step responses for zero, OpenPI-style, X-VLA-style, and optional InternVLA-A1 dialects |
+| reward/success fields | `PASS` | live step responses expose GenManip/EBench metric/reward/success fields |
+| logging fields | `PASS` | run id, worker id, episode id, seed, result path, stdout, and stderr are recorded |
+
+Product boundary:
+
+```text
+Stage 7 passed
+lift2_contract_ready=true
+local_official_baseline_style_contract_ready=true
+official_baseline_evaluable=false
+```
+
+This allows local official-baseline-style Lift2 readiness wording. It still does
+not claim official leaderboard reproduction, official EBench score release,
+model quality, or native material closure. The current Lift2 candidate eval
+scores are all `0.0`, which means the tested simple/default action did not solve
+the tasks; that is a policy/controller result, not a runtime-contract failure.
+The Stage 4-6 material boundary also remains unchanged:
+`native_material_closure_status=open_remote_dependency_waived` and
+`native_material_closure_claim_allowed=false`.
 
 ## Final Verification
 
