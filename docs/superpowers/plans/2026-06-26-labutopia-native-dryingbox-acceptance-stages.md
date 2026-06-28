@@ -219,7 +219,7 @@ Completion evidence, 2026-06-28:
 - Test: `tests/labutopia_poc/test_native_dryingbox_smoke_contract.py`
 - Output: `saved/diagnostics/native_dryingbox_smoke_<utc_timestamp>/smoke.json`
 
-- [ ] **Step 1: Run smoke contract tests**
+- [x] **Step 1: Run smoke contract tests**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -228,7 +228,7 @@ python -m pytest tests/labutopia_poc/test_native_dryingbox_smoke_contract.py -q
 
 Expected: PASS.
 
-- [ ] **Step 2: Run native-only smoke**
+- [x] **Step 2: Run native-only smoke**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -257,11 +257,11 @@ Expected: exit `0`, `runtime_physics_stable=true`, finite root pose, finite hand
 - `non_door_dof_drift_within_tolerance=true` only when non-door DOFs remain inside the configured tolerance, default `1e-4` meters or radians unless the script records a task-specific value;
 - `physx_warning_allowlist`, `physx_warning_denylist`, and `unclassified_physx_warnings`; the validator must fail on any non-empty denylist or unclassified list and must verify the three lists partition `physx_warnings`;
 - `physx_warning_scope`, so warnings from inactive or non-target siblings such as `/World/DryingBox_02` cannot be mistaken for target DryingBox evidence;
-- full-source material-runtime notes: `/World/Looks` present or absent, material collection status, task mesh count, bound mesh count, unbound task mesh count and paths, empty authored binding count and paths, unresolved non-empty binding target count and paths, used material count and paths, remote material dependency count and paths, fallback status, and material compiler warnings filtered to DryingBox materials when Isaac exposes them.
+- full-source material-runtime notes: `/World/Looks` present or absent, material collection status, task mesh count, bound mesh count, unbound task mesh count and paths, empty authored binding count and paths, unresolved non-empty binding target count and paths, used material count and paths, remote material dependency count and paths, `material_binding_gap_count`, `material_binding_gap_paths`, per-path `material_binding_gap_details`, `material_binding_gap_readability_status`, fallback status, and material compiler warnings filtered to DryingBox materials when Isaac exposes them.
 
 Acceptance Stage 2 proves full-source native physics smoke only. It does not prove EBench wrapper packaging, material rebinding, or Lift2 readiness.
 
-- [ ] **Step 3: Enforce stop condition**
+- [x] **Step 3: Enforce stop condition**
 
 Stop before Acceptance Stage 3 if any of these are true:
 
@@ -280,16 +280,18 @@ Stop before Acceptance Stage 3 if any of these are true:
 
 Preserve the artifact and add the blocker to the evidence manifest.
 
-Attempted evidence, 2026-06-28:
+Passed evidence, 2026-06-28:
 
 - GenManip branch: `labutopia-stage2-native-smoke`
-- Smoke artifact: `saved/diagnostics/native_dryingbox_smoke_20260628_110718/smoke.json`
-- Generated stage: `saved/diagnostics/native_dryingbox_smoke_20260628_110718/native_dryingbox.usda`
-- Positive physics signal: `runtime_physics_stable=true`, `finite_trace=true`, `step_count=120`, root/handle drift `0.0`, and joint readback for `RevoluteJoint` plus `PrismaticJoint`.
-- Material finding: current code reports `unresolved_task_material_count=2`, but USD review shows those two are explicit empty `material:binding` targets; the actual non-empty unresolved binding target count should be separated from empty authored bindings. Current review counts: 29 meshes with valid `ComputeBoundMaterial`, 2 empty authored bindings, and 1 unbound mesh.
-- Stage isolation finding: the generated `native_dryingbox.usda` references source `/World` but contains no `active=false` opinions, so non-target siblings such as `DryingBox_02`, `Cabinet_01`, and `Cabinet_02` remain active. This blocks Stage 2 `passed`.
-- Environment finding: the target conda Python cannot import `pxr` before Isaac/Kit initialization; `/isaac-sim/python.sh` can read the source `/World` children. Stage generation must not rely on pre-`SimulationApp` `pxr` availability without recording failure.
-- Current status: `attempted`, not `passed`. Do not advance product wording to EBench wrapper readiness or Lift2 readiness from this artifact.
+- Smoke artifact: `saved/diagnostics/native_dryingbox_smoke_20260628_143638/smoke.json`
+- Generated stage: `saved/diagnostics/native_dryingbox_smoke_20260628_143638/native_dryingbox.usda`
+- Stage result: `stage2_status=passed`, `stage2_passed=true`, and `stage2_validation_errors=[]`.
+- Verification: `python -m py_compile standalone_tools/labutopia_poc/run_native_dryingbox_smoke.py && python -m pytest tests/labutopia_poc -q` -> `113 passed, 1 skipped`. The latest `smoke.json` also passes a fresh `validate_smoke_report()` recomputation after validator hardening.
+- Positive physics signal: `runtime_physics_stable=true`, `finite_trace=true`, `step_count=120`, root drift `0.0`, handle drift `0.0`, door joint path `/World/DryingBox_01/RevoluteJoint`, button joint path `/World/DryingBox_01/button/PrismaticJoint`, and source door limits `[0.0, 120.0]` read from source USD.
+- Stage isolation finding: closed for this artifact. `world_child_discovery_status=ok` via `isaac_python_sh`; active source children are only `Looks`, `PhysicsScene`, and `DryingBox_01`; `active_non_target_world_child_count=0`. Non-target siblings such as `DryingBox_02`, `Cabinet_01`, `Cabinet_02`, `GroundPlane`, and lab props are written as `active=false` overlays in the generated stage.
+- PhysX finding: captured duplicate link-name warnings are fully allowlisted; `physx_warning_denylist=[]` and `unclassified_physx_warnings=[]`.
+- Material finding: accepted for Stage 2 smoke readability, not native material closure. `unresolved_binding_target_count=0`, `material_collection_ok=true`, `task_mesh_count=32`, `bound_task_mesh_count=29`, `used_material_count=3`, `remote_material_dependency_count=0`, and material compiler warnings are empty. Three source material gaps remain visible in the evidence: `/World/DryingBox_01/button` is `unbound`, while `/World/DryingBox_01/Group/_900_1` and `/World/DryingBox_01/panel` have empty authored bindings. The generated smoke stage adds `primvars:displayColor` readability fallback to exactly those three paths, records `material_fallback_overlay_policy=stage2_readability_displayColor_not_native_material_closure`, and runtime evidence records `material_runtime_status=mixed_native_and_fallback`, `fallback_status=readability_evidence_accepted`, and `material_binding_gap_readability_status=accepted`.
+- Product boundary: Stage 2 now proves the real LabUtopia `DryingBox_01` can be isolated from the full source scene and survive 120 Isaac physics steps by itself. It still does not prove EBench wrapper packaging, wrapper-local material rebinding, eval-path scoring, or official Lift2 baseline readiness.
 
 ### Acceptance Stage 3: Native Wrapper Composition
 
@@ -537,10 +539,10 @@ Use this wording if Acceptance Stages 1-5 pass:
 原生 DryingBox_01 已经通过 EBench/GenManip eval path 的 native open-door readback：资产不是 surrogate cube，门、把手、joint 和画面都有证据。但这仍然只是 Franka/native acceptance stage，不等于 official Lift2 baseline 已通过。
 ```
 
-Append this sentence when `material_status=degraded_fallback`:
+Append this sentence when `material_status=degraded_fallback` or `material_status=mixed_native_and_fallback`:
 
 ```text
-当前画面可读性依赖 displayColor fallback，native MDL/texture material closure 仍是单独未闭环项，不能宣称原生材质已经完全接入。
+当前画面可读性至少部分依赖 displayColor fallback，native MDL/texture material closure 仍是单独未闭环项，不能宣称原生材质已经完全接入。
 ```
 
 Use this wording if any Acceptance Stage 1-5 check fails:
