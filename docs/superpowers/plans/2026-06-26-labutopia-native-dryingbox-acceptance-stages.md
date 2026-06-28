@@ -643,7 +643,7 @@ Completion evidence, 2026-06-29:
 - Modify: `docs/records/evidence/2026-06-22-labutopia-ebench-weekly-report/index.html`
 - Modify: `reports/2026-06-15-labutopia-weekly/native-dryingbox-task1.html`
 
-- [ ] **Step 1: Build one evidence manifest**
+- [x] **Step 1: Build one evidence manifest**
 
 The manifest must include:
 
@@ -659,7 +659,7 @@ The manifest must include:
 - visual review verdict;
 - current claim boundary.
 
-- [ ] **Step 2: Update PM-facing wording**
+- [x] **Step 2: Update PM-facing wording**
 
 Use this wording if Acceptance Stages 1-5 pass:
 
@@ -697,9 +697,25 @@ Use this wording if any Acceptance Stage 1-5 check fails:
 原生 DryingBox_01 的接入正在推进，但当前 blocker 仍在 native asset / physics / wrapper / readback 中的一个具体验收阶段；不能宣称 official baseline 可评。
 ```
 
-- [ ] **Step 3: Keep evidence and product page aligned**
+- [x] **Step 3: Keep evidence and product page aligned**
 
 The HTML page must link to the exact evidence manifest and explain old image issues in plain language: camera view mismatch, unresolved native `material:binding`, top-level handle payload risk, and the difference between surrogate and native complex asset.
+
+#### Acceptance Stage 6 Completion Evidence - 2026-06-28
+
+- GenManip evidence manifest: `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_acceptance_20260628_183219.json`
+- Source Stage 5 eval manifest: `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_eval_20260628_183219.json`
+- Runtime diagnostics artifact: `saved/diagnostics/labutopia_native_open_door_eval_20260628_183219/diagnostics.json`
+- GenManip commit for Stage 5/6 evidence: `f743d03 feat: capture LabUtopia DryingBox eval readback`
+- LabUtopia docs/pages commit carrying Stage 5 and Stage 6 status before this update: `3d42bbc docs: record dryingbox stage 5 completion`
+- Updated GenManip PM evidence page: `docs/records/evidence/2026-06-22-labutopia-ebench-weekly-report/index.html`
+- Updated GenManip PM markdown: `docs/records/2026-06-22-labutopia-ebench-weekly-report.md`
+- Updated LabUtopia PM pages: `reports/2026-06-15-labutopia-weekly/index.html` and `reports/2026-06-15-labutopia-weekly/native-dryingbox-task1.html`
+- Stage 6 manifest includes GenManip/LabUtopia SHAs, recommended conda env path `/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310`, effective Isaac Kit Python interpreter, `ASSET_OVERLAY_ROOT`, `MDL_SYSTEM_PATH`, Stage 1-5 commands/artifacts/hash, run id, worker id, seed, episode id, stdout/stderr paths, three frame hashes, material closure report, Aluminum waiver, visual review verdict, and claim boundary.
+- PM wording now says: native `DryingBox_01` passed Franka/native eval-path readback; metric reads the door `RevoluteJoint`; this does not prove official Lift2 baseline readiness.
+- Material wording now says: `remote_aluminum_disposition=explicit_waiver`, waiver id `ALUMINUM_REMOTE_MDL_001`, `native_material_closure_status=open_remote_dependency_waived`, `native_material_closure_claim_allowed=false`; full native MDL/texture material closure remains open.
+- Visual wording now says: Stage 5 image is diagnostic machine evidence with `WARN`, not a polished PM showcase. DryingBox body, blue door edge, and handle are identifiable, but the current camera is dominated by table/overhead geometry; retake is recommended before using it as a showcase screenshot.
+- Stage 6 completion does not change Stage 7 status. `lift2_contract_ready=false` and `official_baseline_evaluable=false` remain the active boundary.
 
 ### Acceptance Stage 7: Lift2 Official-Baseline Contract Check
 
