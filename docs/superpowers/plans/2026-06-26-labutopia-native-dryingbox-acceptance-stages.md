@@ -727,7 +727,7 @@ Stage 7 consumes the material status produced by Stages 4-6; it does not resolve
 - Create: `docs/labutopia_lab_poc/lift2_readiness.md`
 - Test: `tests/labutopia_poc/test_validate_task_package.py`
 
-- [ ] **Step 1: Run static checks**
+- [x] **Step 1: Run static checks**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -740,7 +740,7 @@ git diff --check
 
 Expected: all commands pass.
 
-- [ ] **Step 2: Start eval server with explicit assets**
+- [x] **Step 2: Start eval server with explicit assets (preflight-blocked; server not started)**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -750,7 +750,7 @@ python ray_eval_server.py --host 0.0.0.0 --port 8087 --no_save_process
 
 Expected: server starts with the LabUtopia asset root and no missing Lift2 robot/curobo asset errors.
 
-- [ ] **Step 3: Run Lift2 candidate smoke**
+- [x] **Step 3: Run Lift2 candidate smoke (client commands attempted; blocked before reset)**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -764,7 +764,7 @@ Expected: each task either reaches reset/step/metric with saved results or recor
 
 This step by itself records a Lift2 candidate attempt. It is not a pass unless every required task reaches reset, step, metric, camera framing, reward/success, and logging without `FAIL` or `BLOCKED`.
 
-- [ ] **Step 4: Run `lift2_eval_contract_probe`**
+- [x] **Step 4: Run `lift2_eval_contract_probe`**
 
 The probe must reset one task, dump observation schema, then send an action-dialect matrix:
 
@@ -782,7 +782,7 @@ It must check:
 - reward/success fields from GenManip/EBench metric output, not LabUtopia expert controller `done`;
 - logging fields: `run_id`, `worker_id`, `episode_id`, `seed`, result path, stdout/stderr, and exception stack when present.
 
-- [ ] **Step 5: Write Lift2 readiness report**
+- [x] **Step 5: Write Lift2 readiness report**
 
 `docs/labutopia_lab_poc/lift2_readiness.md` must contain:
 
@@ -792,6 +792,69 @@ It must check:
 - schema rows for observation keys, camera input keys, action dialects, reward/success fields, and logging fields, using only `PASS`, `FAIL`, or `BLOCKED`;
 - a clear statement that Franka/native acceptance-stage pass does not imply official baseline readiness unless Acceptance Stage 7 passes.
 - a clear statement that any `FAIL` or `BLOCKED` row means Stage 7 was attempted, not passed, and Lift2 readiness wording is not allowed.
+
+#### Acceptance Stage 7 Attempt Evidence - 2026-06-28
+
+Result: `Stage 7 attempted, blocked`.
+
+GenManip artifacts:
+
+- Readiness report: `docs/labutopia_lab_poc/lift2_readiness.md`
+- Stage 7 manifest: `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_stage7_lift2_contract_20260628_191421.json`
+- Probe bundle: `docs/labutopia_lab_poc/evidence_manifests/lift2_contract_probe_20260628_191421/`
+- Probe JSON: `docs/labutopia_lab_poc/evidence_manifests/lift2_contract_probe_20260628_191421/probe.json`
+
+Static checks passed:
+
+```text
+python -m pytest tests/labutopia_poc -q
+165 passed, 1 skipped
+
+python standalone_tools/labutopia_poc/validate_task_package.py
+LabUtopia task package validation OK
+
+python -m json.tool configs/tasks/ebench/labutopia_lab_poc/franka_poc/franka_poc.json
+PASS
+
+python -m json.tool configs/tasks/ebench/labutopia_lab_poc/lift2_candidate/lift2_candidate.json
+PASS
+
+git diff --check
+PASS
+```
+
+Runtime attempt boundary:
+
+- Isolated run id: `labutopia_lift2_schema_smoke_20260628_191421`
+- Isolated port: `18088`, intentionally not `8087`, to avoid collision with other runs.
+- Runtime Python: `/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python`
+- GenManip client source: `/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src`
+- `gmp submit`, `gmp eval`, and `gmp status` were attempted through `genmanip_client.cli` and recorded exit code `1` because no eval server was running on `127.0.0.1:18088`.
+- A long Isaac eval server was not started because preflight still reports missing Lift2 composite assets:
+  - `saved/assets/robot_usds/lift2/robot.usd`
+  - `saved/assets/miscs/curobo/R5a/r5a_left_arm.yml`
+  - `saved/tasks/ebench/labutopia_lab_poc/lift2_candidate/level1_pick/meta_info.pkl`
+  - overlay `robot_usds/lift2/robot.usd`
+
+Stage 7 schema matrix:
+
+| Row | Status | Finding |
+| --- | --- | --- |
+| observation keys | `BLOCKED` | no live reset observation schema |
+| camera input keys | `BLOCKED` | no live `video.overlook_camera_view`, `video.left_camera_view`, or `video.right_camera_view` evidence |
+| action dialects | `PASS` | static 16D Lift2 joint-position action plus 3D `base_motion` matrix is valid |
+| reward/success fields | `BLOCKED` | no GenManip/EBench live step metric output |
+| logging fields | `BLOCKED` | no live episode result path, seed, episode id, stdout/stderr from server side |
+
+Product boundary:
+
+```text
+Stage 7 was attempted and produced useful blockers, but it did not pass.
+lift2_contract_ready=false
+official_baseline_evaluable=false
+```
+
+Next engineering step: build the composite Lift2 asset root by combining the LabUtopia overlay with default `robot_usds/lift2` and `miscs/curobo/R5a`, generate or locate the required `meta_info.pkl` seeds, then rerun the isolated eval server plus `gmp submit/eval/status` and `lift2_eval_contract_probe --live`.
 
 ## Final Verification
 

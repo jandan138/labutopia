@@ -321,18 +321,18 @@
   <main>
     <div class="topline">
       <a class="back" href="./index.html">返回 6.15 周报</a>
-      <span class="tag blue">Stage 6 · Evidence Package</span>
+      <span class="tag blue">Stage 7 · Attempted / Blocked</span>
     </div>
 
     <section class="hero">
       <div>
         <div class="eyebrow">EBench native DryingBox · 2026-06-28</div>
-        <h1>原生 DryingBox_01 验收进展：Stage 5 readback 已通过</h1>
-        <p class="lede">结论更新：原生 <code>DryingBox_01</code> 已通过 Acceptance Stage 1-5，Stage 6 evidence package 也已经生成。我们已经证明它不是 surrogate cube，能单独跑 native-only smoke，能进入 EBench/GenManip runtime wrapper，也能通过 Franka/native <code>open_door</code> eval-path reset/render/step/metric/readback。边界仍要写清楚：这还不是 official Lift2 baseline 可评；<code>Aluminum_Anodized_Charcoal.mdl</code> 仍是 explicit waiver，所以 full native MDL/texture material closure 仍 open。</p>
+        <h1>原生 DryingBox_01 验收进展：Stage 7 已尝试，但被 Lift2 资产卡住</h1>
+        <p class="lede">结论更新：原生 <code>DryingBox_01</code> 已通过 Acceptance Stage 1-5，Stage 6 evidence package 也已经生成；Stage 7 已经尝试验证 Lift2 official-baseline-style contract。我们已经证明它不是 surrogate cube，能单独跑 native-only smoke，能进入 EBench/GenManip runtime wrapper，也能通过 Franka/native <code>open_door</code> eval-path reset/render/step/metric/readback。Stage 7 目前不是通过，而是 <code>attempted, blocked</code>：缺默认 Lift2 robot/curobo 资产和 seed <code>meta_info.pkl</code>，没有 live reset/step 证据。边界仍要写清楚：这还不是 official Lift2 baseline 可评；<code>Aluminum_Anodized_Charcoal.mdl</code> 仍是 explicit waiver，所以 full native MDL/texture material closure 仍 open。</p>
       </div>
       <div class="metrics" aria-label="Task 1 关键数字">
         <div class="metric"><strong>54</strong><span>native prims under <code>/World/DryingBox_01</code></span></div>
-        <div class="metric"><strong>5/7</strong><span>acceptance stages passed before Lift2 contract</span></div>
+        <div class="metric"><strong>7</strong><span>Stage 7 attempted; blocked before live reset</span></div>
         <div class="metric"><strong>32</strong><span>runtime task-visible material records</span></div>
         <div class="metric"><strong>1</strong><span>explicit Aluminum remote waiver keeps material closure open</span></div>
       </div>
@@ -351,7 +351,7 @@
         </div>
         <div class="mini">
           <strong>工程推进看验收阶段</strong>
-          <span>Stage 1-5 已过，Stage 6 证据包已生成；下一关是 Stage 7 Lift2 contract check。</span>
+          <span>Stage 1-6 已完成；Stage 7 已尝试，当前 blocker 是 Lift2 composite asset root 不完整。</span>
         </div>
         <div class="mini">
           <strong>对外汇报守边界</strong>
@@ -364,6 +364,7 @@
       <h2>先给产品经理的结论</h2>
       <p>这次要回答的问题已经从“能不能用原生资产”推进到“原生资产能不能进入 EBench eval path 并被 metric 正确读到”。答案是：可以。Stage 5 已经让 <code>DryingBox_01</code> 作为完整 native asset 通过 Franka/native <code>open_door</code> eval-path readback，handle 仍留在 box 内部，metric 读取门的 <code>RevoluteJoint</code>，不是按钮 <code>PrismaticJoint</code>。</p>
       <p><strong>2026-06-28 Stage 5/6 状态：</strong>最终诊断记录 <code>native_eval_readback_ready=true</code>、<code>native_complex_dryingbox_ready=true</code>、<code>runtime_physics_stable=true</code>、<code>eval_step_contract.passed=true</code>、<code>metric_reads_door_revolute_joint=true</code>。Stage 6 acceptance manifest 已经记录 GenManip/LabUtopia SHA、推荐 conda env、<code>ASSET_OVERLAY_ROOT</code>、<code>MDL_SYSTEM_PATH</code>、Stage 1-5 artifact/hash、三张 frame hash、Aluminum waiver 和 claim boundary。</p>
+      <p><strong>2026-06-28 Stage 7 状态：</strong>已新增 <code>lift2_eval_contract_probe.py</code>、Lift2 readiness report 和 Stage 7 machine manifest。静态 action dialect matrix 已经是 <code>PASS</code>，但 observation/camera/reward/logging 都是 <code>BLOCKED</code>，因为没有 live eval server reset/step 证据。我们故意使用独立 run_id 和 <code>18088</code> 端口，避免和默认 <code>8087</code> 或其它工程师的任务混淆。</p>
       <p><strong>材质口径补充：</strong>当前状态是 <code>native_material_closure_status=open_remote_dependency_waived</code>。Stage 5 已完成 runtime material readback 分类，32 条 task-visible material record 有证据；但 <code>Aluminum_Anodized_Charcoal.mdl</code> 当前采用 explicit waiver <code>ALUMINUM_REMOTE_MDL_001</code>，<code>material_closure_eligible=false</code>。也就是说，可以汇报任务可读性和 eval readback 通过，不能宣称 full native MDL/texture material closure。</p>
       <div class="summary-grid">
         <div class="summary-item">
@@ -372,11 +373,11 @@
         </div>
         <div class="summary-item">
           <strong>还不能确定什么</strong>
-          <span>Stage 7 Lift2 contract 还没过，所以不能说 official Lift2 baseline 可评。Aluminum remote waiver 仍 open，所以不能把当前画面包装成“native material 已完全闭环”。</span>
+          <span>Stage 7 不是 passed，而是 attempted/blocked，所以不能说 official Lift2 baseline 可评。Aluminum remote waiver 仍 open，所以不能把当前画面包装成“native material 已完全闭环”。</span>
         </div>
         <div class="summary-item">
           <strong>下一步要过哪一关</strong>
-          <span>进入 Stage 7：验证 Lift2 candidate 的 observation/action/camera/reward/logging contract。通过前继续保持 <code>official_baseline_evaluable=false</code>。</span>
+          <span>先补 Lift2 composite asset root：默认 <code>robot_usds/lift2</code>、<code>miscs/curobo/R5a</code>、seed <code>meta_info.pkl</code>。补齐后再启动隔离 eval server，重跑 <code>gmp submit/eval/status</code> 和 probe。</span>
         </div>
       </div>
     </section>
@@ -384,8 +385,8 @@
     <section class="grid" aria-label="给产品经理的结论">
       <article class="panel">
         <h2>给产品的一句话</h2>
-        <p>原生复杂干燥箱已经能以完整 native asset 通过 Franka/native eval-path readback，门、把手、画面和门 <code>RevoluteJoint</code> metric 都有机器证据；下一步是 Stage 7 Lift2 contract。</p>
-        <span class="tag">Stage 5 passed</span><span class="tag warn">还不是 Lift2 baseline</span>
+        <p>原生复杂干燥箱已经能以完整 native asset 通过 Franka/native eval-path readback，门、把手、画面和门 <code>RevoluteJoint</code> metric 都有机器证据；Stage 7 已经尝试，当前明确卡在 Lift2 复合资产和 live reset 证据。</p>
+        <span class="tag">Stage 7 attempted</span><span class="tag warn">还不是 Lift2 baseline</span>
       </article>
       <article class="panel">
         <h2>给实习生的一句话</h2>
@@ -451,6 +452,8 @@
       <div class="path">Stage 4 physics override artifact: saved/diagnostics/native_dryingbox_physics_override_20260628_172756/physics_override.json</div>
       <div class="path">Stage 5 eval readback diagnostics: saved/diagnostics/labutopia_native_open_door_eval_20260628_183219/diagnostics.json</div>
       <div class="path">Stage 6 acceptance manifest: docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_acceptance_20260628_183219.json</div>
+      <div class="path">Stage 7 Lift2 readiness report: docs/labutopia_lab_poc/lift2_readiness.md</div>
+      <div class="path">Stage 7 machine manifest: docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_stage7_lift2_contract_20260628_191421.json</div>
       <div class="path">stage_sha256: 26212d40a78cd28f2bc3a38b2e06f05875b3096501c7d6dd5ccbe9a6e9019983</div>
       <figure class="evidence-image">
         <img src="assets/labutopia-franka-level1-open-door-native-eval-stage5.png" alt="Stage 5 native DryingBox_01 eval-path diagnostic evidence">
@@ -463,6 +466,8 @@
         <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-stage2-native-smoke/saved/diagnostics/native_dryingbox_smoke_20260628_143638/smoke.json</div>
         <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/saved/diagnostics/labutopia_native_open_door_eval_20260628_183219/diagnostics.json</div>
         <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_acceptance_20260628_183219.json</div>
+        <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/docs/labutopia_lab_poc/lift2_readiness.md</div>
+        <div class="path">/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_stage7_lift2_contract_20260628_191421.json</div>
       </details>
       <div class="table-scroll">
         <table>
@@ -862,7 +867,7 @@ python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
 
     <section class="flow" aria-label="七个 Acceptance Stage 怎么衔接">
       <h2>七个 Acceptance Stage 分别干什么？</h2>
-      <p>这七步是验收阶段，不是简单任务清单。每一步都要产出可追溯证据，前一步不过就不应该把后一步的产品结论写满。当前 Stage 1-6 已完成，Stage 7 是下一步。</p>
+      <p>这七步是验收阶段，不是简单任务清单。每一步都要产出可追溯证据，前一步不过就不应该把后一步的产品结论写满。当前 Stage 1-6 已完成，Stage 7 已尝试但 blocked；这不是失败，而是明确告诉我们下一步要先补 Lift2 composite assets。</p>
       <div class="flow-track">
         <div class="step done"><strong>1. Asset Audit</strong><span>只读检查原生 USD，列出 hierarchy、joint、handle 和风险。当前已完成。</span></div>
         <div class="step done"><strong>2. Isaac Smoke</strong><span>native-only stage 已跑 120 步，pose/joint finite、physics stable，非目标 sibling 已隔离。</span></div>
@@ -870,7 +875,7 @@ python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
         <div class="step done"><strong>4. Physics Override</strong><span>additive USD override 已固化 scale、mass、inertia、joint target、DOF filtering 和 fixed-base；Aluminum waiver 在这里登记。</span></div>
         <div class="step done"><strong>5. Eval Readback</strong><span>open_door readback 已确认 render、joint、handle、metric 都能被 EBench 侧读到。</span></div>
         <div class="step done"><strong>6. Docs Evidence</strong><span>Stage 6 acceptance manifest 已记录 artifact/hash、frame hash、waiver 和 claim boundary；PM 页面同步更新。</span></div>
-        <div class="step next"><strong>7. Lift2 Contract Check</strong><span>进入 Lift2 observation/action/camera/reward/logging contract。只有这里通过后，才重新讨论 official_baseline_evaluable。</span></div>
+        <div class="step next"><strong>7. Lift2 Contract Check</strong><span>已尝试：action dialect 静态契约 PASS；live observation/camera/reward/logging BLOCKED，因为缺 Lift2 robot/curobo 复合资产和 seed meta_info。只有这里全 PASS 后，才重新讨论 official_baseline_evaluable。</span></div>
       </div>
     </section>
 
@@ -894,7 +899,7 @@ python3 -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q</div>
 
     <section class="note">
       <strong>当前对外口径：</strong>
-      原生 <code>DryingBox_01</code> 已通过 Stage 1-5，Stage 6 evidence package 已生成：结构可审计、native-only smoke 稳定、EBench wrapper composition、additive physics override、Franka/native eval-path readback、门 <code>RevoluteJoint</code> metric、frame hash 和 PM claim boundary 都有证据。当前仍不能宣称 full native MDL/texture closure 或 official Lift2 baseline 可评；下一步要做 Stage 7 Lift2 contract check。
+	      原生 <code>DryingBox_01</code> 已通过 Stage 1-5，Stage 6 evidence package 已生成，Stage 7 已尝试并产出 blocker：结构可审计、native-only smoke 稳定、EBench wrapper composition、additive physics override、Franka/native eval-path readback、门 <code>RevoluteJoint</code> metric、frame hash 和 PM claim boundary 都有证据；Lift2 official-baseline-style contract 还缺 live reset/step/metric/logging 证据。当前仍不能宣称 full native MDL/texture closure 或 official Lift2 baseline 可评；下一步要补 Lift2 composite asset root 后重跑 Stage 7。
     </section>
 
     <div class="footer">
