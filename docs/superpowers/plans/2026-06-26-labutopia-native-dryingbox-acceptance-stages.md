@@ -114,7 +114,7 @@ Use `Acceptance Stage` for this seven-stage native DryingBox acceptance lane. Re
 - Test: `tests/labutopia_poc/test_native_dryingbox_audit.py`
 - Output: `saved/diagnostics/native_dryingbox_audit_<utc_timestamp>/audit.json`
 
-- [ ] **Step 1: Run audit contract tests**
+- [x] **Step 1: Run audit contract tests**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -123,7 +123,7 @@ python -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q
 
 Expected: PASS. If it fails, fix the audit schema before collecting new evidence.
 
-- [ ] **Step 2: Re-run the native audit**
+- [x] **Step 2: Re-run the native audit**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -135,7 +135,7 @@ python standalone_tools/labutopia_poc/audit_native_dryingbox.py \
 
 Expected: exit `0` and write `audit.json`.
 
-- [ ] **Step 3: Check audit evidence**
+- [x] **Step 3: Check audit evidence**
 
 `audit.json` must record:
 
@@ -147,11 +147,21 @@ Expected: exit `0` and write `audit.json`.
 - rigid bodies, collisions, mass, inertia, `centerOfMass`, and `principalAxes`;
 - `physics:body0/body1` for every joint;
 - door `RevoluteJoint`, button `PrismaticJoint`, and handle candidates;
-- known risk flags, including invalid body target, non-identity root scale, missing mass/inertia, multiple DOFs, out-of-scope `/World/Looks` dependency, missing MDL, missing texture, remote-only MDL, and black or low-contrast fallback color.
+- known risk flags, including invalid body target, non-identity root scale, missing mass/inertia, multiple DOFs, out-of-scope `/World/Looks` dependency, missing MDL, missing texture, remote-only MDL, remote-only texture, and black or low-contrast fallback color.
 
-- [ ] **Step 4: Record PM wording**
+- [x] **Step 4: Record PM wording**
 
 Update the PM note only to say: native `DryingBox_01` is worth continuing, but Acceptance Stage 1 alone does not prove EBench/Lift2 evaluability.
+
+Completion evidence, 2026-06-28:
+
+- GenManip branch: `labutopia-stage1-material-audit`
+- GenManip commit: `9568262 feat: audit DryingBox material closure`
+- Audit artifact: `saved/diagnostics/native_dryingbox_audit_20260628_102604/audit.json`
+- Verification: `python -m pytest tests/labutopia_poc/test_native_dryingbox_audit.py -q` -> `3 passed`
+- Verification: `python -m pytest tests/labutopia_poc -q` -> `93 passed, 1 skipped`
+- Material audit summary: 32 meshes, 29 bound meshes, 29 out-of-source-subtree material bindings, 3 MDL dependencies, 17 helper MDL dependencies, 1 texture dependency, and machine-readable fallback/material risk flags.
+- PM note: `reports/2026-06-15-labutopia-weekly/native-dryingbox-task1.html` now says Stage 1 proves the native asset is worth continuing, but does not prove EBench wrapper, Isaac runtime, or Lift2 baseline readiness.
 
 ### Acceptance Stage 2: Native-Only Isaac Smoke
 
