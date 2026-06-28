@@ -16,6 +16,19 @@ The P0 camera/light work changed `level1_pick` and `level1_place` from pure blac
 - `/World/DryingBox_01/handle` only has a correct world pose when composed through `/World/DryingBox_01`; as an independent top-level payload its local translate becomes a huge world translate and its bbox becomes roughly 1000 times too large.
 - Several source material bindings point to `/World/Looks/...`; payloading a narrow source prim can drop those bindings because the relationship target is outside the payload scope.
 
+## Material Namespace Policy
+
+`/World/Looks` is a valid USD scene-level material library, but it is not an object-local package boundary. A mesh with `material:binding = </World/Looks/mdl_0007>` will render correctly only if that exact material prim is present in the composed EBench stage and its MDL and texture dependencies resolve in the worker environment.
+
+The LabUtopia EBench package must therefore use an explicit material policy instead of relying on implicit lookup:
+
+- Preserve `/World/Looks` only when the final eval stage explicitly owns the required `/World/Looks` material prims and authored runtime bindings resolve there.
+- Prefer wrapper-local `Looks` for native `DryingBox_01` packaging. Copy only the materials used by task-visible meshes under an owned runtime scope, such as `/World/labutopia_level1_poc/obj_DryingBox_01/Looks`, then reauthor `material:binding` relationships to those runtime-local paths.
+- Do not assume EBench searches `/World/Looks` by name. EBench/GenManip accepts any material scope if the USD binding target resolves and the worker `MDL_SYSTEM_PATH` plus packaged asset paths resolve the MDL and texture files.
+- Preserve exact `info:mdl:sourceAsset` and `info:mdl:sourceAsset:subIdentifier` values when rebasing LabUtopia materials. Some LabUtopia MDL files export identifiers such as `mdl_0007` even when the file name is `material_11.mdl`; deriving the subIdentifier from the file basename would be unsafe.
+- Keep MDL helper files and relative texture layouts together. Remote, missing, or unhashed MDL dependencies are blockers unless explicitly replaced or waived in the evidence manifest.
+- Treat `displayColor` as a degraded visibility fallback only. It may keep task-visible meshes readable during debugging, but it does not count as native material closure.
+
 ## Reviewed Alternatives
 
 ### A. Keep Current Top-Level Handle Payload
@@ -45,7 +58,8 @@ The overlay must:
   - target platform near `[0.26, -0.24, 0.776]`
   - drying box near `[0.75, 0.10, 0.78]`
 - Preserve source rotations and source scales unless a test proves they are invalid.
-- Author display-color overrides on task-visible meshes so failed MDL bindings do not collapse the scene into flat gray.
+- Author distinct non-black display-color fallbacks on task-visible meshes so failed MDL bindings do not collapse the scene into flat gray. These fallbacks must be labeled as degraded fallback, not native material closure.
+- Declare a `material_scope_policy` manifest block with the selected policy (`preserve_owned_world_looks` or `wrapper_local_looks_rebind`), source binding targets, runtime binding targets, MDL source assets, subIdentifiers, texture dependencies, hashes, and unresolved or waived dependencies.
 - Declare a `render_object_contracts` manifest block with source prim path, wrapper prim path, role, desired runtime translation, expected bbox size range, and display color for every required object and part.
 
 ## Task Contract
@@ -74,6 +88,10 @@ Static validation must fail before Isaac runtime if:
 
 - the generated runtime scene still contains a top-level `obj_obj_DryingBox_01_handle` payload;
 - the manifest lacks `render_object_contracts`;
+- the manifest lacks `material_scope_policy` for native `DryingBox_01`;
+- any wrapper-local object keeps an out-of-scope `/World/Looks/...` binding after rebasing;
+- any required post-rebind runtime `material:binding` target is unresolved or `ComputeBoundMaterial` fails. A runtime rebind map is required evidence, but it does not by itself satisfy material closure;
+- any required MDL, helper MDL, or texture dependency is unresolved, remote-only, or unhashed without an explicit waiver;
 - any required object/part lacks a visible display color;
 - any runtime translation is still in the source LabUtopia coordinate band instead of the robot/table workspace;
 - `level1_open_door` lacks the articulation config needed to register the handle as an articulation part;
@@ -85,7 +103,7 @@ Static validation must fail before Isaac runtime if:
 The P1 layout work is necessary but not sufficient for native complex `DryingBox_01` acceptance. Native acceptance must additionally fail fast if:
 
 - any native `reference` or `payload` dependency is unresolved;
-- required native `material:binding` targets are unresolved and no explicit fallback display policy is recorded;
+- required native `material:binding` targets are unresolved, MDL/texture dependencies are unresolved, or only a fallback display policy is available while the claim says native material closure;
 - `PhysicsScene` is missing or duplicated in the composed runtime stage;
 - `PhysicsArticulationRootAPI` is lost after wrapper composition;
 - any active joint `physics:body0` or `physics:body1` target lacks `RigidBodyAPI`;
