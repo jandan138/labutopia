@@ -532,7 +532,7 @@ Completion evidence, 2026-06-29:
 - Create: `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_eval_<utc_timestamp>.json`
 - Test: `tests/labutopia_poc/test_render_diagnostics_contract.py`
 
-- [ ] **Step 1: Run diagnostics contract tests**
+- [x] **Step 1: Run diagnostics contract tests**
 
 ```bash
 cd /cpfs/shared/simulation/zhuzihou/dev/GenManip
@@ -541,7 +541,7 @@ python -m pytest tests/labutopia_poc/test_render_diagnostics_contract.py -q
 
 Expected: PASS.
 
-- [ ] **Step 2: Run eval-path open-door readback**
+- [x] **Step 2: Run eval-path open-door readback**
 
 Use the latest Acceptance Stage 1 `audit.json` and Acceptance Stage 2 `smoke.json` paths explicitly:
 
@@ -565,7 +565,7 @@ conda run -p /cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-ev
 
 Expected: writes `diagnostics.json` plus reset frame(s) and records the exact audit/smoke artifact hashes.
 
-- [ ] **Step 3: Verify readback fields**
+- [x] **Step 3: Verify readback fields**
 
 `diagnostics.json` must show:
 
@@ -612,11 +612,28 @@ Material readback has five separate outcomes:
 
 If `remote_aluminum_disposition=explicit_waiver`, Stage 5 may still pass `native_eval_readback_ready=true` for task-readability and metric evidence, but it must set `native_material_closure_status=open_remote_dependency_waived` unless a stronger blocker forces `blocked`; it must not set `resolved_native_material`.
 
-- [ ] **Step 4: Retake camera if needed**
+- [x] **Step 4: Retake camera if needed**
 
 Reject frames that are black, flat gray, missing the drying box, missing the door face, missing the handle, or dominated by wall/ceiling geometry. A passing PM-facing frame must show the box body, door edge, and handle clearly enough to explain the task. If the frame uses `displayColor` fallback rather than resolved native MDL materials, the diagnostics and PM note must say so explicitly.
 
 Stop before Acceptance Stage 6 if `native_eval_readback_ready` is not true, if metric evidence does not read the door `RevoluteJoint`, if result/log paths are missing, or if material readback cannot distinguish `resolved_native_material`, fallback-driven readability, `open_remote_dependency_waived`, and `blocked`.
+
+Completion evidence, 2026-06-29:
+
+- GenManip branch: `labutopia-stage5-eval-readback`
+- GenManip commit: `f743d03 feat: capture LabUtopia DryingBox eval readback`
+- Remote branch: `fork/labutopia-stage5-eval-readback`
+- Runtime diagnostics artifact: `saved/diagnostics/labutopia_native_open_door_eval_20260628_183219/diagnostics.json`
+- Stage 5 eval manifest: `docs/labutopia_lab_poc/evidence_manifests/native_dryingbox_eval_20260628_183219.json`
+- Verification: `python -m pytest tests/labutopia_poc -q` -> `151 passed, 1 skipped`
+- Verification: `python standalone_tools/labutopia_poc/validate_task_package.py` -> `LabUtopia task package validation OK`
+- Runtime readback result: `native_eval_readback_ready=true`, `native_complex_dryingbox_ready=true`, `runtime_physics_stable=true`, and `eval_step_contract.passed=true`.
+- Metric contract: `open_door_metric_contract.metric_reads_door_revolute_joint=true`; the metric target is `RevoluteJoint`, while `PrismaticJoint` remains explicitly ignored for the open-door metric.
+- Evidence contract: `stage5_evidence_contract.passed=true`; the final artifact records result directory, stdout/stderr log paths, run id, worker id `local`, episode id, seed `000`, three unique frame paths, and frame hashes.
+- Material boundary: `remote_aluminum_disposition=explicit_waiver`, `native_material_closure_status=open_remote_dependency_waived`, `runtime_material_dependency_status=open_waived`, and `material_closure_eligible=false`. Stage 5 proves eval-path task readability and runtime material readback classification; it does not claim full native MDL/texture material closure.
+- Runtime material readback now records 32 task-visible material records, runtime `ComputeBoundMaterial` results, binding relationship metadata where inferable, Shader `info:mdl:sourceAsset`, `subIdentifier`, resolved local MDL path, and MDL hash. Recursive helper MDL and texture dependency closure remain governed by the Stage 4 material validator plus the explicit Aluminum waiver; Stage 6 wording must keep native material closure open.
+- Visual QA: independent render review returned `WARN`, not `FAIL`. The box body, blue door edge, and handle are identifiable enough for readback evidence, but the camera angle is not ideal for a PM showcase because a large overhead/table surface dominates the frame. Stage 6 must present this as acceptable machine evidence and either label it clearly or add a better PM-facing retake before using it as a polished product image.
+- Lift2 boundary: `lift2_contract_ready=false`; no Stage 5 wording may claim official Lift2 baseline readiness.
 
 ### Acceptance Stage 6: Evidence Package And PM Claim Boundary
 
