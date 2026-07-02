@@ -104,6 +104,43 @@ Stage 4b 运行时仍记录了 `mdl_compiler_error_count=636`。这不阻塞 res
 render / metric / logging 的 smoke pass，但它阻止任何更强的视觉声明：不能把 Stage 4b
 PASS 说成 full visual material parity 或 source-native full material closure。
 
+### 2026-07-02 Producer Render Visual QA
+
+`reports/2026-06-15-labutopia-weekly/assets/aan-dryingbox-producer-runtime-smoke-render.png`
+现在只保留为问题诊断图，不作为展示图。视觉复核结论：
+
+- 明显异常红色材质：ConvertAsset producer runtime log 中有
+  `Failed to create MDL shade node`、`could not find module` 和 unresolved texture
+  记录，说明 MDL / texture runtime 解析没有闭环；
+- 背面/俯视相机：画面看不到 DryingBox 的门、handle 和正面整体结构；
+- 因此 producer `runtime_smoke.status=pass` 只能说明 headless load / render
+  readback / step / reset 这些 smoke gate 通过，不能升级为 full visual material
+  parity 或可展示最终材质效果。
+
+关键 producer 证据：
+
+```text
+/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-07-01-aan-07-dryingbox-runtime-ready/package/evidence/runtime_smoke/report.json
+/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-07-01-aan-07-dryingbox-runtime-ready/package/evidence/runtime_smoke/stderr.log
+/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-07-01-aan-07-dryingbox-runtime-ready/package/evidence/runtime_smoke/stdout.log
+```
+
+当前日志计数：
+
+```text
+producer_failed_mdl_shade_nodes=10
+producer_missing_mdl_modules=41
+producer_unresolved_textures=18
+producer_payload_scope_material_binding_warnings=84
+consumer_mdl_compiler_error_count=636
+```
+
+这也修正了 `material_closure=pass` 的 PM 读法：它是 package-local dependency /
+material evidence gate，不等于 Isaac 4.1 runtime 中所有 MDL shader、texture 和最终颜色
+都已经正确显示。下一步应由 ConvertAsset 侧做 material runtime closure follow-up：
+补齐 MDL transitive dependencies、texture path、material binding scope，并用 task-facing
+showcase camera 重拍；LabUtopia / GenManip 只消费新包并复跑 evidence，不做本地修包。
+
 Stage 5 PM/weekly HTML 已发布到：
 
 ```text
@@ -111,7 +148,8 @@ reports/2026-06-15-labutopia-weekly/index.html#aan-handoff
 ```
 
 该页面把 Producer evidence 和 Consumer evidence 分开展示，并把两张 DryingBox render
-图标注为 diagnostic render，不升级为 full visual material parity。
+图标注为 diagnostic render。AAN producer render 已进一步标注为视觉 QA FAIL/OPEN：
+红色异常材质和背面视角都是待修问题，不升级为 full visual material parity。
 
 `aan_dryingbox_runtime_adapter_20260701_0000.json` 的关键硬门：
 
@@ -290,7 +328,7 @@ Reusable validator boundary:
 | `task_render_accepted=true` | eval camera 能拍到可读任务图 | 官方榜单成绩已复现 |
 | `lift2_contract_ready=true` | 本地 Lift2 合同检查通过 | official leaderboard 已发布 |
 | `asset_specific_claims.aluminum_material_closure_claim_allowed=true` | DryingBox 的 Aluminum 远端材质依赖已 local mirror | DryingBox 全部 native 材质已恢复 |
-| `full_material_closure_claim_allowed=true` | EBench package material gate 已通过 | source-native full material closure 已完成 |
+| `full_material_closure_claim_allowed=true` | EBench package material evidence 已记录 | runtime MDL/texture closure 或 source-native full material closure 已完成 |
 | `full_native_material_closure_claim_allowed=false` | 仍不能宣称 source-native 全闭环 | 把它解读为 package material gate 未通过 |
 | `pm_showcase_ready=false` | 当前图只能作为诊断证据 | 当前图可直接对外展示 |
 
@@ -307,7 +345,7 @@ Reusable validator boundary:
   Stage 5 PM/weekly HTML publication: PASS
   Stage 6a no-local-repair guard: PASS
   Stage 6 replication on additional assets: PASS; Stage 1-4b generic smoke PASS on MuffleFurnace and Beaker_01
-  EBench package material closure: PASS
+  EBench package material evidence: PASS
   Aluminum local mirror: PASS
   Stage 4b consumer live smoke: PASS
   runtime material warning: mdl_compiler_error_count=636; not full visual parity evidence
@@ -318,4 +356,4 @@ Reusable validator boundary:
   full visual material parity: BLOCKED / not proven
 ```
 
-这说明 DryingBox 当前已经能证明“本地 consumer live smoke 通过”和“包级材质闭环通过”，但还不能证明“策略成功”“官方成绩发布”或“source-native 全材质闭环完成”。PM 汇报时可以说 package material gate 和 Stage 4b local live smoke 通过，不能把 `button` 和 `Group/_900_1` 的 wrapper-local `PreviewSurface` 说成原生材质已恢复，也不能把 636 条 MDL compiler warning 解释成视觉一致性已经无风险。
+这说明 DryingBox 当前已经能证明“本地 consumer live smoke 通过”和“包级材质 evidence 已记录”，但还不能证明“策略成功”“官方成绩发布”或“source-native 全材质闭环完成”。PM 汇报时可以说 package material evidence 和 Stage 4b local live smoke 有证据，不能把 `button` 和 `Group/_900_1` 的 wrapper-local `PreviewSurface` 说成原生材质已恢复，也不能把红色 producer render 或 636 条 MDL compiler warning 解释成视觉一致性已经无风险。

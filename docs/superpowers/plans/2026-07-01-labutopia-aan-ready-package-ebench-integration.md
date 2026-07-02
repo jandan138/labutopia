@@ -823,6 +823,9 @@ Stage 5 does not make the asset more ready. It publishes Stage 4b evidence and c
 boundaries in a PM-readable form. Stage 5 is complete because
 `reports/2026-06-15-labutopia-weekly/index.html#aan-handoff` now links the final
 Stage 4b manifest, live artifact paths, diagnostic renders, and forbidden claims.
+The 2026-07-02 visual QA update explicitly marks the AAN producer render as
+`FAIL/OPEN` for PM-facing visual use: it has red abnormal material and a back/top
+camera view, so it is diagnostic evidence only.
 
 **Implementation steps:**
 
@@ -867,6 +870,12 @@ Stage 4b manifest, live artifact paths, diagnostic renders, and forbidden claims
 
 - [x] If the page shows render images, label them as evidence/diagnostic render images unless
   a separate visual-parity study proves full visual parity.
+
+- [x] 2026-07-02 visual QA update: mark the current AAN producer render as
+  diagnostic-only problem evidence, not as a showcase image. The known issues are:
+  red abnormal material caused by unresolved runtime MDL / texture closure, and a
+  back/top automatic smoke camera that does not show the door, handle, or full
+  DryingBox shape.
 
 - [x] Preserve the forbidden claims:
 
@@ -1305,14 +1314,38 @@ Use these three levels consistently:
 
 | Term | Allowed wording | Forbidden upgrade |
 |---|---|---|
-| `material_closure` | AAN package material gate passed and package-local material evidence is recorded. | Do not call this full visual parity. |
+| `material_closure` | AAN package material evidence is recorded with package-local path/hash or source-preserved evidence. | Do not call this runtime MDL/texture closure or full visual parity. |
 | `local mirror` | A specific remote MDL/texture dependency has package-local path/hash evidence. | Do not claim visual identity solely from local mirror. |
 | `full visual parity` | Not allowed from current evidence. | Do not say source-native full material closure or full visual material parity is proven. |
+
+2026-07-02 observed DryingBox render issue:
+
+```text
+producer_failed_mdl_shade_nodes=10
+producer_missing_mdl_modules=41
+producer_unresolved_textures=18
+producer_payload_scope_material_binding_warnings=84
+consumer_mdl_compiler_error_count=636
+producer_render_visual_qa=FAIL/OPEN
+```
+
+Interpretation:
+
+- Producer `runtime_smoke.status=pass` proves cold load, required prim existence,
+  non-empty headless render readback, physics step, and reset smoke.
+- It does not prove runtime MDL compiler closure, texture closure, source-native
+  material parity, PM showcase camera quality, or full visual material parity.
+- The red render should be treated as material-runtime-closure diagnostic evidence.
+  The back/top camera should be treated as diagnostic-camera evidence, not a product
+  display view.
 
 PM-safe wording:
 
 ```text
-AAN package material gate 已通过，remote material dependencies 已按 manifest 做 local mirror；这证明 package 可离线消费并保留材质来源证据，不代表 source-native full material closure 或 full visual parity。
+AAN package material evidence 已记录，部分 remote material dependencies 已按 manifest 做
+local mirror/source-preserved evidence；这证明 package 有可追踪的材质来源和依赖证据，
+但当前 runtime 仍有 MDL/texture 解析错误和红色异常渲染，因此不代表 source-native
+full material closure 或 full visual parity。
 ```
 
 ## Verification Checklist For This Plan

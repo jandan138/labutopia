@@ -145,6 +145,16 @@
       color: var(--muted);
       font-size: 13px;
     }
+    figure.diagnostic.issue {
+      border-color: #f2a7b5;
+    }
+    figure.diagnostic.issue figcaption {
+      background: #fff1f3;
+      color: var(--ink);
+    }
+    figure.diagnostic figcaption strong {
+      color: var(--red);
+    }
     .claim-list {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -227,6 +237,9 @@
       border-radius: 8px;
       margin: 12px 0;
     }
+    .answer.warning { border-left-color: var(--amber); background: var(--warn); }
+    .answer.issue { border-left-color: var(--red); background: #fff1f3; }
+    .answer.issue strong { color: var(--red); }
     .note {
       padding: 16px 18px;
       background: var(--warn);
@@ -355,8 +368,8 @@
       <div class="aan-head">
         <div>
           <h2>ConvertAsset AAN-ready package handoff</h2>
-          <p>这条新证据线回答一个更工程化的问题：不是“我们能不能手工把 DryingBox 调到能跑”，而是“ConvertAsset 产出的资产包，LabUtopia / GenManip 能不能不本地修包、直接消费进 EBench task”。当前答案是：DryingBox 已经通过 Stage 1-5；Stage 6 replication hardening 也已 PASS：<code>MuffleFurnace</code> 和 <code>Beaker_01</code> 都完成 Stage 1-4b generic live smoke。<code>task/evaluator.yaml</code> 的 runtime 执行会作为后续 semantic evaluator 工作单独推进。</p>
-          <span class="tag">DryingBox Stage 4b PASS</span><span class="tag">MuffleFurnace Stage 4b PASS</span><span class="tag">Beaker Stage 4b PASS</span><span class="tag">Stage 6 PASS</span>
+          <p>这条新证据线回答一个更工程化的问题：不是“我们能不能手工把 DryingBox 调到能跑”，而是“ConvertAsset 产出的资产包，LabUtopia / GenManip 能不能不本地修包、直接消费进 EBench task”。当前答案是：DryingBox 已经通过 Stage 1-5；Stage 6 replication hardening 也已 PASS：<code>MuffleFurnace</code> 和 <code>Beaker_01</code> 都完成 Stage 1-4b generic live smoke。<code>task/evaluator.yaml</code> 的 runtime 执行会作为后续 semantic evaluator 工作单独推进。2026-07-02 视觉复核补充：producer render 本身是问题证据，不能作为材质展示图。</p>
+          <span class="tag">DryingBox Stage 4b PASS</span><span class="tag">MuffleFurnace Stage 4b PASS</span><span class="tag">Beaker Stage 4b PASS</span><span class="tag">Stage 6 PASS</span><span class="tag bad">producer visual QA OPEN</span>
         </div>
         <div class="metric">
           <strong>PASS</strong>
@@ -376,8 +389,8 @@
       <div class="lane-grid" aria-label="Producer 和 Consumer 证据线">
         <div class="lane">
           <h3>Producer evidence：ConvertAsset AAN</h3>
-          <p><strong>证明资产包本身合格。</strong>它记录了 USD dependency closure、package-level material closure、physics / articulation where applicable、producer Isaac 4.1 runtime_smoke 和 benchmark_contract。</p>
-          <p>PM 可以说：AAN package material gate passed，remote MDL / texture dependencies 已有 package-local evidence。</p>
+          <p><strong>证明资产包结构证据和 producer smoke 存在。</strong>它记录了 USD dependency closure、package-level material evidence、physics / articulation where applicable、producer Isaac 4.1 runtime_smoke 和 benchmark_contract。</p>
+          <p>PM 可以说：AAN package 有 package-local dependency evidence 和 producer smoke evidence；但不能说 full visual material parity 已完成，因为当前 producer render 仍有红色异常材质和非展示相机视角。</p>
         </div>
         <div class="lane">
           <h3>Consumer evidence：LabUtopia / GenManip</h3>
@@ -391,10 +404,19 @@
           <img src="assets/labutopia-franka-level1-open-door-native-eval-stage5.png" alt="Hand-built LabUtopia overlay diagnostic render for native DryingBox eval path">
           <figcaption>旧证据线：hand-built LabUtopia overlay 的 eval-path diagnostic render。它证明本地合同链路能读写任务，不证明 AAN package 被消费。</figcaption>
         </figure>
-        <figure class="diagnostic">
+        <figure class="diagnostic issue">
           <img src="assets/aan-dryingbox-producer-runtime-smoke-render.png" alt="ConvertAsset AAN package producer runtime smoke diagnostic render for DryingBox">
-          <figcaption>新证据线：ConvertAsset AAN package 的 producer runtime_smoke render。图像只作为诊断证据；颜色和材质不能升级为 full visual material parity。</figcaption>
+          <figcaption><strong>问题证据：</strong>ConvertAsset AAN package 的 producer runtime_smoke render 当前视觉 QA FAIL/OPEN：整机异常偏红，日志显示 MDL module / texture 解析失败；相机是背面/俯视角，看不到门、handle 和 DryingBox 全貌。它只证明 headless render readback 非空，不能作为展示图或 full visual material parity 证据。</figcaption>
         </figure>
+      </div>
+
+      <div class="claim-list" aria-label="DryingBox producer render visual QA">
+        <div class="answer issue">
+          <p><strong>视觉复核结论：</strong>这张 producer render 有两个肉眼可见问题。第一，DryingBox 大面积变成异常红色，结合日志看不是正常材质差异，而是 MDL / texture runtime 解析没有闭环后的 fallback / error material。第二，相机从背面和上方看过去，看不到门板、handle、正面结构和完整设备形态。</p>
+        </div>
+        <div class="answer">
+          <p><strong>下一步处理：</strong>ConvertAsset 侧要补齐 MDL transitive dependencies、texture path 和 material binding 的 runtime 解析，再用 task-facing showcase camera 重拍。LabUtopia / GenManip 侧只消费新包并复跑 smoke / evidence，不在本地偷偷修 USD 或材质。</p>
+        </div>
       </div>
 
       <div class="table-scroll">
@@ -429,8 +451,13 @@
             </tr>
             <tr>
               <td>材质 warning</td>
-              <td><code>mdl_compiler_error_count=636</code></td>
-              <td>不阻塞 Stage 4b smoke PASS，但阻止 full visual material parity / source-native material closure 这类更强声明。</td>
+              <td><code>consumer_mdl_compiler_error_count=636</code><br><code>producer_failed_mdl_shade_nodes=10</code><br><code>producer_missing_mdl_modules=41</code><br><code>producer_unresolved_textures=18</code></td>
+              <td>不阻塞 reset / step / render / metric / logging smoke PASS，但解释了红色异常材质，也阻止 full visual material parity / source-native runtime material closure 这类更强声明。</td>
+            </tr>
+            <tr>
+              <td>producer render 视觉 QA</td>
+              <td><code>visual_qa=FAIL/OPEN</code><br><code>red_error_or_fallback_material=true</code><br><code>camera_view=back/top</code></td>
+              <td>这张图只能作为问题诊断证据，不能作为产品展示图。后续需要 producer 侧先修 material runtime closure，再用正面或三分之四视角重拍。</td>
             </tr>
             <tr>
               <td>Stage 6 复制资产</td>
@@ -466,7 +493,7 @@
           <p><strong>现在可以说：</strong>DryingBox AAN-ready package 已被 LabUtopia / GenManip consumer 接入 <code>level1_open_door</code>，并通过本地 EBench / GenManip live smoke；旧 overlay 没有被复用。Stage 6 已把收货、验货、挂载 dry-run、no-local-repair verify、Stage 4a runtime adapter preflight 和 generic Stage 4b live smoke 复制到 <code>MuffleFurnace</code> 和 <code>Beaker_01</code>，所以 Stage 6 replication hardening 已 PASS。</p>
         </div>
         <div class="answer warning">
-          <p><strong>仍不能说：</strong>official leaderboard score 已完成；policy/model 已经解决任务；<code>MuffleFurnace</code> 或 <code>Beaker_01</code> generic smoke 等于 semantic task success；任意 USD / MJCF / deformable / liquid 都自动可评；full visual material parity 已证明。</p>
+          <p><strong>仍不能说：</strong>official leaderboard score 已完成；policy/model 已经解决任务；<code>MuffleFurnace</code> 或 <code>Beaker_01</code> generic smoke 等于 semantic task success；任意 USD / MJCF / deformable / liquid 都自动可评；full visual material parity 已证明；producer render 已经是可展示的最终材质效果。</p>
         </div>
       </div>
 
