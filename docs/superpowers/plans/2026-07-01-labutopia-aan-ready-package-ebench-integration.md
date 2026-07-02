@@ -20,7 +20,7 @@
 
 Six stages:
 
-| Stage | Product alias | Engineering name | Product meaning | Current status on 2026-07-01 |
+| Stage | Product alias | Engineering name | Product meaning | Current status / latest evidence date |
 |---|---|---|---|---|
 | 1 | 收货锁定 | **AAN package intake** | 固定收货对象，确认消费的是哪一个 ConvertAsset package。 | **Done**: retained package path, manifest path, manifest hash, file count, and package digest are recorded. |
 | 2 | 验货准入 | **Consumer manifest check** | 收货验货，确认这个 package 符合 LabUtopia / EBench consumer 的准入条件。 | **Done**: schema, target runtime, target benchmark, gates, entrypoints, dependency closure, blockers, and waivers pass consumer check. |
@@ -40,7 +40,11 @@ Stage 4 is intentionally split into two substeps while still counting as one of 
 
 DryingBox Stage 4b PASS allows the wording "DryingBox AAN package passed local EBench / GenManip live eval smoke." `MuffleFurnace` and `Beaker_01` Stage 4b PASS allow the narrower wording "replicated AAN packages passed generic local smoke for reset / step / render / metric / logging / result_info." Neither wording allows official leaderboard, policy-success, semantic-task-success, or full visual-material-parity claims.
 
-## Current Execution Status - 2026-07-01
+## Current Execution Status / Latest Evidence Date
+
+Latest evidence date: 2026-07-02. The 2026-07-01 rows describe the original retained
+package and replication hardening; the AAN-11 consumer rerun and runtime bootstrap
+runbook are 2026-07-02 evidence.
 
 Multi-angle review converged on one important boundary: **the AAN package path must not reuse the old `lift2_candidate` evidence silently**.
 
@@ -144,6 +148,7 @@ Planned LabUtopia-side files:
 
 ```text
 docs/labutopia_lab_poc/aan_consumer_handoff.md
+docs/labutopia_lab_poc/aan_runtime_environment_bootstrap.md
 docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_consumer_check_YYYYMMDD_HHMM.json
 docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_task_mount_YYYYMMDD_HHMM.json
 docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_runtime_adapter_YYYYMMDD_HHMM.json
@@ -1380,6 +1385,12 @@ The first two diagnostic runs failed before proving anything about the AAN packa
   2. fallback to old overlay root, causing an empty wrapper composition.
 ```
 
+These lessons are now codified as a reusable runbook:
+
+```text
+docs/labutopia_lab_poc/aan_runtime_environment_bootstrap.md
+```
+
 Fixed native vs AAN front-camera evidence:
 
 ```text
@@ -1430,6 +1441,9 @@ relationship_out_of_scope_count=70, so material parity remains a follow-up.
 - [x] Stage 6 replication is profile-gated and cannot overclaim deformable / liquid / cloth / particle support.
 - [x] PM-facing weekly HTML update is done only after Stage 4b live eval smoke PASS evidence exists.
 - [x] AAN-11 package entered the LabUtopia / EBench consumer and completed a fresh rerun.
+- [x] AAN runtime bootstrap has a dedicated runbook covering conda, `CUROBO_SRC`,
+  `LABUTOPIA_POC_ASSETS_OVERLAY_ROOT`, preflight, failure classification, evidence fields,
+  and claim boundaries.
 - [x] A fixed native vs AAN front-camera pair was produced and reviewed as `WARN`: usable for parity review, not full parity proof.
 - [ ] Any implementation work uses a separate worktree or the GenManip integration repo where runtime tooling actually lives.
 - [x] Final reporting includes both allowed and forbidden claims.
