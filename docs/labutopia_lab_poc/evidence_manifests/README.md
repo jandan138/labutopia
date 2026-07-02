@@ -309,6 +309,65 @@ PM 文案只能说对应 `PASS` 的部分。比如 `task_runtime=PASS` 可以说
 Rigid-only USD assets must not force `articulation_closure=PASS`; use `NOT_APPLICABLE` or
 `NOT_REQUIRED`. Articulated assets must keep explicit articulation evidence.
 
+## Expert Oracle Score 字段
+
+`score=0.0` 的 live smoke 不等于 expert 失败。后续新增 `Stage 4c: Expert Oracle
+Score / Score Calibration` 时，manifest 必须把 smoke、oracle、policy 和 official score
+分开记录。
+
+推荐字段：
+
+```json
+{
+  "stage": "expert_oracle_score",
+  "substage": "franka_native_expert_replay | lift2_oracle_retarget",
+  "score_lane": "franka_expert_oracle | lift2_oracle | real_policy | official_leaderboard",
+  "evidence_freeze": {
+    "task_name": "",
+    "usd_name": "",
+    "config_sha256": "",
+    "asset_wrapper_sha256": "",
+    "run_id_policy": "must include expert_oracle or lift2_oracle",
+    "assets_root": "",
+    "wrapper_path": "",
+    "no_local_repair": true
+  },
+  "embodiment": "manip/franka/panda_hand | manip/lift2/R5a",
+  "controller_kind": "labutopia_native_expert | retargeted_expert | lift2_scripted_oracle | learned_policy",
+  "action_contract": "franka_native | lift2_r5a_16d",
+  "metric_authority": "genmanip_ebench_metric_output",
+  "metric_target": {
+    "object_uid": "obj_DryingBox_01",
+    "joint_name": "RevoluteJoint",
+    "angle_deg_range": [30, 120]
+  },
+  "oracle_score": null,
+  "policy_score": null,
+  "policy_score_claim_allowed": false,
+  "official_score_claim_allowed": false,
+  "result_info_path": "",
+  "action_log_path": "",
+  "metric_trace_path": "",
+  "render_or_video_path": ""
+}
+```
+
+允许说法：
+
+```text
+Franka expert oracle 通过，只能说明 LabUtopia native expert 的标准答案能被 EBench metric 识别。
+Lift2 oracle / retarget 通过，只能说明 Lift2/R5a 口径存在可完成专家上限。
+真实 policy score 必须由模型通过 EvalClient 输出标准 action 后单独记录。
+```
+
+禁止说法：
+
+```text
+Franka expert oracle 等于 Lift2 score。
+Lift2 oracle / retarget 等于模型能力。
+本地 policy score 自动等于 official leaderboard score。
+```
+
 ## Material Closure 字段
 
 `material_closure` 必须拆清楚 package-level claim 和 source-native claim：

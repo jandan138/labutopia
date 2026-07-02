@@ -28,6 +28,7 @@
 - [runs/2026-06-09-expert-videos.md](runs/2026-06-09-expert-videos.md): 本次多角度审阅和视频批跑记录。
 - [labutopia_lab_poc/aan_consumer_handoff.md](labutopia_lab_poc/aan_consumer_handoff.md): ConvertAsset AAN-ready package 在 LabUtopia / EBench 侧的消费规则和继续点。
 - [labutopia_lab_poc/aan_runtime_environment_bootstrap.md](labutopia_lab_poc/aan_runtime_environment_bootstrap.md): AAN package 进入 LabUtopia / EBench consumer 前的标准 conda、环境变量、preflight、failure classification 和 evidence 归档规范。
+- [labutopia_lab_poc/expert_oracle_score_plan.md](labutopia_lab_poc/expert_oracle_score_plan.md): 在真实 policy 评测前，用 Franka expert 和 Lift2 oracle / retarget 验证 EBench metric 能给专家答案打分的规划。
 - [labutopia_lab_poc/evidence_manifests/README.md](labutopia_lab_poc/evidence_manifests/README.md): AAN consumer Stage 1-5 证据、周报入口和 PM claim boundary 说明。
 - [superpowers/plans/2026-07-01-labutopia-aan-ready-package-ebench-integration.md](superpowers/plans/2026-07-01-labutopia-aan-ready-package-ebench-integration.md): LabUtopia AAN-Ready Package 接入 EBench 的 6 阶段执行计划。
 

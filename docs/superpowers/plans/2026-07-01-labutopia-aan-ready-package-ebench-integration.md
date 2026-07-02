@@ -14,7 +14,7 @@
 
 大计划名：**LabUtopia AAN-Ready Package 接入 EBench 计划**。
 
-通俗解释：ConvertAsset 已经把 DryingBox 做成“合格资产包”；LabUtopia / GenManip 这边已经把这个合格资产包装进 EBench / GenManip 的真实任务，并证明它在任务里能 reset、step、出图、产出 metric 和日志。PM/weekly HTML 已发布这条证据，no-local-repair guard 也已在位。Stage 6 已把同一套 consumer 流程复制到 `MuffleFurnace` 和 `Beaker_01`：两个资产都完成 Stage 1-4a，并且都完成 generic Stage 4b live smoke。因此六阶段的 AAN consumer replication hardening 已经 `PASS`；后续增强是规划 `task/evaluator.yaml` 的 semantic evaluator 执行，以及处理材质 warning / visual parity 这类更强声明。
+通俗解释：ConvertAsset 已经把 DryingBox 做成“合格资产包”；LabUtopia / GenManip 这边已经把这个合格资产包装进 EBench / GenManip 的真实任务，并证明它在任务里能 reset、step、出图、产出 metric 和日志。PM/weekly HTML 已发布这条证据，no-local-repair guard 也已在位。Stage 6 已把同一套 consumer 流程复制到 `MuffleFurnace` 和 `Beaker_01`：两个资产都完成 Stage 1-4a，并且都完成 generic Stage 4b live smoke。因此六阶段的 AAN consumer replication hardening 已经 `PASS`；后续增强要分三条推进：`Expert Oracle Score` 先证明专家答案在 EBench metric 下能得分，`task/evaluator.yaml` semantic evaluator 执行单独闭环，材质 warning / visual parity 单独处理。
 
 这不是 official leaderboard score，也不是模型已经会开门。它证明的是：资产包可以被 EBench 消费，且任务运行链路可以被证据化检查。
 
@@ -29,7 +29,7 @@ Six stages:
 | 5 | 产出 PM 证据 | **PM evidence gate** | 把 Stage 4b live smoke、AAN render、claim boundary 写到周报 HTML，产品能看懂。 | **Done**: `reports/2026-06-15-labutopia-weekly/index.html#aan-handoff` 已发布 Stage 4b PASS 证据和 forbidden claims。 |
 | 6 | 防偷修包并复制验证 | **Regression and replication hardening** | 固化 no-local-repair guard，并把同一套收货、验货、挂载、runtime adapter preflight / smoke 流程复制到更多 rigid / articulated USD assets；复制验证不等于完整 runtime / policy 评测成功。 | **PASS; follow-ups open**: DryingBox no-local-repair PASS; `MuffleFurnace` and `Beaker_01` Stage 1-4b generic smoke PASS. |
 
-DryingBox consumer integration is internally reportable because Stages 1-5 pass. Stage 6 is a hardening and replication phase. It now shows that the intake/check/mount/no-local-repair/runtime-adapter workflow is not DryingBox-only, and that both a non-DryingBox articulated asset and a rigid transparent prop can pass generic Stage 4b live smoke. It still does not prove semantic task success, official leaderboard score, or full visual material parity.
+DryingBox consumer integration is internally reportable because Stages 1-5 pass. Stage 6 is a hardening and replication phase. It now shows that the intake/check/mount/no-local-repair/runtime-adapter workflow is not DryingBox-only, and that both a non-DryingBox articulated asset and a rigid transparent prop can pass generic Stage 4b live smoke. It still does not prove semantic task success, expert-oracle score, official leaderboard score, or full visual material parity.
 
 Stage 4 is intentionally split into two substeps while still counting as one of the six stages:
 
@@ -39,6 +39,48 @@ Stage 4 is intentionally split into two substeps while still counting as one of 
 | Stage 4b | Live eval smoke: launch the server/client path and prove reset, step, render, metric, and logging with a fresh AAN run id. | PASS for DryingBox, `MuffleFurnace`, and `Beaker_01` generic smoke. |
 
 DryingBox Stage 4b PASS allows the wording "DryingBox AAN package passed local EBench / GenManip live eval smoke." `MuffleFurnace` and `Beaker_01` Stage 4b PASS allow the narrower wording "replicated AAN packages passed generic local smoke for reset / step / render / metric / logging / result_info." Neither wording allows official leaderboard, policy-success, semantic-task-success, or full visual-material-parity claims.
+
+## Stage 4c: Expert Oracle Score / Score Calibration
+
+The six AAN consumer stages remain the asset-consumer acceptance pipeline. Stage 4c is a
+post-4b score-calibration layer: it validates that the task metric can award score to an
+expert answer before we interpret real policy scores.
+
+Score ladder:
+
+```text
+4b Consumer Smoke -> 4c Expert Oracle Score -> Semantic Evaluator / Policy Score -> Official Leaderboard
+```
+
+Detailed plan:
+
+```text
+docs/labutopia_lab_poc/expert_oracle_score_plan.md
+```
+
+| Substage | Product meaning | Technical route | Status |
+|---|---|---|---|
+| EOS-1 Metric parity preflight | 先确认评分器读的是正确门关节 / 物体状态，不是 LabUtopia controller 内部 `done`。 | Check `obj_DryingBox_01` / `RevoluteJoint` metric, initial/final angle, `result_info.json`, and GenManip / EBench reward fields. | **PLANNED** |
+| EOS-2 Franka native expert oracle replay | 把 LabUtopia 原生 Franka expert 当作“标准答案”放进 EBench metric，验证专家答案能得分。 | Run or replay Franka expert in `franka_poc`; score only via EBench metric, with action log / metric trace / render evidence. | **PLANNED** |
+| EOS-3 Lift2 oracle / retarget | 证明官方 Lift2/R5a 机器人口径下也存在可完成的 expert / oracle 上限。 | Retarget Franka expert or write Lift2-specific scripted oracle using `-a r5a -g lift2` 16D action contract. | **PLANNED** |
+| EOS-4 Real policy handoff | oracle 通过后再看真实 baseline / model 得分。 | Run actual policy output, not expert controller, and report separately from oracle score. | **NOT_STARTED** |
+
+Allowed wording after this planning update:
+
+```text
+Expert Oracle Score 已规划为 Stage 4c / Score Calibration；当前 0 分 smoke 不是 expert 失败。
+下一步先用 Franka native expert 验证 EBench metric 能给专家答案打分，再做 Lift2 oracle / retarget。
+```
+
+Forbidden wording:
+
+```text
+Stage 4c 已经 PASS。
+Franka expert oracle 已经得分。
+Lift2 oracle 已经完成。
+真实 policy 已经会开门。
+official leaderboard score 已完成。
+```
 
 ## Current Execution Status / Latest Evidence Date
 
@@ -149,6 +191,7 @@ Planned LabUtopia-side files:
 ```text
 docs/labutopia_lab_poc/aan_consumer_handoff.md
 docs/labutopia_lab_poc/aan_runtime_environment_bootstrap.md
+docs/labutopia_lab_poc/expert_oracle_score_plan.md
 docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_consumer_check_YYYYMMDD_HHMM.json
 docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_task_mount_YYYYMMDD_HHMM.json
 docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_runtime_adapter_YYYYMMDD_HHMM.json
@@ -479,6 +522,9 @@ material_warning_claim_boundary=Stage 4b PASS proves runtime reset/step/render/m
 logging 都有证据。`score=0.0` / `success_rate=0` 是 policy/task execution 结果，不是
 AAN package runtime 接入失败。636 条 MDL compiler warning 仍必须留在材质/视觉边界里：
 它们不阻塞 Stage 4b smoke pass，但阻止我们宣称 full visual material parity。
+`score=0.0` 的专家口径会进入 Stage 4c / Expert Oracle Score 单独校准：先跑 Franka
+native expert under EBench metric，再做 Lift2 oracle / retarget，不能用 smoke 0 分直接推断
+expert 或 official baseline 失败。
 
 Two different `runtime_smoke` claims must never be mixed:
 
@@ -1445,5 +1491,7 @@ relationship_out_of_scope_count=70, so material parity remains a follow-up.
   `LABUTOPIA_POC_ASSETS_OVERLAY_ROOT`, preflight, failure classification, evidence fields,
   and claim boundaries.
 - [x] A fixed native vs AAN front-camera pair was produced and reviewed as `WARN`: usable for parity review, not full parity proof.
+- [x] Expert Oracle Score has a dedicated post-acceptance plan separating current
+  `score=0.0` smoke from Franka expert oracle, Lift2 oracle / retarget, and real policy score.
 - [ ] Any implementation work uses a separate worktree or the GenManip integration repo where runtime tooling actually lives.
 - [x] Final reporting includes both allowed and forbidden claims.

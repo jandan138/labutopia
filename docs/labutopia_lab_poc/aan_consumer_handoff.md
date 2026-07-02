@@ -14,6 +14,10 @@ submit / eval 都是 exit `0`，reset 后跑满 1000 steps，并产出 `result_i
 semantic evaluator 和 material parity。
 runtime bootstrap 的标准环境、preflight、failure classification 和 evidence 字段已固化在
 [`aan_runtime_environment_bootstrap.md`](aan_runtime_environment_bootstrap.md)。
+分数校准的下一层规划已固化在
+[`expert_oracle_score_plan.md`](expert_oracle_score_plan.md)：它把当前 `score=0.0`
+的 consumer smoke、Franka expert oracle、Lift2 oracle / retarget 和真实 policy score
+分开，避免把“链路能跑”误解成“专家或模型失败”。
 
 Stage 6 的最新结论：overall Stage 6 已经 `PASS`，但后续仍有 semantic evaluator 和
 full visual/material parity 的增强工作。`MuffleFurnace` 和 `Beaker_01` 都完成
@@ -68,6 +72,15 @@ AAN 专用入口，并用 fresh run 跑通 reset / step / metric / logging，且
 
 当前仍不能说：official leaderboard score 已完成、模型已经解决任务、benchmark-wide
 任意资产都自动可评、full visual material parity 已证明。
+
+分数四层口径：
+
+| 层级 | 通俗解释 | 当前状态 | 能否当作模型成绩 |
+|---|---|---|---|
+| 0 分 smoke | 当前 eval client 能跑完整条任务链路，但默认 action / policy 没完成任务。 | 已有证据 | 不能 |
+| Franka expert oracle | 把 LabUtopia native Franka expert 当作标准答案，用 EBench metric 打分。 | 规划中 | 不能 |
+| Lift2 oracle / retarget | 把专家答案迁到 Lift2/R5a 16D action contract 后，用同一 metric 打分。 | 规划中 | 不能 |
+| Real policy score | 真实模型通过 EvalClient 输出标准 action，由 EBench metric 判分。 | 后续 | 可以作为 policy 质量证据；是否 official 另看提交流程 |
 
 Stage 4 内部有两个硬门：
 
@@ -423,6 +436,7 @@ labutopia_aan_packages/dryingbox_01_overlay/asset.usd
 | package ready | ConvertAsset 资产包合格 | AAN manifest 通过，资产包可交给 consumer | 任务已经 live eval 通过 |
 | consumer wired | LabUtopia / GenManip 已接上包 | task root 能解析 asset/task/evaluator 文件 | reset / step / metric 已通过 |
 | live eval smoke passed | 本地任务链路跑通 | reset、step、render、metric、logging 有证据 | 模型已经成功完成任务 |
+| expert oracle scored | 专家答案在同一 EBench metric 下能得分 | Franka expert 或 Lift2 oracle / retarget 的标准答案可被评分器识别 | 真实模型已经达到该分数 |
 | model solved task | policy/controller 成功完成任务 | success/score 由 evaluator 证明 | official leaderboard 已发布 |
 | official score released | 官方流程产出可比较分数 | 可以谈 official leaderboard comparability | 不能由本地 smoke 自动推出 |
 

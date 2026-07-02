@@ -396,12 +396,12 @@
       <div class="aan-head">
         <div>
           <h2>ConvertAsset AAN-ready package handoff</h2>
-          <p>这条新证据线回答一个更工程化的问题：不是“我们能不能手工把 DryingBox 调到能跑”，而是“ConvertAsset 产出的资产包，LabUtopia / GenManip 能不能不本地修包、直接消费进 EBench task”。旧 AAN 包已经通过 LabUtopia / GenManip consumer Stage 1-4b 和 Stage 6 replication hardening。AAN-11 新包在 ConvertAsset producer 侧修掉了大面积红色 fallback，并完成 material runtime closure。AAN-11 新包也已进入 LabUtopia / EBench consumer 并通过 live smoke；但 <code>task/evaluator.yaml</code> 还不是 runtime semantic metric，会作为后续 semantic evaluator 工作单独推进。</p>
-          <span class="tag">AAN-11 consumer smoke PASS</span><span class="tag">DryingBox Stage 4b PASS</span><span class="tag">MuffleFurnace Stage 4b PASS</span><span class="tag">Beaker Stage 4b PASS</span><span class="tag">Stage 6 PASS</span><span class="tag">front pair PASS/WARN</span><span class="tag warn">material parity OPEN</span>
+          <p>这条新证据线回答一个更工程化的问题：不是“我们能不能手工把 DryingBox 调到能跑”，而是“ConvertAsset 产出的资产包，LabUtopia / GenManip 能不能不本地修包、直接消费进 EBench task”。旧 AAN 包已经通过 LabUtopia / GenManip consumer Stage 1-4b 和 Stage 6 replication hardening。AAN-11 新包在 ConvertAsset producer 侧修掉了大面积红色 fallback，并完成 material runtime closure。AAN-11 新包也已进入 LabUtopia / EBench consumer 并通过 live smoke；但 <code>score=0.0</code> 仍只是 smoke action 的结果，不代表 expert 失败。下一步新增 <code>Stage 4c: Expert Oracle Score</code>：先用 Franka native expert 在 EBench metric 下 replay，再做 Lift2 oracle / retarget。</p>
+          <span class="tag">AAN-11 consumer smoke PASS</span><span class="tag">DryingBox Stage 4b PASS</span><span class="tag">Stage 4c planned</span><span class="tag">MuffleFurnace Stage 4b PASS</span><span class="tag">Beaker Stage 4b PASS</span><span class="tag">Stage 6 PASS</span><span class="tag">front pair PASS/WARN</span><span class="tag warn">material parity OPEN</span>
         </div>
         <div class="metric">
           <strong>PASS</strong>
-          <span>AAN-11 新包已完成本地 consumer live smoke<br>下一步做材质细节闭环和 semantic evaluator</span>
+          <span>AAN-11 新包已完成本地 consumer live smoke<br>下一步做 Expert Oracle Score 分数校准</span>
         </div>
       </div>
 
@@ -412,6 +412,22 @@
         <div class="status-cell"><strong>4 冒烟</strong><span>DryingBox live smoke PASS</span></div>
         <div class="status-cell"><strong>5 发布</strong><span>PM evidence / weekly HTML</span></div>
         <div class="status-cell"><strong>6 复制</strong><span>Muffle + Beaker 4b PASS</span></div>
+      </div>
+
+      <div class="claim-list" aria-label="Expert Oracle Score score ladder">
+        <div class="answer">
+          <p><strong>新增分数校准阶段：</strong><code>Stage 4c: Expert Oracle Score / Score Calibration</code> 不重排上面的六阶段。它插在 Stage 4b smoke 和真实 policy score 之间，专门证明“标准答案放进 EBench metric 能得分”。</p>
+        </div>
+        <div class="answer warning">
+          <p><strong>分数四层口径：</strong>Stage 4b 的 <code>score=0.0</code> 只说明普通 smoke action 没完成任务；Franka expert oracle 证明原生专家答案能被新评分器识别；Lift2 oracle / retarget 证明官方 Lift2/R5a 机器人口径存在可完成上限；真实 policy score 必须等模型通过 EvalClient 输出标准 action 后再单独汇报。</p>
+        </div>
+      </div>
+
+      <div class="status-rail" aria-label="Score calibration ladder">
+        <div class="status-cell"><strong>4b Smoke</strong><span>能 reset / step / render / logging</span></div>
+        <div class="status-cell"><strong>4c Franka</strong><span>native expert under EBench metric</span></div>
+        <div class="status-cell"><strong>4c Lift2</strong><span>oracle / retarget under R5a 16D</span></div>
+        <div class="status-cell"><strong>Policy</strong><span>real model score, not oracle</span></div>
       </div>
 
       <div class="lane-grid" aria-label="Producer 和 Consumer 证据线">
@@ -538,6 +554,11 @@
               <td>这说明当前 policy 没完成开门，不是 AAN package 接入失败。</td>
             </tr>
             <tr>
+              <td>Stage 4c Expert Oracle Score</td>
+              <td><a href="../../docs/labutopia_lab_poc/expert_oracle_score_plan.md"><code>expert_oracle_score_plan.md</code></a><br><code>status=PLANNED</code><br><code>Franka expert oracle=NOT_RUN</code><br><code>Lift2 oracle / retarget=NOT_RUN</code></td>
+              <td>下一步先用 LabUtopia 原生 Franka expert 在 EBench metric 下 replay，证明“标准答案能被新评分器打分”；再把专家意图迁移到 Lift2/R5a 16D 口径，证明“官方机器人口径也存在可完成上限”。</td>
+            </tr>
+            <tr>
               <td>旧包材质 warning</td>
               <td><code>consumer_mdl_compiler_error_count=636</code><br><code>producer_failed_mdl_shade_nodes=10</code><br><code>producer_missing_mdl_modules=41</code><br><code>producer_unresolved_textures=18</code></td>
               <td>这是 2026-07-01 旧包 / 旧 consumer 证据，用来解释旧红图为什么失败。它不再代表 AAN-11 producer 最新状态。</td>
@@ -598,7 +619,7 @@
 
       <div class="claim-list" aria-label="AAN claim boundary">
         <div class="answer">
-          <p><strong>现在可以说：</strong>AAN-11 DryingBox package 已被 LabUtopia / EBench consumer 接入 <code>level1_open_door</code>，并通过本地 live smoke；旧 overlay 没有被复用。Stage 6 已把收货、验货、挂载 dry-run、no-local-repair verify、Stage 4a runtime adapter preflight 和 generic Stage 4b live smoke 复制到 <code>MuffleFurnace</code> 和 <code>Beaker_01</code>。新增 AAN-11 证据还可以说：ConvertAsset producer 侧红色异常材质已经闭环，最新 DryingBox 多视角和固定正面 consumer 对比 render 没有 solid red fallback。</p>
+          <p><strong>现在可以说：</strong>AAN-11 DryingBox package 已被 LabUtopia / EBench consumer 接入 <code>level1_open_door</code>，并通过本地 live smoke；旧 overlay 没有被复用。Stage 6 已把收货、验货、挂载 dry-run、no-local-repair verify、Stage 4a runtime adapter preflight 和 generic Stage 4b live smoke 复制到 <code>MuffleFurnace</code> 和 <code>Beaker_01</code>。新增 AAN-11 证据还可以说：ConvertAsset producer 侧红色异常材质已经闭环，最新 DryingBox 多视角和固定正面 consumer 对比 render 没有 solid red fallback。Expert Oracle Score 已规划为 Stage 4c，下一步会用 Franka expert 和 Lift2 oracle / retarget 单独验证专家答案能否在 EBench metric 下得分。</p>
         </div>
         <div class="answer warning">
           <p><strong>仍不能说：</strong>official leaderboard score 已完成；policy/model 已经解决任务；<code>MuffleFurnace</code> 或 <code>Beaker_01</code> generic smoke 等于 semantic task success；任意 USD / MJCF / deformable / liquid 都自动可评；full visual material parity 已证明；AAN-11 render 已经和 LabUtopia native 外观逐项一致。</p>
@@ -1004,6 +1025,11 @@ result_info: saved/eval_results/ebench/labutopia_aan_lift2_stage4b_20260701_0855
           <span class="tag warn">不是简单复制配置</span><span class="tag">评测口径重建</span>
         </article>
         <article class="card">
+          <h3>Expert Oracle Score</h3>
+          <p>先用 Franka native expert 证明“标准答案在 EBench metric 下能得分”，再做 Lift2 oracle / retarget 证明“官方机器人口径也有可完成上限”。这一步仍不是模型成绩。</p>
+          <span class="tag">Stage 4c planned</span><span class="tag warn">not policy score</span>
+        </article>
+        <article class="card">
           <h3>三任务 POC 已跑通</h3>
           <p><code>level1_pick</code>、<code>level1_place</code>、<code>level1_open_door</code> 已在 Lift2 candidate 配置中完成 reset、step、result_info 和 metric logging；下一步才是扩大任务面与提升策略得分。</p>
           <span class="tag">3 个代表任务已验证</span><span class="tag">下一步批量扩展</span>
@@ -1035,6 +1061,11 @@ result_info: saved/eval_results/ebench/labutopia_aan_lift2_stage4b_20260701_0855
               <td>决定 leaderboard 和诊断报告能否公平解释结果，而不是只得到一段视频。</td>
             </tr>
             <tr>
+              <td>Expert Oracle Score</td>
+              <td>新增 <code>Stage 4c / Score Calibration</code>：先跑 Franka native expert under EBench metric，再做 Lift2/R5a 16D oracle 或 retarget；两条证据都要有独立 run id、action log、metric trace 和 <code>result_info.json</code>。</td>
+              <td>先证明“标准答案在新评分器下能拿分”，再讨论真实 policy 为什么得 0 分；不会把 smoke 0 分误判成 expert 失败。</td>
+            </tr>
+            <tr>
               <td>动作接口</td>
               <td>EBench 侧模型输出的是标准 action dict/向量，当前基线主要按 fixed-base 16 维或 mobile 19 维处理；LabUtopia 的 Franka/Ridgebase 控制口径需要对齐。</td>
               <td>决定现有 EBench baseline 能不能直接评 LabUtopia 任务。</td>
@@ -1052,7 +1083,7 @@ result_info: saved/eval_results/ebench/labutopia_aan_lift2_stage4b_20260701_0855
           </tbody>
         </table>
       </div>
-      <p class="answer"><strong>建议推进口径：</strong>3 个代表任务已经证明能在 EBench server 中完成 reset、step、score/result_info logging（重置、执行一步、打分记录）。后续工作应转向两条线：一是把 29 个 LabUtopia config 按 pick/place/press/open 到 pour/stir/shake/clean beaker 的难度顺序分批接入；二是用官方 baseline 或更强 policy 做真正的策略得分提升。</p>
+      <p class="answer"><strong>建议推进口径：</strong>3 个代表任务已经证明能在 EBench server 中完成 reset、step、score/result_info logging（重置、执行一步、打分记录）。下一步先插入 Expert Oracle Score 校准：用 Franka 标准答案证明评分器能给分，再用 Lift2/R5a oracle 或 retarget 证明官方机器人口径可完成；之后再把 29 个 LabUtopia config 分批接入，并用真实 baseline 或更强 policy 做策略得分提升。</p>
     </section>
 
     <section class="flow" aria-label="expert controller 工作流">
