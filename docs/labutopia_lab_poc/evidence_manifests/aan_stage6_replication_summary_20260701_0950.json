@@ -1,0 +1,107 @@
+{
+  "allowed_claims": [
+    "Stage6 has replicated AAN consumer intake, manifest check, task-root mount, and no-local-repair verification on one articulated asset and one rigid transparent prop.",
+    "The replicated package-local USDs open and their required non-N/A prims resolve through the LabUtopia/GenManip composite asset root."
+  ],
+  "assets": [
+    {
+      "asset_class": "articulated",
+      "asset_id": "MuffleFurnace",
+      "benchmark_profile": "ebench-lift2",
+      "blocker_or_next_action": "Add a generic AAN task lane/evaluator adapter that consumes task/task_config.yaml, task/required_prims.yaml, and task/evaluator.yaml, or define how producer-delivered evaluator entrypoints are installed into the GenManip/EBench runtime.",
+      "blockers": [
+        {
+          "code": "missing_consumer_task_lane_for_aan08_assets",
+          "detail": "No GenManip configs/tasks/ebench/labutopia_lab_poc task lane exists for AAN08.MuffleFurnaceDoor or AAN08.TransparentBeaker; current AAN runtime smoke lane is DryingBox-specific."
+        }
+      ],
+      "consumer_check": "aan_muffle_furnace_consumer_check_20260701_094329.json",
+      "dynamics_profile": "articulated_body",
+      "evaluator_entrypoint": "ebench.evaluators.aan08:MuffleFurnaceDoorEvaluator",
+      "failure_owner": "GenManip / LabUtopia consumer",
+      "failure_phase": "stage4b_runtime_task_dispatch",
+      "highest_passed_stage": 3,
+      "intake": "aan_muffle_furnace_package_intake_20260701_094329.json",
+      "mount": "aan_muffle_furnace_task_mount_20260701_094802.json",
+      "no_local_repair_status": "PASS",
+      "no_local_snapshot": "aan_muffle_furnace_no_local_repair_snapshot_20260701_094846.json",
+      "no_local_verify": "aan_muffle_furnace_no_local_repair_verify_20260701_094846.json",
+      "package_digest_after_stage3": "69c49538658892e4faef4265a9dd5049b16e690d3740f5a764b47a5f2b42a233",
+      "package_dir": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/muffle_furnace",
+      "producer_manifest": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/muffle_furnace_manifest.json",
+      "producer_manifest_raw_status": "pass",
+      "producer_owner_action": "not_required_for_stage1_3; coordinate evaluator/plugin contract before Stage4b",
+      "runtime_profile": "isaac41",
+      "stage1_intake_status": "PASS",
+      "stage2_consumer_check_status": "PASS",
+      "stage3_all_required_prims_found": true,
+      "stage3_mount_status": "PASS",
+      "stage3_path_resolution_status": "already_mounted_same_source",
+      "stage3_usd_stage_opened": true,
+      "stage4b_live_smoke_status": "BLOCKED",
+      "task_id": "AAN08.MuffleFurnaceDoor"
+    },
+    {
+      "asset_class": "rigid transparent prop",
+      "asset_id": "Beaker_01",
+      "benchmark_profile": "ebench-lift2",
+      "blocker_or_next_action": "Add a generic AAN task lane/evaluator adapter that consumes task/task_config.yaml, task/required_prims.yaml, and task/evaluator.yaml, or define how producer-delivered evaluator entrypoints are installed into the GenManip/EBench runtime.",
+      "blockers": [
+        {
+          "code": "missing_consumer_task_lane_for_aan08_assets",
+          "detail": "No GenManip configs/tasks/ebench/labutopia_lab_poc task lane exists for AAN08.MuffleFurnaceDoor or AAN08.TransparentBeaker; current AAN runtime smoke lane is DryingBox-specific."
+        }
+      ],
+      "consumer_check": "aan_beaker_01_consumer_check_20260701_094343.json",
+      "dynamics_profile": "rigid_body",
+      "evaluator_entrypoint": "ebench.evaluators.aan08:TransparentBeakerEvaluator",
+      "failure_owner": "GenManip / LabUtopia consumer",
+      "failure_phase": "stage4b_runtime_task_dispatch",
+      "highest_passed_stage": 3,
+      "intake": "aan_beaker_01_package_intake_20260701_094343.json",
+      "mount": "aan_beaker_01_task_mount_20260701_094802.json",
+      "no_local_repair_status": "PASS",
+      "no_local_snapshot": "aan_beaker_01_no_local_repair_snapshot_20260701_094846.json",
+      "no_local_verify": "aan_beaker_01_no_local_repair_verify_20260701_094846.json",
+      "package_digest_after_stage3": "b707403b13a7295d0f5385e0c48b1498dc98119f5a728cc2d9d07614c3c87e98",
+      "package_dir": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/beaker_01",
+      "producer_manifest": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/beaker_01_manifest.json",
+      "producer_manifest_raw_status": "pass",
+      "producer_owner_action": "not_required_for_stage1_3; coordinate evaluator/plugin contract before Stage4b",
+      "runtime_profile": "isaac41",
+      "stage1_intake_status": "PASS",
+      "stage2_consumer_check_status": "PASS",
+      "stage3_all_required_prims_found": true,
+      "stage3_mount_status": "PASS",
+      "stage3_path_resolution_status": "already_mounted_same_source",
+      "stage3_usd_stage_opened": true,
+      "stage4b_live_smoke_status": "BLOCKED",
+      "task_id": "AAN08.TransparentBeaker"
+    }
+  ],
+  "blocked_claims": [
+    "Stage6 complete",
+    "AAN08 assets have passed LabUtopia / GenManip live eval smoke",
+    "official EBench leaderboard or policy success is proven",
+    "generic evaluator dispatch for arbitrary AAN task/evaluator.yaml is implemented"
+  ],
+  "blocker_or_next_action": "Implement the consumer-side generic AAN task/evaluator adapter, then rerun Stage4b for at least one replicated asset.",
+  "failure_owner": "GenManip / LabUtopia consumer",
+  "failure_phase": "stage4b_runtime_task_dispatch",
+  "highest_common_passed_stage": 3,
+  "meaning": "Two non-DryingBox AAN packages pass consumer intake, manifest check, task-root mount dry-run, and no-local-repair verification; Stage4b runtime smoke is blocked on a missing generic AAN task/evaluator dispatch layer, not on package-local USD composition.",
+  "notes": [
+    "Earlier 20260701_094329/094343 mount records blocked because the consumer interpreted path=N/A and status=not_applicable as a required USD prim. The consumer parser was updated by TDD to align with the AAN-07 contract: non-N/A required prims must resolve; N/A/not_applicable roles do not represent USD prims.",
+    "No ConvertAsset package files were edited; no-local-repair verify records remain PASS for both assets."
+  ],
+  "producer_owner_action": "not_required_for_stage1_3; coordinate evaluator/plugin contract before Stage4b",
+  "recorded_at_utc": "2026-07-01T09:50:04Z",
+  "replication_assets": [
+    "MuffleFurnace",
+    "Beaker_01"
+  ],
+  "schema_version": 1,
+  "stage": "aan_stage6_multi_asset_replication_summary",
+  "stage4b_live_smoke_status": "BLOCKED",
+  "status": "BLOCKED"
+}

@@ -1,0 +1,66 @@
+{
+  "blocker_or_next_action": null,
+  "blockers": [],
+  "failure_owner": null,
+  "local_usd_repair_allowed": false,
+  "package_dir": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/muffle_furnace",
+  "package_hash": {
+    "algorithm": "sha256(sorted_relative_path_nul_file_sha256)",
+    "digest": "69c49538658892e4faef4265a9dd5049b16e690d3740f5a764b47a5f2b42a233",
+    "files": [
+      {
+        "path": "asset.usd",
+        "sha256": "4be6c36c39eff36868dcb44848aa7ddadc9501f0a8f571bcf24cd6f344207d3d"
+      },
+      {
+        "path": "deps/mdl/mdl_0000.mdl",
+        "sha256": "5ac2b7c436c3dc5406cbfbffce6e882ca1460d20016e3e911731208c2351d5fa"
+      },
+      {
+        "path": "deps/mdl/mdl_0005.mdl",
+        "sha256": "3a6d7d12b2daeafe810206645ae751a31d2b323001eb2a30f7e7ac518a549254"
+      },
+      {
+        "path": "deps/mdl/mdl_0006.mdl",
+        "sha256": "30f34305403cd4b992d2040e194af5302ab0bec2c09846edf4b55822f20830ef"
+      },
+      {
+        "path": "deps/mdl/mdl_0007.mdl",
+        "sha256": "8ebde7f4532586da7a868abb5c1ec1bccad00c88dfc96c46cbf2aabde67601d8"
+      },
+      {
+        "path": "evidence/runtime_smoke/render.png",
+        "sha256": "3c4f6e6a58608fc5ebeddb3a66ef2a794b98ad7363c1678b7bbc22a4396df4ef"
+      },
+      {
+        "path": "evidence/runtime_smoke/report.json",
+        "sha256": "4c7aa1284c84064b0b931e658e802739f833be1956b9143263df0e4fe686cdff"
+      },
+      {
+        "path": "evidence/runtime_smoke/stderr.log",
+        "sha256": "ba46915e1da4179da1723a5ead7cf5abc1c2ef4ef17a05732bf2fed98c48aa1f"
+      },
+      {
+        "path": "evidence/runtime_smoke/stdout.log",
+        "sha256": "35df1497791bd14e363890e654893abe80b7b8f65a73b58126a7717c32631ed8"
+      },
+      {
+        "path": "task/evaluator.yaml",
+        "sha256": "0dd1526b61a2b1a39d1ba96e88f3feddd0465b834dc645186768785c3f34b5c6"
+      },
+      {
+        "path": "task/required_prims.yaml",
+        "sha256": "84f8841fc165f5b4867fa5ba70c869ed4e1cad9e085a41e3b537970ce0621d54"
+      },
+      {
+        "path": "task/task_config.yaml",
+        "sha256": "5da5ac999b4f5c863b0a0ab8f7db53cff6834b62ba367db190e1f66019374acd"
+      }
+    ]
+  },
+  "package_mutation_allowed": false,
+  "producer_owner_action": null,
+  "stage": "aan_no_local_repair_snapshot",
+  "stage_label": "stage6_replication_muffle_furnace_after_stage3_mount",
+  "status": "PASS"
+}

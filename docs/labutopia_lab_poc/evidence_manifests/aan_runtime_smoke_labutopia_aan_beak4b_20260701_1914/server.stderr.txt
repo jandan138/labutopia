@@ -1,0 +1,25 @@
+2026-07-01 19:16:12,718	INFO worker.py:1918 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8265 [39m[22m
+INFO:     Started server process [2125653]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:18267 (Press CTRL+C to quit)
+[36m(IsaacWorker pid=2133441)[0m Warning: Possible version incompatibility. Attempting to load omni::fabric::IPath with version v0.2 against v0.1.
+[36m(IsaacWorker pid=2133441)[0m Warning: Possible version incompatibility. Attempting to load omni::fabric::IPath with version v0.2 against v0.1.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1782904681.540958 2126975 chttp2_transport.cc:1182] ipv4:10.150.153.120:43225: Got goaway [2] err=UNAVAILABLE:GOAWAY received; Error code: 2; Debug Text: Cancelling all calls {grpc_status:14, http2_error:2, created_time:"2026-07-01T19:18:01.540952216+08:00"}
+[36m(IsaacWorker pid=2134576)[0m Warning: Possible version incompatibility. Attempting to load omni::fabric::IPath with version v0.2 against v0.1.
+[36m(IsaacWorker pid=2134576)[0m Warning: Possible version incompatibility. Attempting to load omni::fabric::IPath with version v0.2 against v0.1.
+I0000 00:00:1782904693.033332 2128151 chttp2_transport.cc:1182] ipv4:10.150.153.120:39267: Got goaway [2] err=UNAVAILABLE:GOAWAY received; Error code: 2; Debug Text: Cancelling all calls {created_time:"2026-07-01T19:18:13.03332486+08:00", http2_error:2, grpc_status:14}
+[36m(IsaacWorker pid=2135730)[0m Warning: Possible version incompatibility. Attempting to load omni::fabric::IPath with version v0.2 against v0.1.
+[36m(IsaacWorker pid=2135730)[0m Warning: Possible version incompatibility. Attempting to load omni::fabric::IPath with version v0.2 against v0.1.
+I0000 00:00:1782904706.715407 2128153 chttp2_transport.cc:1182] ipv4:10.150.153.120:45133: Got goaway [2] err=UNAVAILABLE:GOAWAY received; Error code: 2; Debug Text: Cancelling all calls {created_time:"2026-07-01T19:18:26.715401034+08:00", http2_error:2, grpc_status:14}
+[36m(IsaacWorker pid=2136682)[0m Warning: Possible version incompatibility. Attempting to load omni::fabric::IPath with version v0.2 against v0.1.
+[36m(IsaacWorker pid=2136682)[0m Warning: Possible version incompatibility. Attempting to load omni::fabric::IPath with version v0.2 against v0.1.
+I0000 00:00:1782904723.784347 2128157 chttp2_transport.cc:1182] ipv4:10.150.153.120:36119: Got goaway [2] err=UNAVAILABLE:GOAWAY received; Error code: 2; Debug Text: Cancelling all calls {grpc_status:14, http2_error:2, created_time:"2026-07-01T19:18:43.784340764+08:00"}
+[36m(IsaacWorker pid=2138087)[0m Warning: Possible version incompatibility. Attempting to load omni::fabric::IPath with version v0.2 against v0.1.[32m [repeated 2x across cluster][0m
+I0000 00:00:1782904737.762768 2126975 chttp2_transport.cc:1182] ipv4:10.150.153.120:38617: Got goaway [2] err=UNAVAILABLE:GOAWAY received; Error code: 2; Debug Text: Cancelling all calls {created_time:"2026-07-01T19:18:57.76276299+08:00", http2_error:2, grpc_status:14}
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2125653]
+I0000 00:00:1782904996.618851 2126201 chttp2_transport.cc:1182] ipv4:10.150.153.120:63568: Got goaway [2] err=UNAVAILABLE:GOAWAY received; Error code: 2; Debug Text: Cancelling all calls {created_time:"2026-07-01T19:23:16.6188489+08:00", http2_error:2, grpc_status:14}

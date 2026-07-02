@@ -1,0 +1,184 @@
+{
+  "action_dialect_matrix": [
+    {
+      "action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_is_rel": true,
+      "base_motion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "control_type": "joint_position",
+      "is_rel": false,
+      "name": "zero_action"
+    },
+    {
+      "action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_is_rel": true,
+      "base_motion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "control_type": "joint_position",
+      "is_rel": false,
+      "name": "openpi_relative_base_motion"
+    },
+    {
+      "action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_is_rel": false,
+      "base_motion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "control_type": "joint_position",
+      "is_rel": false,
+      "name": "xvla_absolute_base_motion"
+    }
+  ],
+  "claim_boundary": {
+    "aggregate_stage7_manifest_required": true,
+    "blocked_rows": [
+      {
+        "finding": "no reset observation schema was provided",
+        "name": "observation keys",
+        "status": "BLOCKED"
+      },
+      {
+        "finding": "no reset observation schema was provided",
+        "name": "camera input keys",
+        "status": "BLOCKED"
+      },
+      {
+        "finding": "no GenManip/EBench step response was provided",
+        "name": "reward/success fields",
+        "status": "BLOCKED"
+      }
+    ],
+    "claim_scope": "single_task_live_schema_probe_only",
+    "failed_rows": [],
+    "lift2_contract_ready": null,
+    "local_official_baseline_style_contract_ready": null,
+    "native_material_closure_claim_allowed": false,
+    "official_baseline_evaluable": false,
+    "probe_status": "single-task live schema probe blocked",
+    "stage7_status": "Stage 7 not evaluated by single-task live schema probe"
+  },
+  "live_probe": {
+    "exception_message": "HTTP error on reset: 500 - {'detail': 'ValueError: No job started. Call start_new_job first.'}",
+    "exception_stack": "Traceback (most recent call last):\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/standalone_tools/labutopia_poc/lift2_eval_contract_probe.py\", line 562, in run_live_probe\n    reset_response = client.reset()\n  File \"/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/eval_client.py\", line 826, in reset\n    raise RuntimeError(f\"HTTP error on reset: {resp.status_code} - {detail}\")\nRuntimeError: HTTP error on reset: 500 - {'detail': 'ValueError: No job started. Call start_new_job first.'}\n",
+    "exception_type": "RuntimeError",
+    "status": "blocked",
+    "worker_id": "0"
+  },
+  "logging": {
+    "episode_id": "live_probe",
+    "result_path": "saved/eval_results/ebench/labutopia_aan_muf4b_20260701_104829/ebench/labutopia_lab_poc/aan_stage6_muffle_furnace/level1_smoke/000/result_info.json",
+    "run_id": "labutopia_aan_muf4b_20260701_104829",
+    "seed": "000",
+    "stderr_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/live_probe.stderr.txt",
+    "stdout_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/live_probe.stdout.txt",
+    "worker_id": "0"
+  },
+  "observation_schema": {
+    "camera_keys": [],
+    "entries": {},
+    "keys": [],
+    "present": false
+  },
+  "required_tasks": [
+    "level1_pick",
+    "level1_place",
+    "level1_open_door"
+  ],
+  "schema_rows": [
+    {
+      "finding": "no reset observation schema was provided",
+      "name": "observation keys",
+      "status": "BLOCKED"
+    },
+    {
+      "finding": "no reset observation schema was provided",
+      "name": "camera input keys",
+      "status": "BLOCKED"
+    },
+    {
+      "details": {
+        "dialects": [
+          "zero_action",
+          "openpi_relative_base_motion",
+          "xvla_absolute_base_motion"
+        ]
+      },
+      "finding": "all supplied action dialects match the Lift2 action contract",
+      "name": "action dialects",
+      "status": "PASS"
+    },
+    {
+      "finding": "no GenManip/EBench step response was provided",
+      "name": "reward/success fields",
+      "status": "BLOCKED"
+    },
+    {
+      "finding": "run id, worker, episode, seed, result path, and logs are recorded",
+      "name": "logging fields",
+      "status": "PASS"
+    }
+  ],
+  "schema_version": 1,
+  "stage": "acceptance_stage_7_lift2_contract_probe",
+  "step_response_summary": null,
+  "task_name": "level1_smoke"
+}

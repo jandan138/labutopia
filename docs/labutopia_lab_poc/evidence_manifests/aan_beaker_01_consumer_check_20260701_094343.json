@@ -1,0 +1,49 @@
+{
+  "aan_consumer_manifest_ready": true,
+  "aan_package_mount_allowed": true,
+  "accepted_waivers": [],
+  "blockers": [],
+  "entrypoints": {
+    "metric_evaluator": {
+      "exists": true,
+      "path": "task/evaluator.yaml",
+      "resolved_inside_package": true,
+      "resolved_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/beaker_01/task/evaluator.yaml"
+    },
+    "required_prims": {
+      "exists": true,
+      "path": "task/required_prims.yaml",
+      "resolved_inside_package": true,
+      "resolved_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/beaker_01/task/required_prims.yaml"
+    },
+    "root_usd": {
+      "exists": true,
+      "path": "asset.usd",
+      "resolved_inside_package": true,
+      "resolved_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/beaker_01/asset.usd"
+    },
+    "task_config": {
+      "exists": true,
+      "path": "task/task_config.yaml",
+      "resolved_inside_package": true,
+      "resolved_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/beaker_01/task/task_config.yaml"
+    }
+  },
+  "forbidden_claims": [
+    "ebench_task_execution_passed"
+  ],
+  "gate_results": {
+    "benchmark_contract": "pass",
+    "material_closure": "pass",
+    "physics_static": "pass",
+    "runtime_smoke": "pass",
+    "usd_closure": "pass"
+  },
+  "local_usd_repair_allowed": false,
+  "manifest_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/beaker_01_manifest.json",
+  "package_dir": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/beaker_01",
+  "package_intake_evidence": "docs/labutopia_lab_poc/evidence_manifests/aan_beaker_01_package_intake_20260701_094343.json",
+  "source_manifest_sha256": "611769636e6632b4a208469acee71c8028f64f3292d827165cd44281b1c46780",
+  "stage": "aan_consumer_manifest_check",
+  "status": "pass"
+}

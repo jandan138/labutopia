@@ -1,0 +1,15 @@
+╭────────────────────────────────────────────────╮
+│           GenManip Evaluation Client           │
+╰────────────────────────────────────────────────╯
+
+→ Results directory: /root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/client_results
+→ Client UID: 04233943
+→ Connected to server: http://127.0.0.1:18267
+→ Workers: ['0']
+→ Save process: True
+→ Save result: True
+→ Plot on episode end: False
+
+→ Polling reset result for workers: ['0']
+
+✓ Client closed.

@@ -1,0 +1,9 @@
+{
+  "episode_id": "live_probe",
+  "result_path": "saved/eval_results/ebench/labutopia_aan_beak4b_20260701_1914/ebench/labutopia_lab_poc/aan_stage6_beaker_01/level1_smoke/000/result_info.json",
+  "run_id": "labutopia_aan_beak4b_20260701_1914",
+  "seed": "000",
+  "stderr_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_beak4b_20260701_1914/live_probe.stderr.txt",
+  "stdout_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_beak4b_20260701_1914/live_probe.stdout.txt",
+  "worker_id": "0"
+}

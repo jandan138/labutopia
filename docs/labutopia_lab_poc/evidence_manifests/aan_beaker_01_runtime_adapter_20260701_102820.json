@@ -1,0 +1,125 @@
+{
+  "allowed_claims": {
+    "aan_live_eval_smoke_passed": false,
+    "aan_runtime_adapter_preflight_passed": true
+  },
+  "blockers": [],
+  "command": "python standalone_tools/labutopia_poc/aan_runtime_adapter.py --repo-root . --mount-record docs/labutopia_lab_poc/evidence_manifests/aan_beaker_01_task_mount_20260701_094802.json --source-task-config configs/tasks/ebench/labutopia_lab_poc/lift2_candidate/level1_open_door.yml --task-group ebench/labutopia_lab_poc/aan_stage6_beaker_01 --task-name level1_smoke --runtime-usd-name scene_usds/labutopia/aan/stage6_beaker_01_scene --runtime-scene-uid labutopia_aan_stage6_beaker_01 --runtime-object-uid beaker_01 --generic-smoke --json-out docs/labutopia_lab_poc/evidence_manifests/aan_beaker_01_runtime_adapter_20260701_102820.json",
+  "composite_assets_root": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets",
+  "config_path": "ebench/labutopia_lab_poc/aan_stage6_beaker_01/level1_smoke.yml",
+  "forbidden_claims": [
+    "ebench_task_execution_passed",
+    "official_leaderboard_score_complete",
+    "policy_success_proven"
+  ],
+  "legacy_overlay_used": false,
+  "mount_record_mounted_root_usd": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets/labutopia_aan_packages/stage6_codex_20260701_beaker_01/asset.usd",
+  "mounted_package_hash": {
+    "algorithm": "sha256(sorted_relative_path_nul_file_sha256)",
+    "digest": "b707403b13a7295d0f5385e0c48b1498dc98119f5a728cc2d9d07614c3c87e98",
+    "files": [
+      {
+        "path": "asset.usd",
+        "sha256": "06d36cc08c2c287760e34e3fdd48f5a6cf5bbc8bff4b174e2d05545c6ee228a2"
+      },
+      {
+        "path": "deps/mdl/OmniGlass.mdl",
+        "sha256": "cd7c97781dc95f1694f9acc70c0b9ae327361a3b1c84abf917e55a9d672e627a"
+      },
+      {
+        "path": "evidence/runtime_smoke/render.png",
+        "sha256": "6f55cd79e1ec19dccbdcbe041bd9dedfe6382eaddd5c541d520c86b9b48a010f"
+      },
+      {
+        "path": "evidence/runtime_smoke/report.json",
+        "sha256": "a91185ffb82bd56b1bafb805473e3b618e4a3d640c0f76ca5e80678eb58c3b4c"
+      },
+      {
+        "path": "evidence/runtime_smoke/stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "evidence/runtime_smoke/stdout.log",
+        "sha256": "d9d657930980f97f86d1ec16f0adf302650f0d98c8bc1547744e8d75d3b269f7"
+      },
+      {
+        "path": "task/evaluator.yaml",
+        "sha256": "415cfedd3890e61dfa28fcaa54fa1a3072eec9a0377548b2d8d21bc74c84e8fd"
+      },
+      {
+        "path": "task/required_prims.yaml",
+        "sha256": "1f9aa27234288f8fec3f3014e80fb1b8a17d95c872276fe6e3fedd1947564dfe"
+      },
+      {
+        "path": "task/task_config.yaml",
+        "sha256": "bcdfba0efd2fc6edc97d5f1cc1963208211b98a27e43b1d3082bd7b74d754a49"
+      }
+    ]
+  },
+  "mounted_package_tree_digest": "b707403b13a7295d0f5385e0c48b1498dc98119f5a728cc2d9d07614c3c87e98",
+  "mounted_root_usd": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets/labutopia_aan_packages/stage6_codex_20260701_beaker_01/asset.usd",
+  "mounted_root_usd_sha256": "06d36cc08c2c287760e34e3fdd48f5a6cf5bbc8bff4b174e2d05545c6ee228a2",
+  "namespace": "labutopia_aan_packages/stage6_codex_20260701_beaker_01",
+  "package_tree_digest": "b707403b13a7295d0f5385e0c48b1498dc98119f5a728cc2d9d07614c3c87e98",
+  "required_prim_resolution_rows": [
+    {
+      "exists": true,
+      "exists_in_runtime_wrapper": true,
+      "path": "/group_000",
+      "required": true,
+      "role": "asset_root",
+      "runtime_path": "/World/labutopia_aan_stage6_beaker_01/obj_beaker_01"
+    },
+    {
+      "exists": true,
+      "exists_in_runtime_wrapper": true,
+      "path": "/group_000/mesh_000",
+      "required": true,
+      "role": "manipulated_body",
+      "runtime_path": "/World/labutopia_aan_stage6_beaker_01/obj_beaker_01/mesh_000"
+    },
+    {
+      "exists": true,
+      "exists_in_runtime_wrapper": true,
+      "path": "/group_000/mesh_000",
+      "required": true,
+      "role": "collision_root",
+      "runtime_path": "/World/labutopia_aan_stage6_beaker_01/obj_beaker_01/mesh_000"
+    },
+    {
+      "exists": true,
+      "exists_in_runtime_wrapper": true,
+      "path": "/group_000",
+      "required": true,
+      "role": "spawn_anchor",
+      "runtime_path": "/World/labutopia_aan_stage6_beaker_01/obj_beaker_01"
+    },
+    {
+      "exists": null,
+      "exists_in_runtime_wrapper": null,
+      "path": "N/A",
+      "required": false,
+      "role": "goal_target",
+      "runtime_path": "N/A",
+      "status": "not_applicable"
+    }
+  ],
+  "reset_passed": false,
+  "resolved_runtime_scene": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets/scene_usds/labutopia/aan/stage6_beaker_01_scene.usda",
+  "result_info_path": null,
+  "run_id": null,
+  "runtime_execution_passed": false,
+  "runtime_object_uid": "beaker_01",
+  "runtime_scene_sha256": "c644180ca45f1fae097c342d40336e63746dfecb6530a91d3f78b6ac9bf89a08",
+  "runtime_scene_uid": "labutopia_aan_stage6_beaker_01",
+  "runtime_usd_name": "scene_usds/labutopia/aan/stage6_beaker_01_scene",
+  "stage": "aan_runtime_adapter_preflight",
+  "status": "pass",
+  "stderr_path": null,
+  "stdout_path": null,
+  "step_passed": false,
+  "task_name": "ebench/labutopia_lab_poc/aan_stage6_beaker_01/level1_smoke",
+  "wrapper_references": [
+    "../../../labutopia_aan_packages/stage6_codex_20260701_beaker_01/asset.usd"
+  ]
+}

@@ -1,0 +1,265 @@
+{
+  "baseline_stage_label": "before_stage6_no_local_repair_guard",
+  "blocker_or_next_action": null,
+  "blockers": [],
+  "failure_owner": null,
+  "local_usd_repair_allowed": false,
+  "package_dir": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-07-01-aan-07-dryingbox-runtime-ready/package",
+  "package_hash_after": {
+    "algorithm": "sha256(sorted_relative_path_nul_file_sha256)",
+    "digest": "6bc1bcb64f20b8db9f253f745dc733bfd1df23928ab8fc71a4977d69a5423936",
+    "files": [
+      {
+        "path": "asset.usd",
+        "sha256": "bcebeeea33cb30cf0d667e27ebda760815b0b487bffaff6e6ddb78aea2664c23"
+      },
+      {
+        "path": "deps/mdl/Aluminum_Anodized_Charcoal.mdl",
+        "sha256": "640855d3890c6faaae6346a850ef9f366d4b397c0f4313e25c7ac0b9230c106a"
+      },
+      {
+        "path": "deps/mdl/OmniGlass.mdl",
+        "sha256": "cd7c97781dc95f1694f9acc70c0b9ae327361a3b1c84abf917e55a9d672e627a"
+      },
+      {
+        "path": "deps/mdl/OmniPBR.mdl",
+        "sha256": "685a82c18b381f1cd29831490e4c356e61dbeac2d86803babc115cd6a4a845db"
+      },
+      {
+        "path": "deps/mdl/OmniSurfacePresets.mdl",
+        "sha256": "5c86c8545a1e215ec4b99e60eb66f9112ca5952cc66ca13ec0c26687dcfcb930"
+      },
+      {
+        "path": "deps/mdl/Plastic.mdl",
+        "sha256": "00ff5c95e8f9a97a5f21d0230536b01ac2ab88a8ab0d7eea9780e839be8be215"
+      },
+      {
+        "path": "deps/mdl/Plastic_Thick_Translucent.mdl",
+        "sha256": "e6fc7403fce0da94912d3aa2ced0638a2aafb4c9cd504a745743f4273b7dc333"
+      },
+      {
+        "path": "deps/mdl/Stainless_Steel.mdl",
+        "sha256": "4ea4907fe674866a20bfc45e32be1f1db71aaa7c2479458b3ad3277ea0fa5d48"
+      },
+      {
+        "path": "deps/mdl/Steel_Stainless.mdl",
+        "sha256": "4aa967952d1f840438880df500a642e71b385bd537fd077dbf202e98a1573689"
+      },
+      {
+        "path": "deps/mdl/material_06.mdl",
+        "sha256": "a387b9e3f737dbc61653de75538958e95eab77c0ae9093cdc30f8496579214ad"
+      },
+      {
+        "path": "deps/mdl/material_08.mdl",
+        "sha256": "2d340831b68cb0402efac04f53857c8fef5c479f505c7dfbf96fc26525acd6ae"
+      },
+      {
+        "path": "deps/mdl/material_09.mdl",
+        "sha256": "0569e8b1b05810a9c1d0eb604184dbc5450f0ad79307639e0cb0ec44dce26ea8"
+      },
+      {
+        "path": "deps/mdl/material_11.mdl",
+        "sha256": "f91013cdb672bc6670ef09225f378918df2fed2a977de2b3927e4f148ced9a32"
+      },
+      {
+        "path": "deps/mdl/material_12.mdl",
+        "sha256": "c63181bc2f23c090d36e9e3b96672b511a17e03f4362cca130937c6b6d7ec492"
+      },
+      {
+        "path": "deps/mdl/pbr.mdl",
+        "sha256": "08d49f866cba15416a9614776ce3502dd922c3ca5441261496df84ffee1ae0a2"
+      },
+      {
+        "path": "deps/textures/Steel_Stainless_BaseColor.png",
+        "sha256": "3f8b3b576ce734630625a64faf6266faf411714a59c42c7af395dc0826e52151"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture0.jpg",
+        "sha256": "090cea3716ec138f618190081619ed4516a3403351d378063e15c6c06d2cce46"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture0_1.jpg",
+        "sha256": "090cea3716ec138f618190081619ed4516a3403351d378063e15c6c06d2cce46"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture1.jpg",
+        "sha256": "c993bac14939eb27ab4cf248fee5816a6873885d8a159e0e97c2f4fad0619925"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture1_1.jpg",
+        "sha256": "c993bac14939eb27ab4cf248fee5816a6873885d8a159e0e97c2f4fad0619925"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture2.png",
+        "sha256": "a961a7fb56b25ad1905310f6be55efcb167f241fe2f01836468bc17f7a6602ba"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture2_1.png",
+        "sha256": "a961a7fb56b25ad1905310f6be55efcb167f241fe2f01836468bc17f7a6602ba"
+      },
+      {
+        "path": "deps/usd/scene.usd",
+        "sha256": "0869dea71ae29018d298fccf14926d858fc8f97c4cfe39abc9e41cbb9ce68127"
+      },
+      {
+        "path": "evidence/runtime_smoke/render.png",
+        "sha256": "1bec312aa1b682e6d400c0ba42b3d9d698a1017b1a52d1ad0f3c7bce6265c9bd"
+      },
+      {
+        "path": "evidence/runtime_smoke/report.json",
+        "sha256": "44e9e3f03a54398cfd1771fd1fc35942c59ca51d85af9bf20b84b8aa695a67f2"
+      },
+      {
+        "path": "evidence/runtime_smoke/stderr.log",
+        "sha256": "a55fb2d68f4186e916721619520659d36fda6090d4989d1b8a5628bc83620141"
+      },
+      {
+        "path": "evidence/runtime_smoke/stdout.log",
+        "sha256": "b402fd16fa9b5dd8f2e463bf9246cfeac573989bf63954b7c777cecdf64ed27b"
+      },
+      {
+        "path": "task/evaluator.yaml",
+        "sha256": "6e388e8c3bd96d78c540186997fe7299f85841efdaeb711ef7cc4908811219e1"
+      },
+      {
+        "path": "task/required_prims.yaml",
+        "sha256": "35699dda732dca523770ffc733128d8ac76c5b925a006fe29acb29f967bc0399"
+      },
+      {
+        "path": "task/task_config.yaml",
+        "sha256": "16b34f8ad087241f16dff04038d277bcf01ca212b7371061e2b926df23faedb0"
+      }
+    ]
+  },
+  "package_hash_before": {
+    "algorithm": "sha256(sorted_relative_path_nul_file_sha256)",
+    "digest": "6bc1bcb64f20b8db9f253f745dc733bfd1df23928ab8fc71a4977d69a5423936",
+    "files": [
+      {
+        "path": "asset.usd",
+        "sha256": "bcebeeea33cb30cf0d667e27ebda760815b0b487bffaff6e6ddb78aea2664c23"
+      },
+      {
+        "path": "deps/mdl/Aluminum_Anodized_Charcoal.mdl",
+        "sha256": "640855d3890c6faaae6346a850ef9f366d4b397c0f4313e25c7ac0b9230c106a"
+      },
+      {
+        "path": "deps/mdl/OmniGlass.mdl",
+        "sha256": "cd7c97781dc95f1694f9acc70c0b9ae327361a3b1c84abf917e55a9d672e627a"
+      },
+      {
+        "path": "deps/mdl/OmniPBR.mdl",
+        "sha256": "685a82c18b381f1cd29831490e4c356e61dbeac2d86803babc115cd6a4a845db"
+      },
+      {
+        "path": "deps/mdl/OmniSurfacePresets.mdl",
+        "sha256": "5c86c8545a1e215ec4b99e60eb66f9112ca5952cc66ca13ec0c26687dcfcb930"
+      },
+      {
+        "path": "deps/mdl/Plastic.mdl",
+        "sha256": "00ff5c95e8f9a97a5f21d0230536b01ac2ab88a8ab0d7eea9780e839be8be215"
+      },
+      {
+        "path": "deps/mdl/Plastic_Thick_Translucent.mdl",
+        "sha256": "e6fc7403fce0da94912d3aa2ced0638a2aafb4c9cd504a745743f4273b7dc333"
+      },
+      {
+        "path": "deps/mdl/Stainless_Steel.mdl",
+        "sha256": "4ea4907fe674866a20bfc45e32be1f1db71aaa7c2479458b3ad3277ea0fa5d48"
+      },
+      {
+        "path": "deps/mdl/Steel_Stainless.mdl",
+        "sha256": "4aa967952d1f840438880df500a642e71b385bd537fd077dbf202e98a1573689"
+      },
+      {
+        "path": "deps/mdl/material_06.mdl",
+        "sha256": "a387b9e3f737dbc61653de75538958e95eab77c0ae9093cdc30f8496579214ad"
+      },
+      {
+        "path": "deps/mdl/material_08.mdl",
+        "sha256": "2d340831b68cb0402efac04f53857c8fef5c479f505c7dfbf96fc26525acd6ae"
+      },
+      {
+        "path": "deps/mdl/material_09.mdl",
+        "sha256": "0569e8b1b05810a9c1d0eb604184dbc5450f0ad79307639e0cb0ec44dce26ea8"
+      },
+      {
+        "path": "deps/mdl/material_11.mdl",
+        "sha256": "f91013cdb672bc6670ef09225f378918df2fed2a977de2b3927e4f148ced9a32"
+      },
+      {
+        "path": "deps/mdl/material_12.mdl",
+        "sha256": "c63181bc2f23c090d36e9e3b96672b511a17e03f4362cca130937c6b6d7ec492"
+      },
+      {
+        "path": "deps/mdl/pbr.mdl",
+        "sha256": "08d49f866cba15416a9614776ce3502dd922c3ca5441261496df84ffee1ae0a2"
+      },
+      {
+        "path": "deps/textures/Steel_Stainless_BaseColor.png",
+        "sha256": "3f8b3b576ce734630625a64faf6266faf411714a59c42c7af395dc0826e52151"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture0.jpg",
+        "sha256": "090cea3716ec138f618190081619ed4516a3403351d378063e15c6c06d2cce46"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture0_1.jpg",
+        "sha256": "090cea3716ec138f618190081619ed4516a3403351d378063e15c6c06d2cce46"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture1.jpg",
+        "sha256": "c993bac14939eb27ab4cf248fee5816a6873885d8a159e0e97c2f4fad0619925"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture1_1.jpg",
+        "sha256": "c993bac14939eb27ab4cf248fee5816a6873885d8a159e0e97c2f4fad0619925"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture2.png",
+        "sha256": "a961a7fb56b25ad1905310f6be55efcb167f241fe2f01836468bc17f7a6602ba"
+      },
+      {
+        "path": "deps/textures/lounge_booth_table_texture2_1.png",
+        "sha256": "a961a7fb56b25ad1905310f6be55efcb167f241fe2f01836468bc17f7a6602ba"
+      },
+      {
+        "path": "deps/usd/scene.usd",
+        "sha256": "0869dea71ae29018d298fccf14926d858fc8f97c4cfe39abc9e41cbb9ce68127"
+      },
+      {
+        "path": "evidence/runtime_smoke/render.png",
+        "sha256": "1bec312aa1b682e6d400c0ba42b3d9d698a1017b1a52d1ad0f3c7bce6265c9bd"
+      },
+      {
+        "path": "evidence/runtime_smoke/report.json",
+        "sha256": "44e9e3f03a54398cfd1771fd1fc35942c59ca51d85af9bf20b84b8aa695a67f2"
+      },
+      {
+        "path": "evidence/runtime_smoke/stderr.log",
+        "sha256": "a55fb2d68f4186e916721619520659d36fda6090d4989d1b8a5628bc83620141"
+      },
+      {
+        "path": "evidence/runtime_smoke/stdout.log",
+        "sha256": "b402fd16fa9b5dd8f2e463bf9246cfeac573989bf63954b7c777cecdf64ed27b"
+      },
+      {
+        "path": "task/evaluator.yaml",
+        "sha256": "6e388e8c3bd96d78c540186997fe7299f85841efdaeb711ef7cc4908811219e1"
+      },
+      {
+        "path": "task/required_prims.yaml",
+        "sha256": "35699dda732dca523770ffc733128d8ac76c5b925a006fe29acb29f967bc0399"
+      },
+      {
+        "path": "task/task_config.yaml",
+        "sha256": "16b34f8ad087241f16dff04038d277bcf01ca212b7371061e2b926df23faedb0"
+      }
+    ]
+  },
+  "package_mutation_allowed": false,
+  "producer_owner_action": null,
+  "stage": "aan_no_local_repair_verify",
+  "stage_label": "after_stage6_no_local_repair_guard",
+  "status": "PASS"
+}

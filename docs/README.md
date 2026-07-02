@@ -26,6 +26,9 @@
 - [environment-troubleshooting.md](environment-troubleshooting.md): Isaac Sim、driver、cache、Hydra、import、headless/video 的踩坑记录。
 - [artifacts-and-git-policy.md](artifacts-and-git-policy.md): 哪些东西应该提交，哪些必须保持 gitignored。
 - [runs/2026-06-09-expert-videos.md](runs/2026-06-09-expert-videos.md): 本次多角度审阅和视频批跑记录。
+- [labutopia_lab_poc/aan_consumer_handoff.md](labutopia_lab_poc/aan_consumer_handoff.md): ConvertAsset AAN-ready package 在 LabUtopia / EBench 侧的消费规则和继续点。
+- [labutopia_lab_poc/evidence_manifests/README.md](labutopia_lab_poc/evidence_manifests/README.md): AAN consumer Stage 1-5 证据、周报入口和 PM claim boundary 说明。
+- [superpowers/plans/2026-07-01-labutopia-aan-ready-package-ebench-integration.md](superpowers/plans/2026-07-01-labutopia-aan-ready-package-ebench-integration.md): LabUtopia AAN-Ready Package 接入 EBench 的 6 阶段执行计划。
 
 ## 状态定义
 
@@ -46,4 +49,3 @@
 - 环境还没有 lock file 或容器镜像描述，当前 driver 低于 Isaac Sim 5.1 文档测试版本。
 - `level4_CleanBeaker7Policy` 的 controller/state 接口仍有 bug。
 - `main.py` 顶层生命周期、视频 writer 和 mock collector 语义还需要工程化整理。
-

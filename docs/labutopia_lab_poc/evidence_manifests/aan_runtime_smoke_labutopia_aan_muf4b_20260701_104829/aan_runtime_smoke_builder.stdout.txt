@@ -1,0 +1,204 @@
+{
+  "aan_live_eval_smoke_passed": true,
+  "adapter_record": "docs/labutopia_lab_poc/evidence_manifests/aan_muffle_furnace_runtime_adapter_20260701_102820.json",
+  "allowed_claims": {
+    "aan_live_eval_smoke_passed": true,
+    "aan_runtime_adapter_preflight_passed": true,
+    "policy_success_proven": false
+  },
+  "blocker_or_next_action": null,
+  "blockers": [],
+  "commands": {
+    "eval_or_smoke_client": "python - <<PY from genmanip_client.cli import main; main(['eval','--worker_ids','0','--run_id','labutopia_aan_muf4b_20260701_104829','--host','127.0.0.1','--port','18263','-a','r5a','-g','lift2','-c','joint_position','--no_save_process','--frame_save_interval','0','--chunk_size','1']) PY",
+    "probe": "python standalone_tools/labutopia_poc/lift2_eval_contract_probe.py --live --host 127.0.0.1 --port 18263 --worker-id 0 --run-id labutopia_aan_muf4b_20260701_104829 --task-name level1_smoke --logging-json docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/live_probe_logging.json --output docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/probe.json",
+    "server": "python ray_eval_server.py --host 127.0.0.1 --port 18263 --run_id labutopia_aan_muf4b_20260701_104829 --no_save_process --episode_recorder_save_every 0 --reset_timeout 1200 --step_timeout 1200 --load_config_timeout 300",
+    "submit": "python - <<PY from genmanip_client.cli import main; main(['submit','ebench/labutopia_lab_poc/aan_stage6_muffle_furnace/level1_smoke.yml','--run_id','labutopia_aan_muf4b_20260701_104829','--host','127.0.0.1','--port','18263']) PY"
+  },
+  "composite_assets_root": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets",
+  "config_path": "ebench/labutopia_lab_poc/aan_stage6_muffle_furnace/level1_smoke.yml",
+  "failure_owner": null,
+  "failure_phase": null,
+  "forbidden_claims": [
+    "official_leaderboard_score_complete",
+    "policy_success_proven",
+    "full_visual_material_parity_proven"
+  ],
+  "legacy_overlay_used": false,
+  "live_probe": {
+    "reset_observation_present": true,
+    "status": "attempted",
+    "step_results": [
+      {
+        "action_name": "zero_action",
+        "done": false,
+        "response_present": true
+      },
+      {
+        "action_name": "openpi_relative_base_motion",
+        "done": false,
+        "response_present": true
+      },
+      {
+        "action_name": "xvla_absolute_base_motion",
+        "done": false,
+        "response_present": true
+      }
+    ],
+    "worker_id": "0"
+  },
+  "logging_passed": true,
+  "metric_passed": true,
+  "mounted_package_tree_digest": "69c49538658892e4faef4265a9dd5049b16e690d3740f5a764b47a5f2b42a233",
+  "mounted_root_usd": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets/labutopia_aan_packages/stage6_codex_20260701_muffle_furnace/asset.usd",
+  "mounted_root_usd_sha256": "4be6c36c39eff36868dcb44848aa7ddadc9501f0a8f571bcf24cd6f344207d3d",
+  "namespace": "labutopia_aan_packages/stage6_codex_20260701_muffle_furnace",
+  "no_fail_or_blocked_rows": true,
+  "package_tree_digest": "69c49538658892e4faef4265a9dd5049b16e690d3740f5a764b47a5f2b42a233",
+  "probe_json": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/probe.json",
+  "probe_or_eval_exit_code": 0,
+  "render_passed": true,
+  "required_prim_resolution_rows": [
+    {
+      "exists": true,
+      "exists_in_runtime_wrapper": true,
+      "path": "/group_002",
+      "required": true,
+      "role": "asset_root",
+      "runtime_path": "/World/labutopia_aan_stage6_muffle_furnace/obj_muffle_furnace"
+    },
+    {
+      "exists": true,
+      "exists_in_runtime_wrapper": true,
+      "path": "/group_002/Group/mesh_000",
+      "required": true,
+      "role": "manipulated_body",
+      "runtime_path": "/World/labutopia_aan_stage6_muffle_furnace/obj_muffle_furnace/Group/mesh_000"
+    },
+    {
+      "exists": true,
+      "exists_in_runtime_wrapper": true,
+      "path": "/group_002/Group/mesh_000",
+      "required": true,
+      "role": "collision_root",
+      "runtime_path": "/World/labutopia_aan_stage6_muffle_furnace/obj_muffle_furnace/Group/mesh_000"
+    },
+    {
+      "exists": true,
+      "exists_in_runtime_wrapper": true,
+      "path": "/group_002",
+      "required": true,
+      "role": "spawn_anchor",
+      "runtime_path": "/World/labutopia_aan_stage6_muffle_furnace/obj_muffle_furnace"
+    },
+    {
+      "exists": null,
+      "exists_in_runtime_wrapper": null,
+      "path": "N/A",
+      "required": false,
+      "role": "goal_target",
+      "runtime_path": "N/A",
+      "status": "not_applicable"
+    },
+    {
+      "exists": true,
+      "exists_in_runtime_wrapper": true,
+      "path": "/group_002",
+      "required": true,
+      "role": "articulation_root",
+      "runtime_path": "/World/labutopia_aan_stage6_muffle_furnace/obj_muffle_furnace"
+    }
+  ],
+  "reset_passed": true,
+  "resolved_runtime_scene": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets/scene_usds/labutopia/aan/stage6_muffle_furnace_scene.usda",
+  "result_info_exists": true,
+  "result_info_path": "saved/eval_results/ebench/labutopia_aan_muf4b_20260701_104829/ebench/labutopia_lab_poc/aan_stage6_muffle_furnace/level1_smoke/000/result_info.json",
+  "run_id": "labutopia_aan_muf4b_20260701_104829",
+  "run_id_is_fresh": true,
+  "run_id_matches_probe_or_eval": true,
+  "run_id_matches_result_info_path": true,
+  "run_id_matches_submit": true,
+  "runtime_scene_sha256": "dd093a625e028787a998bc8994ad141e7f231ce238ceeac0f722a2d28f29572b",
+  "runtime_usd_name": "scene_usds/labutopia/aan/stage6_muffle_furnace_scene",
+  "runtime_warning_summary": {
+    "material_warning_claim_boundary": "Stage 4b PASS proves runtime reset/step/render/metric/logging, not full visual material parity.",
+    "mdl_compiler_error_count": 264,
+    "records": [
+      {
+        "exists": true,
+        "mdl_compiler_error_count": 0,
+        "path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/server.stdout.txt"
+      },
+      {
+        "exists": true,
+        "mdl_compiler_error_count": 264,
+        "path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/server.stderr.txt"
+      }
+    ],
+    "warning_log_count": 2
+  },
+  "schema_rows": [
+    {
+      "finding": "reset observation exposes required Lift2 baseline inputs",
+      "name": "observation keys",
+      "status": "PASS"
+    },
+    {
+      "finding": "required baseline camera inputs are present and image-shaped",
+      "name": "camera input keys",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "dialects": [
+          "zero_action",
+          "openpi_relative_base_motion",
+          "xvla_absolute_base_motion"
+        ],
+        "step_results": [
+          {
+            "action_name": "zero_action",
+            "done": false,
+            "response_present": true
+          },
+          {
+            "action_name": "openpi_relative_base_motion",
+            "done": false,
+            "response_present": true
+          },
+          {
+            "action_name": "xvla_absolute_base_motion",
+            "done": false,
+            "response_present": true
+          }
+        ]
+      },
+      "finding": "all supplied action dialects match the Lift2 action contract and produced live step responses",
+      "name": "action dialects",
+      "status": "PASS"
+    },
+    {
+      "finding": "reward/success fields are sourced from GenManip/EBench step output",
+      "name": "reward/success fields",
+      "status": "PASS"
+    },
+    {
+      "finding": "run id, worker, episode, seed, result path, and logs are recorded",
+      "name": "logging fields",
+      "status": "PASS"
+    }
+  ],
+  "score": 0.0,
+  "stage": "aan_stage4b_live_smoke",
+  "status": "PASS",
+  "stderr_exists": true,
+  "stderr_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/live_probe.stderr.txt",
+  "stdout_exists": true,
+  "stdout_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/live_probe.stdout.txt",
+  "step_passed": true,
+  "submit_exit_code": 0,
+  "success_rate": 0,
+  "task_name": "ebench/labutopia_lab_poc/aan_stage6_muffle_furnace/level1_smoke",
+  "wrapper_references": [
+    "../../../labutopia_aan_packages/stage6_codex_20260701_muffle_furnace/asset.usd"
+  ]
+}

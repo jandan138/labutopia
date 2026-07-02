@@ -1,0 +1,17 @@
+→ Starting job with config(s): ['ebench/labutopia_lab_poc/aan_stage6_muffle_furnace/level1_smoke.yml']
+✓ Job started successfully!
+
+╭──────────────────────────────────────────────────╮
+│            GenManip Evaluation Status            │
+├──────────────────────────────────────────────────┤
+│  Status:        ◦ IDLE                           │
+│  Benchmark:     ebench                           │
+│  Run ID:        labutopia_aan_muf4b_20260701_1... │
+├──────────────────────────────────────────────────┤
+│  Progress:      ░░░░░░░░░░░░░░░░░░░░   0.0%      │
+│  Completed:     0                                │
+│  In Progress:   0                                │
+│  Workers:       none                             │
+├──────────────────────────────────────────────────┤
+│  No results yet                                  │
+╰──────────────────────────────────────────────────╯

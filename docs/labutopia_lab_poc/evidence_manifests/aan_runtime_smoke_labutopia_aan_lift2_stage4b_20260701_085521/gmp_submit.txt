@@ -1,0 +1,17 @@
+→ Starting job with config(s): ['ebench/labutopia_lab_poc/aan_lift2_candidate/level1_open_door.yml']
+✓ Job started successfully!
+
+╭──────────────────────────────────────────────────╮
+│            GenManip Evaluation Status            │
+├──────────────────────────────────────────────────┤
+│  Status:        ◦ IDLE                           │
+│  Benchmark:     ebench                           │
+│  Run ID:        labutopia_aan_lift2_stage4b_20... │
+├──────────────────────────────────────────────────┤
+│  Progress:      ░░░░░░░░░░░░░░░░░░░░   0.0%      │
+│  Completed:     0                                │
+│  In Progress:   0                                │
+│  Workers:       none                             │
+├──────────────────────────────────────────────────┤
+│  No results yet                                  │
+╰──────────────────────────────────────────────────╯

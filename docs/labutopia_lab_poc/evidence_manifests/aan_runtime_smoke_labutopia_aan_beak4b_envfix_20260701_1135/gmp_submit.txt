@@ -1,0 +1,17 @@
+→ Starting job with config(s): ['ebench/labutopia_lab_poc/aan_stage6_beaker_01/level1_smoke.yml']
+✓ Job started successfully!
+
+╭──────────────────────────────────────────────────╮
+│            GenManip Evaluation Status            │
+├──────────────────────────────────────────────────┤
+│  Status:        ◦ IDLE                           │
+│  Benchmark:     ebench                           │
+│  Run ID:        labutopia_aan_beak4b_envfix_20... │
+├──────────────────────────────────────────────────┤
+│  Progress:      ░░░░░░░░░░░░░░░░░░░░   0.0%      │
+│  Completed:     0                                │
+│  In Progress:   0                                │
+│  Workers:       none                             │
+├──────────────────────────────────────────────────┤
+│  No results yet                                  │
+╰──────────────────────────────────────────────────╯

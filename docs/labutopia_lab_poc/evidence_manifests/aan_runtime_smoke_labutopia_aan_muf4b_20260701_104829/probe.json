@@ -1,0 +1,410 @@
+{
+  "action_dialect_matrix": [
+    {
+      "action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_is_rel": true,
+      "base_motion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "control_type": "joint_position",
+      "is_rel": false,
+      "name": "zero_action"
+    },
+    {
+      "action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_is_rel": true,
+      "base_motion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "control_type": "joint_position",
+      "is_rel": false,
+      "name": "openpi_relative_base_motion"
+    },
+    {
+      "action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_is_rel": false,
+      "base_motion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "control_type": "joint_position",
+      "is_rel": false,
+      "name": "xvla_absolute_base_motion"
+    }
+  ],
+  "claim_boundary": {
+    "aggregate_stage7_manifest_required": true,
+    "blocked_rows": [],
+    "claim_scope": "single_task_live_schema_probe_only",
+    "failed_rows": [],
+    "lift2_contract_ready": null,
+    "local_official_baseline_style_contract_ready": null,
+    "native_material_closure_claim_allowed": false,
+    "official_baseline_evaluable": false,
+    "probe_status": "single-task live schema probe passed",
+    "stage7_status": "Stage 7 not evaluated by single-task live schema probe"
+  },
+  "live_probe": {
+    "reset_observation_present": true,
+    "status": "attempted",
+    "step_results": [
+      {
+        "action_name": "zero_action",
+        "done": false,
+        "response_present": true
+      },
+      {
+        "action_name": "openpi_relative_base_motion",
+        "done": false,
+        "response_present": true
+      },
+      {
+        "action_name": "xvla_absolute_base_motion",
+        "done": false,
+        "response_present": true
+      }
+    ],
+    "worker_id": "0"
+  },
+  "logging": {
+    "episode_id": "live_probe",
+    "result_path": "saved/eval_results/ebench/labutopia_aan_muf4b_20260701_104829/ebench/labutopia_lab_poc/aan_stage6_muffle_furnace/level1_smoke/000/result_info.json",
+    "run_id": "labutopia_aan_muf4b_20260701_104829",
+    "seed": "000",
+    "stderr_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/live_probe.stderr.txt",
+    "stdout_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_muf4b_20260701_104829/live_probe.stdout.txt",
+    "worker_id": "0"
+  },
+  "observation_schema": {
+    "camera_keys": [
+      "video.left_camera_view",
+      "video.overlook_camera_view",
+      "video.right_camera_view",
+      "video.top_camera_view"
+    ],
+    "entries": {
+      "episode_id": {
+        "type": "str"
+      },
+      "instruction": {
+        "type": "str"
+      },
+      "reset": {
+        "type": "bool"
+      },
+      "robot_id": {
+        "type": "str"
+      },
+      "state.base": {
+        "shape": [
+          3
+        ],
+        "type": "ndarray"
+      },
+      "state.ee_pose": {
+        "length": 2,
+        "shape": [
+          2,
+          2
+        ],
+        "type": "list"
+      },
+      "state.gripper": {
+        "shape": [
+          4
+        ],
+        "type": "ndarray"
+      },
+      "state.joints": {
+        "shape": [
+          12
+        ],
+        "type": "ndarray"
+      },
+      "timestep": {
+        "type": "int"
+      },
+      "video.left_camera_view": {
+        "shape": [
+          480,
+          640,
+          3
+        ],
+        "type": "ndarray"
+      },
+      "video.overlook_camera_view": {
+        "shape": [
+          720,
+          1280,
+          3
+        ],
+        "type": "ndarray"
+      },
+      "video.right_camera_view": {
+        "shape": [
+          480,
+          640,
+          3
+        ],
+        "type": "ndarray"
+      },
+      "video.top_camera_view": {
+        "shape": [
+          720,
+          1280,
+          3
+        ],
+        "type": "ndarray"
+      }
+    },
+    "keys": [
+      "episode_id",
+      "instruction",
+      "reset",
+      "robot_id",
+      "state.base",
+      "state.ee_pose",
+      "state.gripper",
+      "state.joints",
+      "timestep",
+      "video.left_camera_view",
+      "video.overlook_camera_view",
+      "video.right_camera_view",
+      "video.top_camera_view"
+    ],
+    "present": true
+  },
+  "required_tasks": [
+    "level1_pick",
+    "level1_place",
+    "level1_open_door"
+  ],
+  "schema_rows": [
+    {
+      "finding": "reset observation exposes required Lift2 baseline inputs",
+      "name": "observation keys",
+      "status": "PASS"
+    },
+    {
+      "finding": "required baseline camera inputs are present and image-shaped",
+      "name": "camera input keys",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "dialects": [
+          "zero_action",
+          "openpi_relative_base_motion",
+          "xvla_absolute_base_motion"
+        ],
+        "step_results": [
+          {
+            "action_name": "zero_action",
+            "done": false,
+            "response_present": true
+          },
+          {
+            "action_name": "openpi_relative_base_motion",
+            "done": false,
+            "response_present": true
+          },
+          {
+            "action_name": "xvla_absolute_base_motion",
+            "done": false,
+            "response_present": true
+          }
+        ]
+      },
+      "finding": "all supplied action dialects match the Lift2 action contract and produced live step responses",
+      "name": "action dialects",
+      "status": "PASS"
+    },
+    {
+      "finding": "reward/success fields are sourced from GenManip/EBench step output",
+      "name": "reward/success fields",
+      "status": "PASS"
+    },
+    {
+      "finding": "run id, worker, episode, seed, result path, and logs are recorded",
+      "name": "logging fields",
+      "status": "PASS"
+    }
+  ],
+  "schema_version": 1,
+  "stage": "acceptance_stage_7_lift2_contract_probe",
+  "step_response_summary": {
+    "done": false,
+    "info": {
+      "episode_result": null,
+      "info": {
+        "*ebench/labutopia_lab_poc/aan_stage6_muffle_furnace/level1_smoke": {
+          "score": 0.0,
+          "sr": 0.0
+        }
+      },
+      "success": null
+    },
+    "observation_schema": {
+      "camera_keys": [
+        "video.left_camera_view",
+        "video.overlook_camera_view",
+        "video.right_camera_view",
+        "video.top_camera_view"
+      ],
+      "entries": {
+        "episode_id": {
+          "type": "str"
+        },
+        "instruction": {
+          "type": "str"
+        },
+        "reset": {
+          "type": "bool"
+        },
+        "robot_id": {
+          "type": "str"
+        },
+        "state.base": {
+          "shape": [
+            3
+          ],
+          "type": "ndarray"
+        },
+        "state.ee_pose": {
+          "length": 2,
+          "shape": [
+            2,
+            2
+          ],
+          "type": "list"
+        },
+        "state.gripper": {
+          "shape": [
+            4
+          ],
+          "type": "ndarray"
+        },
+        "state.joints": {
+          "shape": [
+            12
+          ],
+          "type": "ndarray"
+        },
+        "timestep": {
+          "type": "int"
+        },
+        "video.left_camera_view": {
+          "shape": [
+            480,
+            640,
+            3
+          ],
+          "type": "ndarray"
+        },
+        "video.overlook_camera_view": {
+          "shape": [
+            720,
+            1280,
+            3
+          ],
+          "type": "ndarray"
+        },
+        "video.right_camera_view": {
+          "shape": [
+            480,
+            640,
+            3
+          ],
+          "type": "ndarray"
+        },
+        "video.top_camera_view": {
+          "shape": [
+            720,
+            1280,
+            3
+          ],
+          "type": "ndarray"
+        }
+      },
+      "keys": [
+        "episode_id",
+        "instruction",
+        "reset",
+        "robot_id",
+        "state.base",
+        "state.ee_pose",
+        "state.gripper",
+        "state.joints",
+        "timestep",
+        "video.left_camera_view",
+        "video.overlook_camera_view",
+        "video.right_camera_view",
+        "video.top_camera_view"
+      ],
+      "present": true
+    },
+    "reward": {
+      "*ebench/labutopia_lab_poc/aan_stage6_muffle_furnace/level1_smoke": {
+        "score": 0.0,
+        "sr": 0.0
+      }
+    }
+  },
+  "task_name": "level1_smoke"
+}

@@ -1,0 +1,184 @@
+{
+  "action_dialect_matrix": [
+    {
+      "action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_is_rel": true,
+      "base_motion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "control_type": "joint_position",
+      "is_rel": false,
+      "name": "zero_action"
+    },
+    {
+      "action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_is_rel": true,
+      "base_motion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "control_type": "joint_position",
+      "is_rel": false,
+      "name": "openpi_relative_base_motion"
+    },
+    {
+      "action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_is_rel": false,
+      "base_motion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "control_type": "joint_position",
+      "is_rel": false,
+      "name": "xvla_absolute_base_motion"
+    }
+  ],
+  "claim_boundary": {
+    "aggregate_stage7_manifest_required": true,
+    "blocked_rows": [
+      {
+        "finding": "no reset observation schema was provided",
+        "name": "observation keys",
+        "status": "BLOCKED"
+      },
+      {
+        "finding": "no reset observation schema was provided",
+        "name": "camera input keys",
+        "status": "BLOCKED"
+      },
+      {
+        "finding": "no GenManip/EBench step response was provided",
+        "name": "reward/success fields",
+        "status": "BLOCKED"
+      }
+    ],
+    "claim_scope": "single_task_live_schema_probe_only",
+    "failed_rows": [],
+    "lift2_contract_ready": null,
+    "local_official_baseline_style_contract_ready": null,
+    "native_material_closure_claim_allowed": false,
+    "official_baseline_evaluable": false,
+    "probe_status": "single-task live schema probe blocked",
+    "stage7_status": "Stage 7 not evaluated by single-task live schema probe"
+  },
+  "live_probe": {
+    "exception_message": "HTTP error on reset_result: 500 - {'detail': 'RuntimeError: Worker 0 reset failed for task=ebench/labutopia_lab_poc/aan_stage6_beaker_01/level1_smoke seed=000: ActorDiedError: The actor died because of an error raised in its creation task, \\x1b[36mray::IsaacWorker.__init__()\\x1b[39m (pid=2179089, ip=10.150.153.120, actor_id=3689c60193cfbbd26916064201000000, repr=<genmanip.core.evaluator.isaac_worker.IsaacWorker object at 0x7f8314208070>)\\nImportError: libcudart.so.11.0: cannot open shared object file: No such file or directory\\n\\nDuring handling of the above exception, another exception occurred:\\n\\n\\x1b[36mray::IsaacWorker.__init__()\\x1b[39m (pid=2179089, ip=10.150.153.120, actor_id=3689c60193cfbbd26916064201000000, repr=<genmanip.core.evaluator.isaac_worker.IsaacWorker object at 0x7f8314208070>)\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/core/evaluator/isaac_worker.py\", line 147, in __init__\\n    from genmanip.core.evaluator.env import IsaacEvalEnvRay\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/core/evaluator/env.py\", line 8, in <module>\\n    from genmanip.core.robot.dualarm_manip import DualArmEmbodiment\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/core/robot/dualarm_manip.py\", line 17, in <module>\\n    from genmanip.core.robot.base import BaseEmbodiment, ManipRobotConfig\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/core/robot/base.py\", line 20, in <module>\\n    from genmanip.utils.planner.curobo.base import CuroboPlanner\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/utils/planner/curobo/base.py\", line 10, in <module>\\n    from curobo.geom.sdf.world import CollisionCheckerType\\n  File \"/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src/curobo/geom/sdf/world.py\", line 24, in <module>\\n    from curobo.curobolib.geom import SdfSphereOBB, SdfSweptSphereOBB\\n  File \"/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src/curobo/curobolib/geom.py\", line 30, in <module>\\n    geom_cu = load(\\n  File \"/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/torch/utils/cpp_extension.py\", line 1312, in load\\n    return _jit_compile(\\n  File \"/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/torch/utils/cpp_extension.py\", line 1722, in _jit_compile\\n    _write_ninja_file_and_build_library(\\n  File \"/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/torch/utils/cpp_extension.py\", line 1804, in _write_ninja_file_and_build_library\\n    verify_ninja_availability()\\n  File \"/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/torch/utils/cpp_extension.py\", line 1853, in verify_ninja_availability\\n    raise RuntimeError(\"Ninja is required to load C++ extensions\")\\nRuntimeError: Ninja is required to load C++ extensions'}",
+    "exception_stack": "Traceback (most recent call last):\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/standalone_tools/labutopia_poc/lift2_eval_contract_probe.py\", line 562, in run_live_probe\n    reset_response = client.reset()\n  File \"/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/eval_client.py\", line 831, in reset\n    obs_dict = self._resolve_pending_resets(obs_dict)\n  File \"/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/eval_client.py\", line 891, in _resolve_pending_resets\n    polled_result = self._get_pending_reset_results(sorted(pending_worker_set))\n  File \"/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/eval_client.py\", line 860, in _get_pending_reset_results\n    raise RuntimeError(\nRuntimeError: HTTP error on reset_result: 500 - {'detail': 'RuntimeError: Worker 0 reset failed for task=ebench/labutopia_lab_poc/aan_stage6_beaker_01/level1_smoke seed=000: ActorDiedError: The actor died because of an error raised in its creation task, \\x1b[36mray::IsaacWorker.__init__()\\x1b[39m (pid=2179089, ip=10.150.153.120, actor_id=3689c60193cfbbd26916064201000000, repr=<genmanip.core.evaluator.isaac_worker.IsaacWorker object at 0x7f8314208070>)\\nImportError: libcudart.so.11.0: cannot open shared object file: No such file or directory\\n\\nDuring handling of the above exception, another exception occurred:\\n\\n\\x1b[36mray::IsaacWorker.__init__()\\x1b[39m (pid=2179089, ip=10.150.153.120, actor_id=3689c60193cfbbd26916064201000000, repr=<genmanip.core.evaluator.isaac_worker.IsaacWorker object at 0x7f8314208070>)\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/core/evaluator/isaac_worker.py\", line 147, in __init__\\n    from genmanip.core.evaluator.env import IsaacEvalEnvRay\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/core/evaluator/env.py\", line 8, in <module>\\n    from genmanip.core.robot.dualarm_manip import DualArmEmbodiment\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/core/robot/dualarm_manip.py\", line 17, in <module>\\n    from genmanip.core.robot.base import BaseEmbodiment, ManipRobotConfig\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/core/robot/base.py\", line 20, in <module>\\n    from genmanip.utils.planner.curobo.base import CuroboPlanner\\n  File \"/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/genmanip/utils/planner/curobo/base.py\", line 10, in <module>\\n    from curobo.geom.sdf.world import CollisionCheckerType\\n  File \"/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src/curobo/geom/sdf/world.py\", line 24, in <module>\\n    from curobo.curobolib.geom import SdfSphereOBB, SdfSweptSphereOBB\\n  File \"/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src/curobo/curobolib/geom.py\", line 30, in <module>\\n    geom_cu = load(\\n  File \"/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/torch/utils/cpp_extension.py\", line 1312, in load\\n    return _jit_compile(\\n  File \"/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/torch/utils/cpp_extension.py\", line 1722, in _jit_compile\\n    _write_ninja_file_and_build_library(\\n  File \"/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/torch/utils/cpp_extension.py\", line 1804, in _write_ninja_file_and_build_library\\n    verify_ninja_availability()\\n  File \"/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/torch/utils/cpp_extension.py\", line 1853, in verify_ninja_availability\\n    raise RuntimeError(\"Ninja is required to load C++ extensions\")\\nRuntimeError: Ninja is required to load C++ extensions'}\n",
+    "exception_type": "RuntimeError",
+    "status": "blocked",
+    "worker_id": "0"
+  },
+  "logging": {
+    "episode_id": "live_probe",
+    "result_path": "saved/eval_results/ebench/labutopia_aan_beak4b_curobo_20260701_112708/ebench/labutopia_lab_poc/aan_stage6_beaker_01/level1_smoke/000/result_info.json",
+    "run_id": "labutopia_aan_beak4b_curobo_20260701_112708",
+    "seed": "000",
+    "stderr_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_beak4b_curobo_20260701_112708/live_probe.stderr.txt",
+    "stdout_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_beak4b_curobo_20260701_112708/live_probe.stdout.txt",
+    "worker_id": "0"
+  },
+  "observation_schema": {
+    "camera_keys": [],
+    "entries": {},
+    "keys": [],
+    "present": false
+  },
+  "required_tasks": [
+    "level1_pick",
+    "level1_place",
+    "level1_open_door"
+  ],
+  "schema_rows": [
+    {
+      "finding": "no reset observation schema was provided",
+      "name": "observation keys",
+      "status": "BLOCKED"
+    },
+    {
+      "finding": "no reset observation schema was provided",
+      "name": "camera input keys",
+      "status": "BLOCKED"
+    },
+    {
+      "details": {
+        "dialects": [
+          "zero_action",
+          "openpi_relative_base_motion",
+          "xvla_absolute_base_motion"
+        ]
+      },
+      "finding": "all supplied action dialects match the Lift2 action contract",
+      "name": "action dialects",
+      "status": "PASS"
+    },
+    {
+      "finding": "no GenManip/EBench step response was provided",
+      "name": "reward/success fields",
+      "status": "BLOCKED"
+    },
+    {
+      "finding": "run id, worker, episode, seed, result path, and logs are recorded",
+      "name": "logging fields",
+      "status": "PASS"
+    }
+  ],
+  "schema_version": 1,
+  "stage": "acceptance_stage_7_lift2_contract_probe",
+  "step_response_summary": null,
+  "task_name": "level1_smoke"
+}

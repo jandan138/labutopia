@@ -1,0 +1,97 @@
+{
+  "baseline_stage_label": "stage6_replication_beaker_01_after_stage3_mount",
+  "blocker_or_next_action": null,
+  "blockers": [],
+  "failure_owner": null,
+  "local_usd_repair_allowed": false,
+  "package_dir": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/beaker_01",
+  "package_hash_after": {
+    "algorithm": "sha256(sorted_relative_path_nul_file_sha256)",
+    "digest": "b707403b13a7295d0f5385e0c48b1498dc98119f5a728cc2d9d07614c3c87e98",
+    "files": [
+      {
+        "path": "asset.usd",
+        "sha256": "06d36cc08c2c287760e34e3fdd48f5a6cf5bbc8bff4b174e2d05545c6ee228a2"
+      },
+      {
+        "path": "deps/mdl/OmniGlass.mdl",
+        "sha256": "cd7c97781dc95f1694f9acc70c0b9ae327361a3b1c84abf917e55a9d672e627a"
+      },
+      {
+        "path": "evidence/runtime_smoke/render.png",
+        "sha256": "6f55cd79e1ec19dccbdcbe041bd9dedfe6382eaddd5c541d520c86b9b48a010f"
+      },
+      {
+        "path": "evidence/runtime_smoke/report.json",
+        "sha256": "a91185ffb82bd56b1bafb805473e3b618e4a3d640c0f76ca5e80678eb58c3b4c"
+      },
+      {
+        "path": "evidence/runtime_smoke/stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "evidence/runtime_smoke/stdout.log",
+        "sha256": "d9d657930980f97f86d1ec16f0adf302650f0d98c8bc1547744e8d75d3b269f7"
+      },
+      {
+        "path": "task/evaluator.yaml",
+        "sha256": "415cfedd3890e61dfa28fcaa54fa1a3072eec9a0377548b2d8d21bc74c84e8fd"
+      },
+      {
+        "path": "task/required_prims.yaml",
+        "sha256": "1f9aa27234288f8fec3f3014e80fb1b8a17d95c872276fe6e3fedd1947564dfe"
+      },
+      {
+        "path": "task/task_config.yaml",
+        "sha256": "bcdfba0efd2fc6edc97d5f1cc1963208211b98a27e43b1d3082bd7b74d754a49"
+      }
+    ]
+  },
+  "package_hash_before": {
+    "algorithm": "sha256(sorted_relative_path_nul_file_sha256)",
+    "digest": "b707403b13a7295d0f5385e0c48b1498dc98119f5a728cc2d9d07614c3c87e98",
+    "files": [
+      {
+        "path": "asset.usd",
+        "sha256": "06d36cc08c2c287760e34e3fdd48f5a6cf5bbc8bff4b174e2d05545c6ee228a2"
+      },
+      {
+        "path": "deps/mdl/OmniGlass.mdl",
+        "sha256": "cd7c97781dc95f1694f9acc70c0b9ae327361a3b1c84abf917e55a9d672e627a"
+      },
+      {
+        "path": "evidence/runtime_smoke/render.png",
+        "sha256": "6f55cd79e1ec19dccbdcbe041bd9dedfe6382eaddd5c541d520c86b9b48a010f"
+      },
+      {
+        "path": "evidence/runtime_smoke/report.json",
+        "sha256": "a91185ffb82bd56b1bafb805473e3b618e4a3d640c0f76ca5e80678eb58c3b4c"
+      },
+      {
+        "path": "evidence/runtime_smoke/stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "evidence/runtime_smoke/stdout.log",
+        "sha256": "d9d657930980f97f86d1ec16f0adf302650f0d98c8bc1547744e8d75d3b269f7"
+      },
+      {
+        "path": "task/evaluator.yaml",
+        "sha256": "415cfedd3890e61dfa28fcaa54fa1a3072eec9a0377548b2d8d21bc74c84e8fd"
+      },
+      {
+        "path": "task/required_prims.yaml",
+        "sha256": "1f9aa27234288f8fec3f3014e80fb1b8a17d95c872276fe6e3fedd1947564dfe"
+      },
+      {
+        "path": "task/task_config.yaml",
+        "sha256": "bcdfba0efd2fc6edc97d5f1cc1963208211b98a27e43b1d3082bd7b74d754a49"
+      }
+    ]
+  },
+  "package_mutation_allowed": false,
+  "producer_owner_action": null,
+  "stage": "aan_no_local_repair_verify",
+  "stage_label": "stage6_replication_beaker_01_after_stage3_mount",
+  "status": "PASS"
+}

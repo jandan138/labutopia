@@ -77,6 +77,101 @@
     .generalization-summary table { min-width: 980px; }
     .migration-summary { margin: 18px 0; padding: 18px; }
     .migration-summary table { min-width: 940px; }
+    .aan-handoff { margin: 18px 0; padding: 18px; }
+    .aan-handoff, .aan-handoff * { min-width: 0; }
+    .aan-handoff code { overflow-wrap: anywhere; word-break: break-word; }
+    .aan-handoff table { min-width: 980px; }
+    .aan-handoff td, .aan-handoff th { vertical-align: top; }
+    .aan-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .status-rail {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      margin: 14px 0;
+    }
+    .status-cell {
+      min-height: 92px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper-2);
+      overflow-wrap: anywhere;
+    }
+    .status-cell strong { display: block; color: var(--green); font-size: 14px; }
+    .status-cell span { color: var(--muted); font-size: 12px; }
+    .status-cell.next { background: var(--warn); border-color: #efd58d; }
+    .status-cell.later { background: #f7faf9; }
+    .lane-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 14px 0;
+    }
+    .lane {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbfa;
+      min-height: 188px;
+    }
+    .lane strong { color: var(--green); }
+    .figure-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 14px 0;
+    }
+    figure.diagnostic {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+    figure.diagnostic img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      background: #edf1f2;
+    }
+    figure.diagnostic figcaption {
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .claim-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 14px 0 0;
+    }
+    .claim-list .answer { margin: 0; }
+    details.evidence-details {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 10px 12px;
+    }
+    details.evidence-details summary {
+      cursor: pointer;
+      color: var(--green);
+      font-weight: 850;
+    }
+    details.evidence-details pre {
+      overflow-x: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
     .table-scroll { overflow-x: auto; margin-top: 12px; }
     table { width: 100%; min-width: 840px; border-collapse: collapse; }
     th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
@@ -152,8 +247,9 @@
       margin-top: 20px;
     }
     @media (max-width: 980px) {
-      .hero, .grid, .two { grid-template-columns: 1fr; }
+      .hero, .grid, .two, .aan-head, .lane-grid, .figure-row, .claim-list { grid-template-columns: 1fr; }
       .flow-track { grid-template-columns: 1fr; }
+      .status-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .step:not(:last-child)::after {
         content: "↓";
         right: 14px;
@@ -165,7 +261,43 @@
       main { padding: 22px 14px 42px; }
       .hero { padding: 22px; }
       .metrics { grid-template-columns: 1fr; }
+      .status-rail { grid-template-columns: 1fr; }
       h1 { font-size: 34px; }
+      .aan-handoff .table-scroll { overflow-x: visible; }
+      .aan-handoff table,
+      .aan-handoff thead,
+      .aan-handoff tbody,
+      .aan-handoff tr,
+      .aan-handoff th,
+      .aan-handoff td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+      }
+      .aan-handoff thead { display: none; }
+      .aan-handoff tr {
+        border-bottom: 1px solid var(--line);
+        padding: 12px 0;
+      }
+      .aan-handoff td {
+        border: 0;
+        padding: 5px 0;
+      }
+      .aan-handoff td:first-child {
+        color: var(--green);
+        font-weight: 800;
+        font-size: 17px;
+      }
+      .aan-handoff td:nth-child(2)::before,
+      .aan-handoff td:nth-child(3)::before {
+        color: var(--muted);
+        display: block;
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 2px;
+      }
+      .aan-handoff td:nth-child(2)::before { content: "位置 / 值"; }
+      .aan-handoff td:nth-child(3)::before { content: "产品解释"; }
     }
   </style>
 </head>
@@ -213,10 +345,137 @@
       </article>
       <article class="card">
         <h2>DryingBox 专题</h2>
-        <p>原生 <code>DryingBox_01</code> 已完成 Acceptance Stage 1-7 的本地合同验收：native asset audit、native-only Isaac smoke、EBench wrapper、additive physics override、Franka/native eval-path readback、Stage 6 evidence package 和 Lift2 official-baseline-style contract 都有证据。Stage 7 已用 composite asset root 跑通三条 <code>lift2_candidate</code> 任务的 reset/step/result_info/metric logging，并分别验证 observation、camera、action、reward/success 和 logging schema。边界仍要保留：这不是 official leaderboard 复现，当前三任务 score 仍为 <code>0.0</code>，Aluminum material closure 仍 open。</p>
-        <span class="tag">Stage 7 passed</span><span class="tag warn">0% score; not leaderboard</span>
+        <p>原生 <code>DryingBox_01</code> 已完成 hand-built overlay 的 Acceptance Stage 1-7；新的 ConvertAsset <code>AAN-ready package</code> 也已完成 LabUtopia / GenManip consumer Stage 1-4b，并用 fresh <code>run_id</code> 跑通本地 EBench live smoke。边界仍要保留：这不是 official leaderboard 复现，policy score 仍为 <code>0.0</code>，Stage 4b 不证明 full visual material parity。</p>
+        <span class="tag">Native Stage 7 passed</span><span class="tag">DryingBox AAN Stage 4b PASS</span><span class="tag warn">not leaderboard</span>
         <p><a href="native-dryingbox-task1.html">查看 DryingBox 验收进展</a></p>
       </article>
+    </section>
+
+    <section class="card aan-handoff" id="aan-handoff" aria-label="ConvertAsset AAN-ready package handoff">
+      <div class="aan-head">
+        <div>
+          <h2>ConvertAsset AAN-ready package handoff</h2>
+          <p>这条新证据线回答一个更工程化的问题：不是“我们能不能手工把 DryingBox 调到能跑”，而是“ConvertAsset 产出的资产包，LabUtopia / GenManip 能不能不本地修包、直接消费进 EBench task”。当前答案是：DryingBox 已经通过 Stage 1-5；Stage 6 replication hardening 也已 PASS：<code>MuffleFurnace</code> 和 <code>Beaker_01</code> 都完成 Stage 1-4b generic live smoke。<code>task/evaluator.yaml</code> 的 runtime 执行会作为后续 semantic evaluator 工作单独推进。</p>
+          <span class="tag">DryingBox Stage 4b PASS</span><span class="tag">MuffleFurnace Stage 4b PASS</span><span class="tag">Beaker Stage 4b PASS</span><span class="tag">Stage 6 PASS</span>
+        </div>
+        <div class="metric">
+          <strong>PASS</strong>
+          <span>DryingBox + MuffleFurnace + Beaker_01<br>reset / step / render / metric / logging 全部有证据</span>
+        </div>
+      </div>
+
+      <div class="status-rail" aria-label="AAN 6 stage status">
+        <div class="status-cell"><strong>1 收货</strong><span>AAN package intake</span></div>
+        <div class="status-cell"><strong>2 验货</strong><span>Consumer manifest check</span></div>
+        <div class="status-cell"><strong>3 挂载</strong><span>Task-root wiring</span></div>
+        <div class="status-cell"><strong>4 冒烟</strong><span>DryingBox live smoke PASS</span></div>
+        <div class="status-cell next"><strong>5 发布</strong><span>PM evidence / weekly HTML</span></div>
+        <div class="status-cell"><strong>6 复制</strong><span>Muffle + Beaker 4b PASS</span></div>
+      </div>
+
+      <div class="lane-grid" aria-label="Producer 和 Consumer 证据线">
+        <div class="lane">
+          <h3>Producer evidence：ConvertAsset AAN</h3>
+          <p><strong>证明资产包本身合格。</strong>它记录了 USD dependency closure、package-level material closure、physics / articulation where applicable、producer Isaac 4.1 runtime_smoke 和 benchmark_contract。</p>
+          <p>PM 可以说：AAN package material gate passed，remote MDL / texture dependencies 已有 package-local evidence。</p>
+        </div>
+        <div class="lane">
+          <h3>Consumer evidence：LabUtopia / GenManip</h3>
+          <p><strong>证明 EBench 任务链路能消费这个包。</strong>DryingBox Stage 4b 用 AAN-specific wrapper 跑 <code>level1_open_door</code>，并记录 submit / probe / eval、<code>result_info.json</code>、stdout/stderr 和 run-id 一致性。</p>
+          <p>PM 可以说：DryingBox 本地 EBench / GenManip live smoke passed；MuffleFurnace 和 Beaker_01 generic Stage 4b live smoke passed。仍不能说 official score、semantic task success 或 policy success。</p>
+        </div>
+      </div>
+
+      <div class="figure-row" aria-label="DryingBox diagnostic renders">
+        <figure class="diagnostic">
+          <img src="assets/labutopia-franka-level1-open-door-native-eval-stage5.png" alt="Hand-built LabUtopia overlay diagnostic render for native DryingBox eval path">
+          <figcaption>旧证据线：hand-built LabUtopia overlay 的 eval-path diagnostic render。它证明本地合同链路能读写任务，不证明 AAN package 被消费。</figcaption>
+        </figure>
+        <figure class="diagnostic">
+          <img src="assets/aan-dryingbox-producer-runtime-smoke-render.png" alt="ConvertAsset AAN package producer runtime smoke diagnostic render for DryingBox">
+          <figcaption>新证据线：ConvertAsset AAN package 的 producer runtime_smoke render。图像只作为诊断证据；颜色和材质不能升级为 full visual material parity。</figcaption>
+        </figure>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>证据项</th>
+              <th>位置 / 值</th>
+              <th>产品解释</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Stage 4b manifest</td>
+              <td><a href="../../docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_runtime_smoke_20260701_085521.json"><code>aan_dryingbox_runtime_smoke_20260701_085521.json</code></a></td>
+              <td>唯一允许把 AAN consumer live smoke 说成 PASS 的 final manifest。</td>
+            </tr>
+            <tr>
+              <td>运行证据目录</td>
+              <td><code>aan_runtime_smoke_labutopia_aan_lift2_stage4b_20260701_085521/</code><br><a href="../../docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_lift2_stage4b_20260701_085521/probe.json">打开 probe JSON</a></td>
+              <td>包含 submit / eval / probe / builder 的 stdout、stderr、exitcode 和 probe JSON；静态页面只直接链接具体文件。</td>
+            </tr>
+            <tr>
+              <td>运行结果</td>
+              <td><code>reset=true</code>、<code>step=true</code>、<code>render=true</code>、<code>metric=true</code>、<code>logging=true</code>、<code>result_info_exists=true</code></td>
+              <td>证明资产包进入本地 EBench / GenManip runtime 后，任务链路可执行、可出图、可产生日志和指标。</td>
+            </tr>
+            <tr>
+              <td>策略得分</td>
+              <td><code>score=0.0</code>、<code>success_rate=0</code></td>
+              <td>这说明当前 policy 没完成开门，不是 AAN package 接入失败。</td>
+            </tr>
+            <tr>
+              <td>材质 warning</td>
+              <td><code>mdl_compiler_error_count=636</code></td>
+              <td>不阻塞 Stage 4b smoke PASS，但阻止 full visual material parity / source-native material closure 这类更强声明。</td>
+            </tr>
+            <tr>
+              <td>Stage 6 复制资产</td>
+              <td><a href="../../docs/labutopia_lab_poc/evidence_manifests/aan_stage6_replication_summary_20260701_1145.json"><code>aan_stage6_replication_summary_20260701_1145.json</code></a><br><code>MuffleFurnace</code>、<code>Beaker_01</code></td>
+              <td>两个非 DryingBox 资产已完成收货、验货、task-root 挂载 dry-run、no-local-repair verify、Stage 4a runtime adapter preflight 和 generic Stage 4b live smoke；Stage 6 replication hardening 已 PASS。</td>
+            </tr>
+            <tr>
+              <td>MuffleFurnace Stage 4b</td>
+              <td><a href="../../docs/labutopia_lab_poc/evidence_manifests/aan_muffle_furnace_runtime_smoke_20260701_105508.json"><code>aan_muffle_furnace_runtime_smoke_20260701_105508.json</code></a><br><code>run_id=labutopia_aan_muf4b_20260701_104829</code></td>
+              <td>reset、step、render、metric、logging 和 <code>result_info.json</code> 均通过；<code>score=0.0</code> 是 generic smoke 边界，不代表 semantic task success；<code>mdl_compiler_error_count=264</code> 阻止 full visual parity 声明。</td>
+            </tr>
+            <tr>
+              <td>Beaker_01 Stage 4b</td>
+              <td><a href="../../docs/labutopia_lab_poc/evidence_manifests/aan_beaker_01_runtime_smoke_20260701_1135.json"><code>aan_beaker_01_runtime_smoke_20260701_1135.json</code></a><br><code>run_id=labutopia_aan_beak4b_envfix_20260701_1135</code></td>
+              <td>reset、step、render、metric、logging 和 <code>result_info.json</code> 均通过；前两次失败是 consumer runtime 环境变量诊断，不是资产失败；<code>mdl_compiler_error_count=8</code> 阻止 full visual parity 声明。</td>
+            </tr>
+            <tr>
+              <td>Beaker_01 启动环境</td>
+              <td><code>CUROBO_SRC</code><br><code>PATH=$PYENV/bin:$PATH</code><br><code>LD_LIBRARY_PATH</code></td>
+              <td>第一次缺 cuRobo 路径，第二次缺 <code>ninja</code> / <code>libcudart.so.11.0</code>；final run 只补齐现有 conda env 的启动变量，没有修改 AAN package、USD、MDL 或 articulation。</td>
+            </tr>
+            <tr>
+              <td>Stage 6 后续</td>
+              <td><code>stage6_minimum_acceptance_status=PASS</code><br><code>stage4b_live_smoke_status=PASS</code></td>
+              <td>下一步是把 AAN runtime env bootstrap 标准化，并单独推进 semantic evaluator、official score 和 full visual/material parity；这些不和 smoke pass 混在一起。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="claim-list" aria-label="AAN claim boundary">
+        <div class="answer">
+          <p><strong>现在可以说：</strong>DryingBox AAN-ready package 已被 LabUtopia / GenManip consumer 接入 <code>level1_open_door</code>，并通过本地 EBench / GenManip live smoke；旧 overlay 没有被复用。Stage 6 已把收货、验货、挂载 dry-run、no-local-repair verify、Stage 4a runtime adapter preflight 和 generic Stage 4b live smoke 复制到 <code>MuffleFurnace</code> 和 <code>Beaker_01</code>，所以 Stage 6 replication hardening 已 PASS。</p>
+        </div>
+        <div class="answer warning">
+          <p><strong>仍不能说：</strong>official leaderboard score 已完成；policy/model 已经解决任务；<code>MuffleFurnace</code> 或 <code>Beaker_01</code> generic smoke 等于 semantic task success；任意 USD / MJCF / deformable / liquid 都自动可评；full visual material parity 已证明。</p>
+        </div>
+      </div>
+
+      <details class="evidence-details">
+        <summary>展开 Stage 4b 关键命令</summary>
+        <pre>submit: gmp submit ebench/labutopia_lab_poc/aan_lift2_candidate/level1_open_door.yml --run_id labutopia_aan_lift2_stage4b_20260701_085521 --host 127.0.0.1 --port 18191
+eval: python -m genmanip_client.cli eval --worker_ids 0 --run_id labutopia_aan_lift2_stage4b_20260701_085521 --host 127.0.0.1 --port 18191 -a r5a -g lift2 -c joint_position --no_save_process --frame_save_interval 0 --chunk_size 1
+result_info: saved/eval_results/ebench/labutopia_aan_lift2_stage4b_20260701_085521/ebench/labutopia_lab_poc/aan_lift2_candidate/level1_open_door/000/result_info.json</pre>
+      </details>
     </section>
 
     <section class="card asset-summary" aria-label="资产种类汇总">
@@ -690,6 +949,7 @@
 
     <div class="footer">
       <span>相关页面：</span>
+      <a href="#aan-handoff">AAN-ready package handoff</a>
       <a href="native-dryingbox-task1.html">Task 1 原生 DryingBox 调研</a>
       <a href="../2026-06-12-labutopia-weekly/">6.12 复现结果与视频周报</a>
       <a href="../../docs/runs/2026-06-09-expert-videos.md">expert 视频批跑记录</a>

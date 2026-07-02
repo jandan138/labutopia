@@ -31,6 +31,29 @@ Run implementation work in the GenManip `labutopia-ebench-poc` branch. Keep LabU
 | EBench baseline | The final acceptance stage must verify `EvalClient` observation/action/reward/logging contracts. Copying Franka YAML and replacing robot/camera names is not enough for official Lift2 baseline readiness. |
 | Material packaging | `/World/Looks` is a valid scene-level USD convention, but EBench does not require that path specifically. Native DryingBox packaging must prove USD `material:binding` resolution, MDL source/subIdentifier resolution, texture dependency resolution, and an explicit fallback boundary. |
 
+## 2026-07-01 AAN Consumer Lane Boundary
+
+This native acceptance-stage plan remains the historical **hand-built LabUtopia native DryingBox**
+lane. It is not the same evidence lane as the newer **ConvertAsset AAN-ready package consumer**
+work documented in:
+
+```text
+docs/superpowers/plans/2026-07-01-labutopia-aan-ready-package-ebench-integration.md
+docs/labutopia_lab_poc/aan_consumer_handoff.md
+```
+
+Current boundary:
+
+- Native Acceptance Stage 7 can still say the historical hand-built overlay passed a local
+  Lift2 official-baseline-style contract, with its own material-boundary wording.
+- AAN Consumer Stage 1-4b can now say the ConvertAsset DryingBox AAN package was received,
+  checked, mounted, passed AAN runtime adapter/preflight, and passed local EBench /
+  GenManip live smoke with `run_id=labutopia_aan_lift2_stage4b_20260701_085521`.
+- AAN Consumer Stage 4b proves reset / step / render / metric / logging in the local
+  smoke lane. It still does not prove official leaderboard completion, policy success,
+  arbitrary asset support, or full visual material parity.
+- Do not use old native Stage 5 / Stage 7 run ids as AAN package evidence.
+
 ## 2026-06-28 Norm Review Addendum
 
 The material and stage rules below incorporate a three-angle review before Stage 2 execution:
@@ -953,3 +976,150 @@ If Acceptance Stage 7 was attempted, final reporting must say one of:
 - `Stage 7 attempted, failed`: at least one row is `FAIL`.
 
 Only `Stage 7 passed` permits the local official-baseline-style Lift2 readiness claim.
+
+## 2026-07-01 ConvertAsset AAN Handoff
+
+ConvertAsset `Asset Application Normalizer` now provides a DryingBox AAN-ready
+package for the next LabUtopia / EBench consumer step.
+
+Retained producer evidence:
+
+```text
+/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-07-01-aan-07-dryingbox-runtime-ready/
+```
+
+Verified consumer-facing status:
+
+```text
+schema_version=asset_application_normalizer.v1
+asset_id=DryingBox_01_overlay
+task_id=Lift2.DryingBox
+overall_status=pass
+target_runtime_profile=isaac41
+target_benchmark_profile=ebench-lift2
+blocked_reasons_len=0
+waivers_len=0
+```
+
+AAN gates are `pass` for `usd_closure`, `material_closure`, `physics_static`,
+`runtime_smoke`, and `benchmark_contract`. ConvertAsset AAN tests checked in this
+review:
+
+```bash
+cd /cpfs/user/zhuzihou/dev/ConvertAsset
+python -m pytest tests/test_asset_application_normalizer_cli.py \
+  tests/test_asset_application_normalizer_pm_and_mjcf.py -q
+```
+
+Observed result: `29 passed`.
+
+This supersedes the old material-boundary wording for the AAN package path. The
+historical Stage 4-6 `open_remote_dependency_waived` statement remains true for
+the older hand-built LabUtopia overlay evidence, but the ConvertAsset handoff now
+provides a package-local asset closure route with retained manifest evidence.
+
+New continuation plan:
+
+```text
+LabUtopia AAN-Ready Package 接入 EBench 计划
+```
+
+Six stages:
+
+| Stage | Name | Status on 2026-07-01 | Meaning |
+|---|---|---|---|
+| 1 | AAN package intake | Done | ConvertAsset retained package, manifest, hash, and package identity are locked. |
+| 2 | Consumer manifest check | Done | AAN schema, target profiles, gates, entrypoints, dependency closure, blockers, and waivers pass consumer checks. |
+| 3 | Task-root wiring and dry-run composition | Done | AAN package is mounted into the composite task root; `asset.usd`, task files, and required prims resolve without local package repair. |
+| 4 | AAN runtime adapter and live eval smoke | Done / Stage 4b PASS | AAN-specific `.usda` wrapper, task profile, manifest routing, digest hard gates, and fresh `level1_open_door` reset / step / render / metric / logging smoke pass. |
+| 5 | PM evidence and weekly HTML update | Done | Weekly HTML now includes AAN evidence while preserving official-score, model-success, and full-visual-parity boundaries. |
+| 6 | Regression, boundary, and replication hardening | In progress | DryingBox no-local-repair guard is in place; `MuffleFurnace` and `Beaker_01` have Stage 1-3 replication PASS and no-local-repair PASS; Stage 4b replication is BLOCKED by the missing generic AAN task/evaluator adapter. |
+
+Current Stage 1-4b evidence:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_package_intake_20260701_0719.json
+docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_consumer_check_20260701_0000.json
+docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_task_mount_20260701_0000.json
+docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_runtime_adapter_20260701_0000.json
+docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_runtime_smoke_20260701_085521.json
+```
+
+Current Stage 6 replication evidence:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/aan_stage6_replication_summary_20260701_0950.json
+highest_common_passed_stage=3
+stage4b_live_smoke_status=BLOCKED
+failure_owner=GenManip / LabUtopia consumer
+```
+
+Stage 4 must not reuse the old `lift2_candidate` run as AAN evidence. The old
+config still points at:
+
+```text
+scene_usds/labutopia/level1_poc/lab_001/scene
+```
+
+The AAN package entrypoint is:
+
+```text
+labutopia_aan_packages/dryingbox_01_overlay/asset.usd
+```
+
+Because GenManip currently loads `${ASSETS_DIR}/${usd_name}.usda`, Stage 4a has
+generated an AAN-specific wrapper:
+
+```text
+scene_usds/labutopia/aan/dryingbox_01_overlay_scene.usda
+```
+
+and an AAN-specific task profile that sets:
+
+```text
+usd_name: scene_usds/labutopia/aan/dryingbox_01_overlay_scene
+```
+
+The Stage 4a evidence records `legacy_overlay_used=false`,
+`package_tree_digest=mounted_package_tree_digest`, and wrapper references parsed
+from the USDA reference list. Stage 4b evidence records `status=PASS`,
+`legacy_overlay_used=false`, `submit_exit_code=0`, `probe_or_eval_exit_code=0`,
+`reset_passed=true`, `step_passed=true`, `render_passed=true`, `metric_passed=true`,
+`logging_passed=true`, and `result_info_exists=true`.
+
+Stage 4b also records `score=0.0`, `success_rate=0`, and
+`mdl_compiler_error_count=636`. These are important claim boundaries: zero score is
+policy/task execution quality, not package-consumption failure; MDL compiler warnings
+do not block the smoke pass, but they do block full visual material parity wording.
+
+DryingBox consumer integration can now be reported because Stages 1-5 pass. Stage 6
+is the replication/hardening phase and must not block the single-asset DryingBox
+consumer claim. Stage 6 currently proves Stage 1-3 can be reused on non-DryingBox
+USD assets; it does not yet prove non-DryingBox live eval smoke.
+
+Runtime implementation belongs in a GenManip worktree that contains the
+LabUtopia POC tooling. The active AAN consumer branch/worktree is:
+
+```text
+/root/.config/superpowers/worktrees/GenManip/labutopia-aan-consumer/
+```
+
+Relevant commits:
+
+```text
+5161227 feat: add AAN consumer package check
+72ca5e0 fix: block closure-level AAN dependencies
+9d042da feat: add AAN task root mount check
+```
+
+Detailed consumer handoff:
+
+```text
+docs/labutopia_lab_poc/aan_consumer_handoff.md
+```
+
+Detailed six-stage plan:
+
+```text
+docs/superpowers/plans/2026-07-01-labutopia-aan-ready-package-ebench-integration.md
+```

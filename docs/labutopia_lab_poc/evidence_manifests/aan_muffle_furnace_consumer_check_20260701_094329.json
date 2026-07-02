@@ -1,0 +1,49 @@
+{
+  "aan_consumer_manifest_ready": true,
+  "aan_package_mount_allowed": true,
+  "accepted_waivers": [],
+  "blockers": [],
+  "entrypoints": {
+    "metric_evaluator": {
+      "exists": true,
+      "path": "task/evaluator.yaml",
+      "resolved_inside_package": true,
+      "resolved_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/muffle_furnace/task/evaluator.yaml"
+    },
+    "required_prims": {
+      "exists": true,
+      "path": "task/required_prims.yaml",
+      "resolved_inside_package": true,
+      "resolved_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/muffle_furnace/task/required_prims.yaml"
+    },
+    "root_usd": {
+      "exists": true,
+      "path": "asset.usd",
+      "resolved_inside_package": true,
+      "resolved_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/muffle_furnace/asset.usd"
+    },
+    "task_config": {
+      "exists": true,
+      "path": "task/task_config.yaml",
+      "resolved_inside_package": true,
+      "resolved_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/muffle_furnace/task/task_config.yaml"
+    }
+  },
+  "forbidden_claims": [
+    "ebench_task_execution_passed"
+  ],
+  "gate_results": {
+    "benchmark_contract": "pass",
+    "material_closure": "pass",
+    "physics_static": "pass",
+    "runtime_smoke": "pass",
+    "usd_closure": "pass"
+  },
+  "local_usd_repair_allowed": false,
+  "manifest_path": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/muffle_furnace_manifest.json",
+  "package_dir": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-06-30-aan-08-replication-set/packages/muffle_furnace",
+  "package_intake_evidence": "docs/labutopia_lab_poc/evidence_manifests/aan_muffle_furnace_package_intake_20260701_094329.json",
+  "source_manifest_sha256": "5e7271d3e862e541eae60ac6668e07029c747d8b489e4985eb5d8682e5eb3f48",
+  "stage": "aan_consumer_manifest_check",
+  "status": "pass"
+}
