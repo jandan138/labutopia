@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/cli.py", line 57, in main
+    return _load_module(".eval_cli").run(args)
+  File "/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/eval_cli.py", line 101, in run
+    return run_eval_cli(args)
+  File "/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/eval_client.py", line 1337, in run_cli
+    _ = client.reset()
+  File "/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/eval_client.py", line 831, in reset
+    obs_dict = self._resolve_pending_resets(obs_dict)
+  File "/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/eval_client.py", line 891, in _resolve_pending_resets
+    polled_result = self._get_pending_reset_results(sorted(pending_worker_set))
+  File "/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src/genmanip_client/eval_client.py", line 860, in _get_pending_reset_results
+    raise RuntimeError(
+RuntimeError: HTTP error on reset_result: 500 - {'detail': 'RuntimeError: Worker 0 reset failed for task=ebench/labutopia_lab_poc/aan11_lift2_candidate/level1_open_door seed=000: ActorDiedError: The actor died because of an error raised in its creation task, \x1b[36mray::IsaacWorker.__init__()\x1b[39m (pid=3329181, ip=10.150.153.120, actor_id=e973845729ac92ff3abccc2001000000, repr=<genmanip.core.evaluator.isaac_worker.IsaacWorker object at 0x7f3df7cd7e50>)\n  File "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/genmanip/core/evaluator/isaac_worker.py", line 147, in __init__\n    from genmanip.core.evaluator.env import IsaacEvalEnvRay\n  File "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/genmanip/core/evaluator/env.py", line 8, in <module>\n    from genmanip.core.robot.dualarm_manip import DualArmEmbodiment\n  File "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/genmanip/core/robot/dualarm_manip.py", line 14, in <module>\n    from curobo.types.state import JointState\nModuleNotFoundError: No module named \'curobo\''}

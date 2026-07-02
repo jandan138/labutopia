@@ -1,0 +1,124 @@
+evaluation_configs:
+- task_name: ebench/labutopia_lab_poc/aan11_lift2_candidate/level1_open_door
+  instruction: Open the door of the drying box.
+  usd_name: scene_usds/labutopia/aan/dryingbox_01_overlay_aan11_scene
+  table_uid: table
+  mode: manual
+  num_test: 1
+  num_steps: 1000
+  physics_dt: 0.0166666667
+  rendering_dt: 0.0166666667
+  robots:
+  - type: manip/lift2/R5a
+    position:
+    - 0.0
+    - 0.0
+    - 0.0
+  domain_randomization:
+    cameras:
+      config_path: configs/cameras/fixed_camera_lift2_simbox.yml
+      type: fixed
+    random_environment:
+      has_wall: false
+      hdr: false
+      robot_base_position: false
+      robot_eepose: false
+      table_texture: false
+      table_type: false
+      wall_texture: false
+    rewrite_instruction: false
+  labutopia_lift2_contract:
+    schema_version: 1
+    baseline_robot: manip/lift2/R5a
+    required_observation_keys:
+    - instruction
+    - state.joints
+    - state.gripper
+    - state.base
+    - state.ee_pose
+    - video.overlook_camera_view
+    - video.left_camera_view
+    - video.right_camera_view
+    - timestep
+    - reset
+    - robot_id
+    baseline_camera_input_keys:
+    - video.overlook_camera_view
+    - video.left_camera_view
+    - video.right_camera_view
+    camera_config_to_observation_key:
+      overlook_camera: video.overlook_camera_view
+      left_camera: video.left_camera_view
+      right_camera: video.right_camera_view
+    additional_observation_camera_keys:
+      top_camera: video.top_camera_view
+    action_contract:
+      required_fields:
+      - action
+      - base_motion
+      - control_type
+      - is_rel
+      - base_is_rel
+      action_shape:
+      - 16
+      base_motion_shape:
+      - 3
+      control_type: joint_position
+    reward_success_source: genmanip_ebench_metric_output
+    logging_required_fields:
+    - run_id
+    - worker_id
+    - episode_id
+    - seed
+    - result_path
+    - stdout_path
+    - stderr_path
+    material_boundary: stage7_consumes_stage5_6_material_status_only
+    readiness_rule: all_rows_pass_required_for_lift2_contract_ready
+  generation_config:
+    action_path:
+      mode: manual
+      robot: 0
+    articulation: []
+    goal:
+    - - - type: manip/default/check_joint_angle
+          articulation_obj_uid: obj_DryingBox_01
+          joint_name: RevoluteJoint
+          angle_deg_range:
+          - 30
+          - 120
+          skip_steps: 1
+          succ_cnts: 59
+    mode: manual
+    planner: curobo
+  object_config:
+    obj_DryingBox_01:
+      type: existed_object
+      uid_list:
+      - obj_DryingBox_01
+      is_articulated: true
+      target_positions:
+      - 0.0
+      articulation_info:
+        is_articulated: true
+        part:
+          handle: /handle
+  preprocess_config: []
+  layout_config:
+    ignored_objects: []
+    type: null
+  env_vars:
+    MDL_SYSTEM_PATH: /isaac-sim/materials/:{ASSETS_DIR}/labutopia_aan_packages/dryingbox_01_overlay_aan11/deps/mdl:{ASSETS_DIR}/miscs/mdl/labutopia/mdl
+  labutopia_aan11_consumer:
+    schema_version: 1
+    producer_followup: AAN-11-material-runtime-closure
+    package_namespace: labutopia_aan_packages/dryingbox_01_overlay_aan11
+    package_source_root: /tmp/aan11_real_packages_final/dryingbox_runtime
+    package_tree_digest: a859c5a997c77ea9874155070c03879d2cc9ac41e0b4c30e7c8a07719b1fe32e
+    source_manifest_sha256: a68e78095c3d065fcf43f1c91974eb8e0cc07e4c675ecaa8d31115b84d4d125d
+    retained_manifest_sha256: a68e78095c3d065fcf43f1c91974eb8e0cc07e4c675ecaa8d31115b84d4d125d
+    runtime_usd_name: scene_usds/labutopia/aan/dryingbox_01_overlay_aan11_scene
+    legacy_overlay_used: false
+    local_usd_repair_allowed: false
+    claim_boundary: consumer smoke rerun, not full visual material parity or policy
+      success

@@ -1,0 +1,15 @@
+╭────────────────────────────────────────────────╮
+│           GenManip Evaluation Client           │
+╰────────────────────────────────────────────────╯
+
+→ Results directory: /root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/client_results
+→ Client UID: e1addbf0
+→ Connected to server: http://127.0.0.1:18311
+→ Workers: ['0']
+→ Save process: False
+→ Save result: True
+→ Plot on episode end: False
+
+→ Polling reset result for workers: ['0']
+
+✓ Client closed.

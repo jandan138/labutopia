@@ -1,0 +1,40 @@
+{
+  "status": "pass",
+  "stage": "aan11_consumer_intake_mount_adapter",
+  "timestamp_utc": "2026-07-02T17:55:00Z",
+  "producer_followup": "AAN-11-material-runtime-closure",
+  "source_package_root": "/tmp/aan11_real_packages_final/dryingbox_runtime",
+  "source_manifest": "/tmp/aan11_real_packages_final/dryingbox_runtime_manifest.json",
+  "retained_convertasset_manifest": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-07-02-aan-11-material-runtime-closure/runtime/dryingbox/manifest.json",
+  "package_tree_digest": "a859c5a997c77ea9874155070c03879d2cc9ac41e0b4c30e7c8a07719b1fe32e",
+  "package_file_count": 47,
+  "package_byte_count": 32488576,
+  "source_manifest_sha256": "a68e78095c3d065fcf43f1c91974eb8e0cc07e4c675ecaa8d31115b84d4d125d",
+  "retained_manifest_sha256": "a68e78095c3d065fcf43f1c91974eb8e0cc07e4c675ecaa8d31115b84d4d125d",
+  "source_asset_usd_sha256": "bcebeeea33cb30cf0d667e27ebda760815b0b487bffaff6e6ddb78aea2664c23",
+  "composite_assets_root": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets",
+  "package_namespace": "labutopia_aan_packages/dryingbox_01_overlay_aan11",
+  "mounted_package_link": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets/labutopia_aan_packages/dryingbox_01_overlay_aan11",
+  "mounted_package_link_target": "/tmp/aan11_real_packages_final/dryingbox_runtime",
+  "runtime_usd_name": "scene_usds/labutopia/aan/dryingbox_01_overlay_aan11_scene",
+  "runtime_wrapper_path": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets/scene_usds/labutopia/aan/dryingbox_01_overlay_aan11_scene.usda",
+  "runtime_wrapper_sha256": "57eb67fd13e01281671195a791c2b34521ae0d2277ec0b395b2306b97f7c9d52",
+  "runtime_wrapper_references": [
+    "../../../labutopia_aan_packages/dryingbox_01_overlay_aan11/asset.usd"
+  ],
+  "config_path": "ebench/labutopia_lab_poc/aan11_lift2_candidate/level1_open_door.yml",
+  "generated_config_abs_path": "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/configs/tasks/ebench/labutopia_lab_poc/aan11_lift2_candidate/level1_open_door.yml",
+  "config_sha256": "5370f6827f973c2bfab5fda1180fd4e3e0df970f19260bb03b77810771d1ea1c",
+  "config_index_path": "ebench/labutopia_lab_poc/aan11_lift2_candidate/aan11_lift2_candidate.json",
+  "config_index_sha256": "ec61b385e478f80262cd002599a09ea488ebb4fd3f2da66ea592434f7a1ae415",
+  "legacy_namespace_preserved": "labutopia_aan_packages/dryingbox_01_overlay",
+  "legacy_overlay_used": false,
+  "local_usd_repair_allowed": false,
+  "allowed_claims": {
+    "aan11_package_mounted": true,
+    "runtime_adapter_preflight_passed": true,
+    "consumer_live_smoke_passed": false,
+    "full_visual_material_parity_proven": false,
+    "policy_success_proven": false
+  }
+}

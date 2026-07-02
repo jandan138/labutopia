@@ -1348,6 +1348,79 @@ local mirror/source-preserved evidence；这证明 package 有可追踪的材质
 full material closure 或 full visual parity。
 ```
 
+## 2026-07-02 AAN-11 Consumer Rerun And Fixed Camera Update
+
+The AAN-11 package from ConvertAsset material runtime closure has now been consumed by
+the LabUtopia / EBench path. This supersedes the earlier `consumer rerun pending`
+state for DryingBox AAN-11.
+
+Durable evidence:
+
+```text
+package=/tmp/aan11_real_packages_final/dryingbox_runtime
+package_digest_sha256=a859c5a997c77ea9874155070c03879d2cc9ac41e0b4c30e7c8a07719b1fe32e
+manifest=docs/labutopia_lab_poc/evidence_manifests/aan11_dryingbox_runtime_smoke_20260702_1803.json
+run_id=labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803
+runtime_usd_name=scene_usds/labutopia/aan/dryingbox_01_overlay_aan11_scene
+submit_exit_code=0
+eval_exit_code=0
+reset_observed=true
+step_1000_observed=true
+score=0.0
+success_rate=0
+```
+
+Runtime bootstrap lessons:
+
+```text
+CUROBO_SRC must be included in PYTHONPATH.
+LABUTOPIA_POC_ASSETS_OVERLAY_ROOT must point at saved/assets, whose target is the composite assets root.
+The first two diagnostic runs failed before proving anything about the AAN package:
+  1. missing curobo import in Ray worker;
+  2. fallback to old overlay root, causing an empty wrapper composition.
+```
+
+Fixed native vs AAN front-camera evidence:
+
+```text
+weekly_contact_sheet=reports/2026-06-15-labutopia-weekly/assets/aan11-native-vs-aan-fixed-front-contact.png
+native_image=reports/2026-06-15-labutopia-weekly/assets/aan11-native-fixed-front.png
+aan11_image=reports/2026-06-15-labutopia-weekly/assets/aan11-aan-fixed-front.png
+camera=/World/LabUtopiaFixedFrontCamera
+position=[-0.21556737, 0.12, 1.36496577]
+look_at=[0.72, 0.12, 1.20]
+distance=0.95
+elevation=10
+azimuth=180
+resolution=1024x1024
+```
+
+Independent visual review result:
+
+```text
+overall=WARN
+front_view_framing=PASS
+pair_comparability=PASS
+red_fallback=AAN side has no obvious broad red fallback
+remaining_material_differences=native rack red vs AAN rack dark gray/black; control-panel display and buttons sharper on native; side panel and blue door roughness/brightness differ; lower foot red vs black
+```
+
+Allowed PM claim:
+
+```text
+AAN-11 DryingBox package 已进入 LabUtopia / EBench consumer 并通过本地 live smoke。
+固定正面对比图证明 AAN 没有大面积红色 fallback，且门、handle、控制面板和观察窗可比。
+```
+
+Forbidden PM claim:
+
+```text
+Do not claim official leaderboard readiness, policy success, semantic task success,
+arbitrary asset readiness, or full visual/material parity.
+The consumer log still has mdlc_compiler_error_count=16 and
+relationship_out_of_scope_count=70, so material parity remains a follow-up.
+```
+
 ## Verification Checklist For This Plan
 
 - [x] `docs/labutopia_lab_poc/aan_consumer_handoff.md` links this plan.
@@ -1356,5 +1429,7 @@ full material closure 或 full visual parity。
 - [x] Stage 4b has one final PASS artifact and hard gates for reset, step, render, metric, logging, result paths, exit codes, and run-id consistency.
 - [x] Stage 6 replication is profile-gated and cannot overclaim deformable / liquid / cloth / particle support.
 - [x] PM-facing weekly HTML update is done only after Stage 4b live eval smoke PASS evidence exists.
+- [x] AAN-11 package entered the LabUtopia / EBench consumer and completed a fresh rerun.
+- [x] A fixed native vs AAN front-camera pair was produced and reviewed as `WARN`: usable for parity review, not full parity proof.
 - [ ] Any implementation work uses a separate worktree or the GenManip integration repo where runtime tooling actually lives.
-- [ ] Final reporting includes both allowed and forbidden claims.
+- [x] Final reporting includes both allowed and forbidden claims.

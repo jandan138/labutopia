@@ -386,8 +386,8 @@
       </article>
       <article class="card">
         <h2>DryingBox 专题</h2>
-        <p>原生 <code>DryingBox_01</code> 已完成 hand-built overlay 的 Acceptance Stage 1-7；新的 ConvertAsset <code>AAN-ready package</code> 也已完成 LabUtopia / GenManip consumer Stage 1-4b。2026-07-02 新增验收：ConvertAsset AAN-11 已把 producer 侧红色异常材质闭环，最新 DryingBox 多视角 render 不再出现 solid red fallback，并已补一张真正能看到门板、handle、控制面板和观察窗的合格正面图。边界仍要保留：这不是 official leaderboard 复现，policy score 仍为 <code>0.0</code>，也还不是 full visual material parity。</p>
-        <span class="tag">Native Stage 7 passed</span><span class="tag">DryingBox AAN Stage 4b PASS</span><span class="tag">AAN-11 material runtime PASS</span><span class="tag">qualified front render PASS</span><span class="tag warn">consumer rerun pending</span><span class="tag warn">not leaderboard</span>
+        <p>原生 <code>DryingBox_01</code> 已完成 hand-built overlay 的 Acceptance Stage 1-7；新的 ConvertAsset <code>AAN-ready package</code> 也已完成 LabUtopia / GenManip consumer Stage 1-4b。2026-07-02 新增验收：AAN-11 新包已经挂进 LabUtopia / EBench consumer 并重跑 <code>level1_open_door</code> live smoke，submit / eval 均退出 <code>0</code>，reset 后跑满 1000 steps 并产出 <code>result_info.json</code>。固定 native vs AAN 正面对比相机也已补齐；它证明没有大面积红色 fallback，且箱体主体/把手/门窗可比，但 rack、控制面板和小脚等细节仍有材质差异，所以还不能说 full visual/material parity。</p>
+        <span class="tag">Native Stage 7 passed</span><span class="tag">AAN-11 consumer smoke PASS</span><span class="tag">fixed camera pair PASS/WARN</span><span class="tag">no solid red fallback</span><span class="tag warn">material parity OPEN</span><span class="tag warn">not leaderboard</span>
         <p><a href="native-dryingbox-task1.html">查看 DryingBox 验收进展</a></p>
       </article>
     </section>
@@ -396,12 +396,12 @@
       <div class="aan-head">
         <div>
           <h2>ConvertAsset AAN-ready package handoff</h2>
-          <p>这条新证据线回答一个更工程化的问题：不是“我们能不能手工把 DryingBox 调到能跑”，而是“ConvertAsset 产出的资产包，LabUtopia / GenManip 能不能不本地修包、直接消费进 EBench task”。当前答案分两层：旧包已经通过 LabUtopia / GenManip consumer Stage 1-4b 和 Stage 6 replication hardening；新包在 ConvertAsset producer 侧完成 AAN-11 material runtime closure，红色异常材质已从最新 producer render 中消失，并补齐 handle-clear front showcase render。<code>task/evaluator.yaml</code> 的 runtime 执行会作为后续 semantic evaluator 工作单独推进。</p>
-          <span class="tag">DryingBox Stage 4b PASS</span><span class="tag">MuffleFurnace Stage 4b PASS</span><span class="tag">Beaker Stage 4b PASS</span><span class="tag">Stage 6 PASS</span><span class="tag">AAN-11 producer material PASS</span><span class="tag">front showcase PASS</span><span class="tag warn">new consumer rerun next</span>
+          <p>这条新证据线回答一个更工程化的问题：不是“我们能不能手工把 DryingBox 调到能跑”，而是“ConvertAsset 产出的资产包，LabUtopia / GenManip 能不能不本地修包、直接消费进 EBench task”。当前答案分三层：旧包已经通过 LabUtopia / GenManip consumer Stage 1-4b 和 Stage 6 replication hardening；新包在 ConvertAsset producer 侧完成 AAN-11 material runtime closure，红色异常材质已从最新 producer render 中消失；AAN-11 新包也已进入 LabUtopia / EBench consumer 并通过 live smoke。<code>task/evaluator.yaml</code> 的 runtime 执行会作为后续 semantic evaluator 工作单独推进。</p>
+          <span class="tag">AAN-11 consumer smoke PASS</span><span class="tag">DryingBox Stage 4b PASS</span><span class="tag">MuffleFurnace Stage 4b PASS</span><span class="tag">Beaker Stage 4b PASS</span><span class="tag">Stage 6 PASS</span><span class="tag">front pair PASS/WARN</span><span class="tag warn">material parity OPEN</span>
         </div>
         <div class="metric">
           <strong>PASS</strong>
-          <span>Consumer smoke 已有旧包证据；AAN-11 producer 侧红材质已修复<br>下一步消费新包重跑 EBench smoke</span>
+          <span>AAN-11 新包已完成本地 consumer live smoke<br>下一步做材质细节闭环和 semantic evaluator</span>
         </div>
       </div>
 
@@ -418,12 +418,12 @@
         <div class="lane">
           <h3>Producer evidence：ConvertAsset AAN</h3>
           <p><strong>证明资产包结构证据和 producer smoke 存在。</strong>它记录了 USD dependency closure、package-level material evidence、physics / articulation where applicable、producer Isaac 4.1 runtime_smoke 和 benchmark_contract。</p>
-          <p>PM 可以说：AAN-11 已把 required surfaces 的 MDL helper module、MDL-internal texture 和 runtime compiler gate 闭合；最新 DryingBox render 不再有 solid red fallback。仍不能说 full visual material parity，因为还没有做 native reference 的逐项外观对齐。</p>
+          <p>PM 可以说：AAN-11 已把 required surfaces 的 MDL helper module、MDL-internal texture 和 runtime compiler gate 闭合；最新 DryingBox render 不再有 solid red fallback。仍不能说 full visual material parity，因为固定 native vs AAN 对比里还有 rack、控制面板、小脚等材质差异。</p>
         </div>
         <div class="lane">
           <h3>Consumer evidence：LabUtopia / GenManip</h3>
           <p><strong>证明 EBench 任务链路能消费这个包。</strong>DryingBox Stage 4b 用 AAN-specific wrapper 跑 <code>level1_open_door</code>，并记录 submit / probe / eval、<code>result_info.json</code>、stdout/stderr 和 run-id 一致性。</p>
-          <p>PM 可以说：DryingBox 本地 EBench / GenManip live smoke passed；MuffleFurnace 和 Beaker_01 generic Stage 4b live smoke passed。仍不能说 official score、semantic task success 或 policy success。</p>
+          <p>PM 可以说：AAN-11 新包已经被 LabUtopia / EBench consumer 加载并跑通本地 live smoke；MuffleFurnace 和 Beaker_01 generic Stage 4b live smoke passed。仍不能说 official score、semantic task success 或 policy success。</p>
         </div>
       </div>
 
@@ -446,7 +446,19 @@
         <div class="front-note">
           <p><strong>为什么这张才算正面：</strong>之前的 <code>front.png</code> 是相机轴向“大面图”，能看箱体外壳，但看不到 handle；这张按 DryingBox 的真实使用方向定义正面，也就是用户开门、看面板、抓 handle 的那一侧。</p>
           <p><strong>这张图证明什么：</strong>AAN-11 的 DryingBox 可以在 producer runtime 里加载并渲染出可识别的操作面，红色异常材质没有复现。控制面板上的红色数字是正常 UI 细节，不是整机 solid red fallback。</p>
-          <p><strong>还不证明什么：</strong>它仍是 producer showcase render，不等于 LabUtopia / EBench consumer 已用新包重跑，也不等于和 native reference 完成 full visual material parity。</p>
+          <p><strong>还不证明什么：</strong>它本身仍是 producer showcase render，consumer 重跑证据要看下面的 AAN-11 rerun manifest；它也不等于和 native reference 完成 full visual material parity。</p>
+        </div>
+      </div>
+
+      <div class="figure-row front-showcase" aria-label="Native versus AAN-11 fixed front camera comparison">
+        <figure class="diagnostic success">
+          <img src="assets/aan11-native-vs-aan-fixed-front-contact.png" alt="Native and AAN-11 DryingBox fixed front camera comparison showing the handle control panel and window">
+          <figcaption><strong>固定 native vs AAN 正面对比：</strong>同一个 <code>/World/LabUtopiaFixedFrontCamera</code>、同一组 pose、同一分辨率。左图是 native，右图是 AAN-11；门、handle、控制面板和观察窗都清楚可见。</figcaption>
+        </figure>
+        <div class="front-note">
+          <p><strong>这组图证明什么：</strong>AAN-11 已经不是旧的背面/俯视问题图；它和 native 在同一正面相机下可比较，并且 AAN 侧没有大面积 red fallback。像素指标里 AAN 强红异常比例为 <code>0.0000</code>。</p>
+          <p><strong>这组图还暴露什么：</strong>独立视觉审阅给出的整体结论是 <code>WARN</code>：native rack 是红色线框，AAN rack 变成深灰/黑；native 控制面板显示和按钮更清晰、更饱和；银色侧板和蓝色门的 roughness / brightness 也有细微差异；底部小脚 native 是红色、AAN 是黑色。</p>
+          <p><strong>产品结论：</strong>固定相机对比已经够支撑“无异常红 fallback、正面可比、consumer 可加载”的汇报；还不够支撑“和 LabUtopia native 完全视觉一致”。后续要做 control panel、window/rack、feet 的 close-up material parity follow-up。</p>
         </div>
       </div>
 
@@ -474,7 +486,7 @@
           <p><strong>修复前问题：</strong>旧 producer render 有两个肉眼可见问题。第一，DryingBox 大面积变成异常红色，结合日志看不是正常材质差异，而是 MDL / texture runtime 解析没有闭环后的 fallback / error material。第二，相机从背面和上方看过去，看不到门板、handle、正面结构和完整设备形态。</p>
         </div>
         <div class="answer">
-          <p><strong>修复后结论：</strong>ConvertAsset AAN-11 已补齐 material runtime closure。最新 evidence 中 <code>material_runtime_closure=pass</code>，<code>mdlc_count=0</code>，<code>failed_shader_node_count=0</code>，<code>missing_texture_count=0</code>；DryingBox 新图红色像素指标从旧图 <code>0.4385</code> 降到 <code>0.0000</code>。本次已补拍合格产品正面：<code>qualified_front_view=true</code>，门板、handle、控制面板和观察窗清楚可见。下一步是 LabUtopia / GenManip 消费新包重跑 EBench smoke，把 producer 侧修复落到 consumer 侧验证。</p>
+          <p><strong>修复后结论：</strong>ConvertAsset AAN-11 已补齐 producer 侧 material runtime closure。最新 producer evidence 中 <code>material_runtime_closure=pass</code>，<code>mdlc_count=0</code>，<code>failed_shader_node_count=0</code>，<code>missing_texture_count=0</code>；DryingBox 新图红色像素指标从旧图 <code>0.4385</code> 降到 <code>0.0000</code>。本次又完成了 LabUtopia / EBench consumer 重跑：<code>run_id=labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803</code>，submit / eval 都是 <code>0</code>，reset 后跑满 <code>1000</code> steps 并产出 <code>result_info.json</code>。但 consumer 日志仍有 <code>mdlc_compiler_error_count=16</code> 和 <code>relationship_out_of_scope_count=70</code>，固定正面对比也显示局部材质差异，所以 full visual/material parity 仍是 OPEN。</p>
         </div>
       </div>
 
@@ -491,7 +503,17 @@
             <tr>
               <td>Stage 4b manifest</td>
               <td><a href="../../docs/labutopia_lab_poc/evidence_manifests/aan_dryingbox_runtime_smoke_20260701_085521.json"><code>aan_dryingbox_runtime_smoke_20260701_085521.json</code></a></td>
-              <td>唯一允许把 AAN consumer live smoke 说成 PASS 的 final manifest。</td>
+              <td>7 月 1 日旧包 consumer live smoke final manifest；用于证明 consumer Stage 4b 早期闭环。</td>
+            </tr>
+            <tr>
+              <td>AAN-11 新包 consumer rerun</td>
+              <td><a href="../../docs/labutopia_lab_poc/evidence_manifests/aan11_dryingbox_runtime_smoke_20260702_1803.json"><code>aan11_dryingbox_runtime_smoke_20260702_1803.json</code></a><br><code>run_id=labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803</code></td>
+              <td>AAN-11 新包已经进入 LabUtopia / EBench consumer；submit / eval 退出 <code>0</code>，reset、1000 steps、metric logging、<code>result_info.json</code> 都有证据。</td>
+            </tr>
+            <tr>
+              <td>固定正面对比</td>
+              <td><code>camera=LabUtopiaFixedFrontCamera</code><br><code>native_vs_aan_contact=aan11-native-vs-aan-fixed-front-contact.png</code><br><code>independent_visual_review=WARN</code></td>
+              <td>构图和可比性 PASS，AAN 没有大面积红色 fallback；但 rack、控制面板、小脚和表面质感仍有可见差异，所以不能升级成 full visual/material parity。</td>
             </tr>
             <tr>
               <td>运行证据目录</td>
@@ -531,12 +553,12 @@
             <tr>
               <td>合格正面图</td>
               <td><code>qualified_front_view=true</code><br><code>required_view=door_and_handle_clear</code><br><code>camera=azimuth_180_elevation_10_distance_0.95</code></td>
-              <td>已补一张 handle-clear showcase render：门板、handle、控制面板和观察窗清楚可见；少量红色来自控制面板数字，不是材质 fallback。它证明正面图已补齐，但仍不等于 consumer rerun 或 full visual material parity。</td>
+              <td>已补一张 handle-clear showcase render：门板、handle、控制面板和观察窗清楚可见；少量红色来自控制面板数字，不是材质 fallback。这张图本身是 producer showcase；consumer rerun 要看 AAN-11 manifest，且它仍不证明 full visual material parity。</td>
             </tr>
             <tr>
               <td>新包 consumer rerun</td>
-              <td><code>status=pending</code><br><code>owner=LabUtopia / GenManip consumer</code></td>
-              <td>下一步必须把 AAN-11 新 package 挂进 LabUtopia / EBench consumer，重跑 Stage 1-4b，证明 runtime 真的加载的是新包而不是 7 月 1 日旧包。</td>
+              <td><code>status=PASS</code><br><code>owner=LabUtopia / GenManip consumer</code><br><code>submit_exit=0</code>、<code>eval_exit=0</code></td>
+              <td>已完成：AAN-11 新 package 通过 composite assets root 挂进 LabUtopia / EBench consumer，runtime 加载的是新包 wrapper，不是 7 月 1 日旧包。</td>
             </tr>
             <tr>
               <td>Stage 6 复制资产</td>
@@ -569,12 +591,29 @@
 
       <div class="claim-list" aria-label="AAN claim boundary">
         <div class="answer">
-          <p><strong>现在可以说：</strong>DryingBox AAN-ready package 已被 LabUtopia / GenManip consumer 接入 <code>level1_open_door</code>，并通过本地 EBench / GenManip live smoke；旧 overlay 没有被复用。Stage 6 已把收货、验货、挂载 dry-run、no-local-repair verify、Stage 4a runtime adapter preflight 和 generic Stage 4b live smoke 复制到 <code>MuffleFurnace</code> 和 <code>Beaker_01</code>。新增 AAN-11 证据还可以说：ConvertAsset producer 侧红色异常材质已经闭环，最新 DryingBox 多视角 render 没有 solid red fallback。</p>
+          <p><strong>现在可以说：</strong>AAN-11 DryingBox package 已被 LabUtopia / EBench consumer 接入 <code>level1_open_door</code>，并通过本地 live smoke；旧 overlay 没有被复用。Stage 6 已把收货、验货、挂载 dry-run、no-local-repair verify、Stage 4a runtime adapter preflight 和 generic Stage 4b live smoke 复制到 <code>MuffleFurnace</code> 和 <code>Beaker_01</code>。新增 AAN-11 证据还可以说：ConvertAsset producer 侧红色异常材质已经闭环，最新 DryingBox 多视角和固定正面 consumer 对比 render 没有 solid red fallback。</p>
         </div>
         <div class="answer warning">
-          <p><strong>仍不能说：</strong>official leaderboard score 已完成；policy/model 已经解决任务；<code>MuffleFurnace</code> 或 <code>Beaker_01</code> generic smoke 等于 semantic task success；任意 USD / MJCF / deformable / liquid 都自动可评；AAN-11 新 package 已经被 LabUtopia / EBench consumer 重跑；full visual material parity 已证明；AAN-11 render 已经和 LabUtopia native 外观逐项一致。</p>
+          <p><strong>仍不能说：</strong>official leaderboard score 已完成；policy/model 已经解决任务；<code>MuffleFurnace</code> 或 <code>Beaker_01</code> generic smoke 等于 semantic task success；任意 USD / MJCF / deformable / liquid 都自动可评；full visual material parity 已证明；AAN-11 render 已经和 LabUtopia native 外观逐项一致。</p>
         </div>
       </div>
+
+      <details class="evidence-details">
+        <summary>展开 AAN-11 consumer rerun 和固定相机对比证据</summary>
+        <pre>AAN-11 consumer run_id: labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803
+manifest: docs/labutopia_lab_poc/evidence_manifests/aan11_dryingbox_runtime_smoke_20260702_1803.json
+submit_exit_code=0
+eval_exit_code=0
+reset_observed=true
+step_1000_observed=true
+score=0.0
+success_rate=0
+consumer log boundary: mdlc_compiler_error_count=16; relationship_out_of_scope_count=70; solid_red_text_count=0
+fixed camera: /World/LabUtopiaFixedFrontCamera
+camera pose: position=[-0.21556737, 0.12, 1.36496577], look_at=[0.72, 0.12, 1.20], distance=0.95, elevation=10, azimuth=180
+fixed front visual review: framing PASS; pair comparability PASS; material parity WARN/OPEN
+remaining visible differences: rack red vs dark gray/black, control panel sharpness/saturation, small foot red vs black, surface roughness/brightness</pre>
+      </details>
 
       <details class="evidence-details">
         <summary>展开 AAN-11 material runtime closure 验收证据</summary>

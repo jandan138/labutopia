@@ -1,0 +1,125 @@
+╭────────────────────────────────────────────────╮
+│           GenManip Evaluation Client           │
+╰────────────────────────────────────────────────╯
+
+→ Results directory: /root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/client_results
+→ Client UID: 6ffbf614
+→ Connected to server: http://127.0.0.1:18311
+→ Workers: ['0']
+→ Save process: False
+→ Save result: True
+→ Plot on episode end: False
+
+→ Polling reset result for workers: ['0']
+→ Reset complete in 70.22s
+→ Environment reset complete
+
+  ⟳ Step 10: 0.064s
+  ⟳ Step 20: 0.065s
+  ⟳ Step 30: 0.065s
+  ⟳ Step 40: 0.066s
+  ⟳ Step 50: 0.063s
+  ⟳ Step 60: 0.068s
+  ⟳ Step 70: 0.064s
+  ⟳ Step 80: 0.069s
+  ⟳ Step 90: 0.067s
+  ⟳ Step 100: 0.071s
+  ⟳ Step 110: 0.069s
+  ⟳ Step 120: 0.066s
+  ⟳ Step 130: 0.067s
+  ⟳ Step 140: 0.069s
+  ⟳ Step 150: 0.064s
+  ⟳ Step 160: 0.069s
+  ⟳ Step 170: 0.069s
+  ⟳ Step 180: 0.069s
+  ⟳ Step 190: 0.065s
+  ⟳ Step 200: 0.068s
+  ⟳ Step 210: 0.077s
+  ⟳ Step 220: 0.064s
+  ⟳ Step 230: 0.064s
+  ⟳ Step 240: 0.069s
+  ⟳ Step 250: 0.065s
+  ⟳ Step 260: 0.066s
+  ⟳ Step 270: 0.069s
+  ⟳ Step 280: 0.063s
+  ⟳ Step 290: 0.070s
+  ⟳ Step 300: 0.063s
+  ⟳ Step 310: 0.069s
+  ⟳ Step 320: 0.071s
+  ⟳ Step 330: 0.068s
+  ⟳ Step 340: 0.066s
+  ⟳ Step 350: 0.065s
+  ⟳ Step 360: 0.065s
+  ⟳ Step 370: 0.065s
+  ⟳ Step 380: 0.063s
+  ⟳ Step 390: 0.064s
+  ⟳ Step 400: 0.065s
+  ⟳ Step 410: 0.061s
+  ⟳ Step 420: 0.063s
+  ⟳ Step 430: 0.066s
+  ⟳ Step 440: 0.062s
+  ⟳ Step 450: 0.066s
+  ⟳ Step 460: 0.064s
+  ⟳ Step 470: 0.063s
+  ⟳ Step 480: 0.063s
+  ⟳ Step 490: 0.062s
+  ⟳ Step 500: 0.071s
+  ⟳ Step 510: 0.103s
+  ⟳ Step 520: 0.099s
+  ⟳ Step 530: 0.087s
+  ⟳ Step 540: 0.065s
+  ⟳ Step 550: 0.070s
+  ⟳ Step 560: 0.064s
+  ⟳ Step 570: 0.064s
+  ⟳ Step 580: 0.065s
+  ⟳ Step 590: 0.062s
+  ⟳ Step 600: 0.091s
+  ⟳ Step 610: 0.063s
+  ⟳ Step 620: 0.070s
+  ⟳ Step 630: 0.066s
+  ⟳ Step 640: 0.063s
+  ⟳ Step 650: 0.062s
+  ⟳ Step 660: 0.064s
+  ⟳ Step 670: 0.061s
+  ⟳ Step 680: 0.066s
+  ⟳ Step 690: 0.064s
+  ⟳ Step 700: 0.071s
+  ⟳ Step 710: 0.065s
+  ⟳ Step 720: 0.066s
+  ⟳ Step 730: 0.063s
+  ⟳ Step 740: 0.064s
+  ⟳ Step 750: 0.064s
+  ⟳ Step 760: 0.066s
+  ⟳ Step 770: 0.064s
+  ⟳ Step 780: 0.065s
+  ⟳ Step 790: 0.065s
+  ⟳ Step 800: 0.065s
+  ⟳ Step 810: 0.064s
+  ⟳ Step 820: 0.062s
+  ⟳ Step 830: 0.066s
+  ⟳ Step 840: 0.065s
+  ⟳ Step 850: 0.064s
+  ⟳ Step 860: 0.069s
+  ⟳ Step 870: 0.066s
+  ⟳ Step 880: 0.067s
+  ⟳ Step 890: 0.064s
+  ⟳ Step 900: 0.073s
+  ⟳ Step 910: 0.067s
+  ⟳ Step 920: 0.064s
+  ⟳ Step 930: 0.070s
+  ⟳ Step 940: 0.064s
+  ⟳ Step 950: 0.064s
+  ⟳ Step 960: 0.064s
+  ⟳ Step 970: 0.064s
+  ⟳ Step 980: 0.064s
+  ⟳ Step 990: 0.068s
+  ⟳ Step 1000: 0.064s
+→ Polling reset result for workers: ['0']
+→ Reset complete in 1.01s
+╭──────────────────────────────────────────────╮
+│           Final Evaluation Result            │
+├──────────────────────────────────────────────┤
+│  (1/1)ebench/labutopia_lab..        0.00%    │
+╰──────────────────────────────────────────────╯
+
+✓ Client closed.

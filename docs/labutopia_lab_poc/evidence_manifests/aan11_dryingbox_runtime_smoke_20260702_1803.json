@@ -1,0 +1,192 @@
+{
+  "schema_version": "labutopia.aan.consumer.runtime_smoke.v2",
+  "created_at_utc": "2026-07-02T18:30:00Z",
+  "asset_id": "DryingBox_01_overlay_aan11",
+  "package": {
+    "source": "/tmp/aan11_real_packages_final/dryingbox_runtime",
+    "retained_convertasset_manifest": "/cpfs/user/zhuzihou/dev/ConvertAsset/docs/records/evidence/2026-07-02-aan-11-material-runtime-closure/runtime/dryingbox/manifest.json",
+    "package_digest_sha256": "a859c5a997c77ea9874155070c03879d2cc9ac41e0b4c30e7c8a07719b1fe32e",
+    "manifest_sha256": "a68e78095c3d065fcf43f1c91974eb8e0cc07e4c675ecaa8d31115b84d4d125d",
+    "asset_usd_sha256": "bcebeeea33cb30cf0d667e27ebda760815b0b487bffaff6e6ddb78aea2664c23",
+    "file_count": 47,
+    "bytes": 32488576
+  },
+  "consumer_mount": {
+    "composite_assets_root": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets",
+    "saved_assets_symlink": "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/saved/assets",
+    "saved_assets_target": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets",
+    "package_mount": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets/labutopia_aan_packages/dryingbox_01_overlay_aan11",
+    "runtime_wrapper_usd": "/cpfs/shared/simulation/zhuzihou/dev/_datasets/EBench-Assets-Composite/labutopia_level1_poc_lift2_codex/assets/scene_usds/labutopia/aan/dryingbox_01_overlay_aan11_scene.usda",
+    "runtime_usd_name": "scene_usds/labutopia/aan/dryingbox_01_overlay_aan11_scene",
+    "task_config": "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/configs/tasks/ebench/labutopia_lab_poc/aan11_lift2_candidate/level1_open_door.yml",
+    "task_config_repo_copy": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803/config/level1_open_door.yml",
+    "task_config_repo_copy_sha256": "5370f6827f973c2bfab5fda1180fd4e3e0df970f19260bb03b77810771d1ea1c",
+    "task_config_index_repo_copy": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803/config/aan11_lift2_candidate.json",
+    "task_config_index_repo_copy_sha256": "ec61b385e478f80262cd002599a09ea488ebb4fd3f2da66ea592434f7a1ae415"
+  },
+  "runtime_environment_contract": {
+    "conda_env": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310",
+    "required_env": {
+      "CUROBO_SRC": "/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src",
+      "PYTHONPATH_must_include": [
+        "/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src",
+        "/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src",
+        "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback"
+      ],
+      "LABUTOPIA_POC_ASSETS_OVERLAY_ROOT": "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/saved/assets"
+    },
+    "why_required": "Without CUROBO_SRC the Ray worker cannot import curobo; without LABUTOPIA_POC_ASSETS_OVERLAY_ROOT the POC override falls back to the old overlay root and the AAN-11 wrapper composes as an empty scene."
+  },
+  "diagnostic_attempts_before_final": [
+    {
+      "run_id": "labutopia_aan11_lift2_stage4b_20260702_1755",
+      "submit_exit_code": 0,
+      "eval_exit_code": 1,
+      "classification": "consumer_runtime_env_bootstrap_failure",
+      "root_cause": "CUROBO_SRC was not present in server PYTHONPATH; Ray worker raised ModuleNotFoundError: No module named curobo.",
+      "asset_package_failure": false
+    },
+    {
+      "run_id": "labutopia_aan11_lift2_stage4b_envfix_20260702_1759",
+      "submit_exit_code": 0,
+      "eval_exit_code": 1,
+      "classification": "consumer_assets_root_bootstrap_failure",
+      "root_cause": "LABUTOPIA_POC_ASSETS_OVERLAY_ROOT was missing, so ASSETS_DIR resolved to the old overlay root. The AAN-11 wrapper in that root had no package symlink and load_world_xform_prim saw an empty scene.",
+      "asset_package_failure": false
+    }
+  ],
+  "consumer_live_smoke": {
+    "status": "PASS",
+    "run_id": "labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803",
+    "evidence_dir": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803",
+    "submit_exit_code": 0,
+    "eval_exit_code": 0,
+    "reset_observed": true,
+    "step_1000_observed": true,
+    "result_info_path": "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback/saved/eval_results/ebench/labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803/ebench/labutopia_lab_poc/aan11_lift2_candidate/level1_open_door/000/result_info.json",
+    "result_info_sha256": "b48b86f0a10264d59c746e8d4f037914611ea56beec1a9355ace648b74db6b4a",
+    "score": 0.0,
+    "success_rate": 0,
+    "score_boundary": "0.0 is valid smoke evidence for metric/result logging, not semantic task success or policy success.",
+    "stdout_sha256": "a6baf804138700283a02ae4346db44ff6fbd415dd94f6e84ad34d1c648355ad7",
+    "eval_log_sha256": "5ffed983963f27cde3f30e72a813a442ee807052f2cb05ab5df7855bb248b829",
+    "submit_log_sha256": "10ded71abe7c6c5046e296fa40ed257021d32228d51705c48e174decfaf260f1",
+    "result_info_repo_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803/result/result_info.json",
+    "result_json_repo_path": "docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan11_lift2_stage4b_assetsroot_20260702_1803/result/result.json",
+    "result_json_sha256": "220d04bde9ca3b04abecb712cf69832eb033c405dcdc8c261dd868d8c1af3312"
+  },
+  "consumer_log_counts": {
+    "mdlc_compiler_error_count": 16,
+    "mdlc_comp_error_line_count": 8,
+    "failed_shader_node_count": 0,
+    "missing_texture_count": 0,
+    "relationship_out_of_scope_count": 70,
+    "traceback_count": 0,
+    "http_500_count": 0,
+    "solid_red_text_count": 0
+  },
+  "fixed_front_camera_pair": {
+    "status": "WARN",
+    "camera_contract": {
+      "position": [
+        -0.21556737,
+        0.12,
+        1.36496577
+      ],
+      "look_at": [
+        0.72,
+        0.12,
+        1.2
+      ],
+      "distance": 0.95,
+      "elevation": 10.0,
+      "azimuth": 180.0,
+      "focal_mm": 18.0,
+      "horizontal_aperture_mm": 20.955,
+      "aspect": 1.0
+    },
+    "camera_path": "/World/LabUtopiaFixedFrontCamera",
+    "render_method": "temporary USD wrapper with identical camera prim plus ConvertAsset headless viewport_capture; image evidence is diagnostic, not EBench official camera output.",
+    "visual_metrics": {
+      "native_fixed_front": {
+        "path": "/tmp/labutopia_aan11_native_vs_aan_front/native_viewport/native_fixed_front_0000.png",
+        "bytes": 822386,
+        "sha256": "23321546170b52ed77f50ba40ad1839dcb79b5ff49d9578e0a436a8f6e6761a7",
+        "resolution": [
+          1024,
+          1024
+        ],
+        "background_sample_rgb": [
+          228,
+          228,
+          228
+        ],
+        "red_abnormal_pixel_ratio_heuristic": 0.00064945,
+        "blueish_pixel_ratio_heuristic": 0.35092449,
+        "non_background_ratio_heuristic": 0.65357304
+      },
+      "aan11_fixed_front": {
+        "path": "/tmp/labutopia_aan11_native_vs_aan_front/aan11_viewport/aan11_fixed_front_0000.png",
+        "bytes": 758734,
+        "sha256": "d5458845ba4d9e5120a0da98d1604ad848a9e8ad831b11e54ed52e2417a9d56a",
+        "resolution": [
+          1024,
+          1024
+        ],
+        "background_sample_rgb": [
+          228,
+          228,
+          228
+        ],
+        "red_abnormal_pixel_ratio_heuristic": 0.0,
+        "blueish_pixel_ratio_heuristic": 0.35166931,
+        "non_background_ratio_heuristic": 0.65352535
+      },
+      "contact_sheet": {
+        "path": "/tmp/labutopia_aan11_native_vs_aan_front/native_vs_aan11_fixed_front_contact.png",
+        "bytes": 918532,
+        "sha256": "36bae5c513fe2f00f1c820a29133413159617f429c3c5797b4f3fe17840b9acd",
+        "resolution": [
+          2048,
+          1066
+        ]
+      }
+    },
+    "human_visual_review": {
+      "front_view_framing": "PASS: both images show the front face, handle, window, and control panel clearly.",
+      "gross_geometry_parity": "PASS/WARN: object shape and main blue/metal materials are visually close, but not every small material matches.",
+      "red_fallback": "PASS for AAN-11 fixed view: no obvious solid-red fallback and heuristic red pixel ratio is 0.0.",
+      "material_parity": "WARN/OPEN: shelf grid color, control-panel display legibility, small foot/button details, and consumer MDL/out-of-scope warnings prevent full visual/material parity claim."
+    },
+    "image_assets_committed_to_weekly": {
+      "native": "reports/2026-06-15-labutopia-weekly/assets/aan11-native-fixed-front.png",
+      "aan11": "reports/2026-06-15-labutopia-weekly/assets/aan11-aan-fixed-front.png",
+      "contact_sheet": "reports/2026-06-15-labutopia-weekly/assets/aan11-native-vs-aan-fixed-front-contact.png"
+    },
+    "independent_visual_review": {
+      "reviewer": "Galileo the 3rd",
+      "overall": "WARN",
+      "native_left": "PASS: qualifying front view with door/window, handle, control panel, button, and interior rack visible.",
+      "aan11_right": "PASS with material caveats: qualifying front view with matching crop/camera; no obvious broad red fallback or severe broken geometry.",
+      "pair_comparability": "PASS for viewpoint and framing; close enough for parity review.",
+      "remaining_material_differences": "Native rack wires are red while converted rack is dark gray/black; control-panel displays/buttons are sharper and more saturated on native; silver side panel and blue door roughness/brightness differ; lower foot is red on native and black on converted.",
+      "recommendation": "Keep this view as parity evidence, and follow up with tighter crops around the control panel and window/rack before claiming full visual/material parity."
+    }
+  },
+  "allowed_claims": [
+    "AAN-11 DryingBox package entered the LabUtopia / EBench consumer path and passed local live smoke for reset, step, result_info, metric logging, and stdout/stderr evidence.",
+    "A fixed native-vs-AAN front camera pair was produced; it is a fair front-view diagnostic comparison and shows no obvious AAN solid-red fallback.",
+    "The blue body color is expected in both native and AAN fixed-front renders."
+  ],
+  "forbidden_claims": [
+    "Do not claim official EBench leaderboard readiness or official score submission.",
+    "Do not claim policy solved level1_open_door; score and success_rate are 0.",
+    "Do not claim source-native full visual/material parity: consumer logs still contain MDL compiler errors and out-of-scope material:binding warnings, and visible material details differ.",
+    "Do not claim this covers arbitrary USD assets, deformables, liquids, or all future benchmarks."
+  ],
+  "next_actions": [
+    "Close material-runtime differences as a separate material parity follow-up, not as a Lift2 consumer contract blocker.",
+    "Standardize the runtime env bootstrap so CUROBO_SRC and LABUTOPIA_POC_ASSETS_OVERLAY_ROOT are injected by the consumer runner.",
+    "If full visual parity is required, produce per-material/source-native binding evidence and compare more close-up views of control panel, shelf grid, feet, and door/window."
+  ]
+}

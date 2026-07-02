@@ -1,0 +1,9 @@
+{
+  "name": "aan11_lift2_candidate",
+  "tasks": [
+    "level1_open_door"
+  ],
+  "configs": [
+    "ebench/labutopia_lab_poc/aan11_lift2_candidate/level1_open_door.yml"
+  ]
+}
