@@ -218,6 +218,72 @@ S2 之后不能继续说：
 closure，直到至少一个非负控方案达到 95% source retention，且 source 外、spill、target、
 below-table 都为 0。
 
+## 调研补充：别人不是没做过 Isaac 液体 demo，但 demo 和 benchmark 不是一回事
+
+通俗解释：Isaac Sim / Omniverse 当然有人做过液体类 demo。常见做法是用
+`PhysxParticleSystem` + `ParticleSet` + `PBD Particle Material` 生成真实粒子，再用
+`Isosurface` / `Smoothing` / `Anisotropy` 把一堆粒子渲染成一团连续的水。官方 Isaac Sim
+本地 API 也明确写着 PhysX 使用 GPU-accelerated `PBD` particle simulation，可以模拟
+`fluids`, `cloth`, `inflatables`；并且 particles 不支持 CPU simulation，必须启用 GPU。
+
+但是这些 demo 通常只需要“看起来像液体、在手工场景里大致能流动”。我们现在要的是更严格的
+benchmark 口径：
+
+```text
+headless 可复现
+IsaacSim41 / EBench consumer 可加载
+LabUtopia beaker 资产或等价 physics proxy 可复用
+particle readback 能解释结果
+source 外、spill、target、below-table 全部为 0 才能进入 S3
+```
+
+所以当前 S2 失败不是“IsaacSim41 完全不能盛液体”，而是“这批 collider 还没有达到我们对
+benchmark evidence 的严格要求”。
+
+调研结论按证据强弱分三类：
+
+| 类型 | 资料结论 | 对我们的影响 |
+|---|---|---|
+| 官方/本地 API 事实 | `/isaac-sim/exts/isaacsim.core.prims/.../single_particle_system.py` 写明 PBD particles 可模拟 fluids，且 CPU simulation of particles is not supported。 | 必须继续坚持 GPU dynamics，不能用 CPU fallback 当成功。 |
+| 官方/本地 API 事实 | `SingleParticleSystem` 暴露 `contact_offset`, `rest_offset`, `particle_contact_offset`, `enable_ccd`, `max_velocity`, `max_depenetration_velocity` 等参数。 | S2F follow-up 应系统 sweep 这些参数，而不是只换 mesh。 |
+| 官方/本地 API 事实 | `omni.physx.scripts.particleUtils.add_physx_particleset_points` 支持 `fluid=True` 的 `Points` particle set。 | S1/S2 当前用 Points readback 是合理路线。 |
+| 官方/本地 API 事实 | `omni.physx.scripts.utils` 支持 mesh collision approximation，例如 `sdf` 对应 `PhysxSDFMeshCollisionAPI`。 | C3 SDF 路线应继续做 cooking/resolution/subgrid sweep。 |
+| 官方/本地 demo 事实 | 本机 `/isaac-sim/extsPhysics/omni.physx.demos/.../HoneyDemo.py` 是 "Honey flowing into a glass jar"，并说明使用 SDF collision + 高黏度 fluid。 | 官方 demo 路线存在，但它是专门调过的 showcase，不等于任意 LabUtopia 杯子 mesh 可直接持液。 |
+| 官方/本地 demo 事实 | `ParticleDemoBaseDemo.create_particle_box_collider()` 用多个 box/cylinder collider 拼出接粒子的容器，而不是依赖单个复杂凹形玻璃 mesh。 | S2F 的 C2 proxy / segmented collider 方向符合官方 demo 习惯，应优先继续修。 |
+| 官方限制事实 | Isaac Sim physics limitations 建议 GPU native collision approximation，如 `convex hull`, `SDF tri-mesh`, `sphere/box/capsule`；并说明 custom geometry 不与 GPU particles/deformables 碰撞。 | C5 analytic/custom cylinder 不能作为生产路线；S2F 必须明确 GPU-compatible collider。 |
+| 官方限制事实 | Particles/deformable contact reports 不支持；`Isosurface` 是 render-only，并可能有 memory/OOM 风险。 | 后续评分不能依赖 contact report 或漂亮水面图，必须继续用 particle position readback / region counts。 |
+| NVIDIA forum 经验 | “Liquid particle sampler passing through collider” 类问题里，工程师建议检查/增大 particle contact offset；用户反馈增大后漏穿缓解。 | C2 首轮 follow-up 应优先做 contact offset / particle contact offset / wall thickness 联合 sweep。 |
+| NVIDIA forum 经验 | 旧的 hand pouring liquid demo 对高加速度敏感；限制 particle max velocity 可以缓解穿透，但会让液体更黏、更不真实。 | S3 之前必须先做静态持液；进入 S3 后也要先 slow tilt，再 medium/fast。 |
+| 我们的推论 | 原生 render mesh 不等于好的 particle collider。`convexDecomposition` 可能让凹形杯内空间不稳定或不可用。 | C4 native mesh 不能直接信任，要和 SDF / proxy collider 分开验证。 |
+
+参考资料：
+
+```text
+NVIDIA Omni Physics particles:
+https://docs.omniverse.nvidia.com/kit/docs/omni_physics/latest/dev_guide/particles/particles.html
+
+Isaac Sim physics limitations:
+https://docs.isaacsim.omniverse.nvidia.com/5.1.0/physics/physics_resources.html
+
+NVIDIA forum, liquid particles passing through collider:
+https://forums.developer.nvidia.com/t/liquid-particle-sampler-is-passing-through-the-collider/248815
+
+Local Isaac Sim API evidence:
+/isaac-sim/exts/isaacsim.core.prims/isaacsim/core/prims/impl/single_particle_system.py
+/isaac-sim/exts/isaacsim.core.prims/isaacsim/core/prims/impl/particle_system.py
+/isaac-sim/extsPhysics/omni.physx/omni/physx/scripts/particleUtils.py
+/isaac-sim/extsPhysics/omni.physx/omni/physx/scripts/utils.py
+/isaac-sim/extsPhysics/omni.physx.demos/omni/physxdemos/scenes/HoneyDemo.py
+/isaac-sim/extsPhysics/omni.physx.demos/omni/physxdemos/scenes/ParticleDemoBaseDemo.py
+/isaac-sim/extsPhysics/omni.physx.demos/omni/physxdemos/scenes/ParticleSamplerDemo.py
+/isaac-sim/extsPhysics/omni.physx.demos/omni/physxdemos/scenes/ParticlePostProcessingDemo.py
+```
+
+给产品经理的白话结论：别人做 demo 的核心经验不是“直接把漂亮杯子 mesh 丢进去就能盛水”，而是
+“单独给液体做 physics-friendly collider，并且反复调 particle contact / collider contact /
+速度 / SDF cooking”。我们下一步要做的就是把这套经验变成可复现的 S2F follow-up，而不是直接进
+倒液视频。
+
 ## 不会混淆的主线
 
 这条 fluid spike 不改变以下结论：
@@ -237,6 +303,7 @@ AAN current profile still excludes deformable/liquid/cloth/particle assets.
 | S0 Scope Freeze | 什么才算 true fluid？ | 真假液体边界已冻结 | `fluid_truth_criteria.json` |
 | S1 Particle Smoke | 粒子能不能在 Isaac runtime 中 step？ | 已通过：standalone PBD 粒子本体可运行 | GPU/schema/readback 失败归因 |
 | S2 Beaker Collider Smoke | 烧杯能不能装住粒子？ | 已完成：当前 C0-C5 均未达到 S3 放行门槛 | collider 失败矩阵 |
+| S2F Collider Follow-up | 怎么把 S2 失败收敛成一个可持液 collider？ | 至少一个非负控 `PASS_SOURCE_HOLD` | 参数/几何/cooking 失败归因 |
 | S3 Kinematic Pour Rig | 杯子倾斜后粒子能不能流向目标杯？ | 找到可倒液的 collider+参数 | 倾倒失败归因 |
 | S4 level1_pour Replay | 原 expert 倒液动作能不能带动粒子？ | LabUtopia native 任务中有真实粒子运动 | 机器人动作/粒子耦合失败归因 |
 | S5 EBench Consumer | EBench 4.1 能不能加载/step 这套流体？ | consumer 没丢 fluid schema | runtime/consumer 失败归因 |
@@ -274,6 +341,7 @@ S2/S3 will test a collider matrix, not one hard-coded collider.
 S1 standalone PBD particle runtime smoke passed.
 S2 beaker collider matrix completed with STOP_WITH_EVIDENCE.
 C2 segmented convex wall pieces is the closest failed candidate, not a pass.
+S2F collider follow-up plan is ready; S3 is still not released.
 ```
 
 禁止：

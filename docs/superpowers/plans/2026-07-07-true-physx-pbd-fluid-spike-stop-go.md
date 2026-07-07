@@ -183,6 +183,99 @@ cpu_collision_fallback_detected=false
 nan_count=0
 ```
 
+## S2F Research Basis and Follow-up Plan
+
+S2F exists because S2 answered the static hold question with
+`STOP_WITH_EVIDENCE`: C0-C5 all produced particle readback and motion, but none
+held particles well enough to release S3. The follow-up is not blind tuning. It
+is a bounded collider/particle-contact investigation based on official PhysX PBD
+particle behavior, local Isaac Sim API evidence, NVIDIA forum experience, and the
+S2 result matrix.
+
+Research basis:
+
+```text
+Official/local API facts:
+- PhysX particle systems are GPU-accelerated PBD particles and can simulate fluids.
+- CPU simulation of particles is not supported; GPU dynamics must stay enabled.
+- SingleParticleSystem exposes contact_offset, rest_offset, particle_contact_offset,
+  enable_ccd, max_velocity, max_depenetration_velocity, solver iterations, and
+  non_particle_collision_enabled.
+- particleUtils can author fluid=True Points/PointInstancer particle sets.
+- PhysX mesh collision utilities support approximation modes including sdf.
+
+Forum/field experience:
+- Liquid particle leak-through-collider cases are often sensitive to particle
+  contact offset and collider contact offset.
+- Hand-pouring style demos can work at low acceleration but become unstable under
+  fast motion; max_velocity can reduce tunneling-like behavior, but may create
+  non-physical sticky liquid.
+
+Project inference:
+- Native render mesh is not automatically a fluid-safe collider.
+- Convex decomposition can be acceptable for rigid-body contact while still
+  failing as a particle container for concave open-cup interiors.
+- Product camera/video can wait; S2F success must be particle readback first.
+```
+
+References:
+
+```text
+https://docs.omniverse.nvidia.com/kit/docs/omni_physics/latest/dev_guide/particles/particles.html
+https://forums.developer.nvidia.com/t/liquid-particle-sampler-is-passing-through-the-collider/248815
+/isaac-sim/exts/isaacsim.core.prims/isaacsim/core/prims/impl/single_particle_system.py
+/isaac-sim/exts/isaacsim.core.prims/isaacsim/core/prims/impl/particle_system.py
+/isaac-sim/extsPhysics/omni.physx/omni/physx/scripts/particleUtils.py
+/isaac-sim/extsPhysics/omni.physx/omni/physx/scripts/utils.py
+```
+
+S2F stage split:
+
+| Stage | Goal | Work | Release condition |
+|---|---|---|---|
+| S2F-0 Evidence Freeze | Keep S2 as baseline | Freeze C0-C5 result matrix, warning scan, visual review, and `s2_no_outside_source_v2` contract. | No S3 release; baseline copied into S2F manifest. |
+| S2F-1 C2 Proxy Sweep | Repair closest failed candidate first | Sweep C2 wall thickness, panel count, bottom seal overlap, particle spawn clearance, collider `contactOffset/restOffset`, and particle `particle_contact_offset/fluid_rest_offset`. | At least one C2-derived variant has `outside_source_count==0`, `spill_count==0`, `below_table_count==0`. |
+| S2F-2 Velocity / Contact Offset Isolation | Separate geometry leak from tuning leak | Test `initial_radial_velocity`, `particle_contact_offset`, `fluid_rest_offset`, `solid_rest_offset`, `enable_ccd`, `max_velocity`, and `max_depenetration_velocity` only after geometry/contact candidates exist. | Any velocity cap must be recorded; sticky/non-physical workaround cannot alone release S3. |
+| S2F-3 C3 SDF Sweep | Test concave mesh route | Sweep SDF resolution, subgrid, margin/narrow band, remeshing, mesh normals, and bottom fan closure. | SDF variant passes static hold without perf/cooking failure. |
+| S2F-4 C4 Native Isolation | Decide if native beaker can be salvaged | Compare native `beaker2/mesh` as convexDecomposition, SDF, and proxy wrapper; isolate pose/material warnings from collider failure. | Either native-derived collider passes, or manifest signs `NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER`. |
+| S2F-5 Promotion Review | Decide S3 entry | Re-run promoted candidates across 3 seeds and 2 particle counts: 256 and 1024; write `fluid_spike_s2f_collider_followup_<yyyymmdd>.json` with ranked candidates, warnings, images, traces, and claim guard. | Exactly one or more non-negative-control variants in `best_for_s3`, otherwise remain `STOP_WITH_EVIDENCE`. |
+
+S2F candidate naming:
+
+```text
+C2A_* = C2-derived proxy/contact/gap variants
+C3A_* = C3 SDF/cooking variants
+C4A_* = C4 native mesh isolation variants
+```
+
+S2F required evidence per variant:
+
+```text
+variant_summary.json
+particle_readback_trace.jsonl
+physics_scene_settings.json
+runtime_warning_scan.json
+initial_frame.png
+mid_frame.png
+terminal_frame.png
+top_collision_overlay.png
+side_collision_overlay.png
+source/outside/spill/below-table counts
+all authored collider and particle offsets
+```
+
+S2F stop rules:
+
+```text
+If C2A cannot reach zero outside-source particles after bounded sweep, do not
+continue tuning C2 indefinitely; move to C3A/C4A and record C2A_BOUND_EXHAUSTED.
+
+If all C2A/C3A/C4A variants fail, keep best_for_s3=[] and do not run S3.
+
+If a variant only works by extreme max_velocity damping or non-physical sticky
+settings, classify it as FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE.
+```
+
 ## Stage Status Vocabulary
 
 Use exactly these statuses in manifests:
@@ -524,6 +617,294 @@ The manifest must rank variants:
 
 S2 final state: no variant can proceed to S3 yet. C2 is the closest failed
 candidate and should be the first geometry/parameter follow-up route.
+
+---
+
+### Task 3A: S2 Collider Follow-up Recovery
+
+**Files:**
+- Create: `tools/labutopia_fluid/run_beaker_collider_followup_sweep.py`
+- Create: `tests/test_fluid_beaker_collider_followup_sweep.py`
+- Create: `docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_plan_20260707.json`
+- Create: `docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_<phase>_<yyyymmdd>.json`
+- Create: `docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_followup_<phase>_<yyyymmdd>_<NNN>/`
+- Modify: `docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md`
+- Modify: `docs/labutopia_lab_poc/evidence_manifests/README.md`
+
+S2F is required before Task 4. Do not run S3 until this task writes a promotion
+review manifest with non-empty `best_for_s3`.
+
+- [ ] **Step 1: Freeze S2F baseline contract**
+
+Create:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_plan_20260707.json
+```
+
+Required fields:
+
+```json
+{
+  "schema_version": 1,
+  "manifest_type": "true_physx_pbd_fluid_spike_s2_followup_plan",
+  "stage": "S2F_COLLIDER_FOLLOW_UP_PLAN",
+  "parent_s2_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json",
+  "status": "PLAN_READY",
+  "s3_kinematic_pour_released": false,
+  "best_for_s3": [],
+  "contract_version": "s2_no_outside_source_v2",
+  "baseline_closest_failed_candidate": "C2",
+  "baseline_c2": {
+    "classification": "FAIL_CONTAINER_LEAK",
+    "source_retention_fraction": 0.828125,
+    "outside_source_count": 44,
+    "spill_count": 32,
+    "below_table_count": 12
+  },
+  "baseline_phase": "S2F0_BASELINE_FREEZE",
+  "required_pass_criteria": {
+    "source_retention_fraction": ">=0.95",
+    "particle_count_final_fraction": ">=0.95",
+    "outside_source_count": 0,
+    "target_count": 0,
+    "spill_count": 0,
+    "below_table_count": 0,
+    "tail_leak_rate_fraction_per_second": "<0.02",
+    "cpu_collision_fallback_detected": false,
+    "gpu_collider_unsupported": false,
+    "nan_count": 0
+  },
+  "phase_order": [
+    "S2F0_BASELINE_FREEZE",
+    "S2F1_C2_PROXY_SWEEP",
+    "S2F2_VELOCITY_CONTACT_OFFSET",
+    "S2F3_C3_SDF_SWEEP",
+    "S2F4_C4_NATIVE_MESH_ISOLATION",
+    "S2F5_PROMOTION_REVIEW"
+  ]
+}
+```
+
+- [ ] **Step 2: Write failing tests for follow-up sweep planning helpers**
+
+Create `tests/test_fluid_beaker_collider_followup_sweep.py` with tests for:
+
+```python
+def test_followup_matrix_names_do_not_collide_with_s2_baseline():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import followup_phase_specs
+
+    phases = followup_phase_specs()
+    assert list(phases) == [
+        "S2F0_BASELINE_FREEZE",
+        "S2F1_C2_PROXY_SWEEP",
+        "S2F2_VELOCITY_CONTACT_OFFSET",
+        "S2F3_C3_SDF_SWEEP",
+        "S2F4_C4_NATIVE_MESH_ISOLATION",
+        "S2F5_PROMOTION_REVIEW",
+    ]
+    assert phases["S2F0_BASELINE_FREEZE"]["candidate_prefix"] == "S2"
+    assert phases["S2F1_C2_PROXY_SWEEP"]["candidate_prefix"] == "C2A"
+    assert phases["S2F3_C3_SDF_SWEEP"]["candidate_prefix"] == "C3A"
+    assert phases["S2F4_C4_NATIVE_MESH_ISOLATION"]["candidate_prefix"] == "C4A"
+
+
+def test_followup_pass_criteria_require_zero_outside_source():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import classify_followup_candidate
+
+    result = classify_followup_candidate(
+        candidate_id="C2A_001",
+        source_retention_fraction=1.0,
+        particle_count_final_fraction=1.0,
+        outside_source_count=1,
+        target_count=0,
+        spill_count=0,
+        below_table_count=0,
+        tail_leak_rate_fraction_per_second=0.0,
+        cpu_collision_fallback_detected=False,
+        gpu_collider_unsupported=False,
+        nan_count=0,
+        non_physical_parameter_dependence=False,
+    )
+    assert result["classification"] == "FAIL_CONTAINER_LEAK"
+    assert result["pass_criteria"]["outside_source_count_eq_zero"] is False
+```
+
+Run:
+
+```bash
+python -m pytest -q tests/test_fluid_beaker_collider_followup_sweep.py
+```
+
+Expected before implementation: import failure.
+
+- [ ] **Step 3: Implement C2 proxy sweep generator**
+
+Create `tools/labutopia_fluid/run_beaker_collider_followup_sweep.py` with:
+
+```text
+followup_phase_specs()
+build_c2_proxy_sweep()
+build_velocity_contact_offset_sweep()
+classify_followup_candidate()
+rank_followup_candidates()
+write_followup_manifest()
+```
+
+The first bounded C2A grid should cover:
+
+```text
+panel_count: 24, 32, 48
+wall_thickness: 0.010, 0.014, 0.018
+bottom_overlap: 0.000, 0.003, 0.006
+particle_contact_offset: 0.0045, 0.0060, 0.0075
+collider_contact_offset: 0.002, 0.004, 0.006
+collider_rest_offset: -0.001, 0.000
+initial_radial_velocity: 0.02, 0.04, 0.08
+```
+
+Bound the first live batch to 12 candidates selected by risk coverage, not the
+full Cartesian product. Write the candidate list into the S2F1 manifest before
+launching runtime.
+
+- [ ] **Step 4: Run S2F1 C2 proxy sweep**
+
+Run:
+
+```bash
+ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=YES PYTHONNOUSERSITE=1 PYTHONUNBUFFERED=1 \
+  /cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python \
+  tools/labutopia_fluid/run_beaker_collider_followup_sweep.py \
+  --phase S2F1_C2_PROXY_SWEEP \
+  --parent-manifest docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json \
+  --artifact-dir docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_followup_c2_proxy_sweep_20260707_001 \
+  --manifest-path docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json \
+  --steps 240 \
+  --headless
+```
+
+Do not release S3 from this phase unless at least one C2A candidate satisfies
+all S2F pass criteria.
+
+- [ ] **Step 5: Run S2F2 velocity/contact-offset isolation**
+
+Only run this after S2F1 shows at least one near-pass candidate or a clear
+geometry failure. The goal is to separate geometry leak from particle/contact
+parameter sensitivity.
+
+Required variants:
+
+```text
+same geometry, lower initial_radial_velocity
+same geometry, higher particle_contact_offset
+same geometry, collider contact/rest offset pair sweep
+same geometry, enable_ccd on/off if supported by runtime
+same geometry, max_velocity guardrail
+```
+
+Classify any success that depends only on extreme `max_velocity` damping as:
+
+```text
+FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE
+```
+
+- [ ] **Step 6: Run S2F3 C3 SDF sweep**
+
+Run SDF as its own phase, not mixed with C2A. Required variables:
+
+```text
+sdf_resolution: 64, 96, 128
+sdf_subgrid_resolution: 4, 8
+sdf_margin: 0.002, 0.005
+sdf_narrow_band_thickness: 0.01, 0.02
+mesh bottom fan closure: on
+normals/winding audit: pass
+```
+
+Stop S2F3 early if stdout/stderr scan finds CPU fallback, GPU unsupported, SDF
+cooking error, or perf budget exceeded for every candidate.
+
+- [ ] **Step 7: Run S2F4 C4 native mesh isolation**
+
+Compare native-derived routes:
+
+```text
+C4A_convexDecomposition_reference_scope_closed
+C4A_sdf_reference_scope_closed
+C4A_native_render_mesh_plus_proxy_collision
+```
+
+The phase must separate three issues:
+
+```text
+material:binding reference-scope warning
+native pose/scale/orientation mismatch
+particle collider interior usability
+```
+
+If native-derived routes still fail, write:
+
+```text
+NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER
+```
+
+This is not a no-go for fluid overall; it only means native render mesh should be
+wrapped by a fluid-safe physics proxy.
+
+- [ ] **Step 8: Write S2F5 promotion review**
+
+Create:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_promotion_review_20260707.json
+```
+
+Required fields:
+
+```json
+{
+  "stage": "S2F5_PROMOTION_REVIEW",
+  "status": "GO_NEXT|STOP_WITH_EVIDENCE",
+  "best_for_s3": [],
+  "s3_kinematic_pour_released": false,
+  "ranked_candidates": [],
+  "blocked_claims": [
+    "S3 kinematic pour released without PASS_SOURCE_HOLD",
+    "native beaker mesh is fluid-safe by default",
+    "isosurface render equals physical success",
+    "particle contact report can be used as score evidence"
+  ]
+}
+```
+
+Set `s3_kinematic_pour_released=true` only if `best_for_s3` is non-empty and
+every promoted candidate has same-run particle readback, warning scan, and visual
+diagnostic overlays.
+
+- [ ] **Step 9: Update docs and commit S2F result**
+
+Update:
+
+```text
+docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md
+docs/labutopia_lab_poc/evidence_manifests/README.md
+docs/superpowers/plans/2026-07-07-true-physx-pbd-fluid-spike-stop-go.md
+```
+
+Run:
+
+```bash
+python -m pytest -q tests/test_fluid_beaker_collider_followup_sweep.py tests/test_fluid_beaker_collider_smoke.py
+python -m json.tool docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_promotion_review_20260707.json
+git diff --check
+```
+
+Commit:
+
+```bash
+git add tools/labutopia_fluid/run_beaker_collider_followup_sweep.py tests/test_fluid_beaker_collider_followup_sweep.py docs/labutopia_lab_poc docs/superpowers/plans/2026-07-07-true-physx-pbd-fluid-spike-stop-go.md
+git commit -m "feat: add fluid collider follow-up sweep"
+```
 
 ---
 

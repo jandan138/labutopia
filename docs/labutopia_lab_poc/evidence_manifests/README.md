@@ -123,6 +123,7 @@ s2_beaker_collider_matrix_released=true
 s2_beaker_collider_matrix_completed=true
 s2_beaker_collider_matrix_status=STOP_WITH_EVIDENCE
 s2_best_for_s3=[]
+s2_followup_plan_ready=true
 s3_kinematic_pour_released=false
 s2_s3_collider_matrix_required=true
 ```
@@ -148,6 +149,12 @@ fluid_spike_s2_runtime_warning_scan_20260707.json
 fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/
 ```
 
+S2 follow-up planning evidence:
+
+```text
+fluid_spike_s2_followup_plan_20260707.json
+```
+
 S2 结论：`status=STOP_WITH_EVIDENCE`，`best_for_s3=[]`。C0、C1、C2、C3、C5 均为
 `FAIL_CONTAINER_LEAK`；C4 native `beaker2/mesh` `convexDecomposition` 为
 `FAIL_NATIVE_CONVEX_INTERIOR_NOT_USABLE`。所有 variant 都有 particle readback 和运动证据，
@@ -160,6 +167,15 @@ S2 runtime warning scan 未发现 `CPU collision fallback`、`GPU collider unsup
 C4 的 `material:binding` scope warning 只说明原生 mesh reference 的外观材质绑定超出 reference scope，
 不把它解释为 collider 失败主因。S2 PNG 是 diagnostic projection；`v2_dynamic_z_shows_below_table_leaks`
 版本用红色点显示 below-table leak，不是产品级 camera render。
+
+S2 后续规划已更新为 `S2F Collider Follow-up`，不是直接进入 S3。调研结论是：Isaac Sim /
+Omniverse 的确支持 PBD particle fluid demo，但 demo 通常依赖 GPU dynamics、physics-friendly
+collider、`particle_contact_offset/contactOffset/restOffset` 调参、SDF/convex proxy 和低加速度动作；
+不能假设 LabUtopia 原生 render mesh 天然就是可盛液体的 particle collider。S2F 统一拆成
+`S2F0-S2F5`：先冻结 S2 baseline，再做 C2 proxy sweep、velocity/contact offset isolation、
+C3 SDF sweep、C4 native beaker isolation，最后做 promotion review。只有至少一个非负控
+variant 达到 `outside_source_count==0`、`spill_count==0`、`target_count==0`、
+`below_table_count==0`，才允许释放 S3。
 
 `eos2_expert_oracle_s2_readback_render_inventory_20260706.json` 和
 `eos2_expert_oracle_s2_claim_review_20260706.json` 是 S1R-D fresh S1 之后的 no-new-live S2 证据盘点和声明复核。
