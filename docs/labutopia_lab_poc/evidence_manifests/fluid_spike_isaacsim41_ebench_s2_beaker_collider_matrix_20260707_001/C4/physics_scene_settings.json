@@ -1,0 +1,36 @@
+{
+  "broadphase_type": "GPU",
+  "collider_paths": [
+    "/World/SourceContainer/NativeBeaker2/mesh"
+  ],
+  "gpu_dynamics_enabled": true,
+  "particle_contact_offset": 0.0045,
+  "particle_set_path": "/World/ParticleSet",
+  "particle_system_path": "/World/ParticleSystem",
+  "physics_dt": 0.016666666666666666,
+  "physics_scene_path": "/World/PhysicsScene",
+  "region_definitions": {
+    "below_table_region": "finite particles with z < 0.0",
+    "source_region": "cylindrical region around source container interior; center_xy=(0.0, 0.0) radius=0.055 z=[0.0, 0.13]",
+    "spill_region": "finite particles outside source and target regions with z >= table_z",
+    "target_region": "cylindrical region around target container interior; center_xy=(0.22, 0.0) radius=0.055 z=[0.0, 0.13]"
+  },
+  "solver_type": "TGS",
+  "suppress_readback_setting": false,
+  "update_particles_to_usd_setting": true,
+  "update_to_usd_setting": true,
+  "update_velocities_to_usd_setting": true,
+  "variant": {
+    "collider_count": 1,
+    "collision_approximation": "convexDecomposition",
+    "description": "Native /World/beaker2/mesh referenced from lab_001 with convexDecomposition.",
+    "name": "native_beaker2_mesh_convex_decomposition",
+    "native_source_path": "/World/beaker2/mesh",
+    "negative_control": false,
+    "panel_count": null,
+    "sdf_resolution": null,
+    "setup": "native_beaker2_mesh_reference",
+    "source_kind": "native_mesh_reference",
+    "variant_id": "C4"
+  }
+}

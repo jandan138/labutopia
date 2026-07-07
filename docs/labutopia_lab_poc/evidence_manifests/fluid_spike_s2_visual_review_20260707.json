@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "manifest_type": "true_physx_pbd_fluid_spike_s2_visual_review",
+  "generated_at_utc": "2026-07-07T14:55:00+00:00",
+  "reviewer": "independent_visual_qa_subagent",
+  "overall_verdict": "PASS",
+  "confidence": "high",
+  "image_set": {
+    "C0_side": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C0/side_collision_overlay.png",
+    "C2_side": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C2/side_collision_overlay.png",
+    "C3_side": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C3/side_collision_overlay.png",
+    "C4_side": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C4/side_collision_overlay.png",
+    "C2_top": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C2/top_collision_overlay.png"
+  },
+  "per_image_verdicts": {
+    "C0_side": {
+      "verdict": "PASS",
+      "visible_evidence": "Blue particles remain clustered along the beaker base/source region, with multiple red particles clearly below the table reference line."
+    },
+    "C2_side": {
+      "verdict": "PASS",
+      "visible_evidence": "Blue particles are visible near the beaker bottom, with sparse red particles below the table line."
+    },
+    "C3_side": {
+      "verdict": "PASS",
+      "visible_evidence": "A dense horizontal band of red particles sits below the table; no meaningful blue hold is visible."
+    },
+    "C4_side": {
+      "verdict": "PASS",
+      "visible_evidence": "A dense red particle band below the table is visible, with readable source/table outlines."
+    },
+    "C2_top": {
+      "verdict": "PASS",
+      "visible_evidence": "Blue source-region cluster and several red particles outside the region are visible."
+    }
+  },
+  "retake_required": false,
+  "boundary": "Diagnostic particle-readback projection only; not product-quality camera render or visual material parity evidence."
+}

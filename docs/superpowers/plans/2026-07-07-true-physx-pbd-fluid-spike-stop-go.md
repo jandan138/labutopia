@@ -119,6 +119,70 @@ near-black frames; the runner now detects unusable camera frames and falls back 
 diagnostic projections.
 Independent visual review of the final diagnostic projection frames is `PASS`.
 
+## S2 Execution Status
+
+S2 closed on 2026-07-07 with `STOP_WITH_EVIDENCE`. The selected IsaacSim41
+runtime ran the required C0-C5 beaker collider matrix for 240 frames per variant
+with GPU dynamics and USD particle readback enabled. All variants produced
+finite particle readback and particle motion, but no non-negative-control
+collider met the S3 release criteria.
+
+Evidence:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_runtime_warning_scan_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_visual_review_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/
+```
+
+Implementation checkpoint:
+
+```text
+tools/labutopia_fluid/run_beaker_collider_smoke.py
+tests/test_fluid_beaker_collider_smoke.py
+assets/chemistry_lab/lab_001_fluid_spike/colliders/
+```
+
+Result matrix:
+
+```text
+C0 FAIL_CONTAINER_LEAK source_retention_fraction=0.6953125 spill_count=66 below_table_count=12
+C1 FAIL_CONTAINER_LEAK source_retention_fraction=0.78125 spill_count=40 below_table_count=16
+C2 FAIL_CONTAINER_LEAK source_retention_fraction=0.828125 spill_count=32 below_table_count=12
+C3 FAIL_CONTAINER_LEAK source_retention_fraction=0.0 spill_count=0 below_table_count=256
+C4 FAIL_NATIVE_CONVEX_INTERIOR_NOT_USABLE source_retention_fraction=0.0 spill_count=0 below_table_count=256
+C5 FAIL_CONTAINER_LEAK source_retention_fraction=0.0 spill_count=0 below_table_count=256
+best_for_s3=[]
+```
+
+Runtime warning scan found no `CPU collision fallback`, `GPU collider
+unsupported`, or PhysX error. C4 emits native mesh `material:binding` scope
+warnings because the referenced mesh points to `/World/Looks/OmniSurface_Glass`
+outside the referenced prim scope; this is recorded as visual-material reference
+scope noise, not as the collider failure root cause.
+
+Visual boundary: S2 PNGs are diagnostic readback projections, not product camera
+renders. The first projection version clipped below-table particles for C3/C4;
+the final `v2_dynamic_z_shows_below_table_leaks` overlays show below-table leak
+particles in red. Independent visual review of the final diagnostic overlays is
+`PASS`.
+
+S2 does not release S3. Before S3 can run, an S2 follow-up must produce at least
+one non-negative-control `PASS_SOURCE_HOLD` collider satisfying:
+
+```text
+source_retention_fraction >= 0.95
+particle_count_final_fraction >= 0.95
+outside_source_count == 0
+target_count == 0
+spill_count == 0
+below_table_count == 0
+tail_leak_rate_fraction_per_second < 0.02
+cpu_collision_fallback_detected=false
+nan_count=0
+```
+
 ## Stage Status Vocabulary
 
 Use exactly these statuses in manifests:
@@ -377,7 +441,7 @@ READBACK_UNAVAILABLE
 - Create: `assets/chemistry_lab/lab_001_fluid_spike/colliders/*.usda`
 - Create: `docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_<yyyymmdd>.json`
 
-- [ ] **Step 1: Implement collider variants**
+- [x] **Step 1: Implement collider variants**
 
 The matrix must include these variants:
 
@@ -390,7 +454,7 @@ The matrix must include these variants:
 | C4 | Native `beaker2/mesh` `convexDecomposition` | Reference original mesh and record current collision attrs |
 | C5 | Custom cylinder / analytic negative control | Expected unsupported or poor GPU-particle collision; never promote directly |
 
-- [ ] **Step 2: Run static hold smoke for each variant**
+- [x] **Step 2: Run static hold smoke for each variant**
 
 For every variant:
 
@@ -414,7 +478,7 @@ The region definitions must be stable and written to the manifest:
 }
 ```
 
-- [ ] **Step 3: Classify each collider**
+- [x] **Step 3: Classify each collider**
 
 Use these exact classifications:
 
@@ -435,25 +499,31 @@ S2 can proceed to S3 if at least one collider has:
 ```text
 source_retention_fraction >= 0.95
 particle_count_final_fraction >= 0.95
+outside_source_count == 0
+target_count == 0
+spill_count == 0
 below_table_count == 0
 tail_leak_rate_fraction_per_second < 0.02
 cpu_collision_fallback_detected=false
 nan_count=0
 ```
 
-- [ ] **Step 4: Write S2 review manifest**
+- [x] **Step 4: Write S2 review manifest**
 
 The manifest must rank variants:
 
 ```json
 {
-  "best_for_s3": ["C0", "C1", "C2"],
-  "native_beaker_status": "PASS_SOURCE_HOLD|...",
-  "negative_control_status": "FAIL_GPU_COLLIDER_UNSUPPORTED|...",
-  "s2_status": "GO_NEXT|STOP_WITH_EVIDENCE",
-  "reason": "..."
+  "best_for_s3": [],
+  "native_beaker_status": "FAIL_NATIVE_CONVEX_INTERIOR_NOT_USABLE",
+  "negative_control_status": "FAIL_CONTAINER_LEAK",
+  "s2_status": "STOP_WITH_EVIDENCE",
+  "reason": "no_non_negative_control_variant_passed"
 }
 ```
+
+S2 final state: no variant can proceed to S3 yet. C2 is the closest failed
+candidate and should be the first geometry/parameter follow-up route.
 
 ---
 
@@ -466,8 +536,9 @@ The manifest must rank variants:
 - [ ] **Step 1: Select S2 variants**
 
 Run S3 on every S2 variant that passed `PASS_SOURCE_HOLD`. If no variant passed,
-run S3 only on the top two variants by retention fraction and mark the stage as
-`STOP_WITH_EVIDENCE`.
+do not run S3. Keep `best_for_s3=[]`, record `STOP_WITH_EVIDENCE`, and open a
+narrow S2 collider follow-up first. Retention-fraction ranking may choose the
+first follow-up candidate, but it must not release a failed collider into S3.
 
 - [ ] **Step 2: Run controlled pour schedule**
 

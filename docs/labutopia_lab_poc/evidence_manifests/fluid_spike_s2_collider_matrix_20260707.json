@@ -1,0 +1,353 @@
+{
+  "allowed_claims": [
+    "S2 tested the required beaker collider matrix in standalone IsaacSim41.",
+    "S2 produced stop evidence for beaker collider hold."
+  ],
+  "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001",
+  "best_for_s3": [],
+  "blocked_claims": [
+    "level1_pour has true fluid today",
+    "S2 standalone collider hold equals robot pouring",
+    "particles have stepped in EBench consumer",
+    "fluid is EBench-scoreable",
+    "Expert Oracle Score includes fluid",
+    "policy score claim",
+    "official leaderboard claim",
+    "diagnostic overlays equal product-quality render"
+  ],
+  "canonical_score_claim_allowed": false,
+  "classification_contract_postprocessed_at_utc": "2026-07-07T15:05:23.124609+00:00",
+  "classification_contract_version": "s2_no_outside_source_v2",
+  "commands": [
+    "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python /cpfs/shared/simulation/zhuzihou/dev/LabUtopia/tools/labutopia_fluid/run_beaker_collider_smoke.py --artifact-dir docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001 --scene-dir assets/chemistry_lab/lab_001_fluid_spike/colliders --manifest-path docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json --variants C0,C1,C2,C3,C4,C5 --steps 240 --width 512 --height 512 --headless"
+  ],
+  "config": {
+    "bottom_thickness": 0.008,
+    "grid_dims": [
+      8,
+      8,
+      4
+    ],
+    "initial_radial_velocity": 0.08,
+    "particle_contact_offset": 0.0045,
+    "particle_count": 256,
+    "particle_spacing": 0.0045,
+    "particle_width": 0.0035,
+    "perf_budget_seconds_per_variant": 240.0,
+    "physics_dt": 0.016666666666666666,
+    "render_height": 512,
+    "render_width": 512,
+    "source_center": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "source_height": 0.13,
+    "source_radius": 0.055,
+    "steps": 240,
+    "table_z": 0.0,
+    "tail_window_steps": 60,
+    "target_center": [
+      0.22,
+      0.0,
+      0.0
+    ],
+    "target_height": 0.13,
+    "target_radius": 0.055,
+    "trace_interval": 30,
+    "wall_height": 0.12,
+    "wall_thickness": 0.01
+  },
+  "created_at_utc": "2026-07-07T14:44:20.963645+00:00",
+  "evidence_files": {
+    "runtime_warning_scan": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_runtime_warning_scan_20260707.json",
+    "server_stderr": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/server.stderr.txt",
+    "server_stdout": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/server.stdout.txt",
+    "visual_review": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_visual_review_20260707.json"
+  },
+  "expert_oracle_score_claim_allowed": false,
+  "fatal_error": null,
+  "fluid_spike_claim_allowed": true,
+  "full_matrix_executed": true,
+  "live_evidence": true,
+  "manifest_type": "true_physx_pbd_fluid_spike_evidence",
+  "native_beaker_status": "FAIL_NATIVE_CONVEX_INTERIOR_NOT_USABLE",
+  "native_usd": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd",
+  "negative_control_status": "FAIL_CONTAINER_LEAK",
+  "next_stage": {
+    "goal": "Use S2 failure matrix to narrow collider/cooking follow-up.",
+    "id": "S2_COLLIDER_FOLLOW_UP",
+    "variants": []
+  },
+  "official_leaderboard_claim_allowed": false,
+  "pass_criteria": {
+    "at_least_one_non_negative_control_variant_passed": false,
+    "required_below_table_count": 0,
+    "required_cpu_collision_fallback_detected": false,
+    "required_nan_count": 0,
+    "required_outside_source_count": 0,
+    "required_particle_count_final_fraction": 0.95,
+    "required_runtime_warning_scan_blocking": false,
+    "required_source_retention_fraction": 0.95,
+    "required_spill_count": 0,
+    "required_tail_leak_rate_fraction_per_second_lt": 0.02,
+    "required_target_count": 0
+  },
+  "policy_score_claim_allowed": false,
+  "reason": "no_non_negative_control_variant_passed",
+  "region_definitions": {
+    "below_table_region": "finite particles with z < 0.0",
+    "source_region": "cylindrical region around source container interior; center_xy=(0.0, 0.0) radius=0.055 z=[0.0, 0.13]",
+    "spill_region": "finite particles outside source and target regions with z >= table_z",
+    "target_region": "cylindrical region around target container interior; center_xy=(0.22, 0.0) radius=0.055 z=[0.0, 0.13]"
+  },
+  "run_id": "fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001",
+  "runtime_step_executed": true,
+  "runtime_warning_evidence_mode": "artifact-level stdout/stderr warning scan is authoritative for S3 release; variant-level runtime flags alone are not sufficient",
+  "runtime_warning_scan": {
+    "blocking_runtime_warning_detected": false,
+    "path": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_runtime_warning_scan_20260707.json",
+    "pattern_counts": {
+      "cpu_fallback": 0,
+      "gpu_unsupported": 0,
+      "headless_window_warning": 18,
+      "material_binding_scope_warning": 15,
+      "physx_error": 0,
+      "sdf_warning": 0
+    }
+  },
+  "s2_status": "STOP_WITH_EVIDENCE",
+  "scene_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001_fluid_spike/colliders",
+  "schema_version": 1,
+  "score_claim_allowed": false,
+  "selected_variant_ids": [
+    "C0",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "stage": "S2_BEAKER_COLLIDER_SMOKE",
+  "status": "STOP_WITH_EVIDENCE",
+  "target_runtime": {
+    "accept_eula": "Y",
+    "gpu_probe": {
+      "torch_cuda_available": true,
+      "torch_cuda_device_0": "NVIDIA GeForce RTX 4090",
+      "torch_cuda_device_count": 1
+    },
+    "omni_kit_accept_eula": "YES",
+    "platform": "Linux-5.10.134-17.3.al8.x86_64-x86_64-with-glibc2.35",
+    "python": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python",
+    "python_version": "3.10.20"
+  },
+  "true_fluid_claim_allowed": false,
+  "variant_ids": [
+    "C0",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "variant_results": [
+    {
+      "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C0",
+      "below_table_count": 12,
+      "classification": "FAIL_CONTAINER_LEAK",
+      "cpu_collision_fallback_detected": false,
+      "gpu_collider_unsupported": false,
+      "nan_count": 0,
+      "negative_control": false,
+      "outside_source_count": 78,
+      "particle_count_final_fraction": 1.0,
+      "scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001_fluid_spike/colliders/c0_segmented_box_wall_proxy.usda",
+      "source_retention_fraction": 0.6953125,
+      "spill_count": 66,
+      "tail_leak_rate_fraction_per_second": 0.0,
+      "target_count": 0,
+      "variant_id": "C0"
+    },
+    {
+      "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C1",
+      "below_table_count": 16,
+      "classification": "FAIL_CONTAINER_LEAK",
+      "cpu_collision_fallback_detected": false,
+      "gpu_collider_unsupported": false,
+      "nan_count": 0,
+      "negative_control": false,
+      "outside_source_count": 56,
+      "particle_count_final_fraction": 1.0,
+      "scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001_fluid_spike/colliders/c1_simplified_thick_wall_open_cup_proxy.usda",
+      "source_retention_fraction": 0.78125,
+      "spill_count": 40,
+      "tail_leak_rate_fraction_per_second": 0.0,
+      "target_count": 0,
+      "variant_id": "C1"
+    },
+    {
+      "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C2",
+      "below_table_count": 12,
+      "classification": "FAIL_CONTAINER_LEAK",
+      "cpu_collision_fallback_detected": false,
+      "gpu_collider_unsupported": false,
+      "nan_count": 0,
+      "negative_control": false,
+      "outside_source_count": 44,
+      "particle_count_final_fraction": 1.0,
+      "scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001_fluid_spike/colliders/c2_segmented_convex_wall_pieces.usda",
+      "source_retention_fraction": 0.828125,
+      "spill_count": 32,
+      "tail_leak_rate_fraction_per_second": 0.0,
+      "target_count": 0,
+      "variant_id": "C2"
+    },
+    {
+      "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C3",
+      "below_table_count": 256,
+      "classification": "FAIL_CONTAINER_LEAK",
+      "cpu_collision_fallback_detected": false,
+      "gpu_collider_unsupported": false,
+      "nan_count": 0,
+      "negative_control": false,
+      "outside_source_count": 256,
+      "particle_count_final_fraction": 1.0,
+      "scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001_fluid_spike/colliders/c3_sdf_trimesh_open_beaker.usda",
+      "source_retention_fraction": 0.0,
+      "spill_count": 0,
+      "tail_leak_rate_fraction_per_second": 0.0,
+      "target_count": 0,
+      "variant_id": "C3"
+    },
+    {
+      "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C4",
+      "below_table_count": 256,
+      "classification": "FAIL_NATIVE_CONVEX_INTERIOR_NOT_USABLE",
+      "cpu_collision_fallback_detected": false,
+      "gpu_collider_unsupported": false,
+      "nan_count": 0,
+      "negative_control": false,
+      "outside_source_count": 256,
+      "particle_count_final_fraction": 1.0,
+      "scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001_fluid_spike/colliders/c4_native_beaker2_mesh_convex_decomposition.usda",
+      "source_retention_fraction": 0.0,
+      "spill_count": 0,
+      "tail_leak_rate_fraction_per_second": 0.0,
+      "target_count": 0,
+      "variant_id": "C4"
+    },
+    {
+      "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C5",
+      "below_table_count": 256,
+      "classification": "FAIL_CONTAINER_LEAK",
+      "cpu_collision_fallback_detected": false,
+      "gpu_collider_unsupported": false,
+      "nan_count": 0,
+      "negative_control": true,
+      "outside_source_count": 256,
+      "particle_count_final_fraction": 1.0,
+      "scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001_fluid_spike/colliders/c5_custom_cylinder_analytic_negative_control.usda",
+      "source_retention_fraction": 0.0,
+      "spill_count": 0,
+      "tail_leak_rate_fraction_per_second": 0.0,
+      "target_count": 0,
+      "variant_id": "C5"
+    }
+  ],
+  "variant_specs": {
+    "C0": {
+      "collider_count": 13,
+      "collision_approximation": "box",
+      "description": "Floor plus 12 thin static box panels, no top cap.",
+      "name": "segmented_box_wall_proxy",
+      "native_source_path": null,
+      "negative_control": false,
+      "panel_count": 12,
+      "sdf_resolution": null,
+      "setup": "positive_control_static_panel_cup",
+      "source_kind": "procedural_proxy",
+      "variant_id": "C0"
+    },
+    "C1": {
+      "collider_count": 17,
+      "collision_approximation": "box",
+      "description": "Thicker open cup proxy with explicit bottom and 16 static wall panels.",
+      "name": "simplified_thick_wall_open_cup_proxy",
+      "native_source_path": null,
+      "negative_control": false,
+      "panel_count": 16,
+      "sdf_resolution": null,
+      "setup": "thick_static_panel_cup",
+      "source_kind": "procedural_proxy",
+      "variant_id": "C1"
+    },
+    "C2": {
+      "collider_count": 25,
+      "collision_approximation": "convex_panel_boxes",
+      "description": "Curved wall approximated by 24 convex static panels, avoiding one sealing hull.",
+      "name": "segmented_convex_wall_pieces",
+      "native_source_path": null,
+      "negative_control": false,
+      "panel_count": 24,
+      "sdf_resolution": null,
+      "setup": "convex_segment_wall_cup",
+      "source_kind": "procedural_proxy",
+      "variant_id": "C2"
+    },
+    "C3": {
+      "collider_count": 1,
+      "collision_approximation": "sdf",
+      "description": "Open concave tri-mesh beaker with PhysX SDF mesh collision attrs.",
+      "name": "sdf_trimesh_open_beaker",
+      "native_source_path": null,
+      "negative_control": false,
+      "panel_count": null,
+      "sdf_resolution": 64,
+      "setup": "sdf_open_concave_mesh",
+      "source_kind": "procedural_mesh",
+      "variant_id": "C3"
+    },
+    "C4": {
+      "collider_count": 1,
+      "collision_approximation": "convexDecomposition",
+      "description": "Native /World/beaker2/mesh referenced from lab_001 with convexDecomposition.",
+      "name": "native_beaker2_mesh_convex_decomposition",
+      "native_source_path": "/World/beaker2/mesh",
+      "negative_control": false,
+      "panel_count": null,
+      "sdf_resolution": null,
+      "setup": "native_beaker2_mesh_reference",
+      "source_kind": "native_mesh_reference",
+      "variant_id": "C4"
+    },
+    "C5": {
+      "collider_count": 1,
+      "collision_approximation": "analytic_cylinder",
+      "description": "Closed analytic cylinder negative control; never promoted to S3.",
+      "name": "custom_cylinder_analytic_negative_control",
+      "native_source_path": null,
+      "negative_control": true,
+      "panel_count": null,
+      "sdf_resolution": null,
+      "setup": "analytic_cylinder_negative_control",
+      "source_kind": "procedural_analytic",
+      "variant_id": "C5"
+    }
+  },
+  "variant_summary_files": {
+    "C0": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C0/variant_summary.json",
+    "C1": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C1/variant_summary.json",
+    "C2": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C2/variant_summary.json",
+    "C3": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C3/variant_summary.json",
+    "C4": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C4/variant_summary.json",
+    "C5": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/C5/variant_summary.json"
+  },
+  "visual_only_liquid_claim_allowed": false,
+  "visual_review": {
+    "boundary": "diagnostic projection only, not product camera render",
+    "overall_verdict": "PASS",
+    "path": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_visual_review_20260707.json",
+    "retake_required": false
+  }
+}

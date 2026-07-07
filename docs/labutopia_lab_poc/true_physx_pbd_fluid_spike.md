@@ -148,6 +148,76 @@ S1 仍然不能说明：
 - EBench consumer 已经能 step 或评分这些粒子。
 - 任何 policy / leaderboard / official score claim。
 
+## S2 已完成：当前这批烧杯 collider 还装不住粒子
+
+S2 的问题是：真实粒子能跑以后，烧杯碰撞体能不能把粒子稳定留在杯里。我们没有只试一个方案，
+而是按计划跑了 C0-C5 六种 collider，全部在目标 IsaacSim41 环境里 step 240 frames，并且每 30
+frames 记录粒子位置、AABB、centroid 和 source/target/spill/below-table 区域统计。
+
+结论是：`S2_BEAKER_COLLIDER_SMOKE` 当前为 `STOP_WITH_EVIDENCE`。这不是说真实液体路线彻底不可行，
+而是说“当前这六种 collider 方案，没有一个达到进入 S3 倾倒测试的稳定持液门槛”。
+
+正式证据：
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_runtime_warning_scan_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/
+assets/chemistry_lab/lab_001_fluid_spike/colliders/
+tools/labutopia_fluid/run_beaker_collider_smoke.py
+tests/test_fluid_beaker_collider_smoke.py
+```
+
+六个方案的结果：
+
+| ID | 方案 | 结果 | 白话解释 |
+|---|---|---|---|
+| C0 | segmented box/wall proxy | `FAIL_CONTAINER_LEAK` | 约 69.5% 粒子留在 source，12 个粒子掉到 table 以下。 |
+| C1 | simplified thick-wall open cup proxy | `FAIL_CONTAINER_LEAK` | 约 78.1% 留在 source，16 个粒子掉到 table 以下。 |
+| C2 | segmented convex wall pieces | `FAIL_CONTAINER_LEAK` | 当前最接近，约 82.8% 留在 source，但仍有 12 个 below-table 粒子，不能放行。 |
+| C3 | SDF tri-mesh open beaker | `FAIL_CONTAINER_LEAK` | 粒子全部掉到 table 以下，说明当前 SDF mesh/cooking 设置不能稳定持液。 |
+| C4 | native `beaker2/mesh` `convexDecomposition` | `FAIL_NATIVE_CONVEX_INTERIOR_NOT_USABLE` | 原生 beaker mesh 引用成功，但 convexDecomposition 口径下内部不能作为稳定持液空间。 |
+| C5 | analytic cylinder negative control | `FAIL_CONTAINER_LEAK` | 负控也不能持液；它本来就不会被推荐进入 S3。 |
+
+S2 的通过门槛是：
+
+```text
+source_retention_fraction >= 0.95
+particle_count_final_fraction >= 0.95
+outside_source_count == 0
+target_count == 0
+spill_count == 0
+below_table_count == 0
+tail_leak_rate_fraction_per_second < 0.02
+cpu_collision_fallback_detected=false
+nan_count=0
+```
+
+实际没有任何非负控方案达到这些条件，所以 `best_for_s3=[]`，S3 暂时不放行。C2 是最接近的方向，
+但它仍有 32 个 above-table spill 粒子和 12 个 below-table leak 粒子，所以只能作为“下一轮
+collider 修复优先候选”，不是已经可用于倒液。
+
+这次也扫了 runtime warning：没有发现 `CPU collision fallback`、`GPU collider unsupported` 或
+PhysX error。C4 有 `material:binding` scope warning，是因为我们只 reference 了原生
+`/World/beaker2/mesh`，它原本绑定的 `/World/Looks/OmniSurface_Glass` 不在 reference scope 内；
+这个 warning 影响的是材质/外观绑定解释，不是这次 collider 失败的主因。
+
+视觉边界：S2 图片仍是 diagnostic projection，不是产品级 camera render。它用于说明粒子 readback 后
+是否在杯内、是否掉到 table 以下；红色点代表 below-table leak。第一版 C3/C4 side projection 曾把
+below-table 粒子裁掉，已用动态 z 范围重生成 `v2_dynamic_z_shows_below_table_leaks` 版本。
+
+S2 之后不能继续说：
+
+- S3 kinematic pouring can proceed.
+- 当前任何 collider 已经能稳定装住真实液体。
+- 原生 LabUtopia beaker collider 天然适合 PBD particles。
+- `level1_pour` 已经可以接真实液体或进 EBench 评分。
+
+下一步应该先做 S2 follow-up，而不是直接进入 S3：优先从 C2 开始修 collider 参数和几何缝隙，
+同时单独开 C3 SDF resolution/subgrid/cooking sweep 和 C4 native beaker reference/material/pose
+closure，直到至少一个非负控方案达到 95% source retention，且 source 外、spill、target、
+below-table 都为 0。
+
 ## 不会混淆的主线
 
 这条 fluid spike 不改变以下结论：
@@ -166,7 +236,7 @@ AAN current profile still excludes deformable/liquid/cloth/particle assets.
 |---|---|---|---|
 | S0 Scope Freeze | 什么才算 true fluid？ | 真假液体边界已冻结 | `fluid_truth_criteria.json` |
 | S1 Particle Smoke | 粒子能不能在 Isaac runtime 中 step？ | 已通过：standalone PBD 粒子本体可运行 | GPU/schema/readback 失败归因 |
-| S2 Beaker Collider Smoke | 烧杯能不能装住粒子？ | 至少一个 collider 能稳定持液 | collider 失败矩阵 |
+| S2 Beaker Collider Smoke | 烧杯能不能装住粒子？ | 已完成：当前 C0-C5 均未达到 S3 放行门槛 | collider 失败矩阵 |
 | S3 Kinematic Pour Rig | 杯子倾斜后粒子能不能流向目标杯？ | 找到可倒液的 collider+参数 | 倾倒失败归因 |
 | S4 level1_pour Replay | 原 expert 倒液动作能不能带动粒子？ | LabUtopia native 任务中有真实粒子运动 | 机器人动作/粒子耦合失败归因 |
 | S5 EBench Consumer | EBench 4.1 能不能加载/step 这套流体？ | consumer 没丢 fluid schema | runtime/consumer 失败归因 |
@@ -186,7 +256,9 @@ AAN current profile still excludes deformable/liquid/cloth/particle assets.
 | C4 | 原生 `beaker2/mesh` `convexDecomposition` | 必须试，用来判断 native beaker collider 是否天然可用 |
 | C5 | custom cylinder / analytic geometry 负例 | 验证官方限制在本地是否复现，不作为生产路线 |
 
-S2 只看“静态装不装得住”。S3 再看“kinematic source beaker 连续倾斜后流不流得出来”。
+S2 只看“静态装不装得住”。当前 S2 结论是 `STOP_WITH_EVIDENCE`，所以 S3 暂不放行。S3 只有在后续
+S2 follow-up 找到至少一个 `PASS_SOURCE_HOLD` 非负控 collider 后，才看“kinematic source beaker
+连续倾斜后流不流得出来”。
 如果 static pass 但 moving fail，结论归类为 `KINEMATIC_COUPLING_FAIL`，不把它误写成
 collider 完全可用或 true fluid 完全不可用。
 
@@ -200,7 +272,8 @@ level1_pour currently has no true fluid.
 lab_003/clock.usd provides a local particle template.
 S2/S3 will test a collider matrix, not one hard-coded collider.
 S1 standalone PBD particle runtime smoke passed.
-S2 beaker collider matrix may proceed.
+S2 beaker collider matrix completed with STOP_WITH_EVIDENCE.
+C2 segmented convex wall pieces is the closest failed candidate, not a pass.
 ```
 
 禁止：

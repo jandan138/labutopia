@@ -1,0 +1,114 @@
+{
+  "blocking_runtime_warning_detected": false,
+  "generated_at_utc": "2026-07-07T14:48:14.218976+00:00",
+  "manifest_type": "true_physx_pbd_fluid_spike_s2_runtime_warning_scan",
+  "notes": [
+    "No CPU collision fallback or GPU collider unsupported warning was found by text scan.",
+    "C4 native beaker reference emits material:binding scope warnings because the referenced mesh points at /World/Looks outside the reference scope; this is visual-material scope only and does not prove collider failure.",
+    "Headless GLFW/display warnings are expected in no-window IsaacSim runs."
+  ],
+  "pattern_counts": {
+    "cpu_fallback": 0,
+    "gpu_unsupported": 0,
+    "headless_window_warning": 18,
+    "material_binding_scope_warning": 15,
+    "physx_error": 0,
+    "sdf_warning": 0
+  },
+  "pattern_examples": {
+    "cpu_fallback": [],
+    "gpu_unsupported": [],
+    "headless_window_warning": [
+      {
+        "line": 18,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:43:36 [7,162ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 21,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:43:36 [7,215ms] [Warning] [omni.platforminfo.plugin] failed to open the default display.  Can't verify X Server version."
+      },
+      {
+        "line": 52,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:43:38 [9,222ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 55,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:43:38 [9,236ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 57,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:43:38 [9,287ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 61,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:43:38 [9,328ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 63,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:43:38 [9,330ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 65,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:43:38 [9,331ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      }
+    ],
+    "material_binding_scope_warning": [
+      {
+        "line": 357,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:44:12 [43,356ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 2890 of /buildAgent/work/ac88d7d902b57417/USD/pxr/usd/usd/stage.cpp -- In </World/SourceContainer/NativeBeaker2/mesh.material:binding>: The relationship target </World/Looks/OmniSurface_Glass> from </World/beaker2/mesh.material:binding> in layer @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd@ refers to a path outside the scope of the reference from </World/SourceContain"
+      },
+      {
+        "line": 359,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:44:12 [43,356ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 2890 of /buildAgent/work/ac88d7d902b57417/USD/pxr/usd/usd/stage.cpp -- In </World/SourceContainer/NativeBeaker2/mesh.material:binding>: The relationship target </World/Looks/OmniSurface_Glass> from </World/beaker2/mesh.material:binding> in layer @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd@ refers to a path outside the scope of the reference from </World/SourceContain"
+      },
+      {
+        "line": 361,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:44:12 [43,356ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 2890 of /buildAgent/work/ac88d7d902b57417/USD/pxr/usd/usd/stage.cpp -- In </World/SourceContainer/NativeBeaker2/mesh.material:binding>: The relationship target </World/Looks/OmniSurface_Glass> from </World/beaker2/mesh.material:binding> in layer @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd@ refers to a path outside the scope of the reference from </World/SourceContain"
+      },
+      {
+        "line": 363,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:44:12 [43,356ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 2890 of /buildAgent/work/ac88d7d902b57417/USD/pxr/usd/usd/stage.cpp -- In </World/SourceContainer/NativeBeaker2/mesh.material:binding>: The relationship target </World/Looks/OmniSurface_Glass> from </World/beaker2/mesh.material:binding> in layer @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd@ refers to a path outside the scope of the reference from </World/SourceContain"
+      },
+      {
+        "line": 365,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:44:12 [43,356ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 2890 of /buildAgent/work/ac88d7d902b57417/USD/pxr/usd/usd/stage.cpp -- In </World/SourceContainer/NativeBeaker2/mesh.material:binding>: The relationship target </World/Looks/OmniSurface_Glass> from </World/beaker2/mesh.material:binding> in layer @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd@ refers to a path outside the scope of the reference from </World/SourceContain"
+      },
+      {
+        "line": 367,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:44:12 [43,357ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 2890 of /buildAgent/work/ac88d7d902b57417/USD/pxr/usd/usd/stage.cpp -- In </World/SourceContainer/NativeBeaker2/mesh.material:binding>: The relationship target </World/Looks/OmniSurface_Glass> from </World/beaker2/mesh.material:binding> in layer @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd@ refers to a path outside the scope of the reference from </World/SourceContain"
+      },
+      {
+        "line": 369,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:44:12 [43,357ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 2890 of /buildAgent/work/ac88d7d902b57417/USD/pxr/usd/usd/stage.cpp -- In </World/SourceContainer/NativeBeaker2/mesh.material:binding>: The relationship target </World/Looks/OmniSurface_Glass> from </World/beaker2/mesh.material:binding> in layer @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd@ refers to a path outside the scope of the reference from </World/SourceContain"
+      },
+      {
+        "line": 371,
+        "source": "server_stdout",
+        "text": "2026-07-07 14:44:12 [43,381ms] [Warning] [omni.usd] Warning (secondary thread): in _ReportErrors at line 2890 of /buildAgent/work/ac88d7d902b57417/USD/pxr/usd/usd/stage.cpp -- In </World/SourceContainer/NativeBeaker2/mesh.material:binding>: The relationship target </World/Looks/OmniSurface_Glass> from </World/beaker2/mesh.material:binding> in layer @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd@ refers to a path outside the scope of the reference from </"
+      }
+    ],
+    "physx_error": [],
+    "sdf_warning": []
+  },
+  "schema_version": 1,
+  "source_files": {
+    "server_stderr": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/server.stderr.txt",
+    "server_stdout": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/server.stdout.txt"
+  },
+  "warning_line_count": 70
+}

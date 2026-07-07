@@ -120,6 +120,10 @@ s1_particle_runtime_passed=true
 s1_standalone_particle_readback_available=true
 s1_diagnostic_projection_frames_available=true
 s2_beaker_collider_matrix_released=true
+s2_beaker_collider_matrix_completed=true
+s2_beaker_collider_matrix_status=STOP_WITH_EVIDENCE
+s2_best_for_s3=[]
+s3_kinematic_pour_released=false
 s2_s3_collider_matrix_required=true
 ```
 
@@ -128,12 +132,34 @@ s2_s3_collider_matrix_required=true
 ```text
 level1_pour_true_fluid_runtime_passed
 ebench_particle_runtime_passed
+s3_kinematic_pour_released
 fluid_score_claim_allowed
 policy_score_claim_allowed
 official_leaderboard_claim_allowed
 visual_only_liquid_equals_true_fluid
 diagnostic_projection_equals_product_camera_render
 ```
+
+S2 canonical evidence:
+
+```text
+fluid_spike_s2_collider_matrix_20260707.json
+fluid_spike_s2_runtime_warning_scan_20260707.json
+fluid_spike_isaacsim41_ebench_s2_beaker_collider_matrix_20260707_001/
+```
+
+S2 结论：`status=STOP_WITH_EVIDENCE`，`best_for_s3=[]`。C0、C1、C2、C3、C5 均为
+`FAIL_CONTAINER_LEAK`；C4 native `beaker2/mesh` `convexDecomposition` 为
+`FAIL_NATIVE_CONVEX_INTERIOR_NOT_USABLE`。所有 variant 都有 particle readback 和运动证据，
+没有 `NaN`，但没有任何非负控 collider 达到 `source_retention_fraction>=0.95`、
+`outside_source_count==0`、`spill_count==0`、`target_count==0` 且 `below_table_count==0`
+的 S3 放行条件。C2 是当前最接近的 failed candidate：`source_retention_fraction=0.828125`，
+但仍有 `spill_count=32` 和 `below_table_count=12`。
+
+S2 runtime warning scan 未发现 `CPU collision fallback`、`GPU collider unsupported` 或 PhysX error。
+C4 的 `material:binding` scope warning 只说明原生 mesh reference 的外观材质绑定超出 reference scope，
+不把它解释为 collider 失败主因。S2 PNG 是 diagnostic projection；`v2_dynamic_z_shows_below_table_leaks`
+版本用红色点显示 below-table leak，不是产品级 camera render。
 
 `eos2_expert_oracle_s2_readback_render_inventory_20260706.json` 和
 `eos2_expert_oracle_s2_claim_review_20260706.json` 是 S1R-D fresh S1 之后的 no-new-live S2 证据盘点和声明复核。
