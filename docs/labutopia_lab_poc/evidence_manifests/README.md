@@ -69,6 +69,19 @@ manifest=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s<stage>_<slug>_<
 manifest_type=true_physx_pbd_fluid_spike_evidence
 ```
 
+S0 scope freeze 已完成，当前 canonical evidence 是：
+
+```text
+fluid_spike_s0_scope_freeze_20260707.json
+fluid_spike_s0_schema_probe_20260707.json
+fluid_spike_s0_isaacsim41_app_schema_probe_20260707.json
+```
+
+S0 结论：目标 IsaacSim41 / EBench 环境在 `SimulationApp` 启动后可以看到
+`pxr.PhysxSchema`、`omni.physx`、`PhysxSceneAPI`、`PhysxParticleSystem`、
+`PhysxParticleSetAPI`、`PhysxParticleAPI` 和 `PhysxPBDMaterialAPI`；RTX 4090 GPU 对该环境可见。
+但 S0 没有做粒子 step，也没有验证烧杯 collider、EBench consumer 或 metric readback。
+
 S2/S3 必须包含 collider matrix，至少覆盖 segmented box/wall proxy、simplified thick-wall open cup
 proxy、segmented convex wall pieces、SDF tri-mesh open beaker、native `beaker2/mesh`
 `convexDecomposition` 和 custom cylinder / analytic geometry negative control。
@@ -79,6 +92,10 @@ proxy、segmented convex wall pieces、SDF tri-mesh open beaker、native `beaker
 level1_pour_current_true_fluid=false
 lab003_clock_usd_particle_template_exists=true
 true_fluid_spike_scope_planned=true
+s0_scope_freeze_completed=true
+isaacsim41_app_physx_particle_schema_available=true
+selected_runtime_gpu_visible=true
+s1_particle_smoke_released=true
 s2_s3_collider_matrix_required=true
 ```
 
@@ -86,6 +103,8 @@ s2_s3_collider_matrix_required=true
 
 ```text
 level1_pour_true_fluid_runtime_passed
+s1_particle_runtime_passed
+ebench_particle_runtime_passed
 fluid_score_claim_allowed
 policy_score_claim_allowed
 official_leaderboard_claim_allowed

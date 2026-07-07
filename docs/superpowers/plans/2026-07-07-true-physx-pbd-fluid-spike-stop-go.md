@@ -25,6 +25,7 @@ docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s<stage>_<slug>_<yyyymmdd>.json
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_<run_id>/
 tools/labutopia_fluid/inspect_usd_particles.py
+tools/labutopia_fluid/probe_isaacsim41_fluid_schema.py
 tools/labutopia_fluid/build_level1_pour_fluid_overlay.py
 tools/labutopia_fluid/run_standalone_particle_smoke.py
 tools/labutopia_fluid/run_beaker_collider_smoke.py
@@ -44,6 +45,33 @@ assets/chemistry_lab/lab_001_fluid_spike/colliders/
 
 Do not edit `assets/chemistry_lab/lab_001/lab_001.usd` in place. The native
 asset stays as evidence baseline.
+
+## S0 Execution Status
+
+S0 closed on 2026-07-07 with `GO_NEXT`. The conclusion is deliberately narrow:
+the selected IsaacSim41 / EBench runtime can load the PhysX particle schemas after
+`SimulationApp` startup, and the selected machine exposes an RTX 4090 GPU. This
+releases S1 standalone particle runtime smoke, but it does not release any claim
+that `level1_pour` already has true fluid or that EBench has stepped/scored it.
+
+Evidence:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_scope_freeze_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_schema_probe_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_isaacsim41_app_schema_probe_20260707.json
+```
+
+Implementation checkpoint:
+
+```text
+tools/labutopia_fluid/inspect_usd_particles.py
+tools/labutopia_fluid/probe_isaacsim41_fluid_schema.py
+```
+
+Asset finding: `assets/chemistry_lab/lab_001/lab_001.usd` has no authored
+`PhysxParticleSystem` / `ParticleSet`; `assets/chemistry_lab/lab_003/clock.usd`
+and `assets/chemistry_lab/lab_003/lab_003.usd` provide local particle templates.
 
 ## Stage Status Vocabulary
 
@@ -77,10 +105,11 @@ Use exactly these top-level claim fields:
 
 **Files:**
 - Create: `tools/labutopia_fluid/inspect_usd_particles.py`
+- Create: `tools/labutopia_fluid/probe_isaacsim41_fluid_schema.py`
 - Create: `docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_scope_freeze_20260707.json`
 - Modify: `docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md`
 
-- [ ] **Step 1: Write `inspect_usd_particles.py`**
+- [x] **Step 1: Write `inspect_usd_particles.py`**
 
 Create a read-only USD scanner that records particle prims, particle material bindings, physics scene settings, and beaker collider settings.
 
@@ -105,7 +134,7 @@ Expected output fields:
 }
 ```
 
-- [ ] **Step 2: Run S0 schema probe**
+- [x] **Step 2: Run S0 schema probe**
 
 Run:
 
@@ -124,7 +153,31 @@ lab_001 particle_systems=[]
 clock.usd has /World/ParticleSystem and /World/ParticleSet
 ```
 
-- [ ] **Step 3: Write S0 manifest**
+- [x] **Step 2B: Run IsaacSim41 `SimulationApp` schema probe**
+
+Run:
+
+```bash
+ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=YES PYTHONNOUSERSITE=1 \
+  /cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python \
+  tools/labutopia_fluid/probe_isaacsim41_fluid_schema.py \
+  --out docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_isaacsim41_app_schema_probe_20260707.json
+```
+
+Expected:
+
+```text
+pxr.PhysxSchema=true after SimulationApp startup
+omni.physx=true after SimulationApp startup
+PhysxParticleSystem=true
+PhysxParticleSetAPI=true
+PhysxParticleAPI=true
+PhysxPBDMaterialAPI=true
+gpu_visible=true
+runtime_step_executed=false
+```
+
+- [x] **Step 3: Write S0 manifest**
 
 Write:
 
@@ -144,7 +197,7 @@ Required fields:
   "status": "GO_NEXT",
   "expert_oracle_score_claim_allowed": false,
   "canonical_score_claim_allowed": false,
-  "true_fluid_definition": "PhysxParticleSystem + ParticleSet + GPU dynamics + particle readback",
+  "true_fluid_definition": "PhysxSceneAPI with GPU dynamics enabled + PhysxParticleSystem + ParticleSet + PBD material + runtime step/fetch + particle readback",
   "not_true_fluid": [
     "mesh_only_liquid",
     "shader_only_water",
@@ -154,7 +207,8 @@ Required fields:
   "allowed_claims": [
     "true fluid spike scope is frozen",
     "level1_pour currently has no particle system",
-    "lab_003 clock.usd is the local particle template"
+    "lab_003 clock.usd is the local particle template",
+    "S1 standalone particle runtime smoke may proceed"
   ],
   "blocked_claims": [
     "level1_pour has true fluid today",
@@ -170,7 +224,7 @@ Required fields:
 Run:
 
 ```bash
-git add tools/labutopia_fluid/inspect_usd_particles.py docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_scope_freeze_20260707.json docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_schema_probe_20260707.json
+git add tools/labutopia_fluid/inspect_usd_particles.py tools/labutopia_fluid/probe_isaacsim41_fluid_schema.py docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_scope_freeze_20260707.json docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_schema_probe_20260707.json docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_isaacsim41_app_schema_probe_20260707.json
 git commit -m "docs: freeze true fluid spike scope"
 ```
 

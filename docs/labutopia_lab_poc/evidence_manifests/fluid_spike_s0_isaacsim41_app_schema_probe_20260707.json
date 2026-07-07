@@ -1,0 +1,59 @@
+{
+  "events": [
+    "SimulationApp import OK",
+    "SimulationApp start OK",
+    "writing probe JSON before SimulationApp close"
+  ],
+  "generated_at_utc": "2026-07-07T13:23:04.595965+00:00",
+  "gpu_probe": {
+    "nvidia_smi": {
+      "exit_code": 0,
+      "stderr_tail": "",
+      "stdout": "0, NVIDIA GeForce RTX 4090, 570.153.02, 46068 MiB"
+    },
+    "torch": {
+      "cuda_available": true,
+      "device_0_name": "NVIDIA GeForce RTX 4090",
+      "device_count": 1
+    }
+  },
+  "host": {
+    "accept_eula": "Y",
+    "omni_kit_accept_eula": "YES",
+    "platform": "Linux-5.10.134-17.3.al8.x86_64-x86_64-with-glibc2.35",
+    "python": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python",
+    "python_version": "3.10.20"
+  },
+  "imports_after_app": {
+    "omni.physx": {
+      "file": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/isaacsim/extsPhysics/omni.physx/omni/physx/__init__.py",
+      "ok": true
+    },
+    "pxr": {
+      "file": null,
+      "ok": true
+    },
+    "pxr.PhysxSchema": {
+      "file": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/isaacsim/extsPhysics/omni.usd.schema.physx/pxr/PhysxSchema/__init__.py",
+      "ok": true
+    },
+    "pxr.Usd": {
+      "file": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/isaacsim/extscache/omni.usd.libs/pxr/Usd/__init__.py",
+      "ok": true
+    }
+  },
+  "manifest_type": "true_physx_pbd_fluid_spike_isaacsim41_app_schema_probe",
+  "physx_schema_attrs": {
+    "PhysxPBDMaterialAPI": true,
+    "PhysxParticleAPI": true,
+    "PhysxParticleAnisotropyAPI": true,
+    "PhysxParticleIsosurfaceAPI": true,
+    "PhysxParticleSetAPI": true,
+    "PhysxParticleSmoothingAPI": true,
+    "PhysxParticleSystem": true,
+    "PhysxSceneAPI": true
+  },
+  "runtime_step_executed": false,
+  "schema_version": 1,
+  "true_fluid_runtime_claim_allowed": false
+}

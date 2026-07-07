@@ -1,0 +1,2229 @@
+{
+  "generated_at_utc": "2026-07-07T13:19:55.619969+00:00",
+  "host": {
+    "platform": "Linux-5.10.134-17.3.al8.x86_64-x86_64-with-glibc2.35",
+    "python": "/usr/bin/python",
+    "python_version": "3.10.15"
+  },
+  "manifest_type": "true_physx_pbd_fluid_spike_schema_probe",
+  "repo_root": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia",
+  "runtime_import_probes": [
+    {
+      "exit_code": 0,
+      "imports_without_app": {
+        "isaacsim": {
+          "error": "No module named 'isaacsim'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "isaacsim.core.api": {
+          "error": "No module named 'isaacsim'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "isaacsim.core.prims": {
+          "error": "No module named 'isaacsim'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "omni.physx": {
+          "error": "No module named 'omni'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "pxr": {
+          "file": "/isaac-sim/kit/python/lib/python3.10/site-packages/pxr/__init__.py",
+          "ok": true
+        },
+        "pxr.PhysxSchema": {
+          "error": "No module named 'pxr.PhysxSchema'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "pxr.Usd": {
+          "file": "/isaac-sim/kit/python/lib/python3.10/site-packages/pxr/Usd/__init__.py",
+          "ok": true
+        }
+      },
+      "python": "/usr/bin/python",
+      "stderr_tail": ""
+    },
+    {
+      "exit_code": 0,
+      "imports_without_app": {
+        "isaacsim": {
+          "file": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/isaacsim/__init__.py",
+          "ok": true
+        },
+        "isaacsim.core.api": {
+          "error": "No module named 'isaacsim.core'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "isaacsim.core.prims": {
+          "error": "No module named 'isaacsim.core'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "omni.physx": {
+          "error": "No module named 'omni.physx'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "pxr": {
+          "error": "No module named 'pxr'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "pxr.PhysxSchema": {
+          "error": "No module named 'pxr'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        },
+        "pxr.Usd": {
+          "error": "No module named 'pxr'",
+          "error_type": "ModuleNotFoundError",
+          "ok": false
+        }
+      },
+      "python": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python",
+      "stderr_tail": ""
+    }
+  ],
+  "scanner": "tools/labutopia_fluid/inspect_usd_particles.py",
+  "schema_version": 1,
+  "summary": {
+    "all_stages_opened": true,
+    "candidate_collider_count": 49,
+    "particle_material_count": 0,
+    "particle_set_count": 2,
+    "particle_system_count": 2,
+    "physics_scene_count": 1,
+    "usd_count": 3,
+    "usd_paths_with_particle_schema": [
+      "assets/chemistry_lab/lab_003/clock.usd",
+      "assets/chemistry_lab/lab_003/lab_003.usd"
+    ],
+    "usd_paths_without_particle_schema": [
+      "assets/chemistry_lab/lab_001/lab_001.usd"
+    ]
+  },
+  "usd_results": [
+    {
+      "abs_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd",
+      "candidate_beaker_colliders": [
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/beaker1/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                -0.07096488773822784,
+                -0.03037942200899124,
+                0.04271113872528076
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.08500000089406967,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                -9.334710921393707e-05,
+                0.00016714118828531355,
+                -3.292421388323419e-05
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/graduated_cylinder_03/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "PhysicsCollisionAPI"
+          ],
+          "attributes": {
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [],
+          "path": "/World/GroundPlane/CollisionPlane",
+          "type_name": "Plane"
+        },
+        {
+          "applied_schemas": [
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "none",
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [
+            "/World/Looks/Material1_plastic_dark_blue"
+          ],
+          "path": "/World/table/surface/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "none",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 9.999999747378752e-06,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)"
+          },
+          "material_bindings": [],
+          "path": "/World/Cube",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.0,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.019999999552965164,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker2/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI",
+            "PhysicsRigidBodyAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.05000000074505806,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/conical_bottle03/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle01/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.6000000238418579,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle02/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.4000000059604645,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle04/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker3/mesh",
+          "type_name": "Mesh"
+        }
+      ],
+      "collider_count": 43,
+      "errors": [],
+      "exists": true,
+      "particle_materials": [],
+      "particle_sampling_prims": [],
+      "particle_sets": [],
+      "particle_systems": [],
+      "physics_scenes": [
+        {
+          "applied_schemas": [],
+          "attributes": {
+            "physics:gravityDirection": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:gravityMagnitude": -Infinity
+          },
+          "path": "/World/PhysicsScene",
+          "type_name": "PhysicsScene"
+        }
+      ],
+      "root_layer": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001/lab_001.usd",
+      "schema_preserved": true,
+      "usd_path": "assets/chemistry_lab/lab_001/lab_001.usd",
+      "used_layer_count": 2
+    },
+    {
+      "abs_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_003/clock.usd",
+      "candidate_beaker_colliders": [
+        {
+          "applied_schemas": [
+            "PhysicsCollisionAPI"
+          ],
+          "attributes": {
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [],
+          "path": "/World/GroundPlane/CollisionPlane",
+          "type_name": "Plane"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniPBR"
+          ],
+          "path": "/World/target_beaker/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "none",
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [
+            "/World/Looks/OmniPBR_01"
+          ],
+          "path": "/World/target_plat/plat",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "none",
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [],
+          "path": "/World/target_button/Cube",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexHull",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniPBR_Button_Blue"
+          ],
+          "path": "/World/target_button/button",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": false,
+            "physxCollision:contactOffset": 0.0010000000474974513,
+            "physxCollision:restOffset": 0.0
+          },
+          "material_bindings": [],
+          "path": "/World/glass_rod/Cylinder",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle01/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.10000000149011612,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle02/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.10000000149011612,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle03/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.10000000149011612,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle04/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_1/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_2/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_3/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_4/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "none",
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [
+            "/World/Looks/OmniPBR_Button_DeepGray"
+          ],
+          "path": "/World/table/surface/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.0,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.15000000596046448,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_03/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.10000000149011612,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_04/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.15000000596046448,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_05/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_5/mesh",
+          "type_name": "Mesh"
+        }
+      ],
+      "collider_count": 26,
+      "errors": [],
+      "exists": true,
+      "particle_materials": [],
+      "particle_sampling_prims": [
+        {
+          "applied_schemas": [],
+          "attributes": {
+            "physxParticleSampling:crc": {
+              "len": 16,
+              "preview": [
+                121,
+                99,
+                27,
+                175,
+                21,
+                5,
+                21,
+                61
+              ]
+            },
+            "physxParticleSampling:volume": true
+          },
+          "particle_targets": [
+            "/World/ParticleSet"
+          ],
+          "path": "/World/Cylinder",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [],
+          "attributes": {
+            "physxParticleSampling:crc": {
+              "len": 16,
+              "preview": [
+                133,
+                42,
+                178,
+                158,
+                77,
+                239,
+                43,
+                67
+              ]
+            },
+            "physxParticleSampling:volume": true
+          },
+          "particle_targets": [
+            "/World/ParticleSet"
+          ],
+          "path": "/World/Cylinder_01",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [],
+          "attributes": {
+            "physxParticleSampling:crc": {
+              "len": 16,
+              "preview": [
+                62,
+                151,
+                206,
+                242,
+                182,
+                236,
+                162,
+                72
+              ]
+            },
+            "physxParticleSampling:volume": true
+          },
+          "particle_targets": [
+            "/World/ParticleSet"
+          ],
+          "path": "/World/Cylinder_02",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [],
+          "attributes": {
+            "physxParticleSampling:crc": {
+              "len": 16,
+              "preview": [
+                66,
+                76,
+                127,
+                25,
+                76,
+                88,
+                138,
+                77
+              ]
+            },
+            "physxParticleSampling:volume": true
+          },
+          "particle_targets": [
+            "/World/ParticleSet"
+          ],
+          "path": "/World/Sphere",
+          "type_name": "Mesh"
+        }
+      ],
+      "particle_sets": [
+        {
+          "applied_schemas": [
+            "PhysicsMassAPI",
+            "MaterialBindingAPI"
+          ],
+          "attributes": {
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:density": 0.0010000000474974513,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:mass": 0.0010000000474974513,
+            "physics:principalAxes": "(0, 0, 0, 0)"
+          },
+          "material_bindings": [
+            "/World/Looks/Blue_Glass"
+          ],
+          "particle_system_targets": [
+            "/World/ParticleSystem"
+          ],
+          "path": "/World/ParticleSet",
+          "points_len": 2941,
+          "type_name": "Points",
+          "velocities_len": 2941,
+          "widths_len": 2941
+        }
+      ],
+      "particle_systems": [
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI"
+          ],
+          "attributes": {
+            "particleContactOffset": 0.004999999888241291,
+            "physxParticleIsosurface:isosurfaceEnabled": false
+          },
+          "material_bindings": [
+            "/World/Looks/Blue_Glass"
+          ],
+          "path": "/World/ParticleSystem",
+          "type_name": "PhysxParticleSystem"
+        }
+      ],
+      "physics_scenes": [],
+      "root_layer": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_003/clock.usd",
+      "schema_preserved": true,
+      "usd_path": "assets/chemistry_lab/lab_003/clock.usd",
+      "used_layer_count": 3
+    },
+    {
+      "abs_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_003/lab_003.usd",
+      "candidate_beaker_colliders": [
+        {
+          "applied_schemas": [
+            "PhysicsCollisionAPI"
+          ],
+          "attributes": {
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [],
+          "path": "/World/GroundPlane/CollisionPlane",
+          "type_name": "Plane"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniPBR"
+          ],
+          "path": "/World/target_beaker/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "none",
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [
+            "/World/Looks/OmniPBR_01"
+          ],
+          "path": "/World/target_plat/plat",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "none",
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [],
+          "path": "/World/target_button/Cube",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexHull",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniPBR_Button_Blue"
+          ],
+          "path": "/World/target_button/button",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": false,
+            "physxCollision:contactOffset": 0.0010000000474974513,
+            "physxCollision:restOffset": 0.0
+          },
+          "material_bindings": [],
+          "path": "/World/glass_rod/Cylinder",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle01/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.10000000149011612,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle02/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.10000000149011612,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle03/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:collisionEnabled": true,
+            "physics:density": 0.10000000149011612,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:kinematicEnabled": false,
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)",
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "material_bindings": [
+            "/World/Looks/OmniGlass"
+          ],
+          "path": "/World/conical_bottle04/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_1/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_2/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_3/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_4/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:approximation": "none",
+            "physics:collisionEnabled": true
+          },
+          "material_bindings": [
+            "/World/Looks/OmniPBR_Button_DeepGray"
+          ],
+          "path": "/World/table/surface/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_03/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_04/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_05/mesh",
+          "type_name": "Mesh"
+        },
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI"
+          ],
+          "attributes": {
+            "physics:angularVelocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:approximation": "convexDecomposition",
+            "physics:collisionEnabled": true,
+            "physics:kinematicEnabled": false,
+            "physics:rigidBodyEnabled": true,
+            "physics:startsAsleep": false,
+            "physics:velocity": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physxCollision:contactOffset": 0.0020000000949949026,
+            "physxCollision:restOffset": -0.0010000000474974513
+          },
+          "material_bindings": [
+            "/World/Looks/OmniSurface_Glass"
+          ],
+          "path": "/World/beaker_5/mesh",
+          "type_name": "Mesh"
+        }
+      ],
+      "collider_count": 26,
+      "errors": [],
+      "exists": true,
+      "particle_materials": [],
+      "particle_sampling_prims": [
+        {
+          "applied_schemas": [],
+          "attributes": {
+            "physxParticleSampling:crc": {
+              "len": 16,
+              "preview": [
+                241,
+                176,
+                222,
+                223,
+                228,
+                97,
+                151,
+                3
+              ]
+            },
+            "physxParticleSampling:volume": true
+          },
+          "particle_targets": [
+            "/World/ParticleSet"
+          ],
+          "path": "/World/Cylinder",
+          "type_name": "Mesh"
+        }
+      ],
+      "particle_sets": [
+        {
+          "applied_schemas": [
+            "PhysicsMassAPI"
+          ],
+          "attributes": {
+            "physics:centerOfMass": {
+              "len": 3,
+              "preview": [
+                -Infinity,
+                -Infinity,
+                -Infinity
+              ]
+            },
+            "physics:density": 0.009999999776482582,
+            "physics:diagonalInertia": {
+              "len": 3,
+              "preview": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "physics:mass": 0.0,
+            "physics:principalAxes": "(0, 0, 0, 0)"
+          },
+          "material_bindings": [],
+          "particle_system_targets": [
+            "/World/ParticleSystem"
+          ],
+          "path": "/World/ParticleSet",
+          "points_len": 911,
+          "type_name": "Points",
+          "velocities_len": 911,
+          "widths_len": 911
+        }
+      ],
+      "particle_systems": [
+        {
+          "applied_schemas": [
+            "MaterialBindingAPI"
+          ],
+          "attributes": {
+            "particleContactOffset": 0.004999999888241291
+          },
+          "material_bindings": [
+            "/World/Looks/Blue_Glass"
+          ],
+          "path": "/World/ParticleSystem",
+          "type_name": "PhysxParticleSystem"
+        }
+      ],
+      "physics_scenes": [],
+      "root_layer": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_003/lab_003.usd",
+      "schema_preserved": true,
+      "usd_path": "assets/chemistry_lab/lab_003/lab_003.usd",
+      "used_layer_count": 3
+    }
+  ]
+}

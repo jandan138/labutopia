@@ -21,6 +21,59 @@ GPU dynamics 没启用，还是粒子能跑但进不了 EBench，还是能进 EB
 - 历史日志显示 PhysX 曾识别 `/World/ParticleSet`，但也提示 particles require GPU dynamics。
   所以现在只能说“已有粒子资产线索”，不能说“真实流体已经跑通”。
 
+## S0 已完成：环境支持线先摸清楚了
+
+S0 的作用不是证明“液体已经能倒起来”，而是先确认我们要用的 EBench / Isaac Sim 4.1
+运行环境里有没有做真实液体所需的底层能力。当前结论是：可以进入下一步 S1，但还不能对外说
+`level1_pour` 已经有真实液体。
+
+本次冻结的目标运行环境是：
+
+```text
+/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python
+```
+
+这个环境里有 `isaacsim==4.1.0.0`，对应 EBench 侧要验证的 Isaac Sim 4.1 口径。直接用普通
+Python import 时，`pxr.PhysxSchema` 和 `omni.physx` 不可见；但启动 `SimulationApp` 之后，
+Isaac/Kit 会加载扩展，这时可以看到：
+
+```text
+pxr.Usd
+pxr.PhysxSchema
+omni.physx
+PhysxSceneAPI
+PhysxParticleSystem
+PhysxParticleSetAPI
+PhysxParticleAPI
+PhysxPBDMaterialAPI
+PhysxParticleAnisotropyAPI
+PhysxParticleSmoothingAPI
+PhysxParticleIsosurfaceAPI
+```
+
+白话解释：底层“能描述真实粒子液体”的 USD/PhysX 组件是存在的；只是这些组件不是普通 Python
+一启动就能看到，必须进入 Isaac Sim runtime 之后才完整可用。
+
+GPU 也能被目标环境看到：`NVIDIA GeForce RTX 4090`，`torch cuda_available=true`。这很关键，
+因为 PhysX particle fluid 依赖 GPU dynamics；没有 GPU，后面不会进入真实液体 runtime 验证。
+
+资产侧结论也已冻结：
+
+- `lab_001/lab_001.usd`，也就是当前 `level1_pour` 场景，没有现成 `ParticleSystem` / `ParticleSet`。
+- `lab_003/clock.usd` 和 `lab_003/lab_003.usd` 里有本地粒子模板，可作为 S1/S2 搭建 smoke scene 的参考。
+- S0 只证明 schema、模板和 GPU 条件具备；它没有 step 粒子、没有验证烧杯能装住液体，也没有证明 EBench
+  consumer 已经能稳定评分真实液体。
+
+S0 证据文件：
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_scope_freeze_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_schema_probe_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_isaacsim41_app_schema_probe_20260707.json
+```
+
+所以下一步是 S1：做一个最小粒子场景，明确打开 GPU dynamics，真的跑几帧并读回粒子状态。
+
 ## 不会混淆的主线
 
 这条 fluid spike 不改变以下结论：

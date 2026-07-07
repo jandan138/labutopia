@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "manifest_type": "true_physx_pbd_fluid_spike_evidence",
+  "run_id": "fluid_spike_isaacsim41_ebench_s0_scope_freeze_20260707_001",
+  "stage": "S0_SCOPE_FREEZE",
+  "status": "GO_NEXT",
+  "live_evidence": false,
+  "runtime_step_executed": false,
+  "true_fluid_runtime_claim_allowed": false,
+  "expert_oracle_score_claim_allowed": false,
+  "canonical_score_claim_allowed": false,
+  "policy_score_claim_allowed": false,
+  "official_leaderboard_claim_allowed": false,
+  "created_at_utc": "2026-07-07T13:30:00+00:00",
+  "objective": "Confirm which Isaac Sim 4.1 / EBench-relevant PhysX/PBD fluid schemas are available before attempting a true-fluid runtime smoke.",
+  "evidence_files": {
+    "usd_schema_probe": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_schema_probe_20260707.json",
+    "isaacsim41_app_schema_probe": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_isaacsim41_app_schema_probe_20260707.json"
+  },
+  "commands": [
+    "python tools/labutopia_fluid/inspect_usd_particles.py --usd assets/chemistry_lab/lab_001/lab_001.usd --usd assets/chemistry_lab/lab_003/clock.usd --usd assets/chemistry_lab/lab_003/lab_003.usd --runtime-python /usr/bin/python --runtime-python /cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python --out docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_schema_probe_20260707.json",
+    "ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=YES PYTHONNOUSERSITE=1 /cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python tools/labutopia_fluid/probe_isaacsim41_fluid_schema.py --out docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_isaacsim41_app_schema_probe_20260707.json"
+  ],
+  "target_runtime": {
+    "python": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python",
+    "isaacsim_package_version": "4.1.0.0",
+    "omniverse_kit_version": "106.0.1.126909",
+    "physx_extension_version_seen_after_app_start": "106.0.20",
+    "gpu_visible": true,
+    "gpu_summary": "NVIDIA GeForce RTX 4090, driver 570.153.02, torch cuda_available=true"
+  },
+  "supported_after_simulation_app_start": {
+    "pxr.Usd": true,
+    "pxr.PhysxSchema": true,
+    "omni.physx": true,
+    "PhysxSceneAPI": true,
+    "PhysxParticleSystem": true,
+    "PhysxParticleSetAPI": true,
+    "PhysxParticleAPI": true,
+    "PhysxPBDMaterialAPI": true,
+    "PhysxParticleAnisotropyAPI": true,
+    "PhysxParticleSmoothingAPI": true,
+    "PhysxParticleIsosurfaceAPI": true
+  },
+  "not_supported_as_plain_python_import": {
+    "note": "The IsaacSim41 conda Python does not expose pxr.PhysxSchema or omni.physx before Kit / SimulationApp extension startup.",
+    "pxr.PhysxSchema_without_app": false,
+    "omni.physx_without_app": false
+  },
+  "asset_probe_summary": {
+    "all_stages_opened": true,
+    "level1_pour_usd": "assets/chemistry_lab/lab_001/lab_001.usd",
+    "level1_pour_has_particle_system": false,
+    "level1_pour_has_particle_set": false,
+    "local_particle_templates": [
+      {
+        "usd_path": "assets/chemistry_lab/lab_003/clock.usd",
+        "particle_system": "/World/ParticleSystem",
+        "particle_set": "/World/ParticleSet",
+        "particle_count": 2941
+      },
+      {
+        "usd_path": "assets/chemistry_lab/lab_003/lab_003.usd",
+        "particle_system": "/World/ParticleSystem",
+        "particle_set": "/World/ParticleSet",
+        "particle_count": 911
+      }
+    ],
+    "particle_material_count": 0,
+    "candidate_collider_count": 49
+  },
+  "true_fluid_definition": "PhysxSceneAPI with GPU dynamics enabled + PhysxParticleSystem + Points/PointInstancer particle set with PhysxParticleSetAPI/PhysxParticleAPI relationship + PBD particle material + successful runtime parse/step/fetch + particle state readback.",
+  "not_true_fluid": [
+    "mesh_only_liquid",
+    "shader_only_water",
+    "offline_video",
+    "rgb_only_success",
+    "USD schema presence without runtime step",
+    "SimulationApp schema import without particle simulation"
+  ],
+  "official_reference_boundary": [
+    "https://docs.omniverse.nvidia.com/kit/docs/omni_physics/106.5/dev_guide/particles/particles.html",
+    "https://docs.omniverse.nvidia.com/kit/docs/omni_usd_schema_physics/106.0/physx_particle_system_8h_source.html",
+    "https://docs.omniverse.nvidia.com/kit/docs/omni_usd_schema_physics/106.0/physx_scene_a_p_i_8h_source.html"
+  ],
+  "allowed_claims": [
+    "S0 scope is frozen.",
+    "The selected IsaacSim41 / GenManip env has PhysX/PBD particle schemas available after SimulationApp startup.",
+    "The selected IsaacSim41 / GenManip env can see an NVIDIA RTX 4090 GPU.",
+    "level1_pour currently has no authored particle system or particle set.",
+    "lab_003 clock.usd and lab_003.usd provide local particle template evidence.",
+    "S1 can proceed to a bounded standalone particle runtime smoke."
+  ],
+  "blocked_claims": [
+    "level1_pour has true fluid today",
+    "true fluid runtime passed",
+    "particles have stepped in EBench",
+    "beaker collider is fluid-compatible",
+    "Expert Oracle Score includes fluid",
+    "official leaderboard claim",
+    "policy score claim"
+  ],
+  "next_stage": {
+    "id": "S1_PARTICLE_SMOKE",
+    "goal": "Create a minimal standalone true-particle scene, enable GPU dynamics on the PhysicsScene, step it, and read back particle state."
+  }
+}
