@@ -46,6 +46,52 @@ replay，runner 退出 `0`，`classification=PASS_SCORE_CAPABLE_ORACLE_RUNNER_CO
 正面、侧面三路可读视频”；不能把这条 review-media run 升级成新的 official score source、policy score、
 leaderboard claim 或 full visual/material parity。
 
+## 2026-07-07 True PhysX/PBD Fluid Spike
+
+True PhysX/PBD Fluid Spike 是一条 parallel research track，不覆盖当前 `Expert Oracle Score` 主线。
+它回答的是 `level1_pour` 能否加入真实 PhysX/PBD particle fluid，并在失败时把 blocker 归因到
+schema、GPU dynamics、beaker collider、kinematic pour、EBench consumer、metric/readback、repeatability
+或 performance。
+
+关联文档：
+
+```text
+docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md
+docs/superpowers/specs/2026-07-07-true-physx-pbd-fluid-spike-design.md
+docs/superpowers/plans/2026-07-07-true-physx-pbd-fluid-spike-stop-go.md
+```
+
+证据命名必须使用独立前缀，不使用 `eos2_`、`expert_oracle_`、`score_oracle_` 或 `aan_`：
+
+```text
+run_id=fluid_spike_isaacsim41_ebench_<stage>_<scene>_<YYYYMMDD>_<NNN>
+manifest=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s<stage>_<slug>_<YYYYMMDD>.json
+manifest_type=true_physx_pbd_fluid_spike_evidence
+```
+
+S2/S3 必须包含 collider matrix，至少覆盖 segmented box/wall proxy、simplified thick-wall open cup
+proxy、segmented convex wall pieces、SDF tri-mesh open beaker、native `beaker2/mesh`
+`convexDecomposition` 和 custom cylinder / analytic geometry negative control。
+
+当前允许 claim：
+
+```text
+level1_pour_current_true_fluid=false
+lab003_clock_usd_particle_template_exists=true
+true_fluid_spike_scope_planned=true
+s2_s3_collider_matrix_required=true
+```
+
+当前禁止 claim：
+
+```text
+level1_pour_true_fluid_runtime_passed
+fluid_score_claim_allowed
+policy_score_claim_allowed
+official_leaderboard_claim_allowed
+visual_only_liquid_equals_true_fluid
+```
+
 `eos2_expert_oracle_s2_readback_render_inventory_20260706.json` 和
 `eos2_expert_oracle_s2_claim_review_20260706.json` 是 S1R-D fresh S1 之后的 no-new-live S2 证据盘点和声明复核。
 结论是 `S2_BLOCKED_READBACK_RENDER_EVIDENCE_GAP_NO_NEW_LIVE_RELEASE`：官方 `score=1.0` 候选分成立，但当时
