@@ -5,7 +5,9 @@
     "C2 is the first follow-up route because it is the closest failed S2 candidate.",
     "S2F1 C2 proxy sweep completed with STOP_WITH_EVIDENCE.",
     "C2A_005 and C2A_009 are near-pass candidates, not S3 candidates.",
-    "Current next step is S2F2_VELOCITY_CONTACT_OFFSET, not S3 kinematic pour."
+    "S2F2 velocity/contact-offset isolation completed with GO_NEXT.",
+    "C2A_009_S2F2_VEL020 is the current S2F5 promotion review candidate.",
+    "Current next step is S2F5_PROMOTION_REVIEW, not S3 kinematic pour."
   ],
   "baseline_c2": {
     "below_table_count": 12,
@@ -15,6 +17,9 @@
     "spill_count": 32
   },
   "baseline_closest_failed_candidate": "C2",
+  "best_for_s2f5": [
+    "C2A_009_S2F2_VEL020"
+  ],
   "best_for_s3": [],
   "blocked_claims": [
     "S3 kinematic pour is released",
@@ -26,20 +31,44 @@
   ],
   "contract_version": "s2_no_outside_source_v2",
   "created_at_utc": "2026-07-07T15:35:00+00:00",
-  "current_pm_summary": "S2F1 C2 proxy sweep completed with STOP_WITH_EVIDENCE; best_for_s3 remains empty; C2A_005 and C2A_009 are near-pass candidates, not S3 candidates; S2F2 velocity/contact-offset isolation is next; S3 kinematic pour is not released.",
+  "current_pm_summary": "S2F2 velocity/contact-offset isolation completed with GO_NEXT. It found one static-hold promotion review candidate, C2A_009_S2F2_VEL020, with outside_source_count=0, spill_count=0, below_table_count=0 under initial_radial_velocity=0.02. The diagnosis is velocity/initial-layout coupled sensitivity because baseline and VEL020 post-reset hashes differ. This is not S3 release; S2F5 promotion review is next, with initial-layout hash stability retest required, and S3 kinematic pour remains unreleased.",
   "evidence_type": "planning_and_research_manifest",
   "manifest_type": "true_physx_pbd_fluid_spike_s2_followup_plan",
   "parent_s2_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json",
   "baseline_phase": "S2F0_BASELINE_FREEZE",
   "s2f0_baseline_freeze_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json",
   "s2f1_c2_proxy_sweep_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json",
+  "s2f2_velocity_contact_offset_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f2_velocity_contact_offset_20260708.json",
   "phase_status": {
     "S2F0_BASELINE_FREEZE": "COMPLETE",
     "S2F1_C2_PROXY_SWEEP": "COMPLETE_STOP_WITH_EVIDENCE",
-    "S2F2_VELOCITY_CONTACT_OFFSET": "NEXT",
+    "S2F2_VELOCITY_CONTACT_OFFSET": "COMPLETE_GO_NEXT",
     "S2F3_C3_SDF_SWEEP": "PENDING",
     "S2F4_C4_NATIVE_MESH_ISOLATION": "PENDING",
-    "S2F5_PROMOTION_REVIEW": "PENDING"
+    "S2F5_PROMOTION_REVIEW": "NEXT"
+  },
+  "s2f2_result_summary": {
+    "candidate_count": 18,
+    "manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f2_velocity_contact_offset_20260708.json",
+    "root_cause_classification": "VELOCITY_INITIAL_LAYOUT_COUPLED_SENSITIVITY",
+    "root_cause_confidence": "COUPLED_DIAGNOSTIC",
+    "status": "GO_NEXT",
+    "post_reset_hash_variation_parents": [
+      "C2A_005",
+      "C2A_007",
+      "C2A_009"
+    ],
+    "hash_audit_interpretation": "Authored spawn positions were pinned, but PhysX reset/settle can still differ when contact offsets change; contact-offset variants are diagnostic-only evidence.",
+    "next_stage_promotion_caveat": "COUPLED_DIAGNOSTIC_REQUIRES_INITIAL_LAYOUT_RETEST",
+    "requires_initial_layout_hash_stability_check": true,
+    "valid_pass_candidates": [
+      "C2A_009_S2F2_VEL020"
+    ],
+    "diagnostic_nonphysical_candidates": [
+      "C2A_005_S2F2_VMAX010",
+      "C2A_007_S2F2_VMAX010",
+      "C2A_009_S2F2_VMAX010"
+    ]
   },
   "near_pass_for_s2f2": [
     "C2A_005",

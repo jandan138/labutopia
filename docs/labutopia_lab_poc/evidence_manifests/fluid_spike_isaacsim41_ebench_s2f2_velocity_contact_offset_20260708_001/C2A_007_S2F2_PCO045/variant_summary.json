@@ -1,0 +1,178 @@
+{
+  "artifact_dir": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/C2A_007_S2F2_PCO045",
+  "classification": "FAIL_CONTAINER_LEAK",
+  "classification_contract_version": "s2_no_outside_source_v2",
+  "classification_detail": {
+    "below_table_count": 0,
+    "classification": "FAIL_CONTAINER_LEAK",
+    "cpu_collision_fallback_detected": false,
+    "fatal_error": null,
+    "gpu_collider_unsupported": false,
+    "nan_count": 0,
+    "outside_source_count": 1,
+    "particle_count_final_fraction": 1.0,
+    "pass_criteria": {
+      "below_table_count_eq_zero": true,
+      "cpu_collision_fallback_detected_false": true,
+      "nan_count_eq_zero": true,
+      "outside_source_count_eq_zero": false,
+      "particle_count_final_fraction_ge_0_95": true,
+      "particle_motion_observed": true,
+      "source_retention_fraction_ge_0_95": true,
+      "spill_count_eq_zero": false,
+      "tail_leak_rate_lt_0_02": true,
+      "target_count_eq_zero": true
+    },
+    "source_retention_fraction": 0.99609375,
+    "spill_count": 1,
+    "tail_leak_rate_fraction_per_second": 0.0,
+    "target_count": 0,
+    "variant_id": "C2A_007_S2F2_PCO045"
+  },
+  "config": {
+    "bottom_overlap": 0.006,
+    "bottom_thickness": 0.008,
+    "collider_contact_offset": 0.006,
+    "collider_rest_offset": 0.0,
+    "fluid_rest_offset": 0.0026999999999999997,
+    "grid_dims": [
+      8,
+      8,
+      4
+    ],
+    "initial_radial_velocity": 0.04,
+    "particle_contact_offset": 0.0045,
+    "particle_count": 256,
+    "particle_enable_ccd": null,
+    "particle_max_depenetration_velocity": null,
+    "particle_max_velocity": 5.0,
+    "particle_rest_offset": 0.0,
+    "particle_spacing": 0.0045,
+    "particle_system_contact_offset": 0.005399999999999999,
+    "particle_width": 0.0035,
+    "perf_budget_seconds_per_variant": 240.0,
+    "physics_dt": 0.016666666666666666,
+    "render_height": 512,
+    "render_width": 512,
+    "solid_rest_offset": 0.0026999999999999997,
+    "source_center": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "source_height": 0.13,
+    "source_radius": 0.055,
+    "spawn_particle_contact_offset": 0.006,
+    "steps": 240,
+    "table_z": 0.0,
+    "tail_window_steps": 60,
+    "target_center": [
+      0.22,
+      0.0,
+      0.0
+    ],
+    "target_height": 0.13,
+    "target_radius": 0.055,
+    "trace_interval": 30,
+    "wall_height": 0.12,
+    "wall_thickness": 0.01
+  },
+  "diagnostic_projection_version": "v2_dynamic_z_shows_below_table_leaks",
+  "elapsed_seconds": 5.4418035335838795,
+  "evidence_files": {
+    "initial_frame": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/C2A_007_S2F2_PCO045/initial_frame.png",
+    "mid_frame": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/C2A_007_S2F2_PCO045/mid_frame.png",
+    "particle_readback_trace": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/C2A_007_S2F2_PCO045/particle_readback_trace.jsonl",
+    "physics_scene_settings": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/C2A_007_S2F2_PCO045/physics_scene_settings.json",
+    "side_collision_overlay": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/C2A_007_S2F2_PCO045/side_collision_overlay.png",
+    "terminal_frame": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/C2A_007_S2F2_PCO045/terminal_frame.png",
+    "top_collision_overlay": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/C2A_007_S2F2_PCO045/top_collision_overlay.png"
+  },
+  "final_aabb": {
+    "max": [
+      0.054438266903162,
+      0.0540885366499424,
+      0.011022168211638927
+    ],
+    "min": [
+      -0.0512053407728672,
+      -0.05226234719157219,
+      0.010988425463438034
+    ]
+  },
+  "final_centroid": [
+    0.001504768705921311,
+    0.0012318933446096025,
+    0.011005287309671985
+  ],
+  "final_count": 256,
+  "final_particle_positions_hash": "4571159cc321e4d2d1a4d784174fa677b4b9a7b0ac15cb62275716b7eac31392",
+  "final_region_counts": {
+    "below_table_count": 0,
+    "finite_count": 256,
+    "source_count": 255,
+    "spill_count": 1,
+    "target_count": 0,
+    "total_count": 256
+  },
+  "frame_sources": {
+    "initial_frame.png": "diagnostic_side_projection_v2_dynamic_z",
+    "mid_frame.png": "diagnostic_side_projection_v2_dynamic_z",
+    "side_collision_overlay.png": "diagnostic_side_projection",
+    "terminal_frame.png": "diagnostic_side_projection_v2_dynamic_z",
+    "top_collision_overlay.png": "diagnostic_top_projection"
+  },
+  "generated_at_utc": "2026-07-07T16:52:49.850240+00:00",
+  "initial_aabb": {
+    "max": [
+      0.04869675263762474,
+      0.04869675263762474,
+      0.02285381779074669
+    ],
+    "min": [
+      -0.04529794678092003,
+      -0.04529794678092003,
+      0.010904693976044655
+    ]
+  },
+  "initial_centroid": [
+    0.0008096702035800263,
+    0.0017667357128630101,
+    0.016624840409349417
+  ],
+  "initial_count": 256,
+  "initial_particle_positions_hash": "743ffb7b6b6ad9bd73e7b866773ee6a108582f17dd747900afc00f0c60ba5916",
+  "initial_region_counts": {
+    "below_table_count": 0,
+    "finite_count": 256,
+    "source_count": 256,
+    "spill_count": 0,
+    "target_count": 0,
+    "total_count": 256
+  },
+  "manifest_type": "true_physx_pbd_fluid_spike_s2_variant_summary",
+  "max_displacement": 0.09662223096707474,
+  "particle_motion_observed": true,
+  "readback_available": true,
+  "runtime_step_executed": true,
+  "runtime_warning_evidence_mode": "variant-level flags are initialized during simulation; artifact-level stdout/stderr warning scan is authoritative for release",
+  "scene_path": "assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f2/c2a_007_s2f2_pco045_c2_proxy_followup.usda",
+  "schema_version": 1,
+  "spawn_position_pinned": true,
+  "stage": "S2_BEAKER_COLLIDER_SMOKE",
+  "tail_leak_rate_fraction_per_second": 0.0,
+  "trace_record_count": 9,
+  "variant": {
+    "collider_count": 49,
+    "collision_approximation": "convex_panel_boxes",
+    "description": "S2F2 velocity/contact-offset isolation candidate derived from a near-pass C2A parent.",
+    "name": "velocity_contact_offset",
+    "native_source_path": null,
+    "negative_control": false,
+    "panel_count": 48,
+    "sdf_resolution": null,
+    "setup": "s2f2_velocity_contact_offset",
+    "source_kind": "procedural_proxy",
+    "variant_id": "C2A_007_S2F2_PCO045"
+  }
+}

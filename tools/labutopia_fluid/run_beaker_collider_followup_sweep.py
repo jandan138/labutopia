@@ -40,8 +40,16 @@ DEFAULT_MANIFEST_PATH = (
     "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json"
 )
 DEFAULT_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f1"
+DEFAULT_S2F2_ARTIFACT_DIR = (
+    "docs/labutopia_lab_poc/evidence_manifests/"
+    "fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001"
+)
+DEFAULT_S2F2_MANIFEST_PATH = (
+    "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f2_velocity_contact_offset_20260708.json"
+)
+DEFAULT_S2F2_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f2"
 DEFAULT_NATIVE_USD = "assets/chemistry_lab/lab_001/lab_001.usd"
-FOLLOWUP_CONTRACT_VERSION = "s2f1_c2_proxy_sweep_v1"
+FOLLOWUP_CONTRACT_VERSION = "s2f_velocity_contact_offset_v2"
 FOLLOWUP_CLASSIFICATIONS = {
     "PASS_SOURCE_HOLD",
     "FAIL_CONTAINER_LEAK",
@@ -64,6 +72,18 @@ class C2ProxyCandidate:
     collider_contact_offset: float
     collider_rest_offset: float
     initial_radial_velocity: float
+    parent_candidate_id: str | None = None
+    phase: str = "S2F1_C2_PROXY_SWEEP"
+    variable_group: str = "c2_proxy_sweep"
+    spawn_particle_contact_offset: float | None = None
+    particle_system_contact_offset: float | None = None
+    particle_rest_offset: float = 0.0
+    fluid_rest_offset: float | None = None
+    solid_rest_offset: float | None = None
+    particle_enable_ccd: bool | None = None
+    particle_max_velocity: float = 5.0
+    particle_max_depenetration_velocity: float | None = None
+    non_physical_parameter_dependence_risk: bool = False
 
     def to_config(self, *, base: ColliderConfig | None = None) -> ColliderConfig:
         config = base or ColliderConfig()
@@ -72,20 +92,34 @@ class C2ProxyCandidate:
             wall_thickness=self.wall_thickness,
             bottom_overlap=self.bottom_overlap,
             particle_contact_offset=self.particle_contact_offset,
+            spawn_particle_contact_offset=self.spawn_particle_contact_offset,
+            particle_system_contact_offset=self.particle_system_contact_offset,
+            particle_rest_offset=self.particle_rest_offset,
+            fluid_rest_offset=self.fluid_rest_offset,
+            solid_rest_offset=self.solid_rest_offset,
             collider_contact_offset=self.collider_contact_offset,
             collider_rest_offset=self.collider_rest_offset,
             initial_radial_velocity=self.initial_radial_velocity,
+            particle_enable_ccd=self.particle_enable_ccd,
+            particle_max_velocity=self.particle_max_velocity,
+            particle_max_depenetration_velocity=self.particle_max_depenetration_velocity,
         )
 
     def to_variant_spec(self) -> VariantSpec:
+        setup = "s2f2_velocity_contact_offset" if self.phase == "S2F2_VELOCITY_CONTACT_OFFSET" else "s2f1_c2_proxy_sweep"
+        name = "velocity_contact_offset" if self.phase == "S2F2_VELOCITY_CONTACT_OFFSET" else "c2_proxy_followup"
         return VariantSpec(
             variant_id=self.candidate_id,
-            name="c2_proxy_followup",
+            name=name,
             description=(
-                "S2F1 C2-derived segmented convex wall proxy with swept panel count, "
-                "wall thickness, bottom overlap, and contact offsets."
+                "S2F2 velocity/contact-offset isolation candidate derived from a near-pass C2A parent."
+                if self.phase == "S2F2_VELOCITY_CONTACT_OFFSET"
+                else (
+                    "S2F1 C2-derived segmented convex wall proxy with swept panel count, "
+                    "wall thickness, bottom overlap, and contact offsets."
+                )
             ),
-            setup="s2f1_c2_proxy_sweep",
+            setup=setup,
             collider_count=self.panel_count + 1,
             collision_approximation="convex_panel_boxes",
             source_kind="procedural_proxy",
@@ -93,8 +127,13 @@ class C2ProxyCandidate:
         )
 
 
-def followup_phase_specs() -> dict[str, dict[str, Any]]:
-    return {
+def followup_phase_specs(
+    *,
+    phase: str | None = None,
+    status: str | None = None,
+    best_for_s2f5: Sequence[str] | None = None,
+) -> dict[str, dict[str, Any]]:
+    specs = {
         "S2F0_BASELINE_FREEZE": {
             "candidate_prefix": "S2",
             "status": "COMPLETE",
@@ -126,6 +165,11 @@ def followup_phase_specs() -> dict[str, dict[str, Any]]:
             "description": "Promotion review before S3 release.",
         },
     }
+    if phase == "S2F2_VELOCITY_CONTACT_OFFSET" and status == "GO_NEXT" and best_for_s2f5:
+        specs["S2F1_C2_PROXY_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F2_VELOCITY_CONTACT_OFFSET"]["status"] = "COMPLETE_GO_NEXT"
+        specs["S2F5_PROMOTION_REVIEW"]["status"] = "NEXT"
+    return specs
 
 
 def build_c2_proxy_sweep(*, limit: int = 12) -> list[C2ProxyCandidate]:
@@ -155,36 +199,161 @@ def build_c2_proxy_sweep(*, limit: int = 12) -> list[C2ProxyCandidate]:
                 collider_contact_offset=row[4],
                 collider_rest_offset=row[5],
                 initial_radial_velocity=row[6],
+                parent_candidate_id=None,
+                phase="S2F1_C2_PROXY_SWEEP",
+                variable_group="c2_proxy_sweep",
             )
         )
     return candidates
 
 
-def build_velocity_contact_offset_sweep() -> list[C2ProxyCandidate]:
-    base = build_c2_proxy_sweep(limit=1)[0]
-    rows = [
-        (0.02, 0.0045, 0.002, -0.001),
-        (0.04, 0.0060, 0.004, 0.000),
-        (0.08, 0.0075, 0.006, -0.001),
-    ]
-    return [
-        C2ProxyCandidate(
-            candidate_id=f"C2A_VEL_{index:03d}",
-            panel_count=base.panel_count,
-            wall_thickness=base.wall_thickness,
-            bottom_overlap=base.bottom_overlap,
-            particle_contact_offset=particle_contact_offset,
-            collider_contact_offset=collider_contact_offset,
-            collider_rest_offset=collider_rest_offset,
-            initial_radial_velocity=initial_radial_velocity,
+def _load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _offset_defaults(particle_contact_offset: float) -> dict[str, float]:
+    return {
+        "particle_system_contact_offset": particle_contact_offset * 1.2,
+        "solid_rest_offset": particle_contact_offset * 0.6,
+        "fluid_rest_offset": particle_contact_offset * 0.6,
+    }
+
+
+def _candidate_from_plan_row(row: dict[str, Any]) -> C2ProxyCandidate:
+    particle_contact_offset = float(row["particle_contact_offset"])
+    defaults = _offset_defaults(particle_contact_offset)
+    return C2ProxyCandidate(
+        candidate_id=str(row["candidate_id"]),
+        parent_candidate_id=row.get("parent_candidate_id"),
+        phase=str(row.get("phase", "S2F1_C2_PROXY_SWEEP")),
+        variable_group=str(row.get("variable_group", "c2_proxy_sweep")),
+        panel_count=int(row["panel_count"]),
+        wall_thickness=float(row["wall_thickness"]),
+        bottom_overlap=float(row["bottom_overlap"]),
+        particle_contact_offset=particle_contact_offset,
+        spawn_particle_contact_offset=(
+            float(row["spawn_particle_contact_offset"])
+            if row.get("spawn_particle_contact_offset") is not None
+            else None
+        ),
+        particle_system_contact_offset=(
+            float(row["particle_system_contact_offset"]) if row.get("particle_system_contact_offset") is not None else defaults["particle_system_contact_offset"]
+        ),
+        fluid_rest_offset=float(row["fluid_rest_offset"]) if row.get("fluid_rest_offset") is not None else defaults["fluid_rest_offset"],
+        solid_rest_offset=float(row["solid_rest_offset"]) if row.get("solid_rest_offset") is not None else defaults["solid_rest_offset"],
+        collider_contact_offset=float(row["collider_contact_offset"]),
+        collider_rest_offset=float(row["collider_rest_offset"]),
+        initial_radial_velocity=float(row["initial_radial_velocity"]),
+        particle_enable_ccd=row.get("particle_enable_ccd"),
+        particle_max_velocity=float(row.get("particle_max_velocity", 5.0)),
+        particle_max_depenetration_velocity=(
+            float(row["particle_max_depenetration_velocity"])
+            if row.get("particle_max_depenetration_velocity") is not None
+            else None
+        ),
+        non_physical_parameter_dependence_risk=bool(row.get("non_physical_parameter_dependence_risk", False)),
+    )
+
+
+def _with_particle_offsets(candidate: C2ProxyCandidate, particle_contact_offset: float) -> dict[str, float]:
+    return _offset_defaults(particle_contact_offset)
+
+
+def _s2f2_candidate(
+    parent: C2ProxyCandidate,
+    *,
+    suffix: str,
+    variable_group: str,
+    initial_radial_velocity: float | None = None,
+    particle_contact_offset: float | None = None,
+    collider_contact_offset: float | None = None,
+    collider_rest_offset: float | None = None,
+    particle_enable_ccd: bool | None = None,
+    particle_max_velocity: float = 5.0,
+    particle_max_depenetration_velocity: float | None = None,
+    non_physical_parameter_dependence_risk: bool = False,
+) -> C2ProxyCandidate:
+    pco = particle_contact_offset if particle_contact_offset is not None else parent.particle_contact_offset
+    offsets = _with_particle_offsets(parent, pco)
+    return C2ProxyCandidate(
+        candidate_id=f"{parent.candidate_id}_S2F2_{suffix}",
+        parent_candidate_id=parent.candidate_id,
+        phase="S2F2_VELOCITY_CONTACT_OFFSET",
+        variable_group=variable_group,
+        panel_count=parent.panel_count,
+        wall_thickness=parent.wall_thickness,
+        bottom_overlap=parent.bottom_overlap,
+        particle_contact_offset=pco,
+        spawn_particle_contact_offset=parent.particle_contact_offset,
+        particle_system_contact_offset=offsets["particle_system_contact_offset"],
+        fluid_rest_offset=offsets["fluid_rest_offset"],
+        solid_rest_offset=offsets["solid_rest_offset"],
+        collider_contact_offset=(
+            collider_contact_offset if collider_contact_offset is not None else parent.collider_contact_offset
+        ),
+        collider_rest_offset=collider_rest_offset if collider_rest_offset is not None else parent.collider_rest_offset,
+        initial_radial_velocity=(
+            initial_radial_velocity if initial_radial_velocity is not None else parent.initial_radial_velocity
+        ),
+        particle_enable_ccd=particle_enable_ccd,
+        particle_max_velocity=particle_max_velocity,
+        particle_max_depenetration_velocity=particle_max_depenetration_velocity,
+        non_physical_parameter_dependence_risk=non_physical_parameter_dependence_risk,
+    )
+
+
+def build_velocity_contact_offset_sweep(
+    *,
+    s2f1_manifest_path: Path | str = DEFAULT_MANIFEST_PATH,
+    limit: int | None = None,
+) -> list[C2ProxyCandidate]:
+    manifest = _load_json(Path(s2f1_manifest_path))
+    plan_by_id = {str(candidate["candidate_id"]): candidate for candidate in manifest["candidate_plan"]}
+    parent_ids = [str(candidate_id) for candidate_id in manifest.get("near_pass_for_s2f2", [])]
+    candidates: list[C2ProxyCandidate] = []
+    for parent_id in parent_ids:
+        parent = _candidate_from_plan_row(plan_by_id[parent_id])
+        pco_test = 0.0045 if parent_id == "C2A_007" else 0.0060
+        cco_test = 0.004 if parent_id in {"C2A_005", "C2A_007"} else 0.006
+        candidates.extend(
+            [
+                _s2f2_candidate(parent, suffix="BASE", variable_group="baseline_repeat"),
+                _s2f2_candidate(
+                    parent,
+                    suffix="VEL020",
+                    variable_group="velocity_020",
+                    initial_radial_velocity=0.02,
+                ),
+                _s2f2_candidate(
+                    parent,
+                    suffix="PCO045" if parent_id == "C2A_007" else "PCO060",
+                    variable_group="particle_contact",
+                    particle_contact_offset=pco_test,
+                ),
+                _s2f2_candidate(
+                    parent,
+                    suffix=f"CCO{int(cco_test * 1000):03d}_RN001",
+                    variable_group="collider_contact_rest",
+                    collider_contact_offset=cco_test,
+                    collider_rest_offset=-0.001,
+                ),
+                _s2f2_candidate(
+                    parent,
+                    suffix="CCD1",
+                    variable_group="ccd_enabled",
+                    particle_enable_ccd=True,
+                    particle_max_depenetration_velocity=5.0,
+                ),
+                _s2f2_candidate(
+                    parent,
+                    suffix="VMAX010",
+                    variable_group="max_velocity_guardrail",
+                    particle_max_velocity=0.10,
+                    non_physical_parameter_dependence_risk=True,
+                ),
+            ]
         )
-        for index, (
-            initial_radial_velocity,
-            particle_contact_offset,
-            collider_contact_offset,
-            collider_rest_offset,
-        ) in enumerate(rows, start=1)
-    ]
+    return candidates[:limit] if limit is not None else candidates
 
 
 def _pass_criteria(
@@ -299,6 +468,123 @@ def rank_followup_candidates(candidate_results: Sequence[dict[str, Any]]) -> dic
     }
 
 
+def analyze_s2f2_diagnosis(candidate_results: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    passed = [result for result in candidate_results if result.get("classification") == "PASS_SOURCE_HOLD"]
+    pass_groups = {str(result.get("variable_group")) for result in passed}
+    baseline_hash_by_parent = {
+        str(result.get("parent_candidate_id")): str(result.get("initial_particle_positions_hash"))
+        for result in candidate_results
+        if result.get("parent_candidate_id")
+        and result.get("variable_group") == "baseline_repeat"
+        and result.get("initial_particle_positions_hash")
+    }
+    velocity_hash_mismatch_candidates = [
+        str(result.get("candidate_id"))
+        for result in passed
+        if result.get("variable_group") == "velocity_020"
+        and result.get("parent_candidate_id")
+        and result.get("initial_particle_positions_hash")
+        and baseline_hash_by_parent.get(str(result.get("parent_candidate_id")))
+        and str(result.get("initial_particle_positions_hash"))
+        != baseline_hash_by_parent[str(result.get("parent_candidate_id"))]
+    ]
+    nonphysical_candidates = [
+        result
+        for result in candidate_results
+        if result.get("classification") == "FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE"
+        or result.get("non_physical_parameter_dependence")
+    ]
+    root_cause_confidence = "DIRECT_DIAGNOSTIC"
+    if "velocity_020" in pass_groups and velocity_hash_mismatch_candidates:
+        conclusion = "VELOCITY_INITIAL_LAYOUT_COUPLED_SENSITIVITY"
+        root_cause_confidence = "COUPLED_DIAGNOSTIC"
+    elif "velocity_020" in pass_groups:
+        conclusion = "INITIAL_RADIAL_VELOCITY_SENSITIVITY"
+    elif "particle_contact" in pass_groups:
+        conclusion = "PARTICLE_CONTACT_OFFSET_SENSITIVITY"
+    elif "collider_contact_rest" in pass_groups:
+        conclusion = "COLLIDER_CONTACT_REST_OFFSET_SENSITIVITY"
+    elif "ccd_enabled" in pass_groups:
+        conclusion = "CCD_TUNNELING_SENSITIVITY"
+    elif nonphysical_candidates and not passed:
+        conclusion = "NON_PHYSICAL_DAMPING_ONLY"
+    elif candidate_results:
+        conclusion = "RESIDUAL_PROXY_GEOMETRY_GAP_SUSPECTED"
+    else:
+        conclusion = "NO_RUNTIME_RESULTS"
+    return {
+        "conclusion": conclusion,
+        "root_cause_confidence": root_cause_confidence,
+        "valid_pass_candidates": [str(result["candidate_id"]) for result in passed],
+        "velocity_pass_candidates_with_initial_hash_mismatch": velocity_hash_mismatch_candidates,
+        "nonphysical_candidates": [str(result["candidate_id"]) for result in nonphysical_candidates],
+        "tested_parent_candidates": sorted(
+            {str(result.get("parent_candidate_id")) for result in candidate_results if result.get("parent_candidate_id")}
+        ),
+        "tested_variable_groups": sorted(
+            {str(result.get("variable_group")) for result in candidate_results if result.get("variable_group")}
+        ),
+    }
+
+
+def analyze_s2f2_initial_layout_hashes(candidate_results: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    parent_accumulator: dict[str, dict[str, Any]] = {}
+    for result in candidate_results:
+        parent_id = str(result.get("parent_candidate_id") or "UNKNOWN_PARENT")
+        entry = parent_accumulator.setdefault(
+            parent_id,
+            {
+                "variant_count": 0,
+                "hashes": set(),
+                "variable_groups_by_hash": {},
+                "missing_hash_candidates": [],
+                "spawn_position_pinned_values": [],
+                "initial_source_counts": [],
+            },
+        )
+        entry["variant_count"] += 1
+        hash_value = result.get("initial_particle_positions_hash")
+        if hash_value:
+            hash_string = str(hash_value)
+            entry["hashes"].add(hash_string)
+            groups = entry["variable_groups_by_hash"].setdefault(hash_string, set())
+            groups.add(str(result.get("variable_group") or "unknown"))
+        else:
+            entry["missing_hash_candidates"].append(str(result.get("candidate_id")))
+        if result.get("spawn_position_pinned") is not None:
+            entry["spawn_position_pinned_values"].append(bool(result.get("spawn_position_pinned")))
+        initial_counts = result.get("initial_region_counts")
+        if isinstance(initial_counts, dict) and "source_count" in initial_counts:
+            entry["initial_source_counts"].append(int(initial_counts["source_count"]))
+
+    parents: dict[str, dict[str, Any]] = {}
+    for parent_id, entry in sorted(parent_accumulator.items()):
+        hashes = sorted(entry["hashes"])
+        parents[parent_id] = {
+            "variant_count": entry["variant_count"],
+            "hash_count": len(hashes),
+            "unique_initial_particle_positions_hashes": hashes,
+            "variable_groups_by_hash": {
+                hash_value: sorted(groups) for hash_value, groups in sorted(entry["variable_groups_by_hash"].items())
+            },
+            "missing_hash_candidates": sorted(entry["missing_hash_candidates"]),
+            "spawn_position_pinned_all": bool(entry["spawn_position_pinned_values"])
+            and all(entry["spawn_position_pinned_values"]),
+            "unique_initial_source_counts": sorted(set(entry["initial_source_counts"])),
+        }
+
+    return {
+        "parents": parents,
+        "parents_with_post_reset_hash_variation": [
+            parent_id for parent_id, entry in parents.items() if entry["hash_count"] > 1
+        ],
+        "notes": [
+            "spawn_position_pinned records authored particle placement pinning before runtime reset.",
+            "initial_particle_positions_hash records post-reset/readback initial positions; contact-offset variants may still alter settling.",
+        ],
+    }
+
+
 def near_pass_candidates_for_s2f2(candidate_results: Sequence[dict[str, Any]]) -> list[str]:
     near_pass = [
         result
@@ -377,7 +663,7 @@ def _candidate_plan(candidates: Sequence[C2ProxyCandidate]) -> list[dict[str, An
     return [asdict(candidate) for candidate in candidates]
 
 
-def _candidate_result_from_summary(summary: dict[str, Any]) -> dict[str, Any]:
+def _candidate_result_from_summary(summary: dict[str, Any], candidate: C2ProxyCandidate | None = None) -> dict[str, Any]:
     detail = summary["classification_detail"]
     result = classify_followup_candidate(
         candidate_id=summary["variant"]["variant_id"],
@@ -391,26 +677,61 @@ def _candidate_result_from_summary(summary: dict[str, Any]) -> dict[str, Any]:
         cpu_collision_fallback_detected=bool(detail["cpu_collision_fallback_detected"]),
         gpu_collider_unsupported=bool(detail["gpu_collider_unsupported"]),
         nan_count=int(detail["nan_count"]),
-        non_physical_parameter_dependence=False,
+        non_physical_parameter_dependence=bool(
+            candidate.non_physical_parameter_dependence_risk if candidate is not None else False
+        ),
         fatal_error=detail.get("fatal_error"),
     )
     result.update(
         {
+            "parent_candidate_id": candidate.parent_candidate_id if candidate is not None else None,
+            "phase": candidate.phase if candidate is not None else None,
+            "variable_group": candidate.variable_group if candidate is not None else None,
+            "s2f2_axis": candidate.variable_group if candidate is not None else None,
+            "non_physical_parameter_dependence_risk": (
+                candidate.non_physical_parameter_dependence_risk if candidate is not None else False
+            ),
+            "non_physical_parameter_dependence_reason": (
+                "max_velocity_guardrail_candidate_not_promotable"
+                if candidate is not None and candidate.non_physical_parameter_dependence_risk
+                else None
+            ),
             "artifact_dir": summary["artifact_dir"],
             "scene_path": summary["scene_path"],
             "variant_summary": str(Path(summary["artifact_dir"]) / "variant_summary.json"),
+            "initial_particle_positions_hash": summary.get("initial_particle_positions_hash"),
+            "final_particle_positions_hash": summary.get("final_particle_positions_hash"),
+            "spawn_position_pinned": summary.get("spawn_position_pinned"),
+            "initial_region_counts": summary.get("initial_region_counts"),
+            "final_region_counts": summary.get("final_region_counts"),
         }
+    )
+    result["promotable_to_s2f5"] = (
+        result["classification"] == "PASS_SOURCE_HOLD" and not result["non_physical_parameter_dependence"]
     )
     return result
 
 
-def load_candidate_results_from_artifacts(artifact_dir: Path) -> list[dict[str, Any]]:
+def load_candidate_results_from_artifacts(
+    artifact_dir: Path,
+    *,
+    candidates: Sequence[C2ProxyCandidate] | None = None,
+) -> list[dict[str, Any]]:
+    candidate_by_id = {candidate.candidate_id: candidate for candidate in candidates or []}
     results: list[dict[str, Any]] = []
+    unplanned: list[str] = []
     for summary_path in sorted(artifact_dir.glob("C2A_*/variant_summary.json")):
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
-        result = _candidate_result_from_summary(summary)
+        variant_id = str(summary["variant"]["variant_id"])
+        candidate = candidate_by_id.get(variant_id)
+        if candidates is not None and candidate is None:
+            unplanned.append(variant_id)
+            continue
+        result = _candidate_result_from_summary(summary, candidate=candidate)
         result["variant_summary"] = str(summary_path)
         results.append(result)
+    if unplanned:
+        raise ValueError(f"unplanned_variant_summaries:{','.join(sorted(unplanned))}")
     return results
 
 
@@ -504,9 +825,18 @@ def write_followup_manifest(
     runtime_warning_scan: dict[str, Any] | None,
     fatal_error: dict[str, Any] | None = None,
     previous_manifest: dict[str, Any] | None = None,
+    source_s2f1_manifest: Path | None = None,
 ) -> dict[str, Any]:
     ranking = rank_followup_candidates(candidate_results)
     near_pass_for_s2f2 = near_pass_candidates_for_s2f2(candidate_results)
+    s2f2_diagnosis = (
+        analyze_s2f2_diagnosis(candidate_results) if phase == "S2F2_VELOCITY_CONTACT_OFFSET" else None
+    )
+    s2f2_initial_layout_hash_audit = (
+        analyze_s2f2_initial_layout_hashes(candidate_results)
+        if phase == "S2F2_VELOCITY_CONTACT_OFFSET"
+        else None
+    )
     warning_gate = _runtime_warning_gate(runtime_warning_scan)
     if not warning_gate["passed"]:
         ranking = {
@@ -520,10 +850,23 @@ def write_followup_manifest(
         status = "PLAN_READY"
     else:
         status = ranking["s2f1_status"]
+    passed_candidates = ranking["best_for_s3"]
+    best_for_s2f5 = passed_candidates if phase == "S2F2_VELOCITY_CONTACT_OFFSET" else []
+    best_for_s3 = [] if phase == "S2F2_VELOCITY_CONTACT_OFFSET" else passed_candidates
+    s2f5_promotion_review_next = bool(
+        phase == "S2F2_VELOCITY_CONTACT_OFFSET" and status == "GO_NEXT" and best_for_s2f5
+    )
+    requires_initial_layout_hash_stability_check = bool(
+        s2f2_diagnosis and s2f2_diagnosis.get("root_cause_confidence") == "COUPLED_DIAGNOSTIC"
+    )
     command_history = _command_history(previous_manifest, command)
     manifest = {
         "schema_version": 1,
-        "manifest_type": "true_physx_pbd_fluid_spike_s2f1_c2_proxy_sweep",
+        "manifest_type": (
+            "true_physx_pbd_fluid_spike_s2f2_velocity_contact_offset"
+            if phase == "S2F2_VELOCITY_CONTACT_OFFSET"
+            else "true_physx_pbd_fluid_spike_s2f1_c2_proxy_sweep"
+        ),
         "stage": phase,
         "status": status,
         "reason": "candidate_plan_written" if status == "PLAN_READY" else ranking["reason"],
@@ -533,6 +876,7 @@ def write_followup_manifest(
         "classification_contract_version": CLASSIFICATION_CONTRACT_VERSION,
         "parent_s2_manifest": str(parent_manifest),
         "baseline_freeze_manifest": str(baseline_freeze_manifest),
+        "source_s2f1_manifest": str(source_s2f1_manifest) if source_s2f1_manifest is not None else None,
         "artifact_dir": str(artifact_dir),
         "commands": command_history["commands"],
         "runtime_commands": command_history["runtime_commands"],
@@ -546,12 +890,17 @@ def write_followup_manifest(
             "omni_kit_accept_eula": os.environ.get("OMNI_KIT_ACCEPT_EULA"),
             "gpu_probe": _gpu_probe(),
         },
-        "phase_specs": followup_phase_specs(),
+        "phase_specs": followup_phase_specs(phase=phase, status=status, best_for_s2f5=best_for_s2f5),
         "candidate_plan": _candidate_plan(candidates),
         "candidate_count": len(candidates),
         "candidate_results": list(candidate_results),
-        "best_for_s3": ranking["best_for_s3"],
+        "best_for_s3": best_for_s3,
+        "best_for_s2f5": best_for_s2f5,
         "near_pass_for_s2f2": near_pass_for_s2f2,
+        "s2f2_diagnosis": s2f2_diagnosis,
+        "s2f2_root_cause_classification": s2f2_diagnosis["conclusion"] if s2f2_diagnosis else None,
+        "s2f2_initial_layout_hash_audit": s2f2_initial_layout_hash_audit,
+        "s2f5_promotion_review_next": s2f5_promotion_review_next,
         "s3_kinematic_pour_released": False,
         "runtime_warning_scan": runtime_warning_scan,
         "runtime_warning_gate": warning_gate,
@@ -570,10 +919,20 @@ def write_followup_manifest(
             "required_blocking_runtime_warning_detected": False,
         },
         "allowed_claims": [
-            "S2F1 C2 proxy sweep candidate set is bounded and recorded.",
-            "S2F1 ran C2-derived proxy collider variants in standalone IsaacSim41."
-            if candidate_results
-            else "S2F1 candidate plan is ready before runtime launch.",
+            (
+                "S2F2 velocity/contact-offset isolation candidate set is bounded and recorded."
+                if phase == "S2F2_VELOCITY_CONTACT_OFFSET"
+                else "S2F1 C2 proxy sweep candidate set is bounded and recorded."
+            ),
+            (
+                "S2F2 ran only C2A_005/C2A_009/C2A_007 near-pass derived variants in standalone IsaacSim41."
+                if phase == "S2F2_VELOCITY_CONTACT_OFFSET" and candidate_results
+                else (
+                    "S2F1 ran C2-derived proxy collider variants in standalone IsaacSim41."
+                    if candidate_results
+                    else f"{phase} candidate plan is ready before runtime launch."
+                )
+            ),
         ],
         "blocked_claims": [
             "S3 kinematic pour is released",
@@ -584,8 +943,19 @@ def write_followup_manifest(
             "diagnostic projections equal product-quality render",
         ],
         "next_stage": {
-            "id": "S2F5_PROMOTION_REVIEW" if ranking["best_for_s3"] else "S2F2_VELOCITY_CONTACT_OFFSET",
-            "variants": ranking["best_for_s3"] if ranking["best_for_s3"] else near_pass_for_s2f2,
+            "id": (
+                "S2F5_PROMOTION_REVIEW"
+                if best_for_s2f5
+                else ("S2F3_C3_SDF_SWEEP" if phase == "S2F2_VELOCITY_CONTACT_OFFSET" else "S2F2_VELOCITY_CONTACT_OFFSET")
+            ),
+            "variants": best_for_s2f5 if best_for_s2f5 else near_pass_for_s2f2,
+            "not_s3_release": phase == "S2F2_VELOCITY_CONTACT_OFFSET",
+            "requires_initial_layout_hash_stability_check": requires_initial_layout_hash_stability_check,
+            "promotion_caveat": (
+                "COUPLED_DIAGNOSTIC_REQUIRES_INITIAL_LAYOUT_RETEST"
+                if requires_initial_layout_hash_stability_check
+                else None
+            ),
         },
         "fatal_error": fatal_error,
     }
@@ -616,7 +986,7 @@ def _run_c2_proxy_sweep(
                 scene_path=scene_path,
                 native_usd=native_usd,
             )
-            result = _candidate_result_from_summary(summary)
+            result = _candidate_result_from_summary(summary, candidate=candidate)
         except Exception as exc:
             fatal_error = {
                 "error_type": type(exc).__name__,
@@ -637,11 +1007,15 @@ def _run_c2_proxy_sweep(
                 cpu_collision_fallback_detected=False,
                 gpu_collider_unsupported=False,
                 nan_count=0,
-                non_physical_parameter_dependence=False,
+                non_physical_parameter_dependence=candidate.non_physical_parameter_dependence_risk,
                 fatal_error=fatal_error,
             )
             result.update(
                 {
+                    "parent_candidate_id": candidate.parent_candidate_id,
+                    "phase": candidate.phase,
+                    "variable_group": candidate.variable_group,
+                    "non_physical_parameter_dependence_risk": candidate.non_physical_parameter_dependence_risk,
                     "artifact_dir": str(candidate_dir),
                     "scene_path": str(scene_path),
                     "variant_summary": str(candidate_dir / "variant_summary.json"),
@@ -657,11 +1031,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--phase", default="S2F1_C2_PROXY_SWEEP")
     parser.add_argument("--parent-manifest", default=DEFAULT_PARENT_MANIFEST)
     parser.add_argument("--baseline-freeze-manifest", default=DEFAULT_BASELINE_FREEZE_MANIFEST)
+    parser.add_argument("--s2f1-manifest", default=DEFAULT_MANIFEST_PATH)
     parser.add_argument("--artifact-dir", default=DEFAULT_ARTIFACT_DIR)
     parser.add_argument("--manifest-path", default=DEFAULT_MANIFEST_PATH)
     parser.add_argument("--scene-dir", default=DEFAULT_SCENE_DIR)
     parser.add_argument("--native-usd", default=DEFAULT_NATIVE_USD)
-    parser.add_argument("--candidate-limit", type=int, default=12)
+    parser.add_argument("--candidate-limit", type=int, default=None)
     parser.add_argument("--particle-count", type=int, default=ColliderConfig.particle_count)
     parser.add_argument("--steps", type=int, default=ColliderConfig.steps)
     parser.add_argument("--width", type=int, default=ColliderConfig.render_width)
@@ -674,10 +1049,22 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
-    if args.phase != "S2F1_C2_PROXY_SWEEP":
+    if args.phase not in {"S2F1_C2_PROXY_SWEEP", "S2F2_VELOCITY_CONTACT_OFFSET"}:
         raise SystemExit(f"unsupported phase for this runner: {args.phase}")
 
-    candidates = build_c2_proxy_sweep(limit=args.candidate_limit)
+    if args.phase == "S2F2_VELOCITY_CONTACT_OFFSET":
+        if args.artifact_dir == DEFAULT_ARTIFACT_DIR:
+            args.artifact_dir = DEFAULT_S2F2_ARTIFACT_DIR
+        if args.manifest_path == DEFAULT_MANIFEST_PATH:
+            args.manifest_path = DEFAULT_S2F2_MANIFEST_PATH
+        if args.scene_dir == DEFAULT_SCENE_DIR:
+            args.scene_dir = DEFAULT_S2F2_SCENE_DIR
+        candidates = build_velocity_contact_offset_sweep(
+            s2f1_manifest_path=Path(args.s2f1_manifest),
+            limit=args.candidate_limit,
+        )
+    else:
+        candidates = build_c2_proxy_sweep(limit=args.candidate_limit or 12)
     base_config = ColliderConfig(
         particle_count=args.particle_count,
         steps=args.steps,
@@ -689,6 +1076,7 @@ def main(argv: list[str]) -> int:
     manifest_path = Path(args.manifest_path)
     parent_manifest = Path(args.parent_manifest)
     baseline_freeze_manifest = Path(args.baseline_freeze_manifest)
+    source_s2f1_manifest = Path(args.s2f1_manifest) if args.phase == "S2F2_VELOCITY_CONTACT_OFFSET" else None
     native_usd = Path(args.native_usd).resolve()
     command = " ".join([sys.executable, Path(__file__).as_posix(), *argv])
     previous_manifest = _load_existing_manifest(manifest_path)
@@ -707,12 +1095,13 @@ def main(argv: list[str]) -> int:
             command=command,
             runtime_warning_scan=None,
             previous_manifest=previous_manifest,
-        )
+            source_s2f1_manifest=source_s2f1_manifest,
+    )
     if args.plan_only:
-        print(f"S2F1 candidate plan manifest={manifest_path}", flush=True)
+        print(f"{args.phase} candidate plan manifest={manifest_path}", flush=True)
         return 0
     if args.summarize_existing:
-        candidate_results = load_candidate_results_from_artifacts(artifact_dir)
+        candidate_results = load_candidate_results_from_artifacts(artifact_dir, candidates=candidates)
         manifest = write_followup_manifest(
             manifest_path,
             phase=args.phase,
@@ -724,10 +1113,16 @@ def main(argv: list[str]) -> int:
             command=command,
             runtime_warning_scan=scan_runtime_warnings(artifact_dir),
             previous_manifest=previous_manifest,
+            source_s2f1_manifest=source_s2f1_manifest,
+        )
+        promotion_field = (
+            f"best_for_s2f5={manifest['best_for_s2f5']}"
+            if args.phase == "S2F2_VELOCITY_CONTACT_OFFSET"
+            else f"best_for_s3={manifest['best_for_s3']}"
         )
         print(
-            "S2F1 C2 proxy sweep summary "
-            f"status={manifest['status']} best_for_s3={manifest['best_for_s3']} "
+            f"{args.phase} summary "
+            f"status={manifest['status']} {promotion_field} best_for_s3={manifest['best_for_s3']} "
             f"manifest={manifest_path}",
             flush=True,
         )
@@ -759,10 +1154,16 @@ def main(argv: list[str]) -> int:
             command=command,
             runtime_warning_scan=scan_runtime_warnings(artifact_dir),
             previous_manifest=_load_existing_manifest(manifest_path),
+            source_s2f1_manifest=source_s2f1_manifest,
+        )
+        promotion_field = (
+            f"best_for_s2f5={final_manifest['best_for_s2f5']}"
+            if args.phase == "S2F2_VELOCITY_CONTACT_OFFSET"
+            else f"best_for_s3={final_manifest['best_for_s3']}"
         )
         print(
-            "S2F1 C2 proxy sweep "
-            f"status={final_manifest['status']} best_for_s3={final_manifest['best_for_s3']} "
+            f"{args.phase} "
+            f"status={final_manifest['status']} {promotion_field} best_for_s3={final_manifest['best_for_s3']} "
             f"manifest={manifest_path}",
             flush=True,
         )
@@ -789,6 +1190,7 @@ def main(argv: list[str]) -> int:
             runtime_warning_scan=scan_runtime_warnings(artifact_dir),
             fatal_error=fatal_error,
             previous_manifest=_load_existing_manifest(manifest_path),
+            source_s2f1_manifest=source_s2f1_manifest,
         )
     return 0 if fatal_error is None else 2
 

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from tools.labutopia_fluid.run_beaker_collider_smoke import ColliderConfig, VariantSpec
 
 
@@ -93,6 +95,92 @@ def test_c2a_candidate_materializes_config_and_variant_spec():
     assert spec.collision_approximation == "convex_panel_boxes"
 
 
+def test_s2f2_sweep_targets_only_near_pass_candidates_and_keeps_geometry_fixed():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import build_velocity_contact_offset_sweep
+
+    candidates = build_velocity_contact_offset_sweep(
+        s2f1_manifest_path=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json"
+        )
+    )
+
+    parents = {candidate.parent_candidate_id for candidate in candidates}
+    assert parents == {"C2A_005", "C2A_009", "C2A_007"}
+    assert len(candidates) == 18
+
+    by_parent = {parent: [candidate for candidate in candidates if candidate.parent_candidate_id == parent] for parent in parents}
+    for parent, group in by_parent.items():
+        assert [candidate.variable_group for candidate in group] == [
+            "baseline_repeat",
+            "velocity_020",
+            "particle_contact",
+            "collider_contact_rest",
+            "ccd_enabled",
+            "max_velocity_guardrail",
+        ]
+        baseline = group[0]
+        for candidate in group:
+            assert candidate.panel_count == baseline.panel_count
+            assert candidate.wall_thickness == baseline.wall_thickness
+            assert candidate.bottom_overlap == baseline.bottom_overlap
+            assert candidate.spawn_particle_contact_offset == baseline.particle_contact_offset
+
+    assert [candidate.candidate_id for candidate in by_parent["C2A_005"]] == [
+        "C2A_005_S2F2_BASE",
+        "C2A_005_S2F2_VEL020",
+        "C2A_005_S2F2_PCO060",
+        "C2A_005_S2F2_CCO004_RN001",
+        "C2A_005_S2F2_CCD1",
+        "C2A_005_S2F2_VMAX010",
+    ]
+    assert next(c for c in candidates if c.candidate_id == "C2A_009_S2F2_VEL020").initial_radial_velocity == 0.02
+    assert next(c for c in candidates if c.candidate_id == "C2A_005_S2F2_PCO060").particle_contact_offset == 0.006
+    assert next(c for c in candidates if c.candidate_id == "C2A_007_S2F2_PCO045").particle_contact_offset == 0.0045
+    capped = next(c for c in candidates if c.candidate_id == "C2A_007_S2F2_VMAX010")
+    assert capped.non_physical_parameter_dependence_risk is True
+    assert capped.particle_max_velocity == 0.10
+
+
+def test_s2f2_candidate_materializes_particle_system_tuning():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import C2ProxyCandidate
+
+    candidate = C2ProxyCandidate(
+        candidate_id="C2A_005_S2F2_PCO060",
+        parent_candidate_id="C2A_005",
+        phase="S2F2_VELOCITY_CONTACT_OFFSET",
+        variable_group="particle_contact",
+        panel_count=32,
+        wall_thickness=0.014,
+        bottom_overlap=0.006,
+        particle_contact_offset=0.006,
+        spawn_particle_contact_offset=0.0045,
+        particle_system_contact_offset=0.0072,
+        fluid_rest_offset=0.0036,
+        solid_rest_offset=0.0036,
+        collider_contact_offset=0.002,
+        collider_rest_offset=0.0,
+        initial_radial_velocity=0.04,
+        particle_max_velocity=5.0,
+    )
+
+    config = candidate.to_config(base=ColliderConfig(steps=12))
+    spec = candidate.to_variant_spec()
+
+    assert config.particle_contact_offset == 0.006
+    assert config.spawn_particle_contact_offset == 0.0045
+    assert config.particle_system_contact_offset == 0.0072
+    assert config.fluid_rest_offset == 0.0036
+    assert config.solid_rest_offset == 0.0036
+    assert config.collider_contact_offset == 0.002
+    assert config.collider_rest_offset == 0.0
+    assert config.particle_enable_ccd is None
+    assert config.particle_max_velocity == 5.0
+    assert config.particle_max_depenetration_velocity is None
+    assert spec.variant_id == "C2A_005_S2F2_PCO060"
+    assert spec.setup == "s2f2_velocity_contact_offset"
+    assert spec.panel_count == 32
+
+
 def test_followup_pass_criteria_require_zero_outside_source():
     from tools.labutopia_fluid.run_beaker_collider_followup_sweep import classify_followup_candidate
 
@@ -140,6 +228,153 @@ def test_non_physical_parameter_dependence_cannot_promote_candidate():
     assert result["classification"] == "FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE"
     assert ranked["best_for_s3"] == []
     assert ranked["s2f1_status"] == "STOP_WITH_EVIDENCE"
+
+
+def test_s2f2_diagnosis_classifies_velocity_contact_geometry_and_nonphysical():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import analyze_s2f2_diagnosis
+
+    base_fail = {
+        "candidate_id": "C2A_005_S2F2_BASE",
+        "parent_candidate_id": "C2A_005",
+        "variable_group": "baseline_repeat",
+        "classification": "FAIL_CONTAINER_LEAK",
+        "source_retention_fraction": 0.9921875,
+        "outside_source_count": 2,
+        "spill_count": 2,
+        "below_table_count": 0,
+    }
+    velocity_pass = {
+        **base_fail,
+        "candidate_id": "C2A_005_S2F2_VEL_ZERO",
+        "variable_group": "velocity_020",
+        "classification": "PASS_SOURCE_HOLD",
+        "outside_source_count": 0,
+        "spill_count": 0,
+    }
+    contact_pass = {
+        **base_fail,
+        "candidate_id": "C2A_005_S2F2_PCO060",
+        "variable_group": "particle_contact",
+        "classification": "PASS_SOURCE_HOLD",
+        "outside_source_count": 0,
+        "spill_count": 0,
+    }
+    nonphysical_only = {
+        **base_fail,
+        "candidate_id": "C2A_005_S2F2_VMAX010",
+        "variable_group": "max_velocity_guardrail",
+        "classification": "FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE",
+        "outside_source_count": 0,
+        "spill_count": 0,
+    }
+
+    assert analyze_s2f2_diagnosis([base_fail, velocity_pass])["conclusion"] == "INITIAL_RADIAL_VELOCITY_SENSITIVITY"
+    assert analyze_s2f2_diagnosis([base_fail, contact_pass])["conclusion"] == "PARTICLE_CONTACT_OFFSET_SENSITIVITY"
+    assert analyze_s2f2_diagnosis([base_fail])["conclusion"] == "RESIDUAL_PROXY_GEOMETRY_GAP_SUSPECTED"
+    assert analyze_s2f2_diagnosis([base_fail, nonphysical_only])["conclusion"] == "NON_PHYSICAL_DAMPING_ONLY"
+
+
+def test_s2f2_diagnosis_marks_velocity_pass_with_hash_mismatch_as_coupled():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import analyze_s2f2_diagnosis
+
+    base_fail = {
+        "candidate_id": "C2A_009_S2F2_BASE",
+        "parent_candidate_id": "C2A_009",
+        "variable_group": "baseline_repeat",
+        "classification": "FAIL_CONTAINER_LEAK",
+        "source_retention_fraction": 0.9921875,
+        "outside_source_count": 2,
+        "spill_count": 2,
+        "below_table_count": 0,
+        "initial_particle_positions_hash": "hash-base",
+    }
+    velocity_pass = {
+        **base_fail,
+        "candidate_id": "C2A_009_S2F2_VEL020",
+        "variable_group": "velocity_020",
+        "classification": "PASS_SOURCE_HOLD",
+        "outside_source_count": 0,
+        "spill_count": 0,
+        "initial_particle_positions_hash": "hash-vel020",
+    }
+
+    diagnosis = analyze_s2f2_diagnosis([base_fail, velocity_pass])
+
+    assert diagnosis["conclusion"] == "VELOCITY_INITIAL_LAYOUT_COUPLED_SENSITIVITY"
+    assert diagnosis["velocity_pass_candidates_with_initial_hash_mismatch"] == ["C2A_009_S2F2_VEL020"]
+    assert diagnosis["root_cause_confidence"] == "COUPLED_DIAGNOSTIC"
+
+
+def test_write_s2f2_manifest_records_promotion_caveat_when_hashes_are_coupled(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_velocity_contact_offset_sweep,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    base_fail = {
+        **classify_followup_candidate(
+            candidate_id="C2A_009_S2F2_BASE",
+            source_retention_fraction=0.9921875,
+            particle_count_final_fraction=1.0,
+            outside_source_count=2,
+            target_count=0,
+            spill_count=2,
+            below_table_count=0,
+            tail_leak_rate_fraction_per_second=0.0,
+            cpu_collision_fallback_detected=False,
+            gpu_collider_unsupported=False,
+            nan_count=0,
+            non_physical_parameter_dependence=False,
+        ),
+        "parent_candidate_id": "C2A_009",
+        "phase": "S2F2_VELOCITY_CONTACT_OFFSET",
+        "variable_group": "baseline_repeat",
+        "initial_particle_positions_hash": "hash-base",
+        "spawn_position_pinned": True,
+        "initial_region_counts": {"source_count": 256, "spill_count": 0},
+    }
+    velocity_pass = {
+        **classify_followup_candidate(
+            candidate_id="C2A_009_S2F2_VEL020",
+            source_retention_fraction=1.0,
+            particle_count_final_fraction=1.0,
+            outside_source_count=0,
+            target_count=0,
+            spill_count=0,
+            below_table_count=0,
+            tail_leak_rate_fraction_per_second=0.0,
+            cpu_collision_fallback_detected=False,
+            gpu_collider_unsupported=False,
+            nan_count=0,
+            non_physical_parameter_dependence=False,
+        ),
+        "parent_candidate_id": "C2A_009",
+        "phase": "S2F2_VELOCITY_CONTACT_OFFSET",
+        "variable_group": "velocity_020",
+        "initial_particle_positions_hash": "hash-vel020",
+        "spawn_position_pinned": True,
+        "initial_region_counts": {"source_count": 256, "spill_count": 0},
+    }
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F2_VELOCITY_CONTACT_OFFSET",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=build_velocity_contact_offset_sweep(limit=1),
+        candidate_results=[base_fail, velocity_pass],
+        command="runner --phase S2F2_VELOCITY_CONTACT_OFFSET",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+    )
+
+    assert manifest["next_stage"]["id"] == "S2F5_PROMOTION_REVIEW"
+    assert manifest["next_stage"]["not_s3_release"] is True
+    assert manifest["next_stage"]["requires_initial_layout_hash_stability_check"] is True
+    assert manifest["next_stage"]["promotion_caveat"] == "COUPLED_DIAGNOSTIC_REQUIRES_INITIAL_LAYOUT_RETEST"
 
 
 def test_write_followup_manifest_records_parent_baseline_and_candidates(tmp_path):
@@ -232,6 +467,69 @@ def test_write_followup_manifest_records_near_pass_candidates_for_s2f2(tmp_path)
     assert manifest["near_pass_for_s2f2"] == ["C2A_005"]
     assert manifest["next_stage"]["id"] == "S2F2_VELOCITY_CONTACT_OFFSET"
     assert manifest["next_stage"]["variants"] == ["C2A_005"]
+
+
+def test_write_s2f2_manifest_records_s2f5_candidates_and_keeps_s3_closed(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_velocity_contact_offset_sweep,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    candidate_results = [
+        {
+            **classify_followup_candidate(
+                candidate_id="C2A_009_S2F2_VEL020",
+                source_retention_fraction=1.0,
+                particle_count_final_fraction=1.0,
+                outside_source_count=0,
+                target_count=0,
+                spill_count=0,
+                below_table_count=0,
+                tail_leak_rate_fraction_per_second=0.0,
+                cpu_collision_fallback_detected=False,
+                gpu_collider_unsupported=False,
+                nan_count=0,
+                non_physical_parameter_dependence=False,
+            ),
+            "parent_candidate_id": "C2A_009",
+            "phase": "S2F2_VELOCITY_CONTACT_OFFSET",
+            "variable_group": "velocity_020",
+            "initial_particle_positions_hash": "hash-vel020",
+            "spawn_position_pinned": True,
+            "initial_region_counts": {"source_count": 256, "spill_count": 0},
+        }
+    ]
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F2_VELOCITY_CONTACT_OFFSET",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=build_velocity_contact_offset_sweep(limit=1),
+        candidate_results=candidate_results,
+        command="runner --phase S2F2_VELOCITY_CONTACT_OFFSET",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+    )
+
+    assert manifest["status"] == "GO_NEXT"
+    assert manifest["best_for_s2f5"] == ["C2A_009_S2F2_VEL020"]
+    assert manifest["best_for_s3"] == []
+    assert manifest["s2f5_promotion_review_next"] is True
+    assert manifest["s3_kinematic_pour_released"] is False
+    assert manifest["s2f2_diagnosis"]["conclusion"] == "INITIAL_RADIAL_VELOCITY_SENSITIVITY"
+    assert manifest["s2f2_initial_layout_hash_audit"]["parents"]["C2A_009"]["hash_count"] == 1
+    assert manifest["s2f2_initial_layout_hash_audit"]["parents"]["C2A_009"]["spawn_position_pinned_all"] is True
+    assert manifest["next_stage"]["id"] == "S2F5_PROMOTION_REVIEW"
+    assert manifest["next_stage"]["variants"] == ["C2A_009_S2F2_VEL020"]
+    assert manifest["next_stage"]["not_s3_release"] is True
+    assert manifest["next_stage"]["requires_initial_layout_hash_stability_check"] is False
+    assert manifest["phase_specs"]["S2F1_C2_PROXY_SWEEP"]["status"] == "COMPLETE_STOP_WITH_EVIDENCE"
+    assert manifest["phase_specs"]["S2F2_VELOCITY_CONTACT_OFFSET"]["status"] == "COMPLETE_GO_NEXT"
+    assert manifest["phase_specs"]["S2F5_PROMOTION_REVIEW"]["status"] == "NEXT"
 
 
 def test_write_followup_manifest_preserves_runtime_command_when_summarizing(tmp_path):
@@ -399,6 +697,10 @@ def test_load_candidate_results_from_artifacts_rebuilds_manifest_inputs(tmp_path
     "tail_leak_rate_fraction_per_second": 0.0,
     "target_count": 0
   },
+  "final_region_counts": {"source_count": 256, "spill_count": 0},
+  "initial_particle_positions_hash": "abc123",
+  "initial_region_counts": {"source_count": 256, "spill_count": 0},
+  "spawn_position_pinned": true,
   "scene_path": "scenes/c2a_001.usda",
   "variant": {"variant_id": "C2A_001"}
 }
@@ -411,4 +713,46 @@ def test_load_candidate_results_from_artifacts_rebuilds_manifest_inputs(tmp_path
     assert len(results) == 1
     assert results[0]["candidate_id"] == "C2A_001"
     assert results[0]["classification"] == "PASS_SOURCE_HOLD"
+    assert results[0]["initial_particle_positions_hash"] == "abc123"
+    assert results[0]["spawn_position_pinned"] is True
+    assert results[0]["initial_region_counts"] == {"source_count": 256, "spill_count": 0}
     assert results[0]["variant_summary"].endswith("C2A_001/variant_summary.json")
+
+
+def test_load_candidate_results_from_artifacts_rejects_unplanned_summaries(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_velocity_contact_offset_sweep,
+        load_candidate_results_from_artifacts,
+    )
+
+    variant_dir = tmp_path / "C2A_999_STALE"
+    variant_dir.mkdir()
+    (variant_dir / "variant_summary.json").write_text(
+        """
+{
+  "artifact_dir": "artifacts/C2A_999_STALE",
+  "classification_detail": {
+    "below_table_count": 0,
+    "cpu_collision_fallback_detected": false,
+    "gpu_collider_unsupported": false,
+    "nan_count": 0,
+    "outside_source_count": 0,
+    "particle_count_final_fraction": 1.0,
+    "source_retention_fraction": 1.0,
+    "spill_count": 0,
+    "tail_leak_rate_fraction_per_second": 0.0,
+    "target_count": 0
+  },
+  "final_region_counts": {"source_count": 256, "spill_count": 0},
+  "initial_particle_positions_hash": "stale",
+  "initial_region_counts": {"source_count": 256, "spill_count": 0},
+  "spawn_position_pinned": true,
+  "scene_path": "scenes/stale.usda",
+  "variant": {"variant_id": "C2A_999_STALE"}
+}
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="unplanned_variant_summaries"):
+        load_candidate_results_from_artifacts(tmp_path, candidates=build_velocity_contact_offset_sweep(limit=1))

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -66,6 +67,14 @@ class ColliderConfig:
     particle_spacing: float = 0.0045
     particle_width: float = 0.0035
     particle_contact_offset: float = 0.0045
+    spawn_particle_contact_offset: float | None = None
+    particle_system_contact_offset: float | None = None
+    particle_rest_offset: float = 0.0
+    solid_rest_offset: float | None = None
+    fluid_rest_offset: float | None = None
+    particle_enable_ccd: bool | None = None
+    particle_max_velocity: float = 5.0
+    particle_max_depenetration_velocity: float | None = None
     source_center: tuple[float, float, float] = (0.0, 0.0, 0.0)
     target_center: tuple[float, float, float] = (0.22, 0.0, 0.0)
     source_radius: float = 0.055
@@ -172,10 +181,15 @@ def variant_specs() -> dict[str, VariantSpec]:
 def source_particle_lower(config: ColliderConfig) -> tuple[float, float, float]:
     grid_x = (config.grid_dims[0] - 1) * config.particle_spacing
     grid_y = (config.grid_dims[1] - 1) * config.particle_spacing
+    spawn_contact_offset = (
+        config.spawn_particle_contact_offset
+        if config.spawn_particle_contact_offset is not None
+        else config.particle_contact_offset
+    )
     return (
         config.source_center[0] - grid_x / 2.0,
         config.source_center[1] - grid_y / 2.0,
-        config.table_z + config.bottom_thickness + config.particle_contact_offset * 3.0,
+        config.table_z + config.bottom_thickness + spawn_contact_offset * 3.0,
     )
 
 
@@ -367,7 +381,12 @@ def _particle_positions(config: ColliderConfig) -> list[tuple[float, float, floa
 def build_source_particle_positions(config: ColliderConfig) -> list[tuple[float, float, float]]:
     """Build deterministic source particles that exercise the beaker wall."""
     positions: list[tuple[float, float, float]] = []
-    usable_radius = config.source_radius - config.particle_contact_offset * 1.2
+    spawn_contact_offset = (
+        config.spawn_particle_contact_offset
+        if config.spawn_particle_contact_offset is not None
+        else config.particle_contact_offset
+    )
+    usable_radius = config.source_radius - spawn_contact_offset * 1.2
     lower_z = source_particle_lower(config)[2]
     samples_per_axis = int(math.ceil((usable_radius * 2.0) / config.particle_spacing)) + 1
     start = -usable_radius
@@ -395,6 +414,11 @@ def build_source_particle_positions(config: ColliderConfig) -> list[tuple[float,
     for x, y, z, _ in candidates[: config.particle_count]:
         positions.append((x, y, z))
     return positions
+
+
+def _positions_hash(positions: Sequence[Sequence[float]]) -> str:
+    payload = [[round(float(value), 9) for value in pos[:3]] for pos in positions]
+    return hashlib.sha256(json.dumps(payload, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
 def build_source_particle_initial_velocities(
@@ -830,18 +854,31 @@ def _build_variant_stage(
     )
 
     particle_system_path = Sdf.Path("/World/ParticleSystem")
+    particle_system_contact_offset = (
+        config.particle_system_contact_offset
+        if config.particle_system_contact_offset is not None
+        else config.particle_contact_offset * 1.2
+    )
+    solid_rest_offset = (
+        config.solid_rest_offset if config.solid_rest_offset is not None else config.particle_contact_offset * 0.6
+    )
+    fluid_rest_offset = (
+        config.fluid_rest_offset if config.fluid_rest_offset is not None else config.particle_contact_offset * 0.6
+    )
     particle_system = particleUtils.add_physx_particle_system(
         stage=stage,
         particle_system_path=particle_system_path,
         particle_system_enabled=True,
         simulation_owner=Sdf.Path(physics_context.prim_path),
-        contact_offset=config.particle_contact_offset * 1.2,
-        rest_offset=0.0,
+        contact_offset=particle_system_contact_offset,
+        rest_offset=config.particle_rest_offset,
         particle_contact_offset=config.particle_contact_offset,
-        solid_rest_offset=config.particle_contact_offset * 0.6,
-        fluid_rest_offset=config.particle_contact_offset * 0.6,
+        solid_rest_offset=solid_rest_offset,
+        fluid_rest_offset=fluid_rest_offset,
+        enable_ccd=config.particle_enable_ccd,
         solver_position_iterations=5,
-        max_velocity=5.0,
+        max_depenetration_velocity=config.particle_max_depenetration_velocity,
+        max_velocity=config.particle_max_velocity,
         max_neighborhood=96,
         global_self_collision_enabled=True,
         non_particle_collision_enabled=True,
@@ -979,6 +1016,26 @@ def _run_variant(
         "particle_system_path": built["particle_system_path"],
         "particle_set_path": built["particle_set_path"],
         "particle_contact_offset": config.particle_contact_offset,
+        "spawn_particle_contact_offset": (
+            config.spawn_particle_contact_offset
+            if config.spawn_particle_contact_offset is not None
+            else config.particle_contact_offset
+        ),
+        "particle_system_contact_offset": (
+            config.particle_system_contact_offset
+            if config.particle_system_contact_offset is not None
+            else config.particle_contact_offset * 1.2
+        ),
+        "particle_rest_offset": config.particle_rest_offset,
+        "solid_rest_offset": (
+            config.solid_rest_offset if config.solid_rest_offset is not None else config.particle_contact_offset * 0.6
+        ),
+        "fluid_rest_offset": (
+            config.fluid_rest_offset if config.fluid_rest_offset is not None else config.particle_contact_offset * 0.6
+        ),
+        "particle_enable_ccd": config.particle_enable_ccd,
+        "particle_max_velocity": config.particle_max_velocity,
+        "particle_max_depenetration_velocity": config.particle_max_depenetration_velocity,
         "variant": asdict(spec),
         "collider_paths": built["collider_paths"],
         "region_definitions": region_definitions(config),
@@ -1094,6 +1151,9 @@ def _run_variant(
         "readback_available": bool(initial_positions and final_positions),
         "initial_count": len(initial_positions),
         "final_count": len(final_positions),
+        "initial_particle_positions_hash": _positions_hash(initial_positions),
+        "final_particle_positions_hash": _positions_hash(final_positions),
+        "spawn_position_pinned": config.spawn_particle_contact_offset is not None,
         "initial_region_counts": compute_region_counts(initial_positions, config),
         "final_region_counts": final_region_counts,
         "initial_aabb": _aabb(initial_positions),

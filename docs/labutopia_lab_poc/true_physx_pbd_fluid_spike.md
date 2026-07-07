@@ -226,8 +226,8 @@ docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260
 
 它固定了四件事：第一，C0-C5 的 S2 矩阵结果不再漂移；第二，C2 是当前最接近但仍失败的 baseline；
 第三，runtime warning scan 和 visual review 已作为 S2F 后续比较的基准；第四，S3 仍然不放行。
-所以 S2F0 当时的产品口径是：先进入 `S2F1_C2_PROXY_SWEEP`，不是进入倒液视频。现在这一步已经完成，
-当前产品口径应更新为：进入 `S2F2_VELOCITY_CONTACT_OFFSET`，继续追查最后几个泄漏粒子。
+所以 S2F0 当时的产品口径是：先进入 `S2F1_C2_PROXY_SWEEP`，不是进入倒液视频。现在 S2F1 和
+S2F2 都已经完成，当前产品口径应更新为：进入 `S2F5_PROMOTION_REVIEW`，复核唯一通过的静态持液候选。
 
 当前 S2F1 也已完成：我们优先修了 C2 proxy collider，不是只手调一个参数，而是跑了 12 个 C2A
 候选，系统覆盖 `panel_count`、`wall_thickness`、`bottom_overlap`、`particle_contact_offset`、
@@ -238,15 +238,51 @@ docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_followup_c2_proxy_sweep_20260707_001/
 ```
 
-结果是：C2 proxy 明显有进步，但还没有达到 benchmark 放行。最好的两个候选 `C2A_005` 和
+S2F1 的结果是：C2 proxy 明显有进步，但还没有达到 benchmark 放行。最好的两个候选 `C2A_005` 和
 `C2A_009` 都把 source retention 提到 `0.9921875`，也就是 256 个粒子里大约 254 个留在杯内；
 但严格口径要求 source 外必须是 0，它们仍各有 2 个粒子跑到 source 外并形成 spill。因此
 `best_for_s3=[]`，S3 仍不放行。下一步不是扩大盲扫，而是进入 `S2F2_VELOCITY_CONTACT_OFFSET`，
 围绕 `C2A_005`、`C2A_009` 和 `C2A_007` 判断这最后几个粒子是几何缝隙问题，还是
 contact offset / velocity 参数敏感问题。
 
-给产品经理的一句话版本：`C2A_005` 和 `C2A_009` 已经很接近合格，但它们只是 near-pass
-candidates，不是 S3 candidates；当前 `best_for_s3=[]`，`s3_kinematic_pour_released=false`。
+当前 S2F2 已完成：我们没有继续盲目调几何，而是只围绕 `C2A_005`、`C2A_009`、`C2A_007`
+这三个 near-pass 候选做 18 个隔离实验。每个候选都固定原来的杯子几何，只分别改一类变量：
+低初始径向速度、particle contact offset、collider contact/rest offset、CCD、以及一个明确标记为
+non-physical 的 `max_velocity` guardrail。
+
+正式证据是：
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f2_velocity_contact_offset_20260708.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/
+assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f2/
+```
+
+S2F2 的关键结果：
+
+| 候选 | 结果 | 白话解释 |
+|---|---|---|
+| `C2A_009_S2F2_VEL020` | `PASS_SOURCE_HOLD` | 把初始径向速度从 `0.08` 降到 `0.02` 后，256 个粒子全部留在 source 区域：`outside=0`, `spill=0`, `below=0`。 |
+| `C2A_009_S2F2_VMAX010` | `FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE` | 数值上也不漏，但它依赖极低 `max_velocity` 限速，等于把液体变得过黏，只能作为诊断，不能作为可推广方案。 |
+| `C2A_007_S2F2_PCO045` | `FAIL_CONTAINER_LEAK` | 非常接近，只剩 1 个 spill 粒子，但严格门槛要求 0，所以仍不能通过。 |
+| contact / collider offset 组 | mostly worse | 单独调 contact offset 没解决问题，部分方案反而漏得更多。 |
+
+因此当前结论是：`C2A_009` 的最后泄漏更像
+`VELOCITY_INITIAL_LAYOUT_COUPLED_SENSITIVITY`，不是简单的 collider contact offset 一调就好。
+白话说，低初始速度确实让这次静态装液不漏，但它和 PhysX reset 后的轻微初始布局变化耦合在一起，
+还不能说根因被纯粹隔离成“只改速度就一定解决”。它给了我们一个很具体的下一步候选：
+`C2A_009_S2F2_VEL020`。
+
+还有一个边界要讲清楚：S2F2 的 `spawn_position_pinned=true` 表示我们写入 USD 的初始粒子坐标是固定的，
+不是每个方案随便换一批液体。但是正式 manifest 的 `s2f2_initial_layout_hash_audit` 显示三个 parent
+都有 post-reset hash variation。白话说，PhysX 在 reset / settle 后会因为 contact offset 等参数让粒子
+出现细小的初始稳定状态差异。因此 contact-offset 组只能作为诊断证据；真正进入下一步复核的是低初始速度通过的
+`C2A_009_S2F2_VEL020`，不是那些依赖 contact offset 或 `max_velocity` 的方案。
+
+给产品经理的一句话版本：我们已经找到一个“静态装液不漏”的候选，但它还只通过了单次 256 粒子的
+静态测试。当前 `best_for_s2f5=["C2A_009_S2F2_VEL020"]`，下一步是 `S2F5_PROMOTION_REVIEW`；
+这个 `next_stage` 明确带有 `COUPLED_DIAGNOSTIC_REQUIRES_INITIAL_LAYOUT_RETEST` caveat，第一步要复测
+initial-layout hash 稳定性。`s3_kinematic_pour_released=false`，还不能说 `level1_pour` 已经可以真实倒液。
 
 ## 调研补充：别人不是没做过 Isaac 液体 demo，但 demo 和 benchmark 不是一回事
 

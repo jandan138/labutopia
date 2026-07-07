@@ -253,14 +253,16 @@ Current status:
 ```text
 S2F0_BASELINE_FREEZE=COMPLETE
 S2F1_C2_PROXY_SWEEP=COMPLETE_STOP_WITH_EVIDENCE
-S2F2_VELOCITY_CONTACT_OFFSET=NEXT
+S2F2_VELOCITY_CONTACT_OFFSET=COMPLETE_GO_NEXT
 S2F3_C3_SDF_SWEEP=PENDING
 S2F4_C4_NATIVE_MESH_ISOLATION=PENDING
-S2F5_PROMOTION_REVIEW=PENDING
+S2F5_PROMOTION_REVIEW=NEXT
 S2F0 result manifest:
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json
 S2F1 result manifest:
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json
+S2F2 result manifest:
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f2_velocity_contact_offset_20260708.json
 ```
 
 Do not repeat S2F0 unless the S2 collider matrix is intentionally regenerated.
@@ -281,10 +283,24 @@ s3_kinematic_pour_released=false
 near_pass_for_s2f2=["C2A_005", "C2A_009", "C2A_007"]
 ```
 
-S2F2 must focus on these near-pass candidates and determine whether the last
-leak is caused by residual proxy geometry gaps or by particle/contact/velocity
-parameter sensitivity. Do not move to S3 until a later promotion review records
-at least one `PASS_SOURCE_HOLD` candidate.
+S2F2 closed on 2026-07-08 with `GO_NEXT`. It focused only on
+`C2A_005`, `C2A_009`, and `C2A_007`, fixed the proxy geometry, and isolated
+velocity/contact/CCD/max-velocity variables. Only `C2A_009_S2F2_VEL020` passed
+the static source-hold contract without non-physical damping:
+
+```text
+best_for_s2f5=["C2A_009_S2F2_VEL020"]
+best_for_s3=[]
+s2f2_root_cause_classification=VELOCITY_INITIAL_LAYOUT_COUPLED_SENSITIVITY
+s2f2_root_cause_confidence=COUPLED_DIAGNOSTIC
+s2f5_promotion_review_next=true
+s3_kinematic_pour_released=false
+```
+
+Do not move directly to S3. `C2A_009_S2F2_VEL020` must first pass S2F5
+promotion review across multiple seeds and particle counts. Because the diagnosis
+is coupled with post-reset initial layout variation, S2F5 must first retest
+initial-layout hash stability before it can treat the candidate as promotable.
 
 S2F required evidence per variant:
 
@@ -871,7 +887,7 @@ settings, diagnostic frames, and collision overlays. A final
 candidate artifacts after fixing manifest finalization order around
 `SimulationApp.close()`.
 
-- [ ] **Step 5: Run S2F2 velocity/contact-offset isolation**
+- [x] **Step 5: Run S2F2 velocity/contact-offset isolation**
 
 Only run this after S2F1 shows at least one near-pass candidate or a clear
 geometry failure. The goal is to separate geometry leak from particle/contact
@@ -892,6 +908,59 @@ Classify any success that depends only on extreme `max_velocity` damping as:
 ```text
 FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE
 ```
+
+Result on 2026-07-08:
+
+```text
+manifest=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f2_velocity_contact_offset_20260708.json
+artifact_dir=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/
+candidate_count=18
+result_count=18
+status=GO_NEXT
+best_for_s2f5=["C2A_009_S2F2_VEL020"]
+best_for_s3=[]
+s2f5_promotion_review_next=true
+s3_kinematic_pour_released=false
+s2f2_diagnosis.conclusion=VELOCITY_INITIAL_LAYOUT_COUPLED_SENSITIVITY
+s2f2_diagnosis.root_cause_confidence=COUPLED_DIAGNOSTIC
+next_stage.promotion_caveat=COUPLED_DIAGNOSTIC_REQUIRES_INITIAL_LAYOUT_RETEST
+next_stage.requires_initial_layout_hash_stability_check=true
+runtime_warning_gate.passed=true
+```
+
+Promotion candidate:
+
+```text
+C2A_009_S2F2_VEL020
+source_retention_fraction=1.0
+outside_source_count=0
+spill_count=0
+below_table_count=0
+target_count=0
+initial_radial_velocity=0.02
+```
+
+Important exclusions:
+
+```text
+C2A_009_S2F2_VMAX010 reached zero leak counts but is
+FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE because it relies on a max_velocity
+guardrail. It is diagnostic-only and not promotable.
+
+C2A_007_S2F2_PCO045 reached outside_source_count=1 and spill_count=1, but the
+contract requires zero, so it remains FAIL_CONTAINER_LEAK.
+
+Particle/contact-offset variants did not explain the leak cleanly; several
+contact/collider-offset variants worsened leakage.
+
+s2f2_initial_layout_hash_audit shows post-reset hash variation for C2A_005,
+C2A_007, and C2A_009. Authored spawn positions were pinned, but PhysX reset /
+settle can still differ when contact offsets change. Treat contact-offset results
+as diagnostic evidence, not release evidence.
+```
+
+PM interpretation: S2F2 found one static-hold promotion-review candidate. It
+does not release S3 or true-fluid `level1_pour`; it releases S2F5 only.
 
 - [ ] **Step 6: Run S2F3 C3 SDF sweep**
 
