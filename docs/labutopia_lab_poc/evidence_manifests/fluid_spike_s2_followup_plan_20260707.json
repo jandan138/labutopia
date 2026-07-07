@@ -2,7 +2,10 @@
   "allowed_claims": [
     "S2 follow-up is planned before S3.",
     "Isaac Sim / Omniverse supports PBD particle fluid demos, but benchmark-ready static containment still requires fluid-safe colliders.",
-    "C2 is the first follow-up route because it is the closest failed S2 candidate."
+    "C2 is the first follow-up route because it is the closest failed S2 candidate.",
+    "S2F1 C2 proxy sweep completed with STOP_WITH_EVIDENCE.",
+    "C2A_005 and C2A_009 are near-pass candidates, not S3 candidates.",
+    "Current next step is S2F2_VELOCITY_CONTACT_OFFSET, not S3 kinematic pour."
   ],
   "baseline_c2": {
     "below_table_count": 12,
@@ -23,19 +26,26 @@
   ],
   "contract_version": "s2_no_outside_source_v2",
   "created_at_utc": "2026-07-07T15:35:00+00:00",
+  "current_pm_summary": "S2F1 C2 proxy sweep completed with STOP_WITH_EVIDENCE; best_for_s3 remains empty; C2A_005 and C2A_009 are near-pass candidates, not S3 candidates; S2F2 velocity/contact-offset isolation is next; S3 kinematic pour is not released.",
   "evidence_type": "planning_and_research_manifest",
   "manifest_type": "true_physx_pbd_fluid_spike_s2_followup_plan",
   "parent_s2_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json",
   "baseline_phase": "S2F0_BASELINE_FREEZE",
   "s2f0_baseline_freeze_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json",
+  "s2f1_c2_proxy_sweep_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json",
   "phase_status": {
     "S2F0_BASELINE_FREEZE": "COMPLETE",
-    "S2F1_C2_PROXY_SWEEP": "PENDING",
-    "S2F2_VELOCITY_CONTACT_OFFSET": "PENDING",
+    "S2F1_C2_PROXY_SWEEP": "COMPLETE_STOP_WITH_EVIDENCE",
+    "S2F2_VELOCITY_CONTACT_OFFSET": "NEXT",
     "S2F3_C3_SDF_SWEEP": "PENDING",
     "S2F4_C4_NATIVE_MESH_ISOLATION": "PENDING",
     "S2F5_PROMOTION_REVIEW": "PENDING"
   },
+  "near_pass_for_s2f2": [
+    "C2A_005",
+    "C2A_009",
+    "C2A_007"
+  ],
   "phase_order": [
     "S2F0_BASELINE_FREEZE",
     "S2F1_C2_PROXY_SWEEP",

@@ -252,17 +252,39 @@ Current status:
 
 ```text
 S2F0_BASELINE_FREEZE=COMPLETE
-S2F1_C2_PROXY_SWEEP=PENDING
-S2F2_VELOCITY_CONTACT_OFFSET=PENDING
+S2F1_C2_PROXY_SWEEP=COMPLETE_STOP_WITH_EVIDENCE
+S2F2_VELOCITY_CONTACT_OFFSET=NEXT
 S2F3_C3_SDF_SWEEP=PENDING
 S2F4_C4_NATIVE_MESH_ISOLATION=PENDING
 S2F5_PROMOTION_REVIEW=PENDING
 S2F0 result manifest:
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json
+S2F1 result manifest:
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json
 ```
 
 Do not repeat S2F0 unless the S2 collider matrix is intentionally regenerated.
 All later follow-up evidence must cite this baseline freeze manifest.
+
+S2F1 closed on 2026-07-07 with `STOP_WITH_EVIDENCE`. The run completed the
+bounded 12-candidate C2A segmented proxy sweep in the IsaacSim41 / EBench target
+runtime. The result is an improvement over the S2 C2 baseline, but not a release
+for S3. `C2A_005` and `C2A_009` both reached
+`source_retention_fraction=0.9921875`, but both still had
+`outside_source_count=2` and `spill_count=2`. The strict
+`s2_no_outside_source_v2` contract requires zero outside-source, zero spill,
+zero target, and zero below-table particles. Therefore:
+
+```text
+best_for_s3=[]
+s3_kinematic_pour_released=false
+near_pass_for_s2f2=["C2A_005", "C2A_009", "C2A_007"]
+```
+
+S2F2 must focus on these near-pass candidates and determine whether the last
+leak is caused by residual proxy geometry gaps or by particle/contact/velocity
+parameter sensitivity. Do not move to S3 until a later promotion review records
+at least one `PASS_SOURCE_HOLD` candidate.
 
 S2F required evidence per variant:
 
@@ -708,7 +730,7 @@ collider matrix, runtime warning scan, visual review, strict
 `s2_no_outside_source_v2` contract, C2 closest-failed metrics, and the
 `best_for_s3=[]` / `s3_kinematic_pour_released=false` guard.
 
-- [ ] **Step 2: Write failing tests for follow-up sweep planning helpers**
+- [x] **Step 2: Write failing tests for follow-up sweep planning helpers**
 
 Create `tests/test_fluid_beaker_collider_followup_sweep.py` with tests for:
 
@@ -760,7 +782,7 @@ python -m pytest -q tests/test_fluid_beaker_collider_followup_sweep.py
 
 Expected before implementation: import failure.
 
-- [ ] **Step 3: Implement C2 proxy sweep generator**
+- [x] **Step 3: Implement C2 proxy sweep generator**
 
 Create `tools/labutopia_fluid/run_beaker_collider_followup_sweep.py` with:
 
@@ -789,7 +811,7 @@ Bound the first live batch to 12 candidates selected by risk coverage, not the
 full Cartesian product. Write the candidate list into the S2F1 manifest before
 launching runtime.
 
-- [ ] **Step 4: Run S2F1 C2 proxy sweep**
+- [x] **Step 4: Run S2F1 C2 proxy sweep**
 
 Run:
 
@@ -807,6 +829,47 @@ ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=YES PYTHONNOUSERSITE=1 PYTHONUNBUFFERED=1 \
 
 Do not release S3 from this phase unless at least one C2A candidate satisfies
 all S2F pass criteria.
+
+Actual run used the same target IsaacSim41 / EBench conda runtime and included
+the frozen S2F0 baseline manifest:
+
+```bash
+ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=YES PYTHONNOUSERSITE=1 PYTHONUNBUFFERED=1 \
+  /cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python \
+  tools/labutopia_fluid/run_beaker_collider_followup_sweep.py \
+  --phase S2F1_C2_PROXY_SWEEP \
+  --parent-manifest docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json \
+  --baseline-freeze-manifest docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json \
+  --artifact-dir docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_followup_c2_proxy_sweep_20260707_001 \
+  --manifest-path docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json \
+  --steps 240 \
+  --headless
+```
+
+S2F1 result:
+
+```text
+status=STOP_WITH_EVIDENCE
+reason=no_c2a_candidate_passed
+best_for_s3=[]
+runtime_warning_scan.blocking_runtime_warning_detected=false
+near_pass_for_s2f2=["C2A_005", "C2A_009", "C2A_007"]
+C2A_005 source_retention_fraction=0.9921875 outside_source_count=2 spill_count=2 below_table_count=0
+C2A_009 source_retention_fraction=0.9921875 outside_source_count=2 spill_count=2 below_table_count=0
+C2A_007 source_retention_fraction=0.9765625 outside_source_count=6 spill_count=3 below_table_count=3
+```
+
+The live runner wrote all 12 candidate artifact folders under:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_followup_c2_proxy_sweep_20260707_001/
+```
+
+Each candidate has `variant_summary.json`, particle readback trace, physics scene
+settings, diagnostic frames, and collision overlays. A final
+`--summarize-existing` pass rebuilt the manifest from the already generated
+candidate artifacts after fixing manifest finalization order around
+`SimulationApp.close()`.
 
 - [ ] **Step 5: Run S2F2 velocity/contact-offset isolation**
 

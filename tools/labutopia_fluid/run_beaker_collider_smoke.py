@@ -75,6 +75,9 @@ class ColliderConfig:
     wall_height: float = 0.12
     wall_thickness: float = 0.01
     bottom_thickness: float = 0.008
+    bottom_overlap: float = 0.0
+    collider_contact_offset: float = 0.003
+    collider_rest_offset: float = 0.0
     table_z: float = 0.0
     steps: int = 240
     physics_dt: float = 1.0 / 60.0
@@ -473,6 +476,8 @@ def _add_static_box(
     position: tuple[float, float, float],
     angle_z: float = 0.0,
     color: tuple[float, float, float] = (0.72, 0.78, 0.86),
+    contact_offset: float = 0.003,
+    rest_offset: float = 0.0,
 ) -> Any:
     from omni.physx.scripts import physicsUtils
     from pxr import Gf
@@ -485,14 +490,18 @@ def _add_static_box(
         orientation=_rotation_quat_z(angle_z),
         color=Gf.Vec3f(*color),
     )
-    _apply_static_collision(prim)
+    _apply_static_collision(prim, contact_offset=contact_offset, rest_offset=rest_offset)
     return prim
 
 
 def _add_segmented_cup(stage: Any, config: ColliderConfig, *, panel_count: int, wall_thickness: float) -> list[str]:
     collider_paths: list[str] = []
     radius = config.source_radius
-    bottom_size = (radius * 2.2, radius * 2.2, config.bottom_thickness)
+    bottom_size = (
+        radius * 2.2 + config.bottom_overlap * 2.0,
+        radius * 2.2 + config.bottom_overlap * 2.0,
+        config.bottom_thickness + config.bottom_overlap,
+    )
     bottom_z = config.table_z + config.bottom_thickness / 2.0
     bottom = _add_static_box(
         stage,
@@ -500,11 +509,13 @@ def _add_segmented_cup(stage: Any, config: ColliderConfig, *, panel_count: int, 
         size=bottom_size,
         position=(config.source_center[0], config.source_center[1], bottom_z),
         color=(0.56, 0.64, 0.76),
+        contact_offset=config.collider_contact_offset,
+        rest_offset=config.collider_rest_offset,
     )
     collider_paths.append(str(bottom.GetPath()))
 
     panel_width = 2.0 * math.pi * radius / panel_count * 1.08
-    wall_center_z = config.table_z + config.bottom_thickness + config.wall_height / 2.0
+    wall_center_z = config.table_z + config.bottom_thickness - config.bottom_overlap + config.wall_height / 2.0
     for index in range(panel_count):
         theta = 2.0 * math.pi * index / panel_count
         center_radius = radius + wall_thickness / 2.0
@@ -517,6 +528,8 @@ def _add_segmented_cup(stage: Any, config: ColliderConfig, *, panel_count: int, 
             position=(x, y, wall_center_z),
             angle_z=theta + math.pi / 2.0,
             color=(0.62, 0.72, 0.88),
+            contact_offset=config.collider_contact_offset,
+            rest_offset=config.collider_rest_offset,
         )
         collider_paths.append(str(panel.GetPath()))
     return collider_paths
@@ -663,6 +676,13 @@ def _add_colliders(stage: Any, config: ColliderConfig, spec: VariantSpec, native
         return _add_segmented_cup(stage, replace(config, wall_thickness=0.014), panel_count=16, wall_thickness=0.014)
     if spec.variant_id == "C2":
         return _add_segmented_cup(stage, replace(config, wall_thickness=0.008), panel_count=24, wall_thickness=0.008)
+    if spec.variant_id.startswith("C2A_"):
+        return _add_segmented_cup(
+            stage,
+            config,
+            panel_count=spec.panel_count or 24,
+            wall_thickness=config.wall_thickness,
+        )
     if spec.variant_id == "C3":
         return _add_sdf_open_beaker(stage, config, spec)
     if spec.variant_id == "C4":

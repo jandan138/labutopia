@@ -226,7 +226,27 @@ docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260
 
 它固定了四件事：第一，C0-C5 的 S2 矩阵结果不再漂移；第二，C2 是当前最接近但仍失败的 baseline；
 第三，runtime warning scan 和 visual review 已作为 S2F 后续比较的基准；第四，S3 仍然不放行。
-所以产品口径是：`S2F0 baseline freeze complete`，下一步进入 `S2F1_C2_PROXY_SWEEP`，不是进入倒液视频。
+所以 S2F0 当时的产品口径是：先进入 `S2F1_C2_PROXY_SWEEP`，不是进入倒液视频。现在这一步已经完成，
+当前产品口径应更新为：进入 `S2F2_VELOCITY_CONTACT_OFFSET`，继续追查最后几个泄漏粒子。
+
+当前 S2F1 也已完成：我们优先修了 C2 proxy collider，不是只手调一个参数，而是跑了 12 个 C2A
+候选，系统覆盖 `panel_count`、`wall_thickness`、`bottom_overlap`、`particle_contact_offset`、
+`collider_contact_offset/rest_offset` 和初始径向速度。正式证据是：
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2_followup_c2_proxy_sweep_20260707_001/
+```
+
+结果是：C2 proxy 明显有进步，但还没有达到 benchmark 放行。最好的两个候选 `C2A_005` 和
+`C2A_009` 都把 source retention 提到 `0.9921875`，也就是 256 个粒子里大约 254 个留在杯内；
+但严格口径要求 source 外必须是 0，它们仍各有 2 个粒子跑到 source 外并形成 spill。因此
+`best_for_s3=[]`，S3 仍不放行。下一步不是扩大盲扫，而是进入 `S2F2_VELOCITY_CONTACT_OFFSET`，
+围绕 `C2A_005`、`C2A_009` 和 `C2A_007` 判断这最后几个粒子是几何缝隙问题，还是
+contact offset / velocity 参数敏感问题。
+
+给产品经理的一句话版本：`C2A_005` 和 `C2A_009` 已经很接近合格，但它们只是 near-pass
+candidates，不是 S3 candidates；当前 `best_for_s3=[]`，`s3_kinematic_pour_released=false`。
 
 ## 调研补充：别人不是没做过 Isaac 液体 demo，但 demo 和 benchmark 不是一回事
 
