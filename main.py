@@ -48,6 +48,14 @@ def parse_args():
                        help='Configuration file name (without .yaml extension)')
     parser.add_argument('--config-dir', type=str, default='config',
                        help='Configuration directory path (default: config)')
+    parser.add_argument('--ebench-action-log-dir', type=str, default=None,
+                       help='Optional directory for candidate EBench replay action JSONL')
+    parser.add_argument('--ebench-action-worker-id', type=str, default='0',
+                       help='Worker id written into candidate EBench replay actions')
+    parser.add_argument('--ebench-action-expected-dim', type=int, default=9,
+                       help='Expected joint_position action dimension for EBench replay logging')
+    parser.add_argument('--ebench-action-allow-prefix-dim', action='store_true',
+                       help='Allow shorter prefix joint_position actions to be expanded with observed tail joints')
     return parser.parse_args()
 
 # Get command line arguments
@@ -81,6 +89,7 @@ extensions.enable_extension("omni.usdphysics.ui")
 
 from factories.robot_factory import create_robot
 from utils.object_utils import ObjectUtils
+from utils.ebench_replay_action_source import EbenchReplayActionLogger
 from factories.task_factory import create_task
 from factories.controller_factory import create_controller
 
@@ -106,6 +115,17 @@ def main():
         save_video = True
         show_video = not args.headless
     video_output_dir = args.video_dir or os.path.join(cfg.multi_run.run_dir, "video")
+    ebench_action_logger = None
+    if args.ebench_action_log_dir:
+        ebench_action_logger = EbenchReplayActionLogger(
+            output_dir=args.ebench_action_log_dir,
+            worker_id=args.ebench_action_worker_id,
+            expected_action_dim=args.ebench_action_expected_dim,
+            task_config_path=os.path.join(args.config_dir, f"{args.config_name}.yaml"),
+            controller_type=str(cfg.controller_type),
+            run_id=os.path.basename(os.path.abspath(args.ebench_action_log_dir)),
+            allow_prefix_joint_positions=args.ebench_action_allow_prefix_dim,
+        )
 
     robot = create_robot(
         cfg.robot.type,
@@ -162,8 +182,23 @@ def main():
             
             action, done, is_success = task_controller.step(state)
             if action is not None:
+                if ebench_action_logger is not None:
+                    ebench_action_logger.log_action(
+                        action,
+                        current_joint_positions=state['joint_positions'],
+                        labutopia_step_index=getattr(task, 'frame_idx', None),
+                    )
                 robot.get_articulation_controller().apply_action(action)
             if done:
+                if ebench_action_logger is not None:
+                    if is_success:
+                        ebench_action_logger.finalize(success_observed=True)
+                        ebench_action_logger = None
+                    else:
+                        ebench_action_logger.discard_episode(
+                            success_observed=False,
+                            reason="failed_episode_before_success",
+                        )
                 task_controller.print_failure_reason()
                 task.on_task_complete(is_success)
                 continue

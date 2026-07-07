@@ -28,8 +28,11 @@
 - [runs/2026-06-09-expert-videos.md](runs/2026-06-09-expert-videos.md): 本次多角度审阅和视频批跑记录。
 - [labutopia_lab_poc/aan_consumer_handoff.md](labutopia_lab_poc/aan_consumer_handoff.md): ConvertAsset AAN-ready package 在 LabUtopia / EBench 侧的消费规则和继续点。
 - [labutopia_lab_poc/aan_runtime_environment_bootstrap.md](labutopia_lab_poc/aan_runtime_environment_bootstrap.md): AAN package 进入 LabUtopia / EBench consumer 前的标准 conda、环境变量、preflight、failure classification 和 evidence 归档规范。
-- [labutopia_lab_poc/expert_oracle_score_plan.md](labutopia_lab_poc/expert_oracle_score_plan.md): 在真实 policy 评测前，用 Franka expert 和 Lift2 oracle / retarget 验证 EBench metric 能给专家答案打分的规划。
-- [labutopia_lab_poc/evidence_manifests/README.md](labutopia_lab_poc/evidence_manifests/README.md): AAN consumer Stage 1-5 证据、周报入口和 PM claim boundary 说明。
+- [labutopia_lab_poc/expert_oracle_score_plan.md](labutopia_lab_poc/expert_oracle_score_plan.md): 在真实 policy 评测前，用 Franka expert 和 Lift2 oracle / retarget 验证 EBench metric 能给专家答案打分的规划；当前 S2-R1E 已完成 M3 single-episode score/readback evidence，后续进入 M4/S4 或 S3。
+- [labutopia_lab_poc/evidence_manifests/README.md](labutopia_lab_poc/evidence_manifests/README.md): AAN consumer Stage 1-5 证据、EOS-2 S0/S1/S2 checkpoints、S2-R1E result review、周报入口和 PM claim boundary 说明。
+- [labutopia_lab_poc/evidence_manifests/eos2_review_camera_reset_smoke_20260707_104047.json](labutopia_lab_poc/evidence_manifests/eos2_review_camera_reset_smoke_20260707_104047.json): EBench `level1_open_door` 的 review-only `tabletop_camera` / `front_camera` / `side_camera` reset smoke 证据；三路产品复盘相机已通过视觉审阅，canonical `camera2` 保持评分/readback 用途不变。
+- [labutopia_lab_poc/evidence_manifests/eos2_review_camera_full_replay_20260707_111621.json](labutopia_lab_poc/evidence_manifests/eos2_review_camera_full_replay_20260707_111621.json): EBench `level1_open_door` 的 review-only full replay MP4 证据；`tabletop_camera` / `front_camera` / `side_camera` 视觉审阅 PASS，legacy `camera2` 为非产品展示 WARN 且保持不改，`score_claim_allowed=false`。
+- [superpowers/plans/2026-07-06-eos2-expert-oracle-stop-go-roadmap.md](superpowers/plans/2026-07-06-eos2-expert-oracle-stop-go-roadmap.md): EOS-2 Expert Oracle Score 的 M1-M4 / S0-S4 stop-go 总控规划，明确到哪一步算方向有戏、到哪一步判当前路线停止；2026-07-06 review addendum 还固定了 S0/S1/S2/S3/S4 的 bounded attempt budget 和 `labutopia-py311` import smoke 结论。
 - [superpowers/plans/2026-07-01-labutopia-aan-ready-package-ebench-integration.md](superpowers/plans/2026-07-01-labutopia-aan-ready-package-ebench-integration.md): LabUtopia AAN-Ready Package 接入 EBench 的 6 阶段执行计划。
 
 ## 状态定义

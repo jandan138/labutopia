@@ -1,0 +1,121 @@
+evaluation_configs:
+- task_name: ebench/labutopia_lab_poc/franka_poc/level1_open_door
+  instruction: Open the door of the drying box.
+  usd_name: scene_usds/labutopia/level1_poc/lab_001/scene
+  table_uid: table
+  mode: manual
+  num_test: 1
+  num_steps: 1000
+  physics_dt: 0.0166666667
+  rendering_dt: 0.0166666667
+  robots:
+  - type: manip/franka/panda_hand
+    position:
+    - -0.4
+    - 0.0
+    - 0.73
+  domain_randomization:
+    cameras:
+      config_path: configs/cameras/labutopia_franka_poc_open_door_review.yml
+      type: fixed
+    random_environment:
+      has_wall: false
+      hdr: false
+      robot_base_position: false
+      robot_eepose: false
+      table_texture: false
+      table_type: false
+      wall_texture: false
+    rewrite_instruction: false
+  generation_config:
+    action_path:
+      mode: manual
+      robot: 0
+    articulation: []
+    goal:
+    - - - type: manip/default/check_joint_angle
+          articulation_obj_uid: obj_DryingBox_01
+          joint_name: RevoluteJoint
+          angle_deg_range:
+          - 30
+          - 120
+          skip_steps: 1
+          succ_cnts: 59
+    mode: manual
+    planner: curobo
+  object_config:
+    obj_DryingBox_01:
+      type: existed_object
+      uid_list:
+      - obj_DryingBox_01
+      is_articulated: true
+      target_positions:
+      - 0.0
+      articulation_info:
+        is_articulated: true
+        part:
+          handle: /handle
+  labutopia_native_drying_box:
+    strategy: native_complex_with_additive_physics_override
+    door_joint_name: RevoluteJoint
+    handle_part_path: /handle
+    button_joint_name: PrismaticJoint
+    button_prismatic_joint_policy: ignored_by_open_door_metric
+  preprocess_config:
+  - type: set_object_active
+    config:
+      active: false
+      uids:
+      - obj_conical_bottle02
+      - obj_beaker2
+      - obj_target_plat
+  layout_config:
+    ignored_objects: []
+    type: null
+  labutopia_render_validation:
+    schema_version: 1
+    primary_camera: camera2
+    evidence_camera_config: configs/cameras/labutopia_franka_poc_open_door.yml
+    required_camera_names:
+    - camera1
+    - camera2
+    required_visible_objects:
+    - obj_DryingBox_01
+    - obj_DryingBox_01_handle
+    hidden_non_task_objects:
+    - obj_conical_bottle02
+    - obj_beaker2
+    - obj_target_plat
+    object_pixel_thresholds:
+      obj_DryingBox_01:
+        min_width_px: 160
+        min_height_px: 150
+        min_bbox_area_fraction: 0.12
+      obj_DryingBox_01_handle:
+        min_width_px: 18
+        min_height_px: 64
+        min_bbox_area_fraction: 0.004
+    task_visual_goal: door_and_handle_visible
+    reject_frame_if:
+    - black_frame
+    - low_texture
+    - required_object_missing
+    - severe_clipping
+    evidence_policy:
+      direct_render: false
+  labutopia_review_cameras:
+    enabled: true
+    camera_config: configs/cameras/labutopia_franka_poc_open_door_review.yml
+    scoring_camera: camera2
+    scoring_camera_observation_key: video.camera2_view
+    review_only: true
+    required_views:
+    - tabletop_camera
+    - front_camera
+    - side_camera
+    output_artifacts:
+      tabletop_camera: video.tabletop_camera_view
+      front_camera: video.front_camera_view
+      side_camera: video.side_camera_view
+  env_vars:
+    MDL_SYSTEM_PATH: /isaac-sim/materials/:{ASSETS_DIR}/scene_usds/labutopia/level1_poc/lab_001/SubUSDs/materials:{ASSETS_DIR}/miscs/mdl/labutopia/mdl

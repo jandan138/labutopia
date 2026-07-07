@@ -1,0 +1,15 @@
+{
+  "score": 1.0,
+  "success_rate": 1,
+  "log_info": {
+    "episode_start_time": "2026-07-07_19_17_14_256521",
+    "episode_end_time": "2026-07-07_19_18_00_131287",
+    "metric_score": [
+      [
+        [
+          1.0
+        ]
+      ]
+    ]
+  }
+}

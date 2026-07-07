@@ -1,0 +1,58 @@
+{
+  "action_log_path": "/tmp/labutopia_open_door_review_camera_full_replay_eos2_review_camera_full_replay_20260707_111621/action_log.jsonl",
+  "camera_config_override": {
+    "generated_config_path": "configs/tasks/ebench/_generated_review_configs/eos2_review_camera_full_replay_20260707_111621/level1_open_door.review_cameras.yml",
+    "override_config_path": "configs/cameras/labutopia_franka_poc_open_door_review.yml",
+    "previous_config_path": "configs/cameras/labutopia_franka_poc_open_door.yml",
+    "start_job_config_path": "ebench/_generated_review_configs/eos2_review_camera_full_replay_20260707_111621/level1_open_door.review_cameras.yml"
+  },
+  "canonical_score_claim_allowed": false,
+  "classification": "PASS_SCORE_CAPABLE_ORACLE_RUNNER_CONTRACT",
+  "episode_result": {
+    "episode_id": "ebench/eos2_review_camera_full_replay_20260707_111621/ebench/labutopia_lab_poc/franka_poc/level1_open_door/000",
+    "score": 1.0,
+    "seed": "000",
+    "sr": 1.0,
+    "task_name": "ebench/labutopia_lab_poc/franka_poc/level1_open_door"
+  },
+  "executed_steps": 919,
+  "expert_oracle_score_claim_allowed": false,
+  "final_done": true,
+  "metric_trace_path": "/tmp/labutopia_open_door_review_camera_full_replay_eos2_review_camera_full_replay_20260707_111621/metric_trace.jsonl",
+  "official_benchmark_reproduction_claim_allowed": false,
+  "policy_claim_allowed": false,
+  "result_info_locator_mode": "canonical_result_base_dir",
+  "result_info_path": "saved/eval_results/ebench/eos2_review_camera_full_replay_20260707_111621/ebench/labutopia_lab_poc/franka_poc/level1_open_door/000/result_info.json",
+  "review_media_run": true,
+  "run_id": "eos2_review_camera_full_replay_20260707_111621",
+  "runner": "score_capable_oracle_runner",
+  "schema_version": 1,
+  "score": 1.0,
+  "score_claim_allowed": false,
+  "standard_model_score_claim_allowed": false,
+  "step_chunk_call_mode": "extended",
+  "step_chunk_render_mode": "always",
+  "step_chunk_subframes": 2,
+  "success_rate": 1.0,
+  "terminal_debug_status": "ok",
+  "terminal_door_angle_deg": 41.71586529928395,
+  "terminal_door_angle_rad": 0.7280791997909546,
+  "terminal_metric_input": {
+    "angle_deg": 41.71586529928395,
+    "angle_deg_range": [
+      30.0,
+      120.0
+    ],
+    "angle_rad": 0.7280791997909546,
+    "articulation_obj_uid": "obj_DryingBox_01",
+    "joint_name": "RevoluteJoint",
+    "metric_type": "CheckJointAngle",
+    "within_range": true
+  },
+  "terminal_obs_compact_path": "/tmp/labutopia_open_door_review_camera_full_replay_eos2_review_camera_full_replay_20260707_111621/terminal_obs_compact.json",
+  "terminal_render_path": "/tmp/labutopia_open_door_review_camera_full_replay_eos2_review_camera_full_replay_20260707_111621/terminal_camera2_view.json",
+  "terminal_succ_cnts": 59,
+  "terminal_video_camera2_available": true,
+  "trace_final_obs": true,
+  "worker_id": "0"
+}

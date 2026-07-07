@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "manifest_type": "review_camera_full_replay_evidence",
+  "created_utc": "2026-07-07T11:18:00Z",
+  "run_id": "eos2_review_camera_full_replay_20260707_111621",
+  "task": "ebench/labutopia_lab_poc/franka_poc/level1_open_door",
+  "purpose": "Produce product/debug review media for LabUtopia DryingBox open-door full replay while preserving canonical camera2 scoring semantics.",
+  "source_action": {
+    "path": "docs/labutopia_lab_poc/evidence_manifests/eos2_expert_oracle_s1r_d_route_b_bridge_release_review_20260706/bridged_action_source_freeze_validation/action_source.jsonl",
+    "records": 919,
+    "worker_id": "0",
+    "expected_action_dim": 9
+  },
+  "environment": {
+    "conda_env": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310",
+    "server_host": "127.0.0.1",
+    "server_port": 18197,
+    "ray_tmpdir": "/tmp/g18197",
+    "pythonpath_required": [
+      "/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src",
+      "/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src",
+      "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback"
+    ],
+    "debug_env": {
+      "LABUTOPIA_ORACLE_DEBUG_OBS": "1",
+      "RAY_ADDRESS": "local",
+      "RAY_USAGE_STATS_ENABLED": "0"
+    }
+  },
+  "runner": {
+    "name": "score_capable_oracle_runner.py",
+    "classification": "PASS_SCORE_CAPABLE_ORACLE_RUNNER_CONTRACT",
+    "step_chunk_call_mode": "extended",
+    "step_chunk_render_mode": "always",
+    "step_chunk_subframes": 2,
+    "executed_steps": 919,
+    "final_done": true,
+    "review_media_run": true,
+    "score_claim_allowed": false,
+    "canonical_score_claim_allowed": false,
+    "policy_claim_allowed": false,
+    "official_benchmark_reproduction_claim_allowed": false
+  },
+  "observed_result": {
+    "score": 1.0,
+    "success_rate": 1.0,
+    "metric_score": [
+      [
+        [
+          1.0
+        ]
+      ]
+    ],
+    "terminal_door_angle_deg": 41.71586529928395,
+    "terminal_succ_cnts": 59,
+    "result_info_path": "saved/eval_results/ebench/eos2_review_camera_full_replay_20260707_111621/ebench/labutopia_lab_poc/franka_poc/level1_open_door/000/result_info.json"
+  },
+  "camera_config_override": {
+    "previous_config_path": "configs/cameras/labutopia_franka_poc_open_door.yml",
+    "override_config_path": "configs/cameras/labutopia_franka_poc_open_door_review.yml",
+    "generated_config_path": "configs/tasks/ebench/_generated_review_configs/eos2_review_camera_full_replay_20260707_111621/level1_open_door.review_cameras.yml",
+    "start_job_config_path": "ebench/_generated_review_configs/eos2_review_camera_full_replay_20260707_111621/level1_open_door.review_cameras.yml",
+    "archived_generated_config": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/level1_open_door.review_cameras.yml"
+  },
+  "artifacts": {
+    "media_dir": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621",
+    "weekly_assets": {
+      "tabletop_camera_mp4": "reports/2026-06-15-labutopia-weekly/assets/eos2-review-full-tabletop-camera.mp4",
+      "front_camera_mp4": "reports/2026-06-15-labutopia-weekly/assets/eos2-review-full-front-camera.mp4",
+      "side_camera_mp4": "reports/2026-06-15-labutopia-weekly/assets/eos2-review-full-side-camera.mp4",
+      "camera2_mp4": "reports/2026-06-15-labutopia-weekly/assets/eos2-review-full-camera2-scoring.mp4",
+      "contact_sheet_png": "reports/2026-06-15-labutopia-weekly/assets/eos2-review-full-contact-sheet.png"
+    },
+    "mp4": {
+      "tabletop_camera": {
+        "path": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/tabletop_camera.mp4",
+        "sha256": "1d72006981740c806ebfab7de2d4cb0d7841f3ac078e5ba4d7ef7dfd56ab2863",
+        "resolution": [
+          1280,
+          720
+        ],
+        "frames": 579,
+        "duration_s": 19.3
+      },
+      "front_camera": {
+        "path": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/front_camera.mp4",
+        "sha256": "552183bb812c7ca8f30241ad7ea207791339df92fd9fcd11571a5b96b3e81938",
+        "resolution": [
+          1280,
+          720
+        ],
+        "frames": 579,
+        "duration_s": 19.3
+      },
+      "side_camera": {
+        "path": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/side_camera.mp4",
+        "sha256": "a27c5f891c1a74dac3df8a91d96843713c1b37d397385a63103e1a456f2a24cb",
+        "resolution": [
+          1280,
+          720
+        ],
+        "frames": 579,
+        "duration_s": 19.3
+      },
+      "camera2": {
+        "path": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/camera2.mp4",
+        "sha256": "d4f1b0e19576cab25d5f37545dd4ff15ea56098c95d54f96e110690f5056d6cf",
+        "resolution": [
+          512,
+          512
+        ],
+        "frames": 579,
+        "duration_s": 19.3
+      }
+    },
+    "summary_json": {
+      "path": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/summary.json",
+      "sha256": "d5ce35c5f88211ba2517320c8ed0e9e4292e7b6677349f398bd0a96437d9607d"
+    },
+    "result_info_json": {
+      "path": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/result_info.json",
+      "sha256": "3b040b5e5e81daab1fc31a4b0cfa04ff16ff943dd6250336e358fb6f86f5ab79"
+    },
+    "contact_sheet": {
+      "path": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/contact_sheet.png",
+      "sha256": "20d070d7875f6a051b9f29b8d5977264f472e8fbda3ae397496246014f0ac704"
+    }
+  },
+  "visual_review": {
+    "overall": "WARN",
+    "confidence": "high",
+    "review_file": "docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/visual_review.md",
+    "per_camera": {
+      "tabletop_camera": "PASS",
+      "front_camera": "PASS",
+      "side_camera": "PASS",
+      "camera2": "WARN"
+    },
+    "camera2_warn_reason": "Nonblank legacy scoring/debug view, but awkward and not product-facing."
+  },
+  "known_warnings": [
+    "camera2 is intentionally unchanged and remains canonical scoring/readback, not product-facing review.",
+    "Isaac logs still include Aluminum_Anodized_Charcoal.mdl remote dependency and out-of-scope material binding warnings; full visual/material parity remains OPEN.",
+    "Rerun SDK is not installed, so episode.rrd logging was skipped; MP4 media and result_info.json were still produced."
+  ],
+  "allowed_claims": [
+    "review_only_full_replay_media_exists",
+    "tabletop_front_side_review_views_pass_visual_review",
+    "camera2_preserved_as_scoring_readback_view"
+  ],
+  "blocked_claims": [
+    "official_leaderboard_ready",
+    "policy_score_complete",
+    "full_visual_material_parity",
+    "canonical_score_source_replaced_by_review_run",
+    "arbitrary_asset_pipeline_complete"
+  ],
+  "canonical_score_source_of_truth": {
+    "run_id": "eos2_s2_l1r_full_env_repaired_route_b_readback_render_20260707_003",
+    "manifest_family": "eos2_expert_oracle_s2_r1e_full_env_repaired_result_review_20260707",
+    "reason": "The full replay in this manifest is a review-media run with score_claim_allowed=false."
+  }
+}

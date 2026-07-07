@@ -1,0 +1,116 @@
+{
+  "stage": "EOS2 review camera reset smoke",
+  "status": "PASS_REVIEW_CAMERA_RESET_SMOKE_REVIEW_ONLY_NO_SCORE_CLAIM",
+  "date_utc": "2026-07-07",
+  "run_id": "eos2_review_camera_reset_smoke_20260707_104047",
+  "task": "ebench/labutopia_lab_poc/franka_poc/level1_open_door",
+  "source_worktree": "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback",
+  "review_camera_config": "configs/cameras/labutopia_franka_poc_open_door_review.yml",
+  "canonical_scoring_camera_config": "configs/cameras/labutopia_franka_poc_open_door.yml",
+  "command_boundary": {
+    "kind": "reset_only_render_diagnostics",
+    "runner": "standalone_tools/labutopia_poc/capture_eval_render_diagnostics.py",
+    "camera_config_override": true,
+    "skip_native_evidence": true,
+    "native_evidence_skip_reason": "review_camera_reset_smoke",
+    "score_claim_allowed": false,
+    "material_parity_claim_allowed": false,
+    "policy_claim_allowed": false
+  },
+  "environment_contract": {
+    "conda_env": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310",
+    "required_pythonpath_entries": [
+      "/cpfs/shared/simulation/mamengchen/curobo-wbc-backup/src",
+      "/cpfs/shared/simulation/zhuzihou/dev/genmanip-client/src",
+      "/root/.config/superpowers/worktrees/GenManip/labutopia-stage5-eval-readback"
+    ],
+    "ld_library_contract": "env lib + Isaac CUDA runtime libs + Isaac GPU deps + torch lib"
+  },
+  "artifacts": {
+    "diagnostics_json": "/tmp/labutopia_open_door_review_camera_smoke_eos2_review_camera_reset_smoke_20260707_104047/diagnostics.json",
+    "review_media_dir": "docs/labutopia_lab_poc/review_media/eos2_review_cameras",
+    "weekly_assets_dir": "reports/2026-06-15-labutopia-weekly/assets",
+    "images": {
+      "tabletop_camera": {
+        "source": "/tmp/labutopia_open_door_review_camera_smoke_eos2_review_camera_reset_smoke_20260707_104047/readback_after_get_eval_camera_data/tabletop_camera/00000.png",
+        "repo_copy": "docs/labutopia_lab_poc/review_media/eos2_review_cameras/tabletop_camera.png",
+        "weekly_copy": "reports/2026-06-15-labutopia-weekly/assets/eos2-review-tabletop-camera.png",
+        "sha256": "d0a617ea2d35a8279bc3b4671c0f6cdfa1c063b73dbe5011730619ffbc4e2153"
+      },
+      "front_camera": {
+        "source": "/tmp/labutopia_open_door_review_camera_smoke_eos2_review_camera_reset_smoke_20260707_104047/readback_after_get_eval_camera_data/front_camera/00000.png",
+        "repo_copy": "docs/labutopia_lab_poc/review_media/eos2_review_cameras/front_camera.png",
+        "weekly_copy": "reports/2026-06-15-labutopia-weekly/assets/eos2-review-front-camera.png",
+        "sha256": "7dcdd7fe5537b3f010d28005952e44e7ef87c4a9192ef2b8566ed5ea45053847"
+      },
+      "side_camera": {
+        "source": "/tmp/labutopia_open_door_review_camera_smoke_eos2_review_camera_reset_smoke_20260707_104047/readback_after_get_eval_camera_data/side_camera/00000.png",
+        "repo_copy": "docs/labutopia_lab_poc/review_media/eos2_review_cameras/side_camera.png",
+        "weekly_copy": "reports/2026-06-15-labutopia-weekly/assets/eos2-review-side-camera.png",
+        "sha256": "4fec03bf03893f27e1577d2e44062dfff46925b82bc685536da9b20894030969"
+      },
+      "camera2": {
+        "source": "/tmp/labutopia_open_door_review_camera_smoke_eos2_review_camera_reset_smoke_20260707_104047/readback_after_get_eval_camera_data/camera2/00000.png",
+        "repo_copy": "docs/labutopia_lab_poc/review_media/eos2_review_cameras/camera2_scoring.png",
+        "weekly_copy": "reports/2026-06-15-labutopia-weekly/assets/eos2-review-camera2-scoring.png",
+        "sha256": "4c1ca3dc633a1cc99fd4ffb1fc3a3d3bc5ef0772c6f3df74b916e9d1edf75bbc"
+      }
+    }
+  },
+  "diagnostics_summary": {
+    "render_validation_passed": true,
+    "camera_names": [
+      "camera2",
+      "front_camera",
+      "side_camera",
+      "tabletop_camera"
+    ],
+    "all_frames_classified_visible": true,
+    "native_evidence_skipped": true
+  },
+  "independent_visual_review": {
+    "reviewer": "Copernicus the 8th",
+    "overall_verdict": "WARN",
+    "interpretation": "The three new review-only cameras pass their intended purpose. The overall WARN is only because canonical camera2 is not product-friendly; camera2 remains unchanged because it is the scoring/readback camera.",
+    "per_image": {
+      "tabletop_camera": {
+        "verdict": "PASS",
+        "visible_evidence": "Clear overhead tabletop layout: robot arm on left, blue/white box on right, table boundary visible.",
+        "main_risk": "Door/handle details are not visible, but that is acceptable for a layout camera."
+      },
+      "front_camera": {
+        "verdict": "PASS",
+        "visible_evidence": "Strong front/three-quarter close view of the drying box; control panel, yellow button, blue door, window, and handle are clearly visible.",
+        "main_risk": "Tight crop excludes robot and clips some box context."
+      },
+      "side_camera": {
+        "verdict": "PASS",
+        "visible_evidence": "Robot arm, gripper, box, and approach spacing are visible from the side.",
+        "main_risk": "Robot is partially cropped at left, but task-relevant relation remains clear."
+      },
+      "camera2": {
+        "verdict": "WARN",
+        "visible_evidence": "Scene content is present: robot and box are visible.",
+        "main_risk": "Large gray plane dominates; target is small and awkwardly angled."
+      }
+    }
+  },
+  "allowed_claims": [
+    "level1_open_door now has a review-only tabletop/front/side camera lane for reset-state inspection",
+    "tabletop_camera, front_camera, and side_camera reset PNGs are visually accepted for product review",
+    "camera2 remains the canonical scoring/readback camera and was not changed by the review lane"
+  ],
+  "blocked_claims": [
+    "full replay review videos are complete",
+    "policy/model completed the task",
+    "official leaderboard score is ready",
+    "full visual/material parity is complete",
+    "reset-only PNGs prove task completion"
+  ],
+  "pm_summary_cn": "这次补的不是新的评分相机，而是给产品和工程复盘看的三路 review camera：俯视图看桌面布局，正面图看门、把手和面板，侧面图看机械臂与箱子的相对位置。三张新图已经通过独立视觉审阅。原来的 camera2 仍保留为评分/readback 相机，所以画面不够好看不是缺陷回归，也不会改动 EBench 分数口径。下一步要在 full replay 里导出同样三路视频，才可以说任务过程视频证据闭环。",
+  "next_steps": [
+    "Run full replay with the same review camera override after reset framing acceptance.",
+    "Export tabletop/front/side/camera2 MP4s and run visual review on the videos.",
+    "Keep canonical S2-R1E score/readback evidence as the only score source of truth."
+  ]
+}

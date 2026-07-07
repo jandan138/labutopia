@@ -129,6 +129,9 @@
     .figure-row.material-views {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+    .figure-row.review-cameras {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
     .figure-row.front-showcase {
       grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
       align-items: stretch;
@@ -147,12 +150,28 @@
       overflow: hidden;
       background: var(--paper);
     }
-    figure.diagnostic img {
+    figure.diagnostic img,
+    figure.diagnostic video {
       display: block;
       width: 100%;
       aspect-ratio: 1 / 1;
       object-fit: cover;
       background: #edf1f2;
+    }
+    figure.diagnostic.wide img,
+    figure.diagnostic.wide video {
+      aspect-ratio: 16 / 9;
+    }
+    .figure-row.review-videos {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .figure-row.review-videos figure.diagnostic video {
+      aspect-ratio: 16 / 9;
+    }
+    figure.diagnostic img.contact-sheet {
+      aspect-ratio: auto;
+      object-fit: contain;
+      background: #fff;
     }
     figure.diagnostic figcaption {
       padding: 10px 12px;
@@ -287,6 +306,7 @@
       .hero, .grid, .two, .aan-head, .lane-grid, .figure-row, .claim-list { grid-template-columns: 1fr; }
       .figure-row.front-showcase { grid-template-columns: 1fr; }
       .figure-row.material-views { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .figure-row.review-cameras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .flow-track { grid-template-columns: 1fr; }
       .status-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .step:not(:last-child)::after {
@@ -303,6 +323,8 @@
       .status-rail { grid-template-columns: 1fr; }
       .figure-row.front-showcase { grid-template-columns: 1fr; }
       .figure-row.material-views { grid-template-columns: 1fr; }
+      .figure-row.review-cameras { grid-template-columns: 1fr; }
+      .figure-row.review-videos { grid-template-columns: 1fr; }
       h1 { font-size: 34px; }
       .aan-handoff .table-scroll { overflow-x: visible; }
       .aan-handoff table,
@@ -386,8 +408,8 @@
       </article>
       <article class="card">
         <h2>DryingBox 专题</h2>
-        <p>原生 <code>DryingBox_01</code> 已完成 hand-built overlay 的 Acceptance Stage 1-7；新的 ConvertAsset <code>AAN-ready package</code> 也已完成 LabUtopia / GenManip consumer Stage 1-4b。2026-07-02 新增验收：AAN-11 新包已经挂进 LabUtopia / EBench consumer 并重跑 <code>level1_open_door</code> live smoke，submit / eval 均退出 <code>0</code>，reset 后跑满 1000 steps 并产出 <code>result_info.json</code>。固定 native vs AAN 正面对比相机也已补齐；它证明没有大面积红色 fallback，且箱体主体/把手/门窗可比，但 rack、控制面板和小脚等细节仍有材质差异，所以还不能说 full visual/material parity。</p>
-        <span class="tag">Native Stage 7 passed</span><span class="tag">AAN-11 consumer smoke PASS</span><span class="tag">fixed camera pair PASS/WARN</span><span class="tag">no solid red fallback</span><span class="tag warn">material parity OPEN</span><span class="tag warn">not leaderboard</span>
+        <p>原生 <code>DryingBox_01</code> 已完成 hand-built overlay 的 Acceptance Stage 1-7；新的 ConvertAsset <code>AAN-ready package</code> 也已完成 LabUtopia / GenManip consumer Stage 1-4b。2026-07-02 新增验收：AAN-11 新包已经挂进 LabUtopia / EBench consumer 并重跑 <code>level1_open_door</code> live smoke，submit / eval 均退出 <code>0</code>，reset 后跑满 1000 steps 并产出 <code>result_info.json</code>。固定 native vs AAN 正面对比相机也已补齐；2026-07-07 又补了 EBench review-only 三视角 reset smoke 和 full replay MP4：俯视看桌面布局，正面看门和 handle，侧面看机械臂与箱子关系。它们解决“产品看不清完整过程”的问题，但不改变 canonical <code>camera2</code> 评分口径。</p>
+        <span class="tag">Native Stage 7 passed</span><span class="tag">AAN-11 consumer smoke PASS</span><span class="tag">review full replay PASS/WARN</span><span class="tag">fixed camera pair PASS/WARN</span><span class="tag">no solid red fallback</span><span class="tag warn">material parity OPEN</span><span class="tag warn">not leaderboard</span>
         <p><a href="native-dryingbox-task1.html">查看 DryingBox 验收进展</a></p>
       </article>
     </section>
@@ -396,8 +418,8 @@
       <div class="aan-head">
         <div>
           <h2>ConvertAsset AAN-ready package handoff</h2>
-          <p>这条新证据线回答一个更工程化的问题：不是“我们能不能手工把 DryingBox 调到能跑”，而是“ConvertAsset 产出的资产包，LabUtopia / GenManip 能不能不本地修包、直接消费进 EBench task”。旧 AAN 包已经通过 LabUtopia / GenManip consumer Stage 1-4b 和 Stage 6 replication hardening。AAN-11 新包在 ConvertAsset producer 侧修掉了大面积红色 fallback，并完成 material runtime closure。AAN-11 新包也已进入 LabUtopia / EBench consumer 并通过 live smoke；但 <code>score=0.0</code> 仍只是 smoke action 的结果，不代表 expert 失败。下一步新增 <code>Stage 4c: Expert Oracle Score</code>：先用 Franka native expert 在 EBench metric 下 replay，再做 Lift2 oracle / retarget。</p>
-          <span class="tag">AAN-11 consumer smoke PASS</span><span class="tag">DryingBox Stage 4b PASS</span><span class="tag">Stage 4c planned</span><span class="tag">MuffleFurnace Stage 4b PASS</span><span class="tag">Beaker Stage 4b PASS</span><span class="tag">Stage 6 PASS</span><span class="tag">front pair PASS/WARN</span><span class="tag warn">material parity OPEN</span>
+          <p>这条新证据线回答一个更工程化的问题：不是“我们能不能手工把 DryingBox 调到能跑”，而是“ConvertAsset 产出的资产包，LabUtopia / GenManip 能不能不本地修包、直接消费进 EBench task”。旧 AAN 包已经通过 LabUtopia / GenManip consumer Stage 1-4b 和 Stage 6 replication hardening。AAN-11 新包在 ConvertAsset producer 侧修掉了大面积红色 fallback，并完成 material runtime closure。AAN-11 新包也已进入 LabUtopia / EBench consumer 并通过 live smoke；Expert Oracle Score 的 S2-R1E 已经证明单集 score/readback evidence 可签收。现在新增的 review-only full replay 视频只解决“PM 和工程师看不清任务布局、正面操作面和开门过程”的问题，不改变 score。</p>
+          <span class="tag">AAN-11 consumer smoke PASS</span><span class="tag">DryingBox Stage 4b PASS</span><span class="tag">Expert Oracle M3 evidence PASS</span><span class="tag">review full replay PASS/WARN</span><span class="tag">MuffleFurnace Stage 4b PASS</span><span class="tag">Beaker Stage 4b PASS</span><span class="tag">Stage 6 PASS</span><span class="tag">front pair PASS/WARN</span><span class="tag warn">material parity OPEN</span>
         </div>
         <div class="metric">
           <strong>PASS</strong>
@@ -508,6 +530,58 @@
         </div>
       </div>
 
+      <div class="figure-row review-cameras" aria-label="EBench review-only reset camera smoke">
+        <figure class="diagnostic success wide">
+          <img src="assets/eos2-review-tabletop-camera.png" alt="EBench review-only tabletop camera showing robot and DryingBox layout from above">
+          <figcaption><strong>tabletop_camera PASS：</strong>俯视桌面布局，能看清机器人在左、DryingBox 在右、两者相对位置和桌面边界。</figcaption>
+        </figure>
+        <figure class="diagnostic success wide">
+          <img src="assets/eos2-review-front-camera.png" alt="EBench review-only front camera showing DryingBox handle control panel and door">
+          <figcaption><strong>front_camera PASS：</strong>这才是产品意义的正面：门、handle、控制面板、观察窗都清楚可见。</figcaption>
+        </figure>
+        <figure class="diagnostic success wide">
+          <img src="assets/eos2-review-side-camera.png" alt="EBench review-only side camera showing robot arm approaching the DryingBox">
+          <figcaption><strong>side_camera PASS：</strong>侧面能看机械臂、夹爪、箱体和 approach spacing，用于判断动作关系。</figcaption>
+        </figure>
+        <figure class="diagnostic wide">
+          <img src="assets/eos2-review-camera2-scoring.png" alt="Canonical EBench scoring camera with gray plane obstruction and small DryingBox view">
+          <figcaption><strong>camera2 WARN：</strong>它是 canonical scoring/readback 相机，不是产品展示相机；画面别扭但保持不改，避免影响评分口径。</figcaption>
+        </figure>
+      </div>
+
+      <div class="figure-row review-videos" aria-label="EBench review-only full replay videos">
+        <figure class="diagnostic success wide">
+          <video src="assets/eos2-review-full-tabletop-camera.mp4" controls preload="metadata"></video>
+          <figcaption><strong>full replay tabletop_camera PASS：</strong>完整 19.3s 俯视视频，能看桌面布局、机器人、DryingBox 和门从关闭到打开的整体过程。</figcaption>
+        </figure>
+        <figure class="diagnostic success wide">
+          <video src="assets/eos2-review-full-front-camera.mp4" controls preload="metadata"></video>
+          <figcaption><strong>full replay front_camera PASS：</strong>完整任务中最适合 PM 查看的一路：门、handle、控制面板、观察窗和开门动作都清楚。</figcaption>
+        </figure>
+        <figure class="diagnostic success wide">
+          <video src="assets/eos2-review-full-side-camera.mp4" controls preload="metadata"></video>
+          <figcaption><strong>full replay side_camera PASS：</strong>侧面能看到机械臂接近、夹爪接触和门打开的空间关系。</figcaption>
+        </figure>
+        <figure class="diagnostic wide">
+          <video src="assets/eos2-review-full-camera2-scoring.mp4" controls preload="metadata"></video>
+          <figcaption><strong>full replay camera2 WARN：</strong>非空且保留原 scoring/readback 语义，但画面仍不是产品展示视角；不以它判断正面是否合格。</figcaption>
+        </figure>
+      </div>
+
+      <figure class="diagnostic success" aria-label="EBench review-only full replay keyframe contact sheet">
+        <img class="contact-sheet" src="assets/eos2-review-full-contact-sheet.png" alt="Contact sheet of tabletop front side and camera2 replay keyframes at start mid and end">
+        <figcaption><strong>关键帧总览：</strong>每行是一台相机，每列是 start / mid / end。能快速看到三路 review camera 均覆盖完整开门过程；<code>camera2</code> 只是 legacy scoring/debug 视角。</figcaption>
+      </figure>
+
+      <div class="claim-list" aria-label="EBench review camera claim boundary">
+        <div class="answer">
+          <p><strong>这次解决了什么：</strong>新增 <code>tabletop_camera</code>、<code>front_camera</code>、<code>side_camera</code> 三路 review-only camera。reset smoke 里四路 frame 都是 visible frame；full replay 又产出四路 MP4，每路 <code>579</code> frames / <code>19.3s</code>。独立视觉审阅给三路新增相机 PASS。</p>
+        </div>
+        <div class="answer warning">
+          <p><strong>边界：</strong>这不是新的 canonical score source。full replay summary 里虽然观测到 <code>score=1.0</code>，但这是 review-media run，明确标记 <code>score_claim_allowed=false</code>、<code>canonical_score_claim_allowed=false</code>。<code>camera2</code> 继续作为 scoring/readback camera；三路 review camera 只服务 PM 复盘和工程诊断。</p>
+        </div>
+      </div>
+
       <div class="table-scroll">
         <table>
           <thead>
@@ -539,6 +613,11 @@
               <td>构图和可比性 PASS，AAN 没有大面积红色 fallback；但 rack、控制面板、小脚和表面质感仍有可见差异，所以不能升级成 full visual/material parity。</td>
             </tr>
             <tr>
+              <td>EBench review cameras</td>
+              <td><a href="../../docs/labutopia_lab_poc/evidence_manifests/eos2_review_camera_full_replay_20260707_111621.json"><code>eos2_review_camera_full_replay_20260707_111621.json</code></a><br><a href="../../docs/labutopia_lab_poc/evidence_manifests/eos2_review_camera_reset_smoke_20260707_104047.json"><code>reset_smoke_104047.json</code></a><br><code>tabletop/front/side=PASS</code><br><code>camera2=WARN but unchanged</code></td>
+              <td>新增三路只用于 review 的相机：俯视看桌面布局，正面看门和 handle，侧面看机械臂与箱子关系。full replay 已有四路 MP4；原 <code>camera2</code> 仍是评分/readback 相机，所以不拿它当产品正面图。</td>
+            </tr>
+            <tr>
               <td>运行证据目录</td>
               <td><code>aan_runtime_smoke_labutopia_aan_lift2_stage4b_20260701_085521/</code><br><a href="../../docs/labutopia_lab_poc/evidence_manifests/aan_runtime_smoke_labutopia_aan_lift2_stage4b_20260701_085521/probe.json">打开 probe JSON</a></td>
               <td>包含 submit / eval / probe / builder 的 stdout、stderr、exitcode 和 probe JSON；静态页面只直接链接具体文件。</td>
@@ -555,8 +634,8 @@
             </tr>
             <tr>
               <td>Stage 4c Expert Oracle Score</td>
-              <td><a href="../../docs/labutopia_lab_poc/expert_oracle_score_plan.md"><code>expert_oracle_score_plan.md</code></a><br><code>status=PLANNED</code><br><code>Franka expert oracle=NOT_RUN</code><br><code>Lift2 oracle / retarget=NOT_RUN</code></td>
-              <td>下一步先用 LabUtopia 原生 Franka expert 在 EBench metric 下 replay，证明“标准答案能被新评分器打分”；再把专家意图迁移到 Lift2/R5a 16D 口径，证明“官方机器人口径也存在可完成上限”。</td>
+              <td><a href="../../docs/labutopia_lab_poc/expert_oracle_score_plan.md"><code>expert_oracle_score_plan.md</code></a><br><code>Franka native under EBench metric=PASS</code><br><code>S2-R1E single-episode score/readback evidence=SIGNED</code><br><code>Lift2 oracle / retarget=FOLLOW-UP</code></td>
+              <td>已经证明“LabUtopia 原生 Franka 标准答案能被 EBench metric 打分”；下一步再把专家意图迁移到 Lift2/R5a 16D 口径，证明“官方机器人口径也存在可完成上限”。</td>
             </tr>
             <tr>
               <td>旧包材质 warning</td>
@@ -619,10 +698,10 @@
 
       <div class="claim-list" aria-label="AAN claim boundary">
         <div class="answer">
-          <p><strong>现在可以说：</strong>AAN-11 DryingBox package 已被 LabUtopia / EBench consumer 接入 <code>level1_open_door</code>，并通过本地 live smoke；旧 overlay 没有被复用。Stage 6 已把收货、验货、挂载 dry-run、no-local-repair verify、Stage 4a runtime adapter preflight 和 generic Stage 4b live smoke 复制到 <code>MuffleFurnace</code> 和 <code>Beaker_01</code>。新增 AAN-11 证据还可以说：ConvertAsset producer 侧红色异常材质已经闭环，最新 DryingBox 多视角和固定正面 consumer 对比 render 没有 solid red fallback。Expert Oracle Score 已规划为 Stage 4c，下一步会用 Franka expert 和 Lift2 oracle / retarget 单独验证专家答案能否在 EBench metric 下得分。</p>
+          <p><strong>现在可以说：</strong>AAN-11 DryingBox package 已被 LabUtopia / EBench consumer 接入 <code>level1_open_door</code>，并通过本地 live smoke；旧 overlay 没有被复用。Stage 6 已把收货、验货、挂载 dry-run、no-local-repair verify、Stage 4a runtime adapter preflight 和 generic Stage 4b live smoke 复制到 <code>MuffleFurnace</code> 和 <code>Beaker_01</code>。新增 AAN-11 证据还可以说：ConvertAsset producer 侧红色异常材质已经闭环，最新 DryingBox 多视角和固定正面 consumer 对比 render 没有 solid red fallback。Expert Oracle Score 的 S2-R1E 已经完成 single-episode score/readback evidence；新增 review-only camera reset smoke 已证明 PM 需要的桌面、正面和侧面静态视角可用。</p>
         </div>
         <div class="answer warning">
-          <p><strong>仍不能说：</strong>official leaderboard score 已完成；policy/model 已经解决任务；<code>MuffleFurnace</code> 或 <code>Beaker_01</code> generic smoke 等于 semantic task success；任意 USD / MJCF / deformable / liquid 都自动可评；full visual material parity 已证明；AAN-11 render 已经和 LabUtopia native 外观逐项一致。</p>
+          <p><strong>仍不能说：</strong>official leaderboard score 已完成；policy/model 已经解决任务；<code>MuffleFurnace</code> 或 <code>Beaker_01</code> generic smoke 等于 semantic task success；任意 USD / MJCF / deformable / liquid 都自动可评；full visual material parity 已证明；AAN-11 render 已经和 LabUtopia native 外观逐项一致；三张 reset PNG 已经等于完整任务过程视频。</p>
         </div>
       </div>
 
@@ -641,6 +720,26 @@ fixed camera: /World/LabUtopiaFixedFrontCamera
 camera pose: position=[-0.21556737, 0.12, 1.36496577], look_at=[0.72, 0.12, 1.20], distance=0.95, elevation=10, azimuth=180
 fixed front visual review: framing PASS; pair comparability PASS; material parity WARN/OPEN
 remaining visible differences: rack red vs dark gray/black, control panel sharpness/saturation, small foot red vs black, surface roughness/brightness</pre>
+      </details>
+
+      <details class="evidence-details">
+        <summary>展开 EBench review camera full replay 证据</summary>
+        <pre>run_id: eos2_review_camera_reset_smoke_20260707_104047
+manifest: docs/labutopia_lab_poc/evidence_manifests/eos2_review_camera_reset_smoke_20260707_104047.json
+diagnostics: /tmp/labutopia_open_door_review_camera_smoke_eos2_review_camera_reset_smoke_20260707_104047/diagnostics.json
+camera_config_override: configs/cameras/labutopia_franka_poc_open_door_review.yml
+native_evidence_skipped=true; reason=review_camera_reset_smoke
+visual review: tabletop_camera=PASS, front_camera=PASS, side_camera=PASS, camera2=WARN
+claim boundary: reset-only review media; no score claim, no material parity claim
+
+run_id: eos2_review_camera_full_replay_20260707_111621
+manifest: docs/labutopia_lab_poc/evidence_manifests/eos2_review_camera_full_replay_20260707_111621.json
+media_dir: docs/labutopia_lab_poc/review_media/eos2_review_camera_full_replay_20260707_111621/
+videos: tabletop_camera.mp4, front_camera.mp4, side_camera.mp4, camera2.mp4
+video spec: 579 frames each; 19.3s each; review cameras 1280x720; camera2 512x512
+runner summary: PASS_SCORE_CAPABLE_ORACLE_RUNNER_CONTRACT; review_media_run=true; score_claim_allowed=false; canonical_score_claim_allowed=false
+visual review: tabletop_camera=PASS, front_camera=PASS, side_camera=PASS, camera2=WARN
+claim boundary: review-only full replay media complete; no policy score claim, no official leaderboard claim, no full material parity claim</pre>
       </details>
 
       <details class="evidence-details">
@@ -1026,8 +1125,8 @@ result_info: saved/eval_results/ebench/labutopia_aan_lift2_stage4b_20260701_0855
         </article>
         <article class="card">
           <h3>Expert Oracle Score</h3>
-          <p>先用 Franka native expert 证明“标准答案在 EBench metric 下能得分”，再做 Lift2 oracle / retarget 证明“官方机器人口径也有可完成上限”。这一步仍不是模型成绩。</p>
-          <span class="tag">Stage 4c planned</span><span class="tag warn">not policy score</span>
+          <p>Franka native expert 已经在 EBench metric 下跑出单集 score/readback 证据，说明“标准答案能被新评分器打分”；后续再做 Lift2 oracle / retarget，证明“官方机器人口径也有可完成上限”。这一步仍不是模型成绩。</p>
+          <span class="tag">Franka oracle evidence signed</span><span class="tag">Lift2 retarget follow-up</span><span class="tag warn">not policy score</span>
         </article>
         <article class="card">
           <h3>三任务 POC 已跑通</h3>
@@ -1062,8 +1161,8 @@ result_info: saved/eval_results/ebench/labutopia_aan_lift2_stage4b_20260701_0855
             </tr>
             <tr>
               <td>Expert Oracle Score</td>
-              <td>新增 <code>Stage 4c / Score Calibration</code>：先跑 Franka native expert under EBench metric，再做 Lift2/R5a 16D oracle 或 retarget；两条证据都要有独立 run id、action log、metric trace 和 <code>result_info.json</code>。</td>
-              <td>先证明“标准答案在新评分器下能拿分”，再讨论真实 policy 为什么得 0 分；不会把 smoke 0 分误判成 expert 失败。</td>
+              <td><code>Stage 4c / Score Calibration</code> 已完成 Franka native expert under EBench metric 的单集证据；Lift2/R5a 16D oracle 或 retarget 仍作为后续阶段推进。每条证据都必须有独立 run id、action log、metric trace 和 <code>result_info.json</code>。</td>
+              <td>已经证明“标准答案在新评分器下能拿分”，因此可以把真实 policy 的 0 分和 expert 上限分开解释；不会把 smoke 0 分误判成 expert 失败。</td>
             </tr>
             <tr>
               <td>动作接口</td>
