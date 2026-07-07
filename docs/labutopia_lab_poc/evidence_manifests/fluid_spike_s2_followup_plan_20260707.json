@@ -27,6 +27,15 @@
   "manifest_type": "true_physx_pbd_fluid_spike_s2_followup_plan",
   "parent_s2_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json",
   "baseline_phase": "S2F0_BASELINE_FREEZE",
+  "s2f0_baseline_freeze_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json",
+  "phase_status": {
+    "S2F0_BASELINE_FREEZE": "COMPLETE",
+    "S2F1_C2_PROXY_SWEEP": "PENDING",
+    "S2F2_VELOCITY_CONTACT_OFFSET": "PENDING",
+    "S2F3_C3_SDF_SWEEP": "PENDING",
+    "S2F4_C4_NATIVE_MESH_ISOLATION": "PENDING",
+    "S2F5_PROMOTION_REVIEW": "PENDING"
+  },
   "phase_order": [
     "S2F0_BASELINE_FREEZE",
     "S2F1_C2_PROXY_SWEEP",

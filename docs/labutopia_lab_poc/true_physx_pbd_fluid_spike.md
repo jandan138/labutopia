@@ -218,6 +218,16 @@ S2 之后不能继续说：
 closure，直到至少一个非负控方案达到 95% source retention，且 source 外、spill、target、
 below-table 都为 0。
 
+当前 S2F0 已完成：我们没有改口径、没有重新挑图，而是把 S2 的失败基线冻结成一个单独 manifest：
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json
+```
+
+它固定了四件事：第一，C0-C5 的 S2 矩阵结果不再漂移；第二，C2 是当前最接近但仍失败的 baseline；
+第三，runtime warning scan 和 visual review 已作为 S2F 后续比较的基准；第四，S3 仍然不放行。
+所以产品口径是：`S2F0 baseline freeze complete`，下一步进入 `S2F1_C2_PROXY_SWEEP`，不是进入倒液视频。
+
 ## 调研补充：别人不是没做过 Isaac 液体 demo，但 demo 和 benchmark 不是一回事
 
 通俗解释：Isaac Sim / Omniverse 当然有人做过液体类 demo。常见做法是用

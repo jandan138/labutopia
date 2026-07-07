@@ -153,6 +153,7 @@ S2 follow-up planning evidence:
 
 ```text
 fluid_spike_s2_followup_plan_20260707.json
+fluid_spike_s2f0_baseline_freeze_20260707.json
 ```
 
 S2 结论：`status=STOP_WITH_EVIDENCE`，`best_for_s3=[]`。C0、C1、C2、C3、C5 均为
@@ -176,6 +177,12 @@ collider、`particle_contact_offset/contactOffset/restOffset` 调参、SDF/conve
 C3 SDF sweep、C4 native beaker isolation，最后做 promotion review。只有至少一个非负控
 variant 达到 `outside_source_count==0`、`spill_count==0`、`target_count==0`、
 `below_table_count==0`，才允许释放 S3。
+
+S2F0 已完成 baseline freeze：`fluid_spike_s2f0_baseline_freeze_20260707.json`
+把 S2 collider matrix、runtime warning scan、visual review、`s2_no_outside_source_v2`
+放行合同和 C2 closest-failed baseline 锁成一个不可变入口。当前 `phase_status` 是
+`S2F0_BASELINE_FREEZE=COMPLETE`，`S2F1-S2F5=PENDING`，所以后续只允许从
+`S2F1_C2_PROXY_SWEEP` 开始推进，仍不允许直接跑 S3。
 
 `eos2_expert_oracle_s2_readback_render_inventory_20260706.json` 和
 `eos2_expert_oracle_s2_claim_review_20260706.json` 是 S1R-D fresh S1 之后的 no-new-live S2 证据盘点和声明复核。

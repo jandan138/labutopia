@@ -248,6 +248,22 @@ C3A_* = C3 SDF/cooking variants
 C4A_* = C4 native mesh isolation variants
 ```
 
+Current status:
+
+```text
+S2F0_BASELINE_FREEZE=COMPLETE
+S2F1_C2_PROXY_SWEEP=PENDING
+S2F2_VELOCITY_CONTACT_OFFSET=PENDING
+S2F3_C3_SDF_SWEEP=PENDING
+S2F4_C4_NATIVE_MESH_ISOLATION=PENDING
+S2F5_PROMOTION_REVIEW=PENDING
+S2F0 result manifest:
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json
+```
+
+Do not repeat S2F0 unless the S2 collider matrix is intentionally regenerated.
+All later follow-up evidence must cite this baseline freeze manifest.
+
 S2F required evidence per variant:
 
 ```text
@@ -634,12 +650,13 @@ candidate and should be the first geometry/parameter follow-up route.
 S2F is required before Task 4. Do not run S3 until this task writes a promotion
 review manifest with non-empty `best_for_s3`.
 
-- [ ] **Step 1: Freeze S2F baseline contract**
+- [x] **Step 1: Freeze S2F baseline contract**
 
 Create:
 
 ```text
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_plan_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json
 ```
 
 Required fields:
@@ -685,6 +702,11 @@ Required fields:
   ]
 }
 ```
+
+Result: `fluid_spike_s2f0_baseline_freeze_20260707.json` freezes the S2
+collider matrix, runtime warning scan, visual review, strict
+`s2_no_outside_source_v2` contract, C2 closest-failed metrics, and the
+`best_for_s3=[]` / `s3_kinematic_pour_released=false` guard.
 
 - [ ] **Step 2: Write failing tests for follow-up sweep planning helpers**
 
