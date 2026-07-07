@@ -1,0 +1,96 @@
+{
+  "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001",
+  "classification": {
+    "expected_particle_count": 256,
+    "failure_class": null,
+    "pass_criteria": {
+      "gpu_dynamics_enabled": true,
+      "nan_count_eq_zero": true,
+      "particle_count_final_fraction_ge_0_95": true,
+      "particle_count_initial_gt_zero": true,
+      "particle_motion_observed": true,
+      "readback_available": true
+    },
+    "s1_particle_runtime_passed": true,
+    "s2_collider_matrix_released": true,
+    "status": "GO_NEXT",
+    "stop_reason": null,
+    "true_fluid_runtime_claim_allowed": true
+  },
+  "config": {
+    "grid_dims": [
+      8,
+      8,
+      4
+    ],
+    "lower": [
+      -0.0175,
+      -0.0175,
+      0.16
+    ],
+    "particle_contact_offset": 0.005,
+    "particle_count": 256,
+    "particle_spacing": 0.005,
+    "particle_width": 0.004,
+    "physics_dt": 0.016666666666666666,
+    "render_height": 512,
+    "render_width": 512,
+    "steps": 120
+  },
+  "frame_sources": {
+    "initial_frame.png": "diagnostic_projection",
+    "mid_frame.png": "diagnostic_projection",
+    "terminal_frame.png": "diagnostic_projection"
+  },
+  "generated_at_utc": "2026-07-07T13:55:30.995755+00:00",
+  "manifest_type": "true_physx_pbd_fluid_spike_runtime_smoke_summary",
+  "readback_available": true,
+  "readback_summary": {
+    "final_aabb": {
+      "max": [
+        0.04788221791386604,
+        0.04788223281502724,
+        8.427739885519259e-06
+      ],
+      "min": [
+        -0.047882094979286194,
+        -0.04788217321038246,
+        8.414821422775276e-06
+      ]
+    },
+    "final_centroid": [
+      3.6096462281420827e-06,
+      2.128494088537991e-06,
+      8.421278650416752e-06
+    ],
+    "initial_aabb": {
+      "max": [
+        0.022621821612119675,
+        0.022621821612119675,
+        0.1251734346151352
+      ],
+      "min": [
+        -0.022621821612119675,
+        -0.022621821612119675,
+        0.09556800127029419
+      ]
+    },
+    "initial_centroid": [
+      -2.091837814077735e-11,
+      -7.185008144006133e-11,
+      0.11031193577218801
+    ],
+    "max_displacement": 0.12548987609554446,
+    "mean_delta_y": 2.128565938619431e-06,
+    "mean_delta_z": -0.11030351449353759,
+    "nan_count": 0,
+    "particle_count_final": 256,
+    "particle_count_final_fraction": 1.0,
+    "particle_count_initial": 256,
+    "particle_motion_observed": true
+  },
+  "runtime_step_executed": true,
+  "scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001_fluid_spike/standalone_particle_smoke.usda",
+  "schema_version": 1,
+  "trace_record_count": 5
+}

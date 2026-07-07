@@ -82,6 +82,26 @@ S0 结论：目标 IsaacSim41 / EBench 环境在 `SimulationApp` 启动后可以
 `PhysxParticleSetAPI`、`PhysxParticleAPI` 和 `PhysxPBDMaterialAPI`；RTX 4090 GPU 对该环境可见。
 但 S0 没有做粒子 step，也没有验证烧杯 collider、EBench consumer 或 metric readback。
 
+S1 standalone particle smoke 已完成，当前 canonical evidence 是：
+
+```text
+fluid_spike_s1_standalone_particle_smoke_20260707.json
+fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/runtime_smoke_summary.json
+fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/particle_readback_trace.jsonl
+fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/physics_scene_settings.json
+fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/initial_frame.png
+fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/mid_frame.png
+fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/terminal_frame.png
+fluid_spike_s1_visual_review_20260707.json
+```
+
+S1 结论：standalone scene 在目标 IsaacSim41 runtime 中 `status=GO_NEXT`；`gpu_dynamics_enabled=true`、
+`particle_count_initial=256`、`particle_count_final=256`、`particle_count_final_fraction=1.0`、
+`nan_count=0`、`readback_available=true`、`runtime_step_executed=true`。它只释放
+standalone PBD particle runtime/readback claim 和 S2 collider matrix，不释放 `level1_pour` true fluid、
+EBench particle runtime、metric/readback、score、policy 或 leaderboard claim。三张 PNG 是 readback
+diagnostic projection，不是产品级 camera render；最终 diagnostic projection 独立视觉 review 为 `PASS`。
+
 S2/S3 必须包含 collider matrix，至少覆盖 segmented box/wall proxy、simplified thick-wall open cup
 proxy、segmented convex wall pieces、SDF tri-mesh open beaker、native `beaker2/mesh`
 `convexDecomposition` 和 custom cylinder / analytic geometry negative control。
@@ -96,6 +116,10 @@ s0_scope_freeze_completed=true
 isaacsim41_app_physx_particle_schema_available=true
 selected_runtime_gpu_visible=true
 s1_particle_smoke_released=true
+s1_particle_runtime_passed=true
+s1_standalone_particle_readback_available=true
+s1_diagnostic_projection_frames_available=true
+s2_beaker_collider_matrix_released=true
 s2_s3_collider_matrix_required=true
 ```
 
@@ -103,12 +127,12 @@ s2_s3_collider_matrix_required=true
 
 ```text
 level1_pour_true_fluid_runtime_passed
-s1_particle_runtime_passed
 ebench_particle_runtime_passed
 fluid_score_claim_allowed
 policy_score_claim_allowed
 official_leaderboard_claim_allowed
 visual_only_liquid_equals_true_fluid
+diagnostic_projection_equals_product_camera_render
 ```
 
 `eos2_expert_oracle_s2_readback_render_inventory_20260706.json` 和

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "manifest_type": "true_physx_pbd_fluid_spike_visual_review",
+  "run_id": "fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001",
+  "stage": "S1_PARTICLE_SMOKE",
+  "created_at_utc": "2026-07-07T14:00:00+00:00",
+  "review_scope": "final S1 diagnostic projection frames after replacing unusable near-black camera RGB frames",
+  "reviewer": "independent_visual_qa_subagent",
+  "overall_verdict": "PASS",
+  "image_reviews": [
+    {
+      "id": "initial_frame",
+      "path": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/initial_frame.png",
+      "verdict": "PASS",
+      "visible_evidence": "Blue particles are visible above the reference line at step 0.",
+      "remaining_risk": "Diagnostic projection only, not camera RGB."
+    },
+    {
+      "id": "mid_frame",
+      "path": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/mid_frame.png",
+      "verdict": "PASS",
+      "visible_evidence": "Blue particles are spread along the reference line at step 60.",
+      "remaining_risk": "Particles overlap the line, so vertical structure is mostly lost."
+    },
+    {
+      "id": "terminal_frame",
+      "path": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/terminal_frame.png",
+      "verdict": "PASS",
+      "visible_evidence": "Blue particles remain visible along the reference line at step 120.",
+      "remaining_risk": "Visual difference from mid frame is subtle; initial-to-mid movement is the clearer visual evidence."
+    }
+  ],
+  "claim_boundary": {
+    "diagnostic_projection_frames_usable": true,
+    "camera_rgb_render_passed": false,
+    "product_quality_render_claim_allowed": false,
+    "visual_material_parity_claim_allowed": false,
+    "score_claim_allowed": false
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "broadphase_type": "GPU",
+  "gpu_dynamics_enabled": true,
+  "isosurface_enabled": false,
+  "material_path": "/World/Looks/Blue_Glass",
+  "particle_contact_offset": 0.005,
+  "particle_set_path": "/World/ParticleSet",
+  "particle_system_path": "/World/ParticleSystem",
+  "physics_dt": 0.016666666666666666,
+  "physics_scene_path": "/World/PhysicsScene",
+  "solver_type": "TGS",
+  "suppress_readback_setting": false,
+  "update_particles_to_usd_setting": true,
+  "update_to_usd_setting": true,
+  "update_velocities_to_usd_setting": true
+}

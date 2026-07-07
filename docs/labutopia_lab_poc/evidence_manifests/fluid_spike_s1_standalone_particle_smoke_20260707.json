@@ -1,0 +1,162 @@
+{
+  "allowed_claims": [
+    "S1 standalone PBD particle runtime smoke passed in the selected IsaacSim41 runtime.",
+    "GPU dynamics was enabled for the standalone PhysicsScene.",
+    "Particle positions stepped and were read back from USD.",
+    "S2 beaker collider matrix may proceed."
+  ],
+  "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001",
+  "blocked_claims": [
+    "level1_pour has true fluid today",
+    "particles have stepped in EBench",
+    "beaker collider is fluid-compatible",
+    "fluid is EBench-scoreable",
+    "Expert Oracle Score includes fluid",
+    "policy score claim",
+    "official leaderboard claim",
+    "visual-only liquid equals true fluid"
+  ],
+  "canonical_score_claim_allowed": false,
+  "classification": {
+    "expected_particle_count": 256,
+    "failure_class": null,
+    "pass_criteria": {
+      "gpu_dynamics_enabled": true,
+      "nan_count_eq_zero": true,
+      "particle_count_final_fraction_ge_0_95": true,
+      "particle_count_initial_gt_zero": true,
+      "particle_motion_observed": true,
+      "readback_available": true
+    },
+    "s1_particle_runtime_passed": true,
+    "s2_collider_matrix_released": true,
+    "status": "GO_NEXT",
+    "stop_reason": null,
+    "true_fluid_runtime_claim_allowed": true
+  },
+  "commands": [
+    "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python /cpfs/shared/simulation/zhuzihou/dev/LabUtopia/tools/labutopia_fluid/run_standalone_particle_smoke.py --artifact-dir docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001 --scene-path assets/chemistry_lab/lab_001_fluid_spike/standalone_particle_smoke.usda --manifest-path docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s1_standalone_particle_smoke_20260707.json --particle-count 256 --steps 120 --width 512 --height 512 --headless"
+  ],
+  "created_at_utc": "2026-07-07T13:55:31.009523+00:00",
+  "evidence_files": {
+    "initial_frame": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/initial_frame.png",
+    "mid_frame": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/mid_frame.png",
+    "particle_readback_trace": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/particle_readback_trace.jsonl",
+    "physics_scene_settings": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/physics_scene_settings.json",
+    "runtime_smoke_summary": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/runtime_smoke_summary.json",
+    "server_stderr": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/server.stderr.txt",
+    "server_stdout": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/server.stdout.txt",
+    "terminal_frame": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/terminal_frame.png"
+  },
+  "expert_oracle_score_claim_allowed": false,
+  "failure_class": null,
+  "fatal_error": null,
+  "fluid_spike_claim_allowed": true,
+  "frame_sources": {
+    "initial_frame.png": "diagnostic_projection",
+    "mid_frame.png": "diagnostic_projection",
+    "terminal_frame.png": "diagnostic_projection"
+  },
+  "gpu_dynamics_enabled": true,
+  "live_evidence": true,
+  "manifest_type": "true_physx_pbd_fluid_spike_evidence",
+  "nan_count": 0,
+  "next_stage": {
+    "goal": "Run the required beaker collider matrix.",
+    "id": "S2_BEAKER_COLLIDER_SMOKE"
+  },
+  "official_leaderboard_claim_allowed": false,
+  "particle_count_final": 256,
+  "particle_count_final_fraction": 1.0,
+  "particle_count_initial": 256,
+  "particle_motion_observed": true,
+  "policy_score_claim_allowed": false,
+  "readback_available": true,
+  "readback_summary": {
+    "final_aabb": {
+      "max": [
+        0.04788221791386604,
+        0.04788223281502724,
+        8.427739885519259e-06
+      ],
+      "min": [
+        -0.047882094979286194,
+        -0.04788217321038246,
+        8.414821422775276e-06
+      ]
+    },
+    "final_centroid": [
+      3.6096462281420827e-06,
+      2.128494088537991e-06,
+      8.421278650416752e-06
+    ],
+    "initial_aabb": {
+      "max": [
+        0.022621821612119675,
+        0.022621821612119675,
+        0.1251734346151352
+      ],
+      "min": [
+        -0.022621821612119675,
+        -0.022621821612119675,
+        0.09556800127029419
+      ]
+    },
+    "initial_centroid": [
+      -2.091837814077735e-11,
+      -7.185008144006133e-11,
+      0.11031193577218801
+    ],
+    "max_displacement": 0.12548987609554446,
+    "mean_delta_y": 2.128565938619431e-06,
+    "mean_delta_z": -0.11030351449353759,
+    "nan_count": 0,
+    "particle_count_final": 256,
+    "particle_count_final_fraction": 1.0,
+    "particle_count_initial": 256,
+    "particle_motion_observed": true
+  },
+  "run_id": "fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001",
+  "runtime_step_executed": true,
+  "scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/assets/chemistry_lab/lab_001_fluid_spike/standalone_particle_smoke.usda",
+  "schema_version": 1,
+  "score_claim_allowed": false,
+  "smoke_config": {
+    "grid_dims": [
+      8,
+      8,
+      4
+    ],
+    "lower": [
+      -0.0175,
+      -0.0175,
+      0.16
+    ],
+    "particle_contact_offset": 0.005,
+    "particle_count": 256,
+    "particle_spacing": 0.005,
+    "particle_width": 0.004,
+    "physics_dt": 0.016666666666666666,
+    "render_height": 512,
+    "render_width": 512,
+    "steps": 120
+  },
+  "stage": "S1_PARTICLE_SMOKE",
+  "status": "GO_NEXT",
+  "stop_reason": null,
+  "target_runtime": {
+    "accept_eula": "Y",
+    "gpu_probe": {
+      "torch_cuda_available": true,
+      "torch_cuda_device_0": "NVIDIA GeForce RTX 4090",
+      "torch_cuda_device_count": 1
+    },
+    "omni_kit_accept_eula": "YES",
+    "platform": "Linux-5.10.134-17.3.al8.x86_64-x86_64-with-glibc2.35",
+    "python": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python",
+    "python_version": "3.10.20"
+  },
+  "true_fluid_claim_allowed": false,
+  "true_fluid_runtime_claim_allowed": true,
+  "visual_only_liquid_claim_allowed": false
+}

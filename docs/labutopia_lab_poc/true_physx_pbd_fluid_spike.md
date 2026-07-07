@@ -72,7 +72,81 @@ docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_schema_probe_20260707.j
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s0_isaacsim41_app_schema_probe_20260707.json
 ```
 
-所以下一步是 S1：做一个最小粒子场景，明确打开 GPU dynamics，真的跑几帧并读回粒子状态。
+S0 之后进入 S1：做一个最小粒子场景，明确打开 GPU dynamics，真的跑几帧并读回粒子状态。
+
+## S1 已完成：最小真实粒子 runtime 已跑通
+
+S1 的问题很简单：不管烧杯、机器人、EBench 评分，先确认 Isaac Sim 4.1 里“真实 PBD 粒子”
+能不能真的动起来，并且能不能读回粒子位置。当前结论是：S1 通过，可以进入 S2 烧杯 collider
+矩阵测试。
+
+本次运行仍然使用 S0 冻结的 IsaacSim41 / EBench 目标环境：
+
+```text
+/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python
+```
+
+S1 standalone scene 写到了：
+
+```text
+assets/chemistry_lab/lab_001_fluid_spike/standalone_particle_smoke.usda
+```
+
+这不是修改原始 `lab_001.usd`，而是在旁边新建了一个最小 smoke scene。scene 里包含：
+
+```text
+/World/PhysicsScene
+/World/ParticleSystem
+/World/ParticleSet
+/World/Looks/Blue_Glass
+ground plane
+review camera
+```
+
+关键结果：
+
+```text
+gpu_dynamics_enabled=true
+particle_count_initial=256
+particle_count_final=256
+particle_count_final_fraction=1.0
+nan_count=0
+readback_available=true
+runtime_step_executed=true
+max_displacement=0.12548987609554446
+mean_delta_z=-0.11030351449353759
+```
+
+白话解释：我们放了 256 个真实 PhysX/PBD 粒子，打开 GPU dynamics，让它们跑了 120 step。
+跑完以后粒子没有丢、没有 NaN，并且位置确实变化了；这说明“真实粒子本体能在目标 IsaacSim41
+runtime 里 step，并且能被读回”。
+
+S1 证据文件：
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s1_standalone_particle_smoke_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/runtime_smoke_summary.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/particle_readback_trace.jsonl
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/physics_scene_settings.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/initial_frame.png
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/mid_frame.png
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/terminal_frame.png
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s1_visual_review_20260707.json
+```
+
+视觉边界也要说清楚：三张图片现在是基于粒子 readback 的 diagnostic projection，用来说明粒子
+初始悬空、step60/step120 后落到地面附近。它们不是产品级相机图，也不是材质/视觉 parity 证据。
+第一次相机 RGB 图曾出现 near-black 画面，runner 已改成检测这种不可用相机帧并回退到诊断投影。
+独立视觉 review 对最终三张 diagnostic projection 的结论是 `PASS`；后续 S2/S3 如果需要给产品展示，
+仍需要重新布置更好的 scene camera。
+
+S1 仍然不能说明：
+
+- `level1_pour` 已经有真实液体。
+- 烧杯能装住这些粒子。
+- 机器人倒液动作能带动粒子。
+- EBench consumer 已经能 step 或评分这些粒子。
+- 任何 policy / leaderboard / official score claim。
 
 ## 不会混淆的主线
 
@@ -91,7 +165,7 @@ AAN current profile still excludes deformable/liquid/cloth/particle assets.
 | 阶段 | 要回答的问题 | 通过后能说什么 | 失败也要留下什么 |
 |---|---|---|---|
 | S0 Scope Freeze | 什么才算 true fluid？ | 真假液体边界已冻结 | `fluid_truth_criteria.json` |
-| S1 Particle Smoke | 粒子能不能在 Isaac runtime 中 step？ | PBD 粒子本体可运行 | GPU/schema/readback 失败归因 |
+| S1 Particle Smoke | 粒子能不能在 Isaac runtime 中 step？ | 已通过：standalone PBD 粒子本体可运行 | GPU/schema/readback 失败归因 |
 | S2 Beaker Collider Smoke | 烧杯能不能装住粒子？ | 至少一个 collider 能稳定持液 | collider 失败矩阵 |
 | S3 Kinematic Pour Rig | 杯子倾斜后粒子能不能流向目标杯？ | 找到可倒液的 collider+参数 | 倾倒失败归因 |
 | S4 level1_pour Replay | 原 expert 倒液动作能不能带动粒子？ | LabUtopia native 任务中有真实粒子运动 | 机器人动作/粒子耦合失败归因 |
@@ -125,16 +199,20 @@ True fluid spike is planned.
 level1_pour currently has no true fluid.
 lab_003/clock.usd provides a local particle template.
 S2/S3 will test a collider matrix, not one hard-coded collider.
+S1 standalone PBD particle runtime smoke passed.
+S2 beaker collider matrix may proceed.
 ```
 
 禁止：
 
 ```text
 level1_pour already has real fluid.
+standalone S1 equals level1_pour fluid integration.
 fluid is already EBench-scoreable.
 policy can already solve fluid pouring.
 official leaderboard claim.
 visual-only water equals true fluid.
+diagnostic projection equals product-quality render.
 ```
 
 ## 关联文档

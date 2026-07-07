@@ -73,6 +73,52 @@ Asset finding: `assets/chemistry_lab/lab_001/lab_001.usd` has no authored
 `PhysxParticleSystem` / `ParticleSet`; `assets/chemistry_lab/lab_003/clock.usd`
 and `assets/chemistry_lab/lab_003/lab_003.usd` provide local particle templates.
 
+## S1 Execution Status
+
+S1 closed on 2026-07-07 with `GO_NEXT`. The selected IsaacSim41 runtime stepped
+the standalone particle scene for 120 frames with GPU dynamics enabled and USD
+particle readback enabled. This releases S2 beaker collider smoke. It does not
+release any `level1_pour`, EBench consumer, metric/readback, score, policy, or
+leaderboard claim.
+
+Evidence:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s1_standalone_particle_smoke_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/runtime_smoke_summary.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/particle_readback_trace.jsonl
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001/physics_scene_settings.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s1_visual_review_20260707.json
+```
+
+Pass values:
+
+```text
+gpu_dynamics_enabled=true
+particle_count_initial=256
+particle_count_final=256
+particle_count_final_fraction=1.0
+nan_count=0
+readback_available=true
+runtime_step_executed=true
+```
+
+Implementation checkpoint:
+
+```text
+tools/labutopia_fluid/run_standalone_particle_smoke.py
+tests/test_fluid_particle_smoke.py
+assets/chemistry_lab/lab_001_fluid_spike/standalone_particle_smoke.usda
+```
+
+Visual boundary: `initial_frame.png`, `mid_frame.png`, and `terminal_frame.png`
+are diagnostic x-z projections generated from particle readback. They are valid
+S1 evidence for particle existence and motion, but they are not product camera
+renders or visual/material parity evidence. The first camera-RGB attempt produced
+near-black frames; the runner now detects unusable camera frames and falls back to
+diagnostic projections.
+Independent visual review of the final diagnostic projection frames is `PASS`.
+
 ## Stage Status Vocabulary
 
 Use exactly these statuses in manifests:
@@ -219,7 +265,7 @@ Required fields:
 }
 ```
 
-- [ ] **Step 4: Commit S0 documentation and probe**
+- [x] **Step 4: Commit S0 documentation and probe**
 
 Run:
 
@@ -237,7 +283,7 @@ git commit -m "docs: freeze true fluid spike scope"
 - Create: `assets/chemistry_lab/lab_001_fluid_spike/standalone_particle_smoke.usda`
 - Create: `docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s1_<slug>_<yyyymmdd>.json`
 
-- [ ] **Step 1: Build a minimal standalone smoke scene**
+- [x] **Step 1: Build a minimal standalone smoke scene**
 
 The scene must include:
 
@@ -259,7 +305,7 @@ particleContactOffset=0.005
 isosurfaceEnabled=false
 ```
 
-- [ ] **Step 2: Run with GPU backend**
+- [x] **Step 2: Run with GPU backend**
 
 Run:
 
@@ -270,7 +316,25 @@ python main.py --config-dir config --config-name level1_pour --backend gpu --hea
 If this command cannot run the standalone scene, stop and create a narrower
 runner command in `tools/labutopia_fluid/run_standalone_particle_smoke.py`.
 
-- [ ] **Step 3: Record runtime smoke artifacts**
+Actual S1 used the narrower standalone runner because the plan command targets
+LabUtopia task execution, while S1 needs an isolated PhysX/PBD particle positive
+control:
+
+```bash
+ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=YES PYTHONNOUSERSITE=1 PYTHONUNBUFFERED=1 \
+  /cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python \
+  tools/labutopia_fluid/run_standalone_particle_smoke.py \
+  --artifact-dir docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s1_standalone_particle_smoke_20260707_001 \
+  --scene-path assets/chemistry_lab/lab_001_fluid_spike/standalone_particle_smoke.usda \
+  --manifest-path docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s1_standalone_particle_smoke_20260707.json \
+  --particle-count 256 \
+  --steps 120 \
+  --width 512 \
+  --height 512 \
+  --headless
+```
+
+- [x] **Step 3: Record runtime smoke artifacts**
 
 Required artifacts:
 
