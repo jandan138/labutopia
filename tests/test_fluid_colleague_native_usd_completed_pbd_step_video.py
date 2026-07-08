@@ -201,9 +201,16 @@ def test_presentation_material_and_lighting_are_authored_with_fixed_paths():
     assert stage.GetPrimAtPath(LIQUID_PRESENTATION_MATERIAL_PATH)
     assert stage.GetPrimAtPath(LIQUID_PRESENTATION_LIGHT_PATH)
     assert material_info["material_path"] == LIQUID_PRESENTATION_MATERIAL_PATH
-    assert material_info["display_name"] == "presentation_water_transparent_blue"
-    assert material_info["opacity"] == 0.90
-    assert material_info["diffuse_color"] == [0.0, 0.62, 1.0]
+    assert material_info["display_name"] == "presentation_water_unified_realistic"
+    assert material_info["emissive_color"] == [0.0, 0.0, 0.0]
+    assert material_info["opacity"] <= 0.38
+    assert material_info["roughness"] <= 0.08
+    assert min(material_info["diffuse_color"]) >= 0.70
+    assert material_info["tint_policy"] == "near_clear_subtle_blue_green"
+    assert material_info["unified_liquid_style"] is True
+    assert material_info["state_specific_liquid_materials"] is False
+    assert material_info["all_liquid_particles_visible"] is True
+    assert material_info["visualization_only"] is True
     assert material_info["visual_material_parity_claim_allowed"] is False
     assert lighting_info["light_path"] == LIQUID_PRESENTATION_LIGHT_PATH
     assert lighting_info["role"] == "leadership_presentation_key_light"

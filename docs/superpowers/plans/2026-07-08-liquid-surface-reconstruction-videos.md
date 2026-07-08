@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a presentation video lane for LabUtopia liquid collider evidence so every native collider variant can show a more readable reconstructed render surface under one fixed leadership-facing camera and lighting contract, while keeping particle readback as the only pass/fail authority.
+**Goal:** Build a unified realistic-water presentation lane for LabUtopia liquid collider evidence so leaked and non-leaked liquid are visualized with one water style under one fixed leadership-facing camera and lighting contract, while keeping particle readback as the only pass/fail authority.
 
-**Architecture:** Extend the existing colleague native USD PBD runner with an optional presentation mode. The mode disables particle debug display, enables PhysX particle isosurface reconstruction on `/World/CompletedPBD/ParticleSystem`, binds a uniform transparent water material, records a fixed `/World/LiquidPresentationMainCamera`, and writes an explicit `presentation_visual_contract`. The existing diagnostic readback, classification, and collider variant sweep stay authoritative and unchanged in meaning.
+**Architecture:** Extend the existing colleague native USD PBD runner with an optional presentation mode. The mode disables particle debug display, enables PhysX particle isosurface reconstruction on `/World/CompletedPBD/ParticleSystem`, binds one non-emissive realistic water material to the whole liquid, records a fixed `/World/LiquidPresentationMainCamera`, and writes an explicit `presentation_visual_contract`. The existing diagnostic readback, classification, and collider variant sweep stay authoritative and unchanged in meaning.
 
 **Tech Stack:** Python, Isaac Sim 4.1, USD / PhysX schemas, `omni.physx.scripts.particleUtils`, existing LabUtopia fluid runner/test stack, static HTML weekly report.
 
@@ -67,6 +67,57 @@ This preserves the claim boundary: `presentation lane` improves human readabilit
 
 ---
 
+## 2026-07-09 Planning Update: Unified Realistic Water Visualization
+
+User correction: leaked/abnormal particles should **not** be hidden, filtered out, recolored by state, or moved to a separate visual style. They are part of the evidence. The problem with the current 20-second render is that all liquid is shown as saturated blue, slightly emissive `UsdPreviewSurface` output, so the spill/leak reads as a blue debug blob or speckled fog instead of water.
+
+The next planning target is therefore:
+
+```text
+unified_realistic_water_visualization=true
+all_liquid_particles_visible=true
+state_specific_liquid_materials=false
+red_or_saturated_blue_debug_style_allowed_for_pm_main_video=false
+particle_readback_remains_pass_fail_gate=true
+```
+
+Multi-agent review summary:
+
+| Angle | Conclusion | Planning impact |
+| --- | --- | --- |
+| Code/test structure | The current runner already has the right mechanical base: `--presentation-isosurface-video` disables particle debug display, applies `PhysX Isosurface` to `/World/CompletedPBD/ParticleSystem`, and binds one material. Tests and docs currently lock that material to `presentation_water_transparent_blue`. | Treat current blue render as a diagnostic presentation baseline, not the final PM visual target. Add a follow-up that changes material/test expectations to realistic water. |
+| Official-doc / rendering research | NVIDIA/Omniverse docs describe `PBD particles` as the simulated fluid and `Isosurface` / smoothing / anisotropy as render-side reconstruction. Render material is separate from `PBD Particle Material`. A realistic water look should use one non-emissive water material, preferably MDL such as `OmniGlass` / `OmniSurface` or a ClearWater-style material, not blue emissive `UsdPreviewSurface`. | Plan pipeline as `PBD particles -> smoothing/aniso/isurface -> one realistic water render material`. Do not claim the visual surface changes physics. |
+| Product/PM wording | Leadership media should stop using red markers or saturated-blue debug-looking blobs as the primary artifact. Diagnostic overlays stay in the engineering appendix. PM-facing videos should use one unified realistic-water presentation layer while leak/pass status stays readback-based. | Update weekly/handoff wording: “current blocker is fluid-safe collider; visual cleanup improves readability only.” |
+
+Primary references used for this planning update:
+
+- NVIDIA Omni Physics particles / `PBD` fluids: <https://docs.omniverse.nvidia.com/kit/docs/omni_physics/latest/dev_guide/particles/particles.html>
+- PhysX `PBD` particle system: <https://nvidia-omniverse.github.io/PhysX/physx/5.3.1/docs/ParticleSystem.html>
+- OpenUSD `UsdPreviewSurface` material inputs including `emissiveColor`: <https://openusd.org/release/spec_usdpreviewsurface.html>
+- NVIDIA Omniverse material templates including `OmniGlass` / `OmniSurface`: <https://docs.omniverse.nvidia.com/materials-and-rendering/latest/materials_templates.html>
+
+Current 20-second evidence remains useful, but its status is now:
+
+```text
+current_blue_isosurface_video_status=DIAGNOSTIC_PRESENTATION_BASELINE_WARN
+current_blue_isosurface_video_final_realistic_water_claim_allowed=false
+reason=material_is_saturated_blue_and_emissive; sparse_leaks_read_as_speckled_debug_surface
+```
+
+The follow-up must produce a new PM-facing video lane that keeps the same particle trajectory and leak metrics, but changes the visual contract:
+
+```text
+material=one unified realistic water material
+emissive_color=(0,0,0)
+ior_target=about_1.33
+roughness=very_low
+tint=subtle_blue_green_or_near_clear
+debug_particle_display=false
+all_liquid_particles_visible=true
+state_specific_color_or_material=false
+claim_boundary=visualization_only_particle_readback_remains_gate
+```
+
 ## Scope And Non-Goals
 
 This plan changes visual evidence production, not the physics gate. It must not claim that `isosurface` fixes leaking, makes a collider benchmark-ready, or replaces `particle_readback_trace.jsonl`.
@@ -75,6 +126,9 @@ Required result:
 
 - Native collider sweep variants can optionally produce `presentation_isosurface.mp4` by launching the existing native USD runtime runner once per variant.
 - Presentation videos use one camera, one lighting contract, one liquid material, and no red particle debug display.
+- PM-facing presentation videos must use one unified realistic-water style for all liquid, including source-beaker liquid, spilled liquid, and below-table leaked liquid.
+- PM-facing presentation videos must not use state-specific colors/materials for cup liquid vs spilled liquid vs leaked liquid.
+- The current saturated-blue `presentation_water_transparent_blue` render is allowed only as historical/diagnostic baseline evidence; it is not the final visual target.
 - Runtime summaries and aggregate manifests expose both presentation evidence and engineering evidence.
 - All generated presentation videos get per-variant visual QA status before any weekly/report claim is written.
 - The weekly HTML explains that reconstructed surface is a visual lane and particle readback remains the pass/fail source.
@@ -85,6 +139,8 @@ Out of scope:
 - Changing static-hold pass/fail thresholds.
 - Claiming visual/material parity with LabUtopia Isaac Sim 5.1.
 - Replacing all historical C0-C5 videos in this pass. The implementation must make the contract reusable for a future C0-C5 evidence refresh.
+- Hiding leaked particles to make the video look cleaner. Leak particles must remain visible; only their rendering style should become water-like.
+- Splitting liquid into separate visual styles by state. The new target is one liquid style everywhere.
 
 ## Files
 
@@ -1291,8 +1347,199 @@ git status --short --branch
 
 Expected on main: `## main...origin/main` and no file changes.
 
+## Task 8: Unified Realistic Water Visualization Follow-Up
+
+**Status:** executed on 2026-07-09 with `WARN_REALISM_NOT_YET_PHOTOREAL`. This follow-up keeps the existing 20-second blue `PhysX Isosurface` render as a diagnostic baseline, but supersedes it as the PM-facing main visual style. The new video removes saturated red/blue debug styling and uses one unified non-emissive water material; it does not claim final `MDL_WATER` or photoreal material parity.
+
+**Files:**
+- Modify: `tools/labutopia_fluid/run_colleague_native_usd_completed_pbd_step_video.py`
+- Modify: `tests/test_fluid_colleague_native_usd_completed_pbd_step_video.py`
+- Modify after runtime: `docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md`
+- Modify after runtime: `reports/2026-07-07-labutopia-fluid-weekly/index.html`
+- Created after runtime: `docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709.json`
+- Created after runtime: `docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2.json`
+
+- [x] **Step 1: Freeze the current blue render as diagnostic baseline**
+
+Record this exact baseline in the new runtime manifest before changing material behavior:
+
+```text
+baseline_video=reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-reconstruction-main-full50k.mp4
+baseline_duration_seconds=20.0
+baseline_classification=FAIL_CONTAINER_LEAK
+baseline_below_table_count=38891
+baseline_material_display_name=presentation_water_transparent_blue
+baseline_status=DIAGNOSTIC_PRESENTATION_BASELINE_WARN
+baseline_final_realistic_water_claim_allowed=false
+```
+
+The baseline remains linked in the weekly appendix because it is useful for before/after comparison.
+
+- [x] **Step 2: Replace material contract tests**
+
+Update `test_presentation_material_and_lighting_are_authored_with_fixed_paths` so it no longer asserts saturated blue/emissive water. The test must assert:
+
+```python
+assert material_info["display_name"] == "presentation_water_unified_realistic"
+assert material_info["emissive_color"] == [0.0, 0.0, 0.0]
+assert material_info["opacity"] <= 0.38
+assert min(material_info["diffuse_color"]) >= 0.70
+assert material_info["roughness"] <= 0.08
+assert material_info["tint_policy"] == "near_clear_subtle_blue_green"
+assert material_info["unified_liquid_style"] is True
+assert material_info["state_specific_liquid_materials"] is False
+assert material_info["all_liquid_particles_visible"] is True
+assert material_info["visualization_only"] is True
+assert material_info["visual_material_parity_claim_allowed"] is False
+```
+
+If the first implementation uses `UsdPreviewSurface` as fallback because the target MDL fails to load in headless IsaacSim41, it must still keep `emissive_color=[0,0,0]`, near-clear tint, and the same claim boundary. The manifest must record:
+
+```text
+material_backend=MDL_WATER or USD_PREVIEW_FALLBACK
+mdl_compile_status=PASS or FALLBACK_USED
+fallback_reason=mdl_compile_error or mdl_asset_missing or headless_renderer_unsupported
+```
+
+- [x] **Step 3: Implement one unified water material**
+
+Preferred runtime material path:
+
+```text
+/World/Looks/LiquidPresentationWater
+```
+
+Preferred backend order:
+
+1. Local IsaacSim41 MDL mirror material using `OmniGlass` / `OmniSurface` style settings.
+2. If MDL compile fails, fallback to non-emissive `UsdPreviewSurface`.
+
+Required visual parameters:
+
+```text
+emissive_color=[0.0, 0.0, 0.0]
+diffuse_or_tint=near_clear_subtle_blue_green
+ior_target=1.33
+roughness<=0.08
+metallic=0.0
+opacity<=0.55
+state_specific_liquid_materials=false
+```
+
+Bind this single material to the whole liquid presentation surface. Do not assign separate materials to source liquid, spill liquid, or below-table leaked liquid.
+
+- [x] **Step 4: Keep physics and leak readback unchanged**
+
+Run the same 50k source trajectory and assert the new visualization does not change the physics summary:
+
+```bash
+ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=YES \
+/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python \
+tools/labutopia_fluid/run_colleague_native_usd_completed_pbd_step_video.py \
+  --presentation-isosurface-video \
+  --disable-particle-debug-display \
+  --particle-limit 0 \
+  --steps 240 \
+  --trace-interval 10 \
+  --video-stride 1 \
+  --video-fps 12 \
+  --runtime-timeout-seconds 900 \
+  --out-dir docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2 \
+  --manifest docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2.json \
+  --headless
+```
+
+Expected physics fields:
+
+```text
+runtime_step_executed=true
+selected_particle_count=50000
+particle_count_final_fraction>=0.95
+nan_count=0
+classification=FAIL_CONTAINER_LEAK
+presentation_video_does_not_replace_particle_readback=true
+```
+
+The exact `below_table_count`, `outside_source_count`, and `spill_count` may differ from the 2026-07-08 run if code or runtime settings changed, but they must be reported and must remain the only source for the leak verdict.
+
+Actual v2 runtime result:
+
+```text
+runtime_step_executed=true
+fatal_error=null
+selected_particle_count=50000
+source_particle_count=50000
+presentation_isosurface_rgb_frame_count=240
+video_duration_seconds=20.0
+classification=FAIL_CONTAINER_LEAK
+below_table_count=39024
+outside_source_count=41067
+spill_count=2043
+source_retention_fraction=0.17866
+tail_leak_rate_fraction_per_second=0.06570000000000001
+particle_count_final_fraction=1.0
+nan_count=0
+```
+
+- [x] **Step 5: Visual review acceptance**
+
+Use `render-visual-reviewer` on the new `presentation_isosurface.mp4`. The video passes PM-facing visual review only if all conditions hold:
+
+```text
+liquid_uses_one_visual_style=true
+source_liquid_spill_liquid_and_leaked_liquid_share_same_material=true
+leaked_liquid_visible_when_readback_reports_leak=true
+red_debug_markers_absent_from_main_video=true
+saturated_blue_debug_blob_absent=true
+self_lit_or_glowing_water_absent=true
+beaker_table_and_liquid_relationship_readable=true
+claim_boundary_visible_in_docs=true
+```
+
+If the video still looks like a blue gel/fog/speckled debug surface, mark the visual review as `WARN_REALISM_NOT_YET_PM_READY` and keep the current weekly main claim as diagnostic evidence only.
+
+Actual visual review result:
+
+```text
+visual_review_verdict=WARN_REALISM_NOT_YET_PHOTOREAL
+saturated_red_debug_absent=true
+saturated_blue_debug_blob_absent=true
+self_lit_or_glowing_water_absent=true
+one_visual_style_for_visible_liquid=true
+leaked_liquid_visible_when_readback_reports_leak=true
+risk=liquid_still_looks_cloudy_or_slushy_and_sparse_leaks_remain_speckled
+```
+
+- [x] **Step 6: Update docs and weekly page**
+
+Update `docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md` and the weekly report with this exact PM wording:
+
+```text
+我们没有隐藏漏出来的液体。所有液体仍然来自同一条 50k PBD particle trajectory；
+区别只是展示层从红色/蓝色 debug 感升级为统一真实水材质。物理结论仍然是 FAIL_CONTAINER_LEAK，
+因为 pass/fail 只看 particle readback，而不是视频好不好看。
+```
+
+The weekly page must show:
+
+- the new unified realistic-water main video as `WARN` PM-facing diagnostic evidence;
+- the old blue render as “旧版诊断展示，问题是偏蓝、偏发光、漏液区域有 speckled debug 感”;
+- the readback metrics beside both videos;
+- blocked claims `realistic_water_video_equals_physics_success=false` and `visualization_only_liquid_equals_true_fluid=false`.
+
+- [ ] **Step 7: Verification**
+
+Run:
+
+```bash
+python3 -m pytest tests/test_fluid_colleague_native_usd_completed_pbd_step_video.py tests/test_fluid_colleague_native_collider_approx_sweep.py -q
+git diff --check
+```
+
+Expected: all tests pass and `git diff --check` prints no output.
+
 ---
 
 ## Product Summary To Use After Completion
 
-这次不是继续给领导看红色粒子团，而是把 PBD 粒子加上一层 `PhysX Isosurface` presentation render：主视频在重建成功时会看到更连续、更易读、统一光照和统一相机的液体画面。每个 collider 方案仍然各跑各的视频，并且每个视频都要单独做视觉 QA。最终结论仍由 `particle readback` 决定：视频负责“看懂现象”，readback 负责“判定有没有漏、能不能进入下一阶段”。
+这次不是继续给领导看红色粒子团或偏蓝发光的 debug 感液体，而是把同一条 50k `PBD particle` 轨迹加上一层统一真实水展示：杯里的水、漏出来的水、桌面/桌下的水都用同一种水材质表达。最终结论仍由 `particle readback` 决定：视频负责“看懂现象”，readback 负责“判定有没有漏、能不能进入下一阶段”。

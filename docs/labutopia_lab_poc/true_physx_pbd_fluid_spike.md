@@ -973,6 +973,92 @@ source beaker、target beaker、桌面和泄漏区域。它不解决 `collider` 
 `LabUtopia51 native visual material parity`。因此周报可以把它作为“更适合领导理解的诊断展示视频”，但不能把它
 升级为 benchmark-ready fluid evidence。
 
+### Unified Realistic Water Visualization Follow-Up 已执行
+
+2026-07-09 的多角度 review 后，展示层口径进一步收窄并已执行：异常粒子不隐藏，漏出来的液体继续可见；
+但主视频里的所有液体都使用同一种 realistic-water-style 可视化，不再把杯内、洒出、桌下分别做成不同颜色或不同风格。
+也就是说，问题不是“异常粒子全部可视化不对”，而是“旧可视化太像红色/蓝色 debug 团”。
+
+旧 20 秒蓝色 `PhysX Isosurface` 视频现在保留为 diagnostic baseline：
+
+```text
+blue_isosurface_video_status=DIAGNOSTIC_PRESENTATION_BASELINE_WARN
+blue_isosurface_video_final_realistic_water_claim_allowed=false
+old_material=presentation_water_transparent_blue
+old_material_diffuse_color=[0.0, 0.62, 1.0]
+old_material_emissive_color=[0.0, 0.12, 0.2]
+```
+
+新 v2 主展示视频已经生成并放入周报：
+
+```text
+summary_manifest=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709.json
+runtime_manifest=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2.json
+report_video=reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-reconstruction-main-full50k.mp4
+runtime=isaacsim41
+selected_particle_count=50000
+video_duration_seconds=20.0
+video_frame_count=240
+classification=FAIL_CONTAINER_LEAK
+below_table_count=39024
+outside_source_count=41067
+spill_count=2043
+source_retention_fraction=0.17866
+nan_count=0
+```
+
+新材质合同：
+
+```text
+display_name=presentation_water_unified_realistic
+material_backend=USD_PREVIEW_FALLBACK
+preferred_backend=MDL_WATER
+mdl_compile_status=FALLBACK_USED
+emissive_color=[0.0, 0.0, 0.0]
+diffuse_color=[0.74, 0.94, 1.0]
+opacity=0.34
+roughness=0.02
+ior=1.333
+tint_policy=near_clear_subtle_blue_green
+all_liquid_particles_visible=true
+state_specific_liquid_materials=false
+visual_material_parity_claim_allowed=false
+```
+
+白话解释：这条视频证明了我们可以把同一条 50k `PBD particle trajectory` 通过 `PhysX Isosurface`
+重建成更可读的液面/液体团，并且物理读数仍然支持 `FAIL_CONTAINER_LEAK`。它解决的是“给领导看的水不要像
+红色/蓝色调试团”，不解决 `collider` 漏液问题，也不改变 `particle readback` 判定。
+
+visual review 结论是 `WARN_REALISM_NOT_YET_PHOTOREAL`。优点是异常红色和强蓝色已经消失，source/target beaker
+和桌面关系清楚；风险是水体仍有半透明雾状/冰沙感，漏出区域仍有 speckled 观感。因此它可以作为 PM-facing
+diagnostic video，但不能升级为 polished pour、`MDL_WATER` parity 或 full visual material parity。
+
+给产品经理的汇报口径：
+
+> 我们没有隐藏漏出来的液体。所有液体仍然来自同一条 50k `PBD particle trajectory`；
+> 区别只是展示层从红色/蓝色 debug 感升级为统一浅色水面。物理结论仍然是
+> `FAIL_CONTAINER_LEAK`，因为 pass/fail 只看 `particle readback`，不是视频好不好看。
+
+允许说：
+
+```text
+Unified realistic water visualization has been executed as a presentation follow-up.
+The old blue Isosurface video is a diagnostic baseline, not final realistic water.
+The new PM-facing fluid media uses one water material for all visible liquid.
+Leak/pass status remains particle-readback-based.
+```
+
+仍然不能说：
+
+```text
+realistic_water_video_equals_physics_success
+realistic_water_video_fixes_collider_leak
+blue_isosurface_video_equals_final_realistic_water
+unified_realistic_water_visualization_equals_photoreal_water
+visualization_only_liquid_equals_true_fluid
+state_specific_coloring_is_needed_to_show_leaks
+```
+
 ## 同事 raw 50k liquid USD 的 D0 直接-step 准入审计
 
 D0 的 raw 50k 直接-step 准入审计已完成；它没有跑原始 `50000` 粒子的 timeline step，结论是
@@ -1058,6 +1144,8 @@ Colleague 50k completed-PBD static leak is supported by particle readback: below
 Colleague 50k completed-PBD real IsaacSim41 RGB review camera evidence is available.
 Colleague 50k completed-PBD PhysX Isosurface presentation render is available for human-readable review.
 Presentation render uses the same simulated particle trajectory and does not replace particle readback.
+Unified realistic water visualization is planned as the next PM-facing presentation follow-up.
+Current blue Isosurface render is diagnostic baseline WARN, not final realistic water.
 ```
 
 禁止：
@@ -1078,6 +1166,9 @@ red RGB review markers are physical fluid mesh or colliders.
 presentation video equals physics success.
 isosurface reconstruction equals zero-leak.
 presentation water material equals LabUtopia51 visual material parity.
+realistic water video equals physics success.
+realistic water video fixes collider leak.
+blue Isosurface render equals final realistic water.
 native collider approximation sweep proves benchmark-ready true fluid.
 built-in/native approximation modes have passed static hold.
 ```

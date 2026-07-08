@@ -428,6 +428,11 @@ def build_presentation_visual_contract(
 def _author_liquid_presentation_water_material(stage: Any) -> dict[str, Any]:
     from pxr import Gf, Sdf, UsdGeom, UsdShade
 
+    diffuse_color = [0.74, 0.94, 1.0]
+    emissive_color = [0.0, 0.0, 0.0]
+    opacity = 0.34
+    roughness = 0.02
+    ior = 1.333
     looks_path = Sdf.Path("/World/Looks")
     if not stage.GetPrimAtPath(looks_path):
         UsdGeom.Scope.Define(stage, looks_path)
@@ -435,18 +440,31 @@ def _author_liquid_presentation_water_material(stage: Any) -> dict[str, Any]:
     material = UsdShade.Material.Define(stage, material_path)
     shader = UsdShade.Shader.Define(stage, material_path.AppendChild("PreviewSurface"))
     shader.CreateIdAttr("UsdPreviewSurface")
-    shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0.0, 0.62, 1.0))
-    shader.CreateInput("emissiveColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0.0, 0.12, 0.20))
-    shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(0.90)
-    shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.10)
+    shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(*diffuse_color))
+    shader.CreateInput("emissiveColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(*emissive_color))
+    shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(opacity)
+    shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(roughness)
+    shader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
+    shader.CreateInput("ior", Sdf.ValueTypeNames.Float).Set(ior)
     material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
     return {
         "material_path": LIQUID_PRESENTATION_MATERIAL_PATH,
         "shader_path": f"{LIQUID_PRESENTATION_MATERIAL_PATH}/PreviewSurface",
-        "display_name": "presentation_water_transparent_blue",
-        "diffuse_color": [0.0, 0.62, 1.0],
-        "emissive_color": [0.0, 0.12, 0.20],
-        "opacity": 0.90,
+        "display_name": "presentation_water_unified_realistic",
+        "material_backend": "USD_PREVIEW_FALLBACK",
+        "preferred_backend": "MDL_WATER",
+        "mdl_compile_status": "FALLBACK_USED",
+        "fallback_reason": "headless_safe_non_emissive_preview_surface_pending_mdl_water_pass",
+        "diffuse_color": diffuse_color,
+        "emissive_color": emissive_color,
+        "opacity": opacity,
+        "roughness": roughness,
+        "ior": ior,
+        "tint_policy": "near_clear_subtle_blue_green",
+        "unified_liquid_style": True,
+        "state_specific_liquid_materials": False,
+        "all_liquid_particles_visible": True,
+        "visualization_only": True,
         "visual_material_parity_claim_allowed": False,
     }
 

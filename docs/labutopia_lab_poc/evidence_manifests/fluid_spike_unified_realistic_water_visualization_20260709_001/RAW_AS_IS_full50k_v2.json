@@ -1,0 +1,4086 @@
+{
+  "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2",
+  "authored_runtime_paths": {
+    "isosurface_contract": {
+      "api_path": "/World/CompletedPBD/ParticleSystem",
+      "claim_boundary": "visual_surface_reconstruction_only",
+      "enabled": true,
+      "grid_filtering_passes": "GS",
+      "grid_smoothing_radius": 0.0003207600535824895,
+      "grid_spacing": 0.00028868404822424056,
+      "max_subgrids": 12500,
+      "max_triangles": 6400000,
+      "max_vertices": 3200000,
+      "num_mesh_normal_smoothing_passes": 4,
+      "num_mesh_smoothing_passes": 4,
+      "parameter_reference": "isaacsim41_fluid_isosurface_cup_demo_style",
+      "surface_distance": 0.00030472205090336497
+    },
+    "particle_isosurface_api_summary": {
+      "api_applied": true,
+      "api_path": "/World/CompletedPBD/ParticleSystem",
+      "applied_schemas": [
+        "PhysxParticleIsosurfaceAPI",
+        "MaterialBindingAPI"
+      ],
+      "enabled": true,
+      "grid_filtering_passes": "GS",
+      "grid_smoothing_radius": 0.0003207600675523281,
+      "grid_spacing": 0.00028868403751403093,
+      "max_subgrids": 12500,
+      "max_triangles": 6400000,
+      "max_vertices": 3200000,
+      "num_mesh_normal_smoothing_passes": 4,
+      "num_mesh_smoothing_passes": 4,
+      "prim_exists": true,
+      "surface_distance": 0.0003047220525331795
+    },
+    "particle_set_path": "/World/CompletedPBD/ParticleSet",
+    "particle_system_path": "/World/CompletedPBD/ParticleSystem",
+    "physics_material_path": "/World/Looks/PBDRuntimeFluidPhysics",
+    "pre_deactivate_summary": {
+      "/World/ParticleSet": {
+        "deactivated": false,
+        "disabled_attrs": {
+          "physxParticle:fluid": false,
+          "physxParticle:selfCollision": false
+        },
+        "existed": true,
+        "kept_active_to_avoid_physx_expired_prim": true
+      },
+      "/World/ParticleSystem": {
+        "deactivated": false,
+        "disabled_attrs": {
+          "particleSystemEnabled": false
+        },
+        "existed": true,
+        "kept_active_to_avoid_physx_expired_prim": true
+      },
+      "/World/fluid": {
+        "deactivated": false,
+        "disabled_attrs": {},
+        "existed": true,
+        "kept_active_to_avoid_physx_expired_prim": true
+      }
+    },
+    "presentation_visual_material_path": "/World/Looks/LiquidPresentationWater",
+    "source_particle_set_path": "/World/ParticleSet",
+    "source_particle_system_path": "/World/ParticleSystem",
+    "source_visual_material_path": "/World/Looks/OmniGlass_01",
+    "visual_material_path": "/World/Looks/LiquidPresentationWater",
+    "visual_material_preserved": true
+  },
+  "camera_capture_diagnostics": {
+    "presentation_isosurface_frames/frame_0000.png": {
+      "dtype": "float64",
+      "shape": [
+        0
+      ],
+      "size": 0,
+      "status": "empty_array"
+    },
+    "presentation_isosurface_frames/frame_0001.png": {
+      "dtype": "uint8",
+      "mean": 105.91918145576132,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0001.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.04802628868349
+    },
+    "presentation_isosurface_frames/frame_0002.png": {
+      "dtype": "uint8",
+      "mean": 106.39474729938271,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0002.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.90708242744339
+    },
+    "presentation_isosurface_frames/frame_0003.png": {
+      "dtype": "uint8",
+      "mean": 106.50313335905349,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0003.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.60422479512417
+    },
+    "presentation_isosurface_frames/frame_0004.png": {
+      "dtype": "uint8",
+      "mean": 106.54681970164609,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0004.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.492057793309044
+    },
+    "presentation_isosurface_frames/frame_0005.png": {
+      "dtype": "uint8",
+      "mean": 106.52279385288065,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0005.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.32786511842295
+    },
+    "presentation_isosurface_frames/frame_0006.png": {
+      "dtype": "uint8",
+      "mean": 106.51299897119341,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0006.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.16459683205753
+    },
+    "presentation_isosurface_frames/frame_0007.png": {
+      "dtype": "uint8",
+      "mean": 106.32003472222222,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0007.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.89393644948606
+    },
+    "presentation_isosurface_frames/frame_0008.png": {
+      "dtype": "uint8",
+      "mean": 106.3301433899177,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0008.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.840997555491995
+    },
+    "presentation_isosurface_frames/frame_0009.png": {
+      "dtype": "uint8",
+      "mean": 106.22676761831276,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0009.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.78357021843782
+    },
+    "presentation_isosurface_frames/frame_0010.png": {
+      "dtype": "uint8",
+      "mean": 106.14874421296297,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0010.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.727799531444624
+    },
+    "presentation_isosurface_frames/frame_0011.png": {
+      "dtype": "uint8",
+      "mean": 106.06688528806585,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0011.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.663568374268976
+    },
+    "presentation_isosurface_frames/frame_0012.png": {
+      "dtype": "uint8",
+      "mean": 105.85208912037037,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0012.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.50838302885109
+    },
+    "presentation_isosurface_frames/frame_0013.png": {
+      "dtype": "uint8",
+      "mean": 105.74141846707819,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0013.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.45240619735675
+    },
+    "presentation_isosurface_frames/frame_0014.png": {
+      "dtype": "uint8",
+      "mean": 105.63345743312757,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0014.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.39720365000474
+    },
+    "presentation_isosurface_frames/frame_0015.png": {
+      "dtype": "uint8",
+      "mean": 105.49787551440329,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0015.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.33160094415484
+    },
+    "presentation_isosurface_frames/frame_0016.png": {
+      "dtype": "uint8",
+      "mean": 105.37952996399177,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0016.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29365297889746
+    },
+    "presentation_isosurface_frames/frame_0017.png": {
+      "dtype": "uint8",
+      "mean": 105.27170653292181,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0017.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2522743024319
+    },
+    "presentation_isosurface_frames/frame_0018.png": {
+      "dtype": "uint8",
+      "mean": 105.16633423353909,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0018.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.213718637287116
+    },
+    "presentation_isosurface_frames/frame_0019.png": {
+      "dtype": "uint8",
+      "mean": 105.07471514917695,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0019.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.195909128913016
+    },
+    "presentation_isosurface_frames/frame_0020.png": {
+      "dtype": "uint8",
+      "mean": 104.99236432613169,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0020.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.173098813246085
+    },
+    "presentation_isosurface_frames/frame_0021.png": {
+      "dtype": "uint8",
+      "mean": 104.94045974794238,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0021.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.15607832182992
+    },
+    "presentation_isosurface_frames/frame_0022.png": {
+      "dtype": "uint8",
+      "mean": 104.92257330246913,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0022.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.14769925036791
+    },
+    "presentation_isosurface_frames/frame_0023.png": {
+      "dtype": "uint8",
+      "mean": 104.87577417695474,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0023.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.17297060170062
+    },
+    "presentation_isosurface_frames/frame_0024.png": {
+      "dtype": "uint8",
+      "mean": 104.82330825617284,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0024.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.165879916846485
+    },
+    "presentation_isosurface_frames/frame_0025.png": {
+      "dtype": "uint8",
+      "mean": 104.86003150720164,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0025.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.17035685349652
+    },
+    "presentation_isosurface_frames/frame_0026.png": {
+      "dtype": "uint8",
+      "mean": 104.8113046553498,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0026.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.152319697689336
+    },
+    "presentation_isosurface_frames/frame_0027.png": {
+      "dtype": "uint8",
+      "mean": 104.80194573045267,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0027.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.160162903882444
+    },
+    "presentation_isosurface_frames/frame_0028.png": {
+      "dtype": "uint8",
+      "mean": 104.79369791666667,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0028.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.163948471808006
+    },
+    "presentation_isosurface_frames/frame_0029.png": {
+      "dtype": "uint8",
+      "mean": 104.78613554526748,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0029.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.14931765093822
+    },
+    "presentation_isosurface_frames/frame_0030.png": {
+      "dtype": "uint8",
+      "mean": 104.73697595164609,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0030.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.134967186242676
+    },
+    "presentation_isosurface_frames/frame_0031.png": {
+      "dtype": "uint8",
+      "mean": 104.71644097222222,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0031.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.15080583526615
+    },
+    "presentation_isosurface_frames/frame_0032.png": {
+      "dtype": "uint8",
+      "mean": 104.70626478909465,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0032.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.14191072818464
+    },
+    "presentation_isosurface_frames/frame_0033.png": {
+      "dtype": "uint8",
+      "mean": 104.67608667695474,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0033.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.13313269404693
+    },
+    "presentation_isosurface_frames/frame_0034.png": {
+      "dtype": "uint8",
+      "mean": 104.65143261316872,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0034.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.1177420746277
+    },
+    "presentation_isosurface_frames/frame_0035.png": {
+      "dtype": "uint8",
+      "mean": 104.68794881687244,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0035.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.15435384242902
+    },
+    "presentation_isosurface_frames/frame_0036.png": {
+      "dtype": "uint8",
+      "mean": 104.64783307613169,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0036.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.14034308485295
+    },
+    "presentation_isosurface_frames/frame_0037.png": {
+      "dtype": "uint8",
+      "mean": 104.61972415123456,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0037.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.148338906074
+    },
+    "presentation_isosurface_frames/frame_0038.png": {
+      "dtype": "uint8",
+      "mean": 104.62279771090535,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0038.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.17472771590409
+    },
+    "presentation_isosurface_frames/frame_0039.png": {
+      "dtype": "uint8",
+      "mean": 104.65386959876543,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0039.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.18660838503742
+    },
+    "presentation_isosurface_frames/frame_0040.png": {
+      "dtype": "uint8",
+      "mean": 104.63078639403292,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0040.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.185252959824
+    },
+    "presentation_isosurface_frames/frame_0041.png": {
+      "dtype": "uint8",
+      "mean": 104.62609632201647,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0041.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.17094387103003
+    },
+    "presentation_isosurface_frames/frame_0042.png": {
+      "dtype": "uint8",
+      "mean": 104.64327481995885,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0042.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.176860664826535
+    },
+    "presentation_isosurface_frames/frame_0043.png": {
+      "dtype": "uint8",
+      "mean": 104.63613940329218,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0043.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.183945437004596
+    },
+    "presentation_isosurface_frames/frame_0044.png": {
+      "dtype": "uint8",
+      "mean": 104.63821051954733,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0044.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2067199133117
+    },
+    "presentation_isosurface_frames/frame_0045.png": {
+      "dtype": "uint8",
+      "mean": 104.6295563271605,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0045.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21927535029958
+    },
+    "presentation_isosurface_frames/frame_0046.png": {
+      "dtype": "uint8",
+      "mean": 104.59694058641975,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0046.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.22848742813444
+    },
+    "presentation_isosurface_frames/frame_0047.png": {
+      "dtype": "uint8",
+      "mean": 104.61284014917696,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0047.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.25624353178472
+    },
+    "presentation_isosurface_frames/frame_0048.png": {
+      "dtype": "uint8",
+      "mean": 104.63753279320987,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0048.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27516341500628
+    },
+    "presentation_isosurface_frames/frame_0049.png": {
+      "dtype": "uint8",
+      "mean": 104.63568994341564,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0049.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.30274220686035
+    },
+    "presentation_isosurface_frames/frame_0050.png": {
+      "dtype": "uint8",
+      "mean": 104.61886059670782,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0050.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27567754670504
+    },
+    "presentation_isosurface_frames/frame_0051.png": {
+      "dtype": "uint8",
+      "mean": 104.61241319444444,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0051.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.292523040847605
+    },
+    "presentation_isosurface_frames/frame_0052.png": {
+      "dtype": "uint8",
+      "mean": 104.63759002057613,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0052.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.30149179967049
+    },
+    "presentation_isosurface_frames/frame_0053.png": {
+      "dtype": "uint8",
+      "mean": 104.58265817901234,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0053.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.280430465388655
+    },
+    "presentation_isosurface_frames/frame_0054.png": {
+      "dtype": "uint8",
+      "mean": 104.59943801440329,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0054.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.277811805824726
+    },
+    "presentation_isosurface_frames/frame_0055.png": {
+      "dtype": "uint8",
+      "mean": 104.58012152777778,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0055.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29271012309566
+    },
+    "presentation_isosurface_frames/frame_0056.png": {
+      "dtype": "uint8",
+      "mean": 104.51153227880658,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0056.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28130746988717
+    },
+    "presentation_isosurface_frames/frame_0057.png": {
+      "dtype": "uint8",
+      "mean": 104.51019225823045,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0057.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26447656990279
+    },
+    "presentation_isosurface_frames/frame_0058.png": {
+      "dtype": "uint8",
+      "mean": 104.5716891718107,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0058.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27078547588433
+    },
+    "presentation_isosurface_frames/frame_0059.png": {
+      "dtype": "uint8",
+      "mean": 104.56628922325103,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0059.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.25778250162289
+    },
+    "presentation_isosurface_frames/frame_0060.png": {
+      "dtype": "uint8",
+      "mean": 104.5597762345679,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0060.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.280544988020125
+    },
+    "presentation_isosurface_frames/frame_0061.png": {
+      "dtype": "uint8",
+      "mean": 104.54185056584362,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0061.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.280763931182854
+    },
+    "presentation_isosurface_frames/frame_0062.png": {
+      "dtype": "uint8",
+      "mean": 104.48603973765432,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0062.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.282173125674376
+    },
+    "presentation_isosurface_frames/frame_0063.png": {
+      "dtype": "uint8",
+      "mean": 104.49564107510288,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0063.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2895625205626
+    },
+    "presentation_isosurface_frames/frame_0064.png": {
+      "dtype": "uint8",
+      "mean": 104.51248649691358,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0064.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.286511232475426
+    },
+    "presentation_isosurface_frames/frame_0065.png": {
+      "dtype": "uint8",
+      "mean": 104.47094714506173,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0065.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26754964907451
+    },
+    "presentation_isosurface_frames/frame_0066.png": {
+      "dtype": "uint8",
+      "mean": 104.47336612654321,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0066.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27969422418285
+    },
+    "presentation_isosurface_frames/frame_0067.png": {
+      "dtype": "uint8",
+      "mean": 104.50430619855968,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0067.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26242386743954
+    },
+    "presentation_isosurface_frames/frame_0068.png": {
+      "dtype": "uint8",
+      "mean": 104.48699459876543,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0068.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26698723337519
+    },
+    "presentation_isosurface_frames/frame_0069.png": {
+      "dtype": "uint8",
+      "mean": 104.45138181584362,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0069.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.258057020745234
+    },
+    "presentation_isosurface_frames/frame_0070.png": {
+      "dtype": "uint8",
+      "mean": 104.49548868312758,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0070.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.254924919325305
+    },
+    "presentation_isosurface_frames/frame_0071.png": {
+      "dtype": "uint8",
+      "mean": 104.49456790123457,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0071.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.25389603174895
+    },
+    "presentation_isosurface_frames/frame_0072.png": {
+      "dtype": "uint8",
+      "mean": 104.47863747427984,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0072.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2538314615665
+    },
+    "presentation_isosurface_frames/frame_0073.png": {
+      "dtype": "uint8",
+      "mean": 104.44765046296297,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0073.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.24727601998501
+    },
+    "presentation_isosurface_frames/frame_0074.png": {
+      "dtype": "uint8",
+      "mean": 104.45736947016461,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0074.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26273785472619
+    },
+    "presentation_isosurface_frames/frame_0075.png": {
+      "dtype": "uint8",
+      "mean": 104.45473058127573,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0075.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.30698920516694
+    },
+    "presentation_isosurface_frames/frame_0076.png": {
+      "dtype": "uint8",
+      "mean": 104.41077546296296,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0076.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29711346959023
+    },
+    "presentation_isosurface_frames/frame_0077.png": {
+      "dtype": "uint8",
+      "mean": 104.38757201646091,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0077.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.30362329608728
+    },
+    "presentation_isosurface_frames/frame_0078.png": {
+      "dtype": "uint8",
+      "mean": 104.41294945987654,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0078.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.31350188697209
+    },
+    "presentation_isosurface_frames/frame_0079.png": {
+      "dtype": "uint8",
+      "mean": 104.45087770061728,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0079.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.32857312808046
+    },
+    "presentation_isosurface_frames/frame_0080.png": {
+      "dtype": "uint8",
+      "mean": 104.44027970679012,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0080.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.3242586754697
+    },
+    "presentation_isosurface_frames/frame_0081.png": {
+      "dtype": "uint8",
+      "mean": 104.42386123971194,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0081.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.306300431021015
+    },
+    "presentation_isosurface_frames/frame_0082.png": {
+      "dtype": "uint8",
+      "mean": 104.40936856995884,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0082.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.306371756312366
+    },
+    "presentation_isosurface_frames/frame_0083.png": {
+      "dtype": "uint8",
+      "mean": 104.44297003600823,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0083.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.32974260402435
+    },
+    "presentation_isosurface_frames/frame_0084.png": {
+      "dtype": "uint8",
+      "mean": 104.46752700617284,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0084.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.309051075666424
+    },
+    "presentation_isosurface_frames/frame_0085.png": {
+      "dtype": "uint8",
+      "mean": 104.43727366255143,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0085.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.273376868577614
+    },
+    "presentation_isosurface_frames/frame_0086.png": {
+      "dtype": "uint8",
+      "mean": 104.45057484567901,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0086.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2812502403811
+    },
+    "presentation_isosurface_frames/frame_0087.png": {
+      "dtype": "uint8",
+      "mean": 104.42339699074074,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0087.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28884352507521
+    },
+    "presentation_isosurface_frames/frame_0088.png": {
+      "dtype": "uint8",
+      "mean": 104.39435956790123,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0088.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28260524119416
+    },
+    "presentation_isosurface_frames/frame_0089.png": {
+      "dtype": "uint8",
+      "mean": 104.42566100823045,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0089.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.295854761470125
+    },
+    "presentation_isosurface_frames/frame_0090.png": {
+      "dtype": "uint8",
+      "mean": 104.40025012860082,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0090.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.292423345402725
+    },
+    "presentation_isosurface_frames/frame_0091.png": {
+      "dtype": "uint8",
+      "mean": 104.38199459876543,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0091.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28827952579027
+    },
+    "presentation_isosurface_frames/frame_0092.png": {
+      "dtype": "uint8",
+      "mean": 104.38956275720165,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0092.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.309732861260564
+    },
+    "presentation_isosurface_frames/frame_0093.png": {
+      "dtype": "uint8",
+      "mean": 104.3824324845679,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0093.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.302030772467006
+    },
+    "presentation_isosurface_frames/frame_0094.png": {
+      "dtype": "uint8",
+      "mean": 104.37941615226337,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0094.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.30485794553728
+    },
+    "presentation_isosurface_frames/frame_0095.png": {
+      "dtype": "uint8",
+      "mean": 104.35664801954732,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0095.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29714066472614
+    },
+    "presentation_isosurface_frames/frame_0096.png": {
+      "dtype": "uint8",
+      "mean": 104.35383359053498,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0096.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.314266899579934
+    },
+    "presentation_isosurface_frames/frame_0097.png": {
+      "dtype": "uint8",
+      "mean": 104.3223559670782,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0097.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.301731206628915
+    },
+    "presentation_isosurface_frames/frame_0098.png": {
+      "dtype": "uint8",
+      "mean": 104.31203768004116,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0098.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28841141539889
+    },
+    "presentation_isosurface_frames/frame_0099.png": {
+      "dtype": "uint8",
+      "mean": 104.34933256172839,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0099.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.31496650354931
+    },
+    "presentation_isosurface_frames/frame_0100.png": {
+      "dtype": "uint8",
+      "mean": 104.35699138374486,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0100.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.30470921277089
+    },
+    "presentation_isosurface_frames/frame_0101.png": {
+      "dtype": "uint8",
+      "mean": 104.32080697016461,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0101.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.288699986256844
+    },
+    "presentation_isosurface_frames/frame_0102.png": {
+      "dtype": "uint8",
+      "mean": 104.35386959876543,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0102.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.32186455502286
+    },
+    "presentation_isosurface_frames/frame_0103.png": {
+      "dtype": "uint8",
+      "mean": 104.34606095679013,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0103.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.305377058253235
+    },
+    "presentation_isosurface_frames/frame_0104.png": {
+      "dtype": "uint8",
+      "mean": 104.34199524176955,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0104.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29149101553945
+    },
+    "presentation_isosurface_frames/frame_0105.png": {
+      "dtype": "uint8",
+      "mean": 104.32569701646091,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0105.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.276482358348424
+    },
+    "presentation_isosurface_frames/frame_0106.png": {
+      "dtype": "uint8",
+      "mean": 104.31409079218108,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0106.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.293861363236346
+    },
+    "presentation_isosurface_frames/frame_0107.png": {
+      "dtype": "uint8",
+      "mean": 104.28192451131687,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0107.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.289364588192484
+    },
+    "presentation_isosurface_frames/frame_0108.png": {
+      "dtype": "uint8",
+      "mean": 104.27130787037036,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0108.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29795353873839
+    },
+    "presentation_isosurface_frames/frame_0109.png": {
+      "dtype": "uint8",
+      "mean": 104.28468878600823,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0109.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29225939927301
+    },
+    "presentation_isosurface_frames/frame_0110.png": {
+      "dtype": "uint8",
+      "mean": 104.25836934156379,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0110.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29937913737482
+    },
+    "presentation_isosurface_frames/frame_0111.png": {
+      "dtype": "uint8",
+      "mean": 104.24934927983539,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0111.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.299226667226
+    },
+    "presentation_isosurface_frames/frame_0112.png": {
+      "dtype": "uint8",
+      "mean": 104.2384792952675,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0112.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.302267963943514
+    },
+    "presentation_isosurface_frames/frame_0113.png": {
+      "dtype": "uint8",
+      "mean": 104.21937371399177,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0113.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.296397744522125
+    },
+    "presentation_isosurface_frames/frame_0114.png": {
+      "dtype": "uint8",
+      "mean": 104.21416538065844,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0114.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28797649102835
+    },
+    "presentation_isosurface_frames/frame_0115.png": {
+      "dtype": "uint8",
+      "mean": 104.2505446244856,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0115.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28025765238104
+    },
+    "presentation_isosurface_frames/frame_0116.png": {
+      "dtype": "uint8",
+      "mean": 104.2676311728395,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0116.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28106266108004
+    },
+    "presentation_isosurface_frames/frame_0117.png": {
+      "dtype": "uint8",
+      "mean": 104.26456790123457,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0117.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27722181851347
+    },
+    "presentation_isosurface_frames/frame_0118.png": {
+      "dtype": "uint8",
+      "mean": 104.26808191872428,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0118.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29751273264726
+    },
+    "presentation_isosurface_frames/frame_0119.png": {
+      "dtype": "uint8",
+      "mean": 104.25054269547326,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0119.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29427047986812
+    },
+    "presentation_isosurface_frames/frame_0120.png": {
+      "dtype": "uint8",
+      "mean": 104.27215342078189,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0120.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.288239237144914
+    },
+    "presentation_isosurface_frames/frame_0121.png": {
+      "dtype": "uint8",
+      "mean": 104.23830375514403,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0121.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28407872064588
+    },
+    "presentation_isosurface_frames/frame_0122.png": {
+      "dtype": "uint8",
+      "mean": 104.2396199845679,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0122.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27887437712393
+    },
+    "presentation_isosurface_frames/frame_0123.png": {
+      "dtype": "uint8",
+      "mean": 104.23263438786009,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0123.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28120222227563
+    },
+    "presentation_isosurface_frames/frame_0124.png": {
+      "dtype": "uint8",
+      "mean": 104.21852816358025,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0124.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26913924602539
+    },
+    "presentation_isosurface_frames/frame_0125.png": {
+      "dtype": "uint8",
+      "mean": 104.18380851337449,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0125.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2690081364846
+    },
+    "presentation_isosurface_frames/frame_0126.png": {
+      "dtype": "uint8",
+      "mean": 104.19010030864197,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0126.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.261563806150704
+    },
+    "presentation_isosurface_frames/frame_0127.png": {
+      "dtype": "uint8",
+      "mean": 104.17391589506173,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0127.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.25306105548259
+    },
+    "presentation_isosurface_frames/frame_0128.png": {
+      "dtype": "uint8",
+      "mean": 104.18468171296297,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0128.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.261475883447595
+    },
+    "presentation_isosurface_frames/frame_0129.png": {
+      "dtype": "uint8",
+      "mean": 104.18759452160494,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0129.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.255753156062035
+    },
+    "presentation_isosurface_frames/frame_0130.png": {
+      "dtype": "uint8",
+      "mean": 104.1778086419753,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0130.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.259613093093
+    },
+    "presentation_isosurface_frames/frame_0131.png": {
+      "dtype": "uint8",
+      "mean": 104.17339248971193,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0131.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26198630992511
+    },
+    "presentation_isosurface_frames/frame_0132.png": {
+      "dtype": "uint8",
+      "mean": 104.18248392489711,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0132.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27053414693458
+    },
+    "presentation_isosurface_frames/frame_0133.png": {
+      "dtype": "uint8",
+      "mean": 104.1229057355967,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0133.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27523262050849
+    },
+    "presentation_isosurface_frames/frame_0134.png": {
+      "dtype": "uint8",
+      "mean": 104.16072916666667,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0134.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27816907446256
+    },
+    "presentation_isosurface_frames/frame_0135.png": {
+      "dtype": "uint8",
+      "mean": 104.15276105967078,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0135.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26263422035506
+    },
+    "presentation_isosurface_frames/frame_0136.png": {
+      "dtype": "uint8",
+      "mean": 104.12089248971193,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0136.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.23005177826105
+    },
+    "presentation_isosurface_frames/frame_0137.png": {
+      "dtype": "uint8",
+      "mean": 104.12622170781893,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0137.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2273203250528
+    },
+    "presentation_isosurface_frames/frame_0138.png": {
+      "dtype": "uint8",
+      "mean": 104.14146026234567,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0138.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2485440650931
+    },
+    "presentation_isosurface_frames/frame_0139.png": {
+      "dtype": "uint8",
+      "mean": 104.16976658950617,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0139.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29048836017546
+    },
+    "presentation_isosurface_frames/frame_0140.png": {
+      "dtype": "uint8",
+      "mean": 104.11935056584362,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0140.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28154210917669
+    },
+    "presentation_isosurface_frames/frame_0141.png": {
+      "dtype": "uint8",
+      "mean": 104.1095396090535,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0141.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.276247028054925
+    },
+    "presentation_isosurface_frames/frame_0142.png": {
+      "dtype": "uint8",
+      "mean": 104.11355516975308,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0142.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28365586660439
+    },
+    "presentation_isosurface_frames/frame_0143.png": {
+      "dtype": "uint8",
+      "mean": 104.1166171553498,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0143.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.277944664765606
+    },
+    "presentation_isosurface_frames/frame_0144.png": {
+      "dtype": "uint8",
+      "mean": 104.11669560185184,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0144.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.267688374385095
+    },
+    "presentation_isosurface_frames/frame_0145.png": {
+      "dtype": "uint8",
+      "mean": 104.07484632201646,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0145.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27250541433698
+    },
+    "presentation_isosurface_frames/frame_0146.png": {
+      "dtype": "uint8",
+      "mean": 104.09763310185186,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0146.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.31074980223403
+    },
+    "presentation_isosurface_frames/frame_0147.png": {
+      "dtype": "uint8",
+      "mean": 104.10625385802469,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0147.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.31963635341265
+    },
+    "presentation_isosurface_frames/frame_0148.png": {
+      "dtype": "uint8",
+      "mean": 104.13879115226338,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0148.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.313112076485204
+    },
+    "presentation_isosurface_frames/frame_0149.png": {
+      "dtype": "uint8",
+      "mean": 104.15538065843621,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0149.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.3243110639724
+    },
+    "presentation_isosurface_frames/frame_0150.png": {
+      "dtype": "uint8",
+      "mean": 104.20447145061729,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0150.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.32263741116972
+    },
+    "presentation_isosurface_frames/frame_0151.png": {
+      "dtype": "uint8",
+      "mean": 104.16010352366256,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0151.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.30392905708671
+    },
+    "presentation_isosurface_frames/frame_0152.png": {
+      "dtype": "uint8",
+      "mean": 104.13664609053498,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0152.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.30096042151883
+    },
+    "presentation_isosurface_frames/frame_0153.png": {
+      "dtype": "uint8",
+      "mean": 104.13684284979423,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0153.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.287161686736866
+    },
+    "presentation_isosurface_frames/frame_0154.png": {
+      "dtype": "uint8",
+      "mean": 104.14387538580247,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0154.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.289496244891694
+    },
+    "presentation_isosurface_frames/frame_0155.png": {
+      "dtype": "uint8",
+      "mean": 104.10539866255144,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0155.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.297454095802856
+    },
+    "presentation_isosurface_frames/frame_0156.png": {
+      "dtype": "uint8",
+      "mean": 104.10760416666666,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0156.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.282617318963744
+    },
+    "presentation_isosurface_frames/frame_0157.png": {
+      "dtype": "uint8",
+      "mean": 104.10946116255144,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0157.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2638816344244
+    },
+    "presentation_isosurface_frames/frame_0158.png": {
+      "dtype": "uint8",
+      "mean": 104.11165830761317,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0158.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.25622718198709
+    },
+    "presentation_isosurface_frames/frame_0159.png": {
+      "dtype": "uint8",
+      "mean": 104.10492734053499,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0159.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.25895103635844
+    },
+    "presentation_isosurface_frames/frame_0160.png": {
+      "dtype": "uint8",
+      "mean": 104.07595100308642,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0160.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.245789889956626
+    },
+    "presentation_isosurface_frames/frame_0161.png": {
+      "dtype": "uint8",
+      "mean": 104.05380208333334,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0161.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.24187183453329
+    },
+    "presentation_isosurface_frames/frame_0162.png": {
+      "dtype": "uint8",
+      "mean": 104.02481995884774,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0162.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.22958656215722
+    },
+    "presentation_isosurface_frames/frame_0163.png": {
+      "dtype": "uint8",
+      "mean": 104.04262795781894,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0163.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.233005349490725
+    },
+    "presentation_isosurface_frames/frame_0164.png": {
+      "dtype": "uint8",
+      "mean": 104.07327160493827,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0164.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.23342755511615
+    },
+    "presentation_isosurface_frames/frame_0165.png": {
+      "dtype": "uint8",
+      "mean": 104.06773276748972,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0165.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.24532215138644
+    },
+    "presentation_isosurface_frames/frame_0166.png": {
+      "dtype": "uint8",
+      "mean": 104.05730195473251,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0166.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.25978794307356
+    },
+    "presentation_isosurface_frames/frame_0167.png": {
+      "dtype": "uint8",
+      "mean": 104.04693544238683,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0167.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2618879219829
+    },
+    "presentation_isosurface_frames/frame_0168.png": {
+      "dtype": "uint8",
+      "mean": 104.02208461934157,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0168.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.24550666812342
+    },
+    "presentation_isosurface_frames/frame_0169.png": {
+      "dtype": "uint8",
+      "mean": 104.00107510288066,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0169.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2227560440538
+    },
+    "presentation_isosurface_frames/frame_0170.png": {
+      "dtype": "uint8",
+      "mean": 103.99813271604938,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0170.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.232446679413485
+    },
+    "presentation_isosurface_frames/frame_0171.png": {
+      "dtype": "uint8",
+      "mean": 104.02339570473251,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0171.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.24935038730772
+    },
+    "presentation_isosurface_frames/frame_0172.png": {
+      "dtype": "uint8",
+      "mean": 104.03697337962963,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0172.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26692133309136
+    },
+    "presentation_isosurface_frames/frame_0173.png": {
+      "dtype": "uint8",
+      "mean": 104.03671360596708,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0173.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.260542315828204
+    },
+    "presentation_isosurface_frames/frame_0174.png": {
+      "dtype": "uint8",
+      "mean": 104.0221283436214,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0174.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2816731696275
+    },
+    "presentation_isosurface_frames/frame_0175.png": {
+      "dtype": "uint8",
+      "mean": 104.04476980452675,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0175.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27794255210691
+    },
+    "presentation_isosurface_frames/frame_0176.png": {
+      "dtype": "uint8",
+      "mean": 104.03557998971193,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0176.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26335633974048
+    },
+    "presentation_isosurface_frames/frame_0177.png": {
+      "dtype": "uint8",
+      "mean": 104.02861818415637,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0177.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26713211017972
+    },
+    "presentation_isosurface_frames/frame_0178.png": {
+      "dtype": "uint8",
+      "mean": 103.99939557613169,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0178.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.249536689097106
+    },
+    "presentation_isosurface_frames/frame_0179.png": {
+      "dtype": "uint8",
+      "mean": 103.97328703703704,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0179.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.25414287595418
+    },
+    "presentation_isosurface_frames/frame_0180.png": {
+      "dtype": "uint8",
+      "mean": 104.00219264403292,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0180.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26291143553617
+    },
+    "presentation_isosurface_frames/frame_0181.png": {
+      "dtype": "uint8",
+      "mean": 104.00231159979424,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0181.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27755608359392
+    },
+    "presentation_isosurface_frames/frame_0182.png": {
+      "dtype": "uint8",
+      "mean": 104.00898791152264,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0182.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29404571450364
+    },
+    "presentation_isosurface_frames/frame_0183.png": {
+      "dtype": "uint8",
+      "mean": 103.97247235082304,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0183.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.29405782180172
+    },
+    "presentation_isosurface_frames/frame_0184.png": {
+      "dtype": "uint8",
+      "mean": 103.94763695987655,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0184.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.28675371642613
+    },
+    "presentation_isosurface_frames/frame_0185.png": {
+      "dtype": "uint8",
+      "mean": 103.90724344135802,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0185.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26380194024804
+    },
+    "presentation_isosurface_frames/frame_0186.png": {
+      "dtype": "uint8",
+      "mean": 103.9135005144033,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0186.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.286215865554475
+    },
+    "presentation_isosurface_frames/frame_0187.png": {
+      "dtype": "uint8",
+      "mean": 103.90013824588478,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0187.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.27598605710217
+    },
+    "presentation_isosurface_frames/frame_0188.png": {
+      "dtype": "uint8",
+      "mean": 103.91419045781893,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0188.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2750496236504
+    },
+    "presentation_isosurface_frames/frame_0189.png": {
+      "dtype": "uint8",
+      "mean": 103.95227109053498,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0189.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.271566077512155
+    },
+    "presentation_isosurface_frames/frame_0190.png": {
+      "dtype": "uint8",
+      "mean": 103.93592721193416,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0190.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26587196958522
+    },
+    "presentation_isosurface_frames/frame_0191.png": {
+      "dtype": "uint8",
+      "mean": 103.9337461419753,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0191.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26101461718154
+    },
+    "presentation_isosurface_frames/frame_0192.png": {
+      "dtype": "uint8",
+      "mean": 103.93053883744857,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0192.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.26667292787002
+    },
+    "presentation_isosurface_frames/frame_0193.png": {
+      "dtype": "uint8",
+      "mean": 103.9141595936214,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0193.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.253313199027325
+    },
+    "presentation_isosurface_frames/frame_0194.png": {
+      "dtype": "uint8",
+      "mean": 103.8685808899177,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0194.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.23592579741548
+    },
+    "presentation_isosurface_frames/frame_0195.png": {
+      "dtype": "uint8",
+      "mean": 103.88918016975309,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0195.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.252750360585054
+    },
+    "presentation_isosurface_frames/frame_0196.png": {
+      "dtype": "uint8",
+      "mean": 103.89794174382716,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0196.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.239101743162266
+    },
+    "presentation_isosurface_frames/frame_0197.png": {
+      "dtype": "uint8",
+      "mean": 103.89622299382717,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0197.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.234081560150045
+    },
+    "presentation_isosurface_frames/frame_0198.png": {
+      "dtype": "uint8",
+      "mean": 103.90934799382715,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0198.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.22796412460876
+    },
+    "presentation_isosurface_frames/frame_0199.png": {
+      "dtype": "uint8",
+      "mean": 103.91613747427984,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0199.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21905864696122
+    },
+    "presentation_isosurface_frames/frame_0200.png": {
+      "dtype": "uint8",
+      "mean": 103.86246977880658,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0200.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.211261656301645
+    },
+    "presentation_isosurface_frames/frame_0201.png": {
+      "dtype": "uint8",
+      "mean": 103.82369405864198,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0201.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.18740505497238
+    },
+    "presentation_isosurface_frames/frame_0202.png": {
+      "dtype": "uint8",
+      "mean": 103.83311856995884,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0202.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.226764352946205
+    },
+    "presentation_isosurface_frames/frame_0203.png": {
+      "dtype": "uint8",
+      "mean": 103.81328317901234,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0203.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.22925225431036
+    },
+    "presentation_isosurface_frames/frame_0204.png": {
+      "dtype": "uint8",
+      "mean": 103.81653163580246,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0204.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.24286540386774
+    },
+    "presentation_isosurface_frames/frame_0205.png": {
+      "dtype": "uint8",
+      "mean": 103.854185313786,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0205.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2323593016129
+    },
+    "presentation_isosurface_frames/frame_0206.png": {
+      "dtype": "uint8",
+      "mean": 103.85568158436215,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0206.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21356992508536
+    },
+    "presentation_isosurface_frames/frame_0207.png": {
+      "dtype": "uint8",
+      "mean": 103.8663805298354,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0207.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.20106176007372
+    },
+    "presentation_isosurface_frames/frame_0208.png": {
+      "dtype": "uint8",
+      "mean": 103.86282728909465,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0208.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.20118971344333
+    },
+    "presentation_isosurface_frames/frame_0209.png": {
+      "dtype": "uint8",
+      "mean": 103.83416023662551,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0209.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2135965426718
+    },
+    "presentation_isosurface_frames/frame_0210.png": {
+      "dtype": "uint8",
+      "mean": 103.82262152777778,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0210.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.205497031777135
+    },
+    "presentation_isosurface_frames/frame_0211.png": {
+      "dtype": "uint8",
+      "mean": 103.82725694444444,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0211.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.22830315164434
+    },
+    "presentation_isosurface_frames/frame_0212.png": {
+      "dtype": "uint8",
+      "mean": 103.82951453189301,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0212.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.23654491559357
+    },
+    "presentation_isosurface_frames/frame_0213.png": {
+      "dtype": "uint8",
+      "mean": 103.82780092592593,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0213.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.23864239187297
+    },
+    "presentation_isosurface_frames/frame_0214.png": {
+      "dtype": "uint8",
+      "mean": 103.82743891460905,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0214.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.24216665340856
+    },
+    "presentation_isosurface_frames/frame_0215.png": {
+      "dtype": "uint8",
+      "mean": 103.81727237654322,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0215.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.235388342518725
+    },
+    "presentation_isosurface_frames/frame_0216.png": {
+      "dtype": "uint8",
+      "mean": 103.81970614711935,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0216.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.236597705904586
+    },
+    "presentation_isosurface_frames/frame_0217.png": {
+      "dtype": "uint8",
+      "mean": 103.79701260288066,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0217.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21546147266008
+    },
+    "presentation_isosurface_frames/frame_0218.png": {
+      "dtype": "uint8",
+      "mean": 103.77202546296296,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0218.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.2263278887748
+    },
+    "presentation_isosurface_frames/frame_0219.png": {
+      "dtype": "uint8",
+      "mean": 103.74456468621399,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0219.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.22994192882849
+    },
+    "presentation_isosurface_frames/frame_0220.png": {
+      "dtype": "uint8",
+      "mean": 103.7680234053498,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0220.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21756176190508
+    },
+    "presentation_isosurface_frames/frame_0221.png": {
+      "dtype": "uint8",
+      "mean": 103.73803112139917,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0221.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.19782905118159
+    },
+    "presentation_isosurface_frames/frame_0222.png": {
+      "dtype": "uint8",
+      "mean": 103.75312821502058,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0222.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21586571522884
+    },
+    "presentation_isosurface_frames/frame_0223.png": {
+      "dtype": "uint8",
+      "mean": 103.72605838477367,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0223.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.23154029499278
+    },
+    "presentation_isosurface_frames/frame_0224.png": {
+      "dtype": "uint8",
+      "mean": 103.69549575617285,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0224.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.240324680817736
+    },
+    "presentation_isosurface_frames/frame_0225.png": {
+      "dtype": "uint8",
+      "mean": 103.65461484053498,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0225.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21882189692825
+    },
+    "presentation_isosurface_frames/frame_0226.png": {
+      "dtype": "uint8",
+      "mean": 103.68787229938272,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0226.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.197205882707365
+    },
+    "presentation_isosurface_frames/frame_0227.png": {
+      "dtype": "uint8",
+      "mean": 103.73965084876544,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0227.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.20046280917413
+    },
+    "presentation_isosurface_frames/frame_0228.png": {
+      "dtype": "uint8",
+      "mean": 103.74397890946501,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0228.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.221637123703914
+    },
+    "presentation_isosurface_frames/frame_0229.png": {
+      "dtype": "uint8",
+      "mean": 103.71833333333333,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0229.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21788574826842
+    },
+    "presentation_isosurface_frames/frame_0230.png": {
+      "dtype": "uint8",
+      "mean": 103.72394290123457,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0230.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21271577181777
+    },
+    "presentation_isosurface_frames/frame_0231.png": {
+      "dtype": "uint8",
+      "mean": 103.68142682613168,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0231.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.22401301610827
+    },
+    "presentation_isosurface_frames/frame_0232.png": {
+      "dtype": "uint8",
+      "mean": 103.67077674897119,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0232.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.20812695641728
+    },
+    "presentation_isosurface_frames/frame_0233.png": {
+      "dtype": "uint8",
+      "mean": 103.6171367026749,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0233.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.19574755585169
+    },
+    "presentation_isosurface_frames/frame_0234.png": {
+      "dtype": "uint8",
+      "mean": 103.6453034979424,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0234.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21807846616433
+    },
+    "presentation_isosurface_frames/frame_0235.png": {
+      "dtype": "uint8",
+      "mean": 103.63412487139918,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0235.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.213178376011214
+    },
+    "presentation_isosurface_frames/frame_0236.png": {
+      "dtype": "uint8",
+      "mean": 103.63138181584362,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0236.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.21124503123867
+    },
+    "presentation_isosurface_frames/frame_0237.png": {
+      "dtype": "uint8",
+      "mean": 103.63938400205761,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0237.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.20896458313533
+    },
+    "presentation_isosurface_frames/frame_0238.png": {
+      "dtype": "uint8",
+      "mean": 103.64830311213991,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0238.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.22002929181678
+    },
+    "presentation_isosurface_frames/frame_0239.png": {
+      "dtype": "uint8",
+      "mean": 103.67461934156378,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0239.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.22638214461592
+    },
+    "presentation_isosurface_frames/frame_0240.png": {
+      "dtype": "uint8",
+      "mean": 103.6556674382716,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface_frames/frame_0240.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 32.217321584621736
+    }
+  },
+  "claim_boundary": {
+    "allowed": [
+      "native_usd_scene_step_video_recorded=true",
+      "native_scene_material_paths_preserved=true",
+      "native_scene_mdl_source_assets_retargeted_to_isaacsim41_local_mirror=true",
+      "pbd_completion_overlay_used_for_runtime_step=true",
+      "isaacsim41_core_mdl_local_mirror_can_be_used_for_runtime_material_closure=true",
+      "50k_colleague_particles_stepped_in_native_scene=true",
+      "leak_status_supported_by_particle_readback=true",
+      "presentation_isosurface_video_recorded=true"
+    ],
+    "blocked": [
+      "raw_usd_direct_step_passed",
+      "raw_50k_colleague_liquid_usd_can_direct_step_as_true_pbd_fluid",
+      "completed_pbd_static_leak_equals_benchmark_ready_fluid",
+      "presentation_video_equals_physics_success",
+      "isosurface_reconstruction_equals_zero_leak",
+      "presentation_water_material_equals_labutopia51_visual_parity",
+      "review_markers_are_physical_fluid_mesh",
+      "review_marker_video_equals_native_material_video",
+      "isaacsim41_core_mdl_local_mirror_equals_labutopia51_native_visual_parity",
+      "ebench_score_or_policy_claim_allowed",
+      "s3_kinematic_pour_released"
+    ]
+  },
+  "classification": {
+    "below_table_count": 39024,
+    "classification": "FAIL_CONTAINER_LEAK",
+    "cpu_collision_fallback_detected": false,
+    "fatal_error": null,
+    "gpu_collider_unsupported": false,
+    "nan_count": 0,
+    "outside_source_count": 41067,
+    "particle_count_final_fraction": 1.0,
+    "pass_criteria": {
+      "below_table_count_eq_zero": false,
+      "cpu_collision_fallback_detected_false": true,
+      "nan_count_eq_zero": true,
+      "outside_source_count_eq_zero": false,
+      "particle_count_final_fraction_ge_0_95": true,
+      "particle_motion_observed": true,
+      "source_retention_fraction_ge_0_95": false,
+      "spill_count_eq_zero": false,
+      "tail_leak_rate_lt_0_02": false,
+      "target_count_eq_zero": true
+    },
+    "source_retention_fraction": 0.17866,
+    "spill_count": 2043,
+    "tail_leak_rate_fraction_per_second": 0.06570000000000001,
+    "target_count": 0,
+    "variant_id": "COLLEAGUE_NATIVE_USD_FULL_50K_COMPLETED_PBD"
+  },
+  "closeup_camera": {
+    "camera_path": "/World/Beaker2CloseupNativeMaterialCamera",
+    "eye": [
+      0.5118020000000001,
+      -0.24819800000000003,
+      1.0227606155217077
+    ],
+    "target": [
+      0.311802,
+      0.091802,
+      0.8680522955217077
+    ],
+    "up": [
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "debug_particle_display_enabled": false,
+  "elapsed_seconds": 265.8321118950844,
+  "evidence_scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/native_scene_completed_pbd_overlay.usda",
+  "generated_at_utc": "2026-07-08T17:04:36.773988+00:00",
+  "isaac_log_summary": {
+    "error_count": 0,
+    "errors": [],
+    "errors_truncated": false,
+    "has_omniglass_compile_error": false,
+    "has_omnipbr_compile_error": false,
+    "has_omnisurface_compile_error": false,
+    "isaac_log_available": true,
+    "isaac_log_path": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.1/site-packages/omni/logs/Kit/Isaac-Sim/4.1/kit_20260709_005925.log",
+    "mdl_compile_status": "PASS"
+  },
+  "local_blue_glass_override_used": false,
+  "manifest_type": "fluid_spike_colleague_native_usd_completed_pbd_step_video",
+  "material_closure": {
+    "closure_base_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base",
+    "closure_omnisurface_module_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/mdl/OmniSurface",
+    "closure_root": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core",
+    "copied_base_file_count": 18,
+    "copied_base_files": [
+      "OmniEmissive.mdl",
+      "OmniGlass.mdl",
+      "OmniGlass_Opacity.mdl",
+      "OmniHair.mdl",
+      "OmniHairPresets.mdl",
+      "OmniPBR.mdl",
+      "OmniPBRBase.mdl",
+      "OmniPBR_ClearCoat.mdl",
+      "OmniPBR_ClearCoat_Opacity.mdl",
+      "OmniPBR_Opacity.mdl",
+      "OmniSurface.mdl",
+      "OmniSurfaceBlend.mdl",
+      "OmniSurfaceLite.mdl",
+      "OmniSurfacePresets.mdl",
+      "SimPBR.mdl",
+      "SimPBR_Model.mdl",
+      "SimPBR_Translucent.mdl",
+      "baking_annotations.mdl"
+    ],
+    "copied_omnisurface_file_count": 6,
+    "copied_omnisurface_files": [
+      "OmniHairBase.mdl",
+      "OmniImage.mdl",
+      "OmniShared.mdl",
+      "OmniSurfaceBase.mdl",
+      "OmniSurfaceBlendBase.mdl",
+      "OmniSurfaceLiteBase.mdl"
+    ],
+    "copies_full_base_mdl_dir": true,
+    "copies_omnisurface_module_dir": true,
+    "material_closure_mode": "isaacsim41_core_mdl_local_mirror",
+    "mdl_files": [
+      "OmniGlass.mdl",
+      "OmniGlass_Opacity.mdl",
+      "OmniPBR.mdl",
+      "OmniPBRBase.mdl",
+      "OmniPBR_ClearCoat.mdl",
+      "OmniSurface.mdl",
+      "OmniSurfaceLite.mdl",
+      "OmniSurfacePresets.mdl"
+    ],
+    "shader_asset_basenames": [
+      "OmniGlass.mdl",
+      "OmniPBR.mdl",
+      "OmniSurfacePresets.mdl"
+    ],
+    "source_base_dir": "/isaac-sim/kit/mdl/core/Base",
+    "source_omnisurface_module_dir": "/isaac-sim/kit/mdl/core/mdl/OmniSurface",
+    "source_root": "/isaac-sim/kit/mdl/core",
+    "visual_material_parity_claim_allowed": false
+  },
+  "material_contract_post": {
+    "beaker1": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker1/mesh",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "beaker2": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniSurface_Glass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker2/mesh",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "runtime_particle_system": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "id",
+      "material_path": "/World/Looks/LiquidPresentationWater",
+      "prim_exists": true,
+      "prim_path": "/World/CompletedPBD/ParticleSystem",
+      "source_asset": null,
+      "source_asset_resolved": false,
+      "source_asset_resolved_path": null,
+      "sub_identifier": null
+    },
+    "source_particle_system": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass_01",
+      "prim_exists": true,
+      "prim_path": "/World/ParticleSystem",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    }
+  },
+  "material_contract_pre": {
+    "all_native_mdl_resolved": true,
+    "beaker1": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker1/mesh",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "beaker2": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniSurface_Glass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker2/mesh",
+      "source_asset": "OmniSurfacePresets.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/OmniSurfacePresets.mdl",
+      "sub_identifier": "OmniSurface_Glass"
+    },
+    "material_resolve_status": "PASS",
+    "native_scene_opened": true,
+    "particle_system": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass_01",
+      "prim_exists": true,
+      "prim_path": "/World/ParticleSystem",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "usd_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd"
+  },
+  "material_resolve_status": "PASS",
+  "material_retarget": {
+    "retarget_enabled": true,
+    "retargeted_shader_count": 10,
+    "retargeted_shaders": [
+      {
+        "compatibility_fallback": "OmniSurface_Glass_to_OmniGlass_for_isaacsim41",
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+        "retargeted_source_asset_basename": "OmniGlass.mdl",
+        "retargeted_sub_identifier": "OmniGlass",
+        "shader_path": "/World/Looks/OmniSurface_Glass/Shader",
+        "source_asset_basename": "OmniSurfacePresets.mdl",
+        "source_sub_identifier": "OmniSurface_Glass"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+        "retargeted_source_asset_basename": "OmniGlass.mdl",
+        "retargeted_sub_identifier": "OmniGlass",
+        "shader_path": "/World/Looks/OmniGlass/Shader",
+        "source_asset_basename": "OmniGlass.mdl",
+        "source_sub_identifier": "OmniGlass"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Blue/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_DeepGray/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Gray/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Green/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Red/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Yellow/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_WhiteBlue/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+        "retargeted_source_asset_basename": "OmniGlass.mdl",
+        "retargeted_sub_identifier": "OmniGlass",
+        "shader_path": "/World/Looks/OmniGlass_01/Shader",
+        "source_asset_basename": "OmniGlass.mdl",
+        "source_sub_identifier": "OmniGlass"
+      }
+    ]
+  },
+  "minimal_native_slice_used": false,
+  "mode": "native_usd_scene_completed_pbd_step_video",
+  "native_beaker_material_override_used": false,
+  "native_collider_approximation": {
+    "enabled": false
+  },
+  "native_scene_opened": true,
+  "original_fluid_deactivate_summary": {
+    "/World/ParticleSet": {
+      "deactivated": false,
+      "disabled_attrs": {
+        "physxParticle:fluid": false,
+        "physxParticle:selfCollision": false
+      },
+      "existed": true,
+      "kept_active_to_avoid_physx_expired_prim": true
+    },
+    "/World/ParticleSystem": {
+      "deactivated": false,
+      "disabled_attrs": {
+        "particleSystemEnabled": false
+      },
+      "existed": true,
+      "kept_active_to_avoid_physx_expired_prim": true
+    },
+    "/World/fluid": {
+      "deactivated": false,
+      "disabled_attrs": {},
+      "existed": true,
+      "kept_active_to_avoid_physx_expired_prim": true
+    }
+  },
+  "particle_scope": {
+    "full_original_50k_completed_pbd_overlay": true,
+    "original_particle_count": 50000,
+    "particle_limit": 0,
+    "particle_scope": "full_original_50k",
+    "sampled_overlay": false,
+    "selected_particle_count": 50000
+  },
+  "physics_dt": 0.016666666666666666,
+  "physics_settings": {
+    "broadphase_type": "GPU",
+    "gpu_dynamics_enabled": true,
+    "gpu_max_particle_contacts": 1048576,
+    "gravity_direction": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "gravity_magnitude": 9.81,
+    "physics_scene_path": "/World/PhysicsScene",
+    "solver_type": "TGS"
+  },
+  "presentation_isosurface_enabled": true,
+  "presentation_lighting": {
+    "intensity": 950.0,
+    "light_path": "/World/LiquidPresentationKeyLight",
+    "lighting_contract_hash": "liquid_presentation_key_light_v1",
+    "role": "leadership_presentation_key_light",
+    "rotate_xyz": [
+      55.0,
+      0.0,
+      35.0
+    ]
+  },
+  "presentation_material": {
+    "all_liquid_particles_visible": true,
+    "diffuse_color": [
+      0.74,
+      0.94,
+      1.0
+    ],
+    "display_name": "presentation_water_unified_realistic",
+    "emissive_color": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fallback_reason": "headless_safe_non_emissive_preview_surface_pending_mdl_water_pass",
+    "ior": 1.333,
+    "material_backend": "USD_PREVIEW_FALLBACK",
+    "material_path": "/World/Looks/LiquidPresentationWater",
+    "mdl_compile_status": "FALLBACK_USED",
+    "opacity": 0.34,
+    "preferred_backend": "MDL_WATER",
+    "roughness": 0.02,
+    "shader_path": "/World/Looks/LiquidPresentationWater/PreviewSurface",
+    "state_specific_liquid_materials": false,
+    "tint_policy": "near_clear_subtle_blue_green",
+    "unified_liquid_style": true,
+    "visual_material_parity_claim_allowed": false,
+    "visualization_only": true
+  },
+  "presentation_video_enabled": true,
+  "presentation_visual_contract": {
+    "camera": {
+      "camera_contract_hash": "liquid_presentation_main_camera_v1",
+      "camera_path": "/World/LiquidPresentationMainCamera",
+      "eye": [
+        0.55248388,
+        0.41454058,
+        1.1127606155217078
+      ],
+      "focus_source_weight": 0.72,
+      "pair_span": 0.456063,
+      "role": "leadership_presentation_main",
+      "source_side_y": 1.0,
+      "target": [
+        0.30248388000000004,
+        0.004083879999999984,
+        0.8286212555217077
+      ],
+      "up": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "camera_path": "/World/LiquidPresentationMainCamera",
+    "claim_boundary": "presentation_lane_only_particle_readback_remains_gate",
+    "claim_boundary_text": "This video is a presentation render of the same simulated particle trajectory used for the diagnostic verdict. Leak classification and spike assessment are based on particle readback, not on visual appearance. Rendering choices including PhysX Isosurface reconstruction, material color/opacity, lighting, and camera framing were adjusted only to improve human readability for review. These adjustments do not change the particle simulation, collider setup, leak classifier, or benchmark claims.",
+    "debug_particle_display_enabled": false,
+    "isosurface": {
+      "api_path": "/World/CompletedPBD/ParticleSystem",
+      "claim_boundary": "visual_surface_reconstruction_only",
+      "enabled": true,
+      "grid_filtering_passes": "GS",
+      "grid_smoothing_radius": 0.0003207600535824895,
+      "grid_spacing": 0.00028868404822424056,
+      "max_subgrids": 12500,
+      "max_triangles": 6400000,
+      "max_vertices": 3200000,
+      "num_mesh_normal_smoothing_passes": 4,
+      "num_mesh_smoothing_passes": 4,
+      "parameter_reference": "isaacsim41_fluid_isosurface_cup_demo_style",
+      "surface_distance": 0.00030472205090336497
+    },
+    "lighting": {
+      "intensity": 950.0,
+      "light_path": "/World/LiquidPresentationKeyLight",
+      "lighting_contract_hash": "liquid_presentation_key_light_v1",
+      "role": "leadership_presentation_key_light",
+      "rotate_xyz": [
+        55.0,
+        0.0,
+        35.0
+      ]
+    },
+    "liquid_material_path": "/World/Looks/LiquidPresentationWater",
+    "particle_count": 50000,
+    "presentation_video_does_not_replace_particle_readback": true,
+    "variant_id": "COLLEAGUE_NATIVE_USD_FULL_50K_COMPLETED_PBD",
+    "visual_material_parity_claim_allowed": false
+  },
+  "raw_usd_direct_step_claim_allowed": false,
+  "readback_diagnostics": {
+    "final_position_hash": "f7d443eebb97e341e42a5c7f4db288288cdd790f1de6ba072a1fd6551050e926",
+    "initial_position_hash": "7449810ed3069627d0678785706893f59a12627e6a466d046b91239f0196c83d",
+    "max_displacement": 0.9256829337992616,
+    "readback_available": true,
+    "readback_position_changed": true
+  },
+  "region_config": {
+    "bottom_overlap": 0.0,
+    "bottom_thickness": 0.008,
+    "collider_contact_offset": 0.003,
+    "collider_rest_offset": 0.0,
+    "fluid_rest_offset": 0.0003207600535824895,
+    "grid_dims": [
+      8,
+      8,
+      4
+    ],
+    "initial_radial_velocity": 0.08,
+    "particle_contact_offset": 0.0005346000893041491,
+    "particle_count": 50000,
+    "particle_enable_ccd": null,
+    "particle_max_depenetration_velocity": null,
+    "particle_max_velocity": 5.0,
+    "particle_rest_offset": 0.0,
+    "particle_seed": null,
+    "particle_spacing": 0.0045,
+    "particle_system_contact_offset": 0.000641520107164979,
+    "particle_width": 0.0005940000992268324,
+    "perf_budget_seconds_per_variant": 240.0,
+    "physics_dt": 0.016666666666666666,
+    "render_height": 540,
+    "render_width": 960,
+    "sdf_margin": null,
+    "sdf_narrow_band_thickness": null,
+    "sdf_resolution": null,
+    "sdf_subgrid_resolution": null,
+    "solid_rest_offset": 0.0003207600535824895,
+    "source_center": [
+      0.311802,
+      0.091802,
+      0.7727606155217077
+    ],
+    "source_height": 0.164296,
+    "source_radius": 0.060327,
+    "spawn_particle_contact_offset": 0.0005346000893041491,
+    "steps": 240,
+    "table_z": 0.7727606155217077,
+    "tail_window_steps": 30,
+    "target_center": [
+      0.278523,
+      -0.221477,
+      0.7727606155217077
+    ],
+    "target_height": 0.183118,
+    "target_radius": 0.082457,
+    "trace_interval": 10,
+    "wall_height": 0.12,
+    "wall_thickness": 0.01
+  },
+  "review_markers": {
+    "enabled": false,
+    "review_marker_source": "particle_readback_positions",
+    "review_markers_are_physics": false,
+    "updates": {}
+  },
+  "runtime": "isaacsim41",
+  "runtime_particle_offsets": {
+    "fluid_rest_offset": 0.0003207600535824895,
+    "particle_contact_offset": 0.0005346000893041491,
+    "particle_system_contact_offset": 0.000641520107164979,
+    "particle_width": 0.0005940000992268324,
+    "solid_rest_offset": 0.0003207600535824895
+  },
+  "runtime_pbd_completion_overlay_used": true,
+  "runtime_step_executed": true,
+  "schema_version": 1,
+  "selected_particle_count": 50000,
+  "source_bbox": {
+    "max": [
+      0.36712894390182405,
+      0.1471289546914178,
+      0.917056322425485
+    ],
+    "min": [
+      0.2564758472940577,
+      0.03647585808365142,
+      0.8266558855450249
+    ]
+  },
+  "source_particle_count": 50000,
+  "source_usd_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd",
+  "steps": 240,
+  "table_bbox": {
+    "max": [
+      1.4210249282229273,
+      1.312490858408316,
+      0.7727606155217077
+    ],
+    "min": [
+      -0.9239185074460179,
+      -1.3322193410256615,
+      -0.3997177639585258
+    ]
+  },
+  "target_bbox": {
+    "max": [
+      0.3559805130656398,
+      -0.1440194718289303,
+      0.9358788459176023
+    ],
+    "min": [
+      0.2010661906964822,
+      -0.29893379419808785,
+      0.8093182448089536
+    ]
+  },
+  "trace_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/particle_readback_trace.jsonl",
+  "video_summary": {
+    "closeup_native_rgb_frame_count": 0,
+    "frame_sources": {
+      "presentation_isosurface_frames/frame_0001.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0002.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0003.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0004.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0005.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0006.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0007.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0008.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0009.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0010.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0011.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0012.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0013.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0014.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0015.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0016.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0017.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0018.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0019.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0020.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0021.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0022.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0023.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0024.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0025.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0026.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0027.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0028.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0029.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0030.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0031.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0032.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0033.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0034.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0035.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0036.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0037.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0038.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0039.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0040.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0041.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0042.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0043.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0044.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0045.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0046.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0047.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0048.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0049.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0050.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0051.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0052.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0053.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0054.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0055.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0056.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0057.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0058.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0059.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0060.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0061.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0062.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0063.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0064.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0065.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0066.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0067.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0068.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0069.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0070.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0071.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0072.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0073.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0074.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0075.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0076.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0077.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0078.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0079.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0080.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0081.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0082.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0083.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0084.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0085.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0086.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0087.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0088.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0089.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0090.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0091.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0092.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0093.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0094.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0095.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0096.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0097.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0098.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0099.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0100.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0101.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0102.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0103.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0104.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0105.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0106.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0107.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0108.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0109.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0110.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0111.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0112.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0113.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0114.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0115.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0116.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0117.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0118.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0119.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0120.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0121.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0122.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0123.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0124.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0125.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0126.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0127.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0128.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0129.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0130.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0131.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0132.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0133.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0134.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0135.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0136.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0137.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0138.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0139.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0140.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0141.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0142.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0143.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0144.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0145.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0146.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0147.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0148.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0149.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0150.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0151.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0152.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0153.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0154.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0155.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0156.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0157.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0158.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0159.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0160.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0161.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0162.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0163.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0164.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0165.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0166.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0167.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0168.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0169.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0170.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0171.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0172.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0173.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0174.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0175.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0176.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0177.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0178.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0179.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0180.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0181.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0182.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0183.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0184.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0185.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0186.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0187.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0188.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0189.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0190.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0191.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0192.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0193.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0194.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0195.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0196.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0197.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0198.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0199.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0200.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0201.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0202.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0203.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0204.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0205.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0206.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0207.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0208.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0209.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0210.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0211.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0212.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0213.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0214.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0215.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0216.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0217.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0218.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0219.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0220.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0221.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0222.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0223.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0224.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0225.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0226.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0227.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0228.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0229.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0230.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0231.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0232.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0233.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0234.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0235.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0236.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0237.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0238.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0239.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0240.png": "presentation_isosurface_rgb"
+    },
+    "native_camera_rgb_frame_count": 0,
+    "native_scene_video_slots": [
+      "presentation_isosurface",
+      "camera1_native_material",
+      "camera2_native_material",
+      "beaker2_closeup_native_material",
+      "beaker2_closeup_review_markers"
+    ],
+    "presentation_isosurface_rgb_frame_count": 240,
+    "review_marker_rgb_frame_count": 0
+  },
+  "videos": {
+    "beaker2_closeup_native_material": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "beaker2_closeup_review_markers": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "camera1_native_material": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "camera2_native_material": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "presentation_isosurface": {
+      "frame_count": 240,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/unified-realistic-water/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2/presentation_isosurface.mp4",
+      "written": true
+    }
+  },
+  "visual_material_parity_claim_allowed": false
+}

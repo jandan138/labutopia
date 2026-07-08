@@ -1,0 +1,89 @@
+{
+  "manifest_type": "fluid_spike_unified_realistic_water_visualization_summary",
+  "schema_version": 1,
+  "created_at_utc": "2026-07-09T01:20:00+00:00",
+  "source_usd_path": "../../outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd",
+  "final_run_manifest": "fluid_spike_unified_realistic_water_visualization_20260709_001/RAW_AS_IS_full50k_v2.json",
+  "final_report_assets": {
+    "mp4": "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-reconstruction-main-full50k.mp4",
+    "webm": "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-reconstruction-main-full50k.webm",
+    "frames": [
+      "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-main-frame-01.png",
+      "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-main-frame-02.png",
+      "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-main-frame-03.png"
+    ],
+    "mp4_bytes": 1344028,
+    "webm_bytes": 319998,
+    "mp4_sha256": "0989af36fec88f7b69ca72afce61f762be6902bf6954500bfb22d2ad4a28251b",
+    "webm_sha256": "741834992b7b7b7143f64bf8e1cdb5ffc151db407ac75f9b7b0cd0d78d6ece32"
+  },
+  "blue_baseline_report_assets": {
+    "mp4": "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-reconstruction-blue-baseline-full50k.mp4",
+    "webm": "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-reconstruction-blue-baseline-full50k.webm",
+    "frames": [
+      "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-blue-baseline-frame-01.png",
+      "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-blue-baseline-frame-02.png",
+      "../../reports/2026-07-07-labutopia-fluid-weekly/assets/liquid-surface-blue-baseline-frame-03.png"
+    ]
+  },
+  "runtime": {
+    "runtime_step_executed": true,
+    "fatal_error": null,
+    "selected_particle_count": 50000,
+    "source_particle_count": 50000,
+    "steps": 240,
+    "video_fps": 12,
+    "video_duration_seconds": 20.0,
+    "video_frame_count": 240,
+    "video_resolution": [960, 540]
+  },
+  "classification": {
+    "classification": "FAIL_CONTAINER_LEAK",
+    "below_table_count": 39024,
+    "outside_source_count": 41067,
+    "spill_count": 2043,
+    "target_count": 0,
+    "nan_count": 0,
+    "particle_count_final_fraction": 1.0,
+    "source_retention_fraction": 0.17866,
+    "tail_leak_rate_fraction_per_second": 0.06570000000000001,
+    "cpu_collision_fallback_detected": false,
+    "gpu_collider_unsupported": false
+  },
+  "presentation_material": {
+    "display_name": "presentation_water_unified_realistic",
+    "material_backend": "USD_PREVIEW_FALLBACK",
+    "preferred_backend": "MDL_WATER",
+    "mdl_compile_status": "FALLBACK_USED",
+    "diffuse_color": [0.74, 0.94, 1.0],
+    "emissive_color": [0.0, 0.0, 0.0],
+    "opacity": 0.34,
+    "roughness": 0.02,
+    "ior": 1.333,
+    "tint_policy": "near_clear_subtle_blue_green",
+    "unified_liquid_style": true,
+    "state_specific_liquid_materials": false,
+    "all_liquid_particles_visible": true,
+    "visualization_only": true,
+    "visual_material_parity_claim_allowed": false
+  },
+  "visual_review": {
+    "verdict": "WARN",
+    "summary": "The saturated red and strong blue diagnostic materials are removed, and the source/target beakers are readable. The liquid still looks cloudy or slushy in places and leaked particles remain speckled, so this is a clearer presentation render rather than photorealistic water or full material parity."
+  },
+  "claim_boundary": {
+    "allowed": [
+      "The colleague native USD 50k particle initial condition can be completed into an IsaacSim41 PBD runtime and stepped.",
+      "The same failing particle trajectory can be visualized with a unified, less diagnostic water style.",
+      "Leak status remains supported by particle readback, not by the video alone."
+    ],
+    "not_allowed": [
+      "unified_realistic_water_visualization_equals_photoreal_water",
+      "presentation_video_equals_physics_success",
+      "isosurface_reconstruction_equals_zero_leak",
+      "presentation_water_material_equals_labutopia51_visual_parity",
+      "level1_pour_true_fluid_runtime_passed",
+      "ebench_score_or_policy_claim_allowed"
+    ]
+  }
+}
