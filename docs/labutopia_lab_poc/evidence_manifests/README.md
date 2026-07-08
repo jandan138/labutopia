@@ -140,7 +140,7 @@ s2f3_c3_sdf_sweep_status=STOP_WITH_EVIDENCE
 s2f3_c3_sdf_sweep_reason=no_c3a_sdf_candidate_passed
 s2f3_best_for_s2f5=[]
 s3_kinematic_pour_released=false
-next_fluid_work=["S2F4_C4_NATIVE_MESH_ISOLATION"]
+next_fluid_work=["S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP"]
 s2_s3_collider_matrix_required=true
 ```
 
@@ -176,6 +176,8 @@ fluid_spike_s2f2_velocity_contact_offset_20260708.json
 fluid_spike_isaacsim41_ebench_s2f2_velocity_contact_offset_20260708_001/
 fluid_spike_s2f3_c3_sdf_sweep_20260708.json
 fluid_spike_isaacsim41_ebench_s2f3_c3_sdf_sweep_20260708_001/
+fluid_spike_s2f4_c4_native_mesh_isolation_20260708.json
+fluid_spike_isaacsim41_ebench_s2f4_c4_native_mesh_isolation_20260708_001/
 ```
 
 S2 结论：`status=STOP_WITH_EVIDENCE`，`best_for_s3=[]`。C0、C1、C2、C3、C5 均为
@@ -205,8 +207,10 @@ S2F0 已完成 baseline freeze：`fluid_spike_s2f0_baseline_freeze_20260707.json
 放行合同和 C2 closest-failed baseline 锁成一个不可变入口。当前 `phase_status` 是
 `S2F0_BASELINE_FREEZE=COMPLETE`，`S2F1_C2_PROXY_SWEEP=COMPLETE_STOP_WITH_EVIDENCE`，
 `S2F2_VELOCITY_CONTACT_OFFSET=COMPLETE_GO_NEXT`，`S2F5_PROMOTION_REVIEW=COMPLETE_STOP_WITH_EVIDENCE`，
-`S2F3_C3_SDF_SWEEP=COMPLETE_STOP_WITH_EVIDENCE`，`S2F4_C4_NATIVE_MESH_ISOLATION=NEXT`。
-这表示 S2F2 找到的 promotion review 候选已经复核失败，SDF 路线也没有找到可晋级候选，仍不允许直接跑 S3。
+`S2F3_C3_SDF_SWEEP=COMPLETE_STOP_WITH_EVIDENCE`，
+`S2F4_C4_NATIVE_MESH_ISOLATION=COMPLETE_STOP_WITH_EVIDENCE`。这表示 S2F2 找到的
+promotion review 候选已经复核失败，SDF 路线和 LabUtopia 原生 beaker mesh 路线也没有找到可晋级候选，
+仍不允许直接跑 S3。
 
 S2F1 已完成 C2 proxy sweep：12 个 C2A segmented proxy 候选都在 IsaacSim41 中完成 240-step
 runtime smoke，artifact-level warning scan 未发现 `CPU collision fallback`、`GPU collider unsupported`
@@ -232,8 +236,9 @@ S2F5 promotion review 已完成：`fluid_spike_s2f5_promotion_review_20260708.js
 IsaacSim41 headless runtime。结果是 `STOP_WITH_EVIDENCE`，`best_for_s3=[]`，
 `s3_kinematic_pour_released=false`。256 粒子组只漏 1-2 个粒子，说明 S2F2 线索接近但未达
 严格 gate；1024 粒子组三个 seed 分别有 347、340、338 个粒子到 source 外，说明高粒子数下容器
-不稳定。下一步不释放 S3，而是执行 `S2F3_C3_SDF_SWEEP` 和 `S2F4_C4_NATIVE_MESH_ISOLATION`
-两条 collider 诊断路线。
+不稳定。当时的下一步是不释放 S3，而是执行 `S2F3_C3_SDF_SWEEP` 和
+`S2F4_C4_NATIVE_MESH_ISOLATION` 两条 collider 诊断路线。现在这两条路线均已完成，当前下一步是
+`S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP`。
 
 产品口径：F3/F4 不是被取消。之前先做 S2F5，是因为 S2F2 已经给出唯一 near-pass 候选，最短路径是先
 验证它能否直接放行；现在 S2F5 复核失败，F3/F4 就从后备分支变成下一步主线。`s2f2_initial_layout_hash_audit`
@@ -249,7 +254,28 @@ SDF 候选，系统 sweep `sdf_resolution=64/96/128`、`sdf_subgrid_resolution=4
 `CPU collision fallback`、`GPU collider unsupported`、PhysX error 或 SDF warning；24 个候选都有
 particle readback 和完整证据文件。失败主因不是 runtime/cooking 挂掉，而是所有 SDF 候选都
 `FAIL_CONTAINER_LEAK`，最终 `below_table_count=256`，说明当前 procedural SDF open beaker 没有形成
-可盛液体的有效内部碰撞空间。下一步只进入 `S2F4_C4_NATIVE_MESH_ISOLATION`，不释放 S3。
+可盛液体的有效内部碰撞空间。当时下一步只进入 `S2F4_C4_NATIVE_MESH_ISOLATION`，不释放 S3；现在
+S2F4 已完成，当前下一步是 `S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP`。
+
+S2F4 C4 native mesh isolation 已完成：`fluid_spike_s2f4_c4_native_mesh_isolation_20260708.json`
+覆盖 3 个 `C4A_*` 候选，并把旧 C4 的混杂问题拆开验证：
+`C4A_convexDecomposition_reference_scope_closed` 使用原生 `/World/beaker2` parent-scope reference、
+local blue-glass material override 和 `convexDecomposition`；`C4A_sdf_reference_scope_closed`
+使用同样的 scope-closed native reference 和 `sdf_resolution=128`；`C4A_native_render_mesh_plus_proxy_collision`
+保留原生 render mesh，但关闭 native mesh collision，并在 `/World/SourceContainer/ProxyCollision`
+下加 24-wall proxy collider。结果是 `STOP_WITH_EVIDENCE`，
+`reason=native_beaker_not_fluid_safe_collider`，`native_beaker_fluid_safe_collider_status=NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER`，
+`best_for_s2f5=[]`，`best_for_s3=[]`，`s3_kinematic_pour_released=false`。两个 direct native
+routes 都是 `source_retention_fraction=0.0`、`below_table_count=256`；proxy-wrapper route
+更接近但仍为 `source_retention_fraction=0.953125`、`outside_source_count=12`、`spill_count=12`，
+没有通过 zero-leak gate。
+
+S2F4 runtime warning scan 没有发现 `CPU collision fallback`、`GPU collider unsupported`、
+PhysX error、SDF warning 或 material binding scope warning；只有 headless window warning。
+因此这次 STOP 不是旧 material scope warning 或 cooking failure，而是 particle readback 证明碰撞空间仍会漏。
+视觉 review 结论：direct native 两张 terminal diagnostic frame 为 `PASS`，红色 below-table leak 点清楚；
+proxy-wrapper terminal frame 为 `WARN`，图像非空且 source region 可识别，但粒子颜色和 proxy 底线接近，
+只能作为诊断图，不能升级成产品级 render。
 
 `eos2_expert_oracle_s2_readback_render_inventory_20260706.json` 和
 `eos2_expert_oracle_s2_claim_review_20260706.json` 是 S1R-D fresh S1 之后的 no-new-live S2 证据盘点和声明复核。

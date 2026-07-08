@@ -60,7 +60,7 @@ the narrower native-collider usability claim.
 **Files:**
 - Modify: `tests/test_fluid_beaker_collider_followup_sweep.py`
 
-- [ ] **Step 1: Write failing candidate-grid test**
+- [x] **Step 1: Write failing candidate-grid test**
 
 Add this test:
 
@@ -89,7 +89,7 @@ def test_s2f4_builds_native_mesh_isolation_candidates():
     assert {candidate.native_pose_alignment for candidate in candidates} == {"bbox_recenter_to_source_region"}
 ```
 
-- [ ] **Step 2: Write failing variant-spec test**
+- [x] **Step 2: Write failing variant-spec test**
 
 Add this test:
 
@@ -102,7 +102,7 @@ def test_s2f4_candidate_materializes_native_variant_spec():
     spec = candidate.to_variant_spec()
 
     assert config.steps == 12
-    assert config.sdf_resolution == 96
+    assert config.sdf_resolution == 128
     assert spec.variant_id == "C4A_sdf_reference_scope_closed"
     assert spec.setup == "s2f4_native_beaker_mesh_isolation"
     assert spec.source_kind == "native_mesh_reference"
@@ -113,7 +113,7 @@ def test_s2f4_candidate_materializes_native_variant_spec():
     assert spec.native_pose_alignment == "bbox_recenter_to_source_region"
 ```
 
-- [ ] **Step 3: Verify RED**
+- [x] **Step 3: Verify RED**
 
 Run:
 
@@ -123,6 +123,8 @@ python -m pytest -q tests/test_fluid_beaker_collider_followup_sweep.py::test_s2f
 
 Expected: FAIL because `build_s2f4_native_mesh_isolation` and S2F4 fields do not exist.
 
+Result: RED observed before implementation: S2F4 builder/spec fields were absent, then GREEN after adding the C4A candidate contract.
+
 ## Task 2: Implement Native-Mesh Authoring Routes
 
 **Files:**
@@ -130,7 +132,7 @@ Expected: FAIL because `build_s2f4_native_mesh_isolation` and S2F4 fields do not
 - Modify: `tools/labutopia_fluid/run_beaker_collider_followup_sweep.py`
 - Test: `tests/test_fluid_beaker_collider_smoke.py`
 
-- [ ] **Step 1: Write failing smoke authoring tests**
+- [x] **Step 1: Write failing smoke authoring tests**
 
 Add tests that build `VariantSpec` instances for `C4A_convexDecomposition_reference_scope_closed`,
 `C4A_sdf_reference_scope_closed`, and `C4A_native_render_mesh_plus_proxy_collision`, call `_add_colliders`
@@ -150,7 +152,7 @@ assert mesh_prim.GetAttribute("physics:collisionEnabled").Get() is False
 assert any(path.startswith("/World/SourceContainer/ProxyCollision") for path in collider_paths)
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run:
 
@@ -160,7 +162,9 @@ python -m pytest -q tests/test_fluid_beaker_collider_smoke.py::test_c4a_native_p
 
 Expected: FAIL because `_add_colliders` does not route `C4A_*`.
 
-- [ ] **Step 3: Implement authoring**
+Result: RED observed as `ValueError: unknown_variant:C4A_*`, followed by one schema-availability fix for non-Isaac unit tests.
+
+- [x] **Step 3: Implement authoring**
 
 Add helper functions:
 
@@ -181,11 +185,11 @@ Add route handling:
 
 ```text
 convexDecomposition -> native mesh collision enabled, approximation=convexDecomposition
-sdf -> native mesh collision enabled, approximation=sdf, sdf_resolution=96
+sdf -> native mesh collision enabled, approximation=sdf, sdf_resolution=128, sdf_subgrid_resolution=8
 render_mesh_plus_proxy_collision -> native mesh collision disabled, add segmented proxy collision under /World/SourceContainer/ProxyCollision
 ```
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 Run the two smoke authoring tests and then:
 
@@ -195,13 +199,15 @@ python -m pytest -q tests/test_fluid_beaker_collider_smoke.py
 
 Expected: all smoke tests PASS.
 
+Result: `python -m pytest -q tests/test_fluid_beaker_collider_smoke.py::test_c4a_native_parent_reference_scope_closed_authoring tests/test_fluid_beaker_collider_smoke.py::test_c4a_native_render_mesh_plus_proxy_disables_native_collision` passed, and the full fluid smoke/follow-up unit set later passed as `59 passed`.
+
 ## Task 3: Add S2F4 Manifest and CLI Support
 
 **Files:**
 - Modify: `tools/labutopia_fluid/run_beaker_collider_followup_sweep.py`
 - Modify: `tests/test_fluid_beaker_collider_followup_sweep.py`
 
-- [ ] **Step 1: Write failing manifest tests**
+- [x] **Step 1: Write failing manifest tests**
 
 Add tests:
 
@@ -240,7 +246,7 @@ def test_write_s2f4_manifest_signs_native_beaker_not_fluid_safe_when_all_fail(tm
     assert manifest["next_stage"]["id"] == "S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP"
 ```
 
-- [ ] **Step 2: Write failing CLI plan-only test**
+- [x] **Step 2: Write failing CLI plan-only test**
 
 Add a plan-only test for:
 
@@ -258,11 +264,13 @@ candidate ids = C4A_convexDecomposition_reference_scope_closed,C4A_sdf_reference
 next_stage.id=S2F4_C4_NATIVE_MESH_ISOLATION
 ```
 
-- [ ] **Step 3: Verify RED**
+- [x] **Step 3: Verify RED**
 
 Run the S2F4 tests. Expected: FAIL because S2F4 is not in `main()` and manifest reason logic.
 
-- [ ] **Step 4: Implement follow-up runner support**
+Result: RED observed across five tests: S2F4 still used C2A reason wording, did not populate `best_for_s2f5`, CLI rejected the phase, and S2F5 plan-row loading dropped native fields.
+
+- [x] **Step 4: Implement follow-up runner support**
 
 Add defaults:
 
@@ -275,7 +283,7 @@ DEFAULT_S2F4_SOURCE_MANIFEST = "docs/labutopia_lab_poc/evidence_manifests/fluid_
 
 Route `--phase S2F4_C4_NATIVE_MESH_ISOLATION` to `build_s2f4_native_mesh_isolation()`. S2F4 PASS should populate `best_for_s2f5`, not `best_for_s3`.
 
-- [ ] **Step 5: Verify GREEN**
+- [x] **Step 5: Verify GREEN**
 
 Run:
 
@@ -285,6 +293,8 @@ python -m pytest -q tests/test_fluid_beaker_collider_followup_sweep.py
 
 Expected: all follow-up tests PASS.
 
+Result: the targeted S2F4 manifest/CLI/S2F5 field-preservation tests passed, then the full pair passed with `59 passed in 0.58s`.
+
 ## Task 4: Run S2F4 Evidence
 
 **Files:**
@@ -292,7 +302,7 @@ Expected: all follow-up tests PASS.
 - Runtime output: `docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f4_c4_native_mesh_isolation_20260708_001/`
 - Runtime output: `assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f4/`
 
-- [ ] **Step 1: Run plan-only**
+- [x] **Step 1: Run plan-only**
 
 ```bash
 python tools/labutopia_fluid/run_beaker_collider_followup_sweep.py --phase S2F4_C4_NATIVE_MESH_ISOLATION --plan-only
@@ -300,7 +310,9 @@ python tools/labutopia_fluid/run_beaker_collider_followup_sweep.py --phase S2F4_
 
 Expected: manifest status `PLAN_READY`, candidate count `3`.
 
-- [ ] **Step 2: Run live S2F4**
+Result: manifest `fluid_spike_s2f4_c4_native_mesh_isolation_20260708.json` was written with `status=PLAN_READY`, `candidate_count=3`, and the three required C4A candidates.
+
+- [x] **Step 2: Run live S2F4**
 
 ```bash
 ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=YES /cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python tools/labutopia_fluid/run_beaker_collider_followup_sweep.py --phase S2F4_C4_NATIVE_MESH_ISOLATION --steps 240 --headless
@@ -308,9 +320,21 @@ ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=YES /cpfs/shared/simulation/zhuzihou/dev/cond
 
 Expected: final manifest status is either `GO_NEXT` with `best_for_s2f5` or `STOP_WITH_EVIDENCE` with `native_beaker_fluid_safe_collider_status=NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER`.
 
-- [ ] **Step 3: Audit runtime warnings**
+Result: final manifest is `STOP_WITH_EVIDENCE`, `reason=native_beaker_not_fluid_safe_collider`, `native_beaker_fluid_safe_collider_status=NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER`, `best_for_s2f5=[]`, and `best_for_s3=[]`.
+
+Variant results:
+
+```text
+C4A_convexDecomposition_reference_scope_closed: FAIL_CONTAINER_LEAK, source_retention_fraction=0.0, below_table_count=256
+C4A_sdf_reference_scope_closed: FAIL_CONTAINER_LEAK, source_retention_fraction=0.0, below_table_count=256
+C4A_native_render_mesh_plus_proxy_collision: FAIL_CONTAINER_LEAK, source_retention_fraction=0.953125, outside_source_count=12, spill_count=12
+```
+
+- [x] **Step 3: Audit runtime warnings**
 
 S2F4 must not treat old material scope warnings as acceptable unless `material_binding_scope_warning==0` for scope-closed C4A routes. CPU fallback, GPU unsupported, PhysX error, and SDF warning remain blocking.
+
+Result: `runtime_warning_gate.passed=true`; pattern counts were `cpu_fallback=0`, `gpu_unsupported=0`, `material_binding_scope_warning=0`, `physx_error=0`, and `sdf_warning=0`. Only headless window warnings were present.
 
 ## Task 5: Update Docs, Review, Commit
 
@@ -319,7 +343,7 @@ S2F4 must not treat old material scope warnings as acceptable unless `material_b
 - Modify: `docs/labutopia_lab_poc/evidence_manifests/README.md`
 - Modify: `docs/superpowers/plans/2026-07-07-true-physx-pbd-fluid-spike-stop-go.md`
 
-- [ ] **Step 1: Update PM wording**
+- [x] **Step 1: Update PM wording**
 
 Explain in Chinese:
 
@@ -330,11 +354,11 @@ S2F4 tested the real LabUtopia beaker2 mesh, but separated three questions:
 3. Did the native-derived collision actually hold PBD particles?
 ```
 
-- [ ] **Step 2: Update evidence index**
+- [x] **Step 2: Update evidence index**
 
 Register the S2F4 manifest, artifact directory, scene directory, and final stop/go result.
 
-- [ ] **Step 3: Request code review**
+- [x] **Step 3: Request code review**
 
 Ask a reviewer to check:
 
@@ -345,7 +369,9 @@ S2F4 STOP signs NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER only after all 3 C4A route
 Material-binding warning scan cannot hide real SDF/PhysX warnings.
 ```
 
-- [ ] **Step 4: Run verification**
+Result: independent review found three contract-boundary issues and all were fixed: partial C4A PASS no longer promotes to S2F5, warning/partial reruns keep S2F4 `ACTIVE` in `phase_specs`, and product docs now point to `S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP` as the current next stage.
+
+- [x] **Step 4: Run verification**
 
 ```bash
 python -m pytest -q tests/test_fluid_beaker_collider_smoke.py tests/test_fluid_beaker_collider_followup_sweep.py
@@ -354,6 +380,16 @@ git diff --check
 ```
 
 Expected: all commands exit `0`.
+
+Result:
+
+```text
+python -m pytest -q tests/test_fluid_beaker_collider_followup_sweep.py -k 's2f4 and (partial or blocking or material or candidate_limit or promotes or proxy_wrapper or signs)' -> 9 passed, 40 deselected
+python -m pytest -q tests/test_fluid_beaker_collider_smoke.py tests/test_fluid_beaker_collider_followup_sweep.py -> 64 passed
+python -m json.tool docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f4_c4_native_mesh_isolation_20260708.json -> exit 0
+S2F4_AUDIT_OK
+git diff --check -> exit 0
+```
 
 - [ ] **Step 5: Commit and push**
 

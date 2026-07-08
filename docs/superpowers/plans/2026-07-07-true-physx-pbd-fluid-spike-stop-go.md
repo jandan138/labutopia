@@ -255,7 +255,7 @@ S2F0_BASELINE_FREEZE=COMPLETE
 S2F1_C2_PROXY_SWEEP=COMPLETE_STOP_WITH_EVIDENCE
 S2F2_VELOCITY_CONTACT_OFFSET=COMPLETE_GO_NEXT
 S2F3_C3_SDF_SWEEP=COMPLETE_STOP_WITH_EVIDENCE
-S2F4_C4_NATIVE_MESH_ISOLATION=NEXT
+S2F4_C4_NATIVE_MESH_ISOLATION=COMPLETE_STOP_WITH_EVIDENCE
 S2F5_PROMOTION_REVIEW=COMPLETE_STOP_WITH_EVIDENCE
 S2F0 result manifest:
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json
@@ -265,6 +265,8 @@ S2F2 result manifest:
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f2_velocity_contact_offset_20260708.json
 S2F3 result manifest:
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f3_c3_sdf_sweep_20260708.json
+S2F4 result manifest:
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f4_c4_native_mesh_isolation_20260708.json
 ```
 
 Do not repeat S2F0 unless the S2 collider matrix is intentionally regenerated.
@@ -303,6 +305,29 @@ Do not move directly to S3. `C2A_009_S2F2_VEL020` must first pass S2F5
 promotion review across multiple seeds and particle counts. Because the diagnosis
 is coupled with post-reset initial layout variation, S2F5 must first retest
 initial-layout hash stability before it can treat the candidate as promotable.
+
+S2F4 closed on 2026-07-08 with `STOP_WITH_EVIDENCE`. It tested three scope-closed
+native-beaker routes: native parent reference plus `convexDecomposition`, native
+parent reference plus `sdf`, and native render mesh plus procedural proxy
+collision. The warning gate stayed clean: `material_binding_scope_warning=0`,
+`cpu_fallback=0`, `gpu_unsupported=0`, `physx_error=0`, and `sdf_warning=0`.
+The direct native routes both leaked all 256 particles below table. The
+proxy-wrapper route retained 244/256 particles, but still had
+`outside_source_count=12` and `spill_count=12`, so it also failed the zero-leak
+contract. The signed status is:
+
+```text
+native_beaker_fluid_safe_collider_status=NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER
+best_for_s2f5=[]
+best_for_s3=[]
+s3_kinematic_pour_released=false
+next_stage=S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP
+```
+
+Do not keep tuning native `beaker2/mesh` as if it were almost ready. The next
+valid work is a narrower proxy-wrapper design follow-up: use the LabUtopia native
+mesh for visual identity, but design a physics-friendly collision wrapper with
+clear visual diagnostic colors and its own stop/go contract.
 
 S2F required evidence per variant:
 
@@ -1017,9 +1042,10 @@ had particle readback and complete evidence files, but all 24 classified as
 `FAIL_CONTAINER_LEAK`; each ended with `outside_source_count=256` and
 `below_table_count=256`. This means the current procedural SDF open beaker runs
 in IsaacSim41 but does not form a fluid-safe interior collider. It does not
-release S2F5 or S3. The next diagnostic route is S2F4 native mesh isolation.
+release S2F5 or S3. This route has been consumed by the completed S2F4 native
+mesh isolation; the current next stage is `S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP`.
 
-- [ ] **Step 7: Run S2F4 C4 native mesh isolation**
+- [x] **Step 7: Run S2F4 C4 native mesh isolation**
 
 Compare native-derived routes:
 
@@ -1037,14 +1063,25 @@ native pose/scale/orientation mismatch
 particle collider interior usability
 ```
 
-If native-derived routes still fail, write:
+Created:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f4_c4_native_mesh_isolation_20260708.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f4_c4_native_mesh_isolation_20260708_001/
+assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f4/
+```
+
+Result:
 
 ```text
 NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER
 ```
 
-This is not a no-go for fluid overall; it only means native render mesh should be
-wrapped by a fluid-safe physics proxy.
+All three C4A routes ran with complete candidate evidence and no blocking CPU
+fallback, GPU unsupported, material-binding scope warning, PhysX error, or SDF
+warning. The conclusion is not a no-go for fluid overall; it means native render
+mesh should be wrapped by a fluid-safe physics proxy. Current next stage:
+`S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP`.
 
 - [x] **Step 8: Write S2F5 promotion review**
 

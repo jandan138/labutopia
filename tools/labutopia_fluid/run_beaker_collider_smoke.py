@@ -114,6 +114,14 @@ class VariantSpec:
     source_kind: str
     negative_control: bool = False
     native_source_path: str | None = None
+    native_mesh_source_path: str | None = None
+    native_reference_scope: str | None = None
+    native_material_binding_strategy: str | None = None
+    native_material_binding_scope_closed: bool | None = None
+    native_pose_alignment: str | None = None
+    native_collision_route: str | None = None
+    native_mesh_collision_enabled: bool | None = None
+    proxy_collision_enabled: bool | None = None
     sdf_resolution: int | None = None
     sdf_subgrid_resolution: int | None = None
     sdf_margin: float | None = None
@@ -501,17 +509,23 @@ def _apply_static_collision(
     sdf_margin: float | None = None,
     sdf_narrow_band_thickness: float | None = None,
 ) -> None:
-    from pxr import PhysxSchema, UsdPhysics
+    from pxr import UsdPhysics
+
+    try:
+        from pxr import PhysxSchema
+    except ImportError:
+        PhysxSchema = None
 
     collision_api = UsdPhysics.CollisionAPI.Apply(prim)
     collision_api.CreateCollisionEnabledAttr().Set(True)
-    physx_collision = PhysxSchema.PhysxCollisionAPI.Apply(prim)
-    physx_collision.CreateContactOffsetAttr().Set(contact_offset)
-    physx_collision.CreateRestOffsetAttr().Set(rest_offset)
+    if PhysxSchema is not None:
+        physx_collision = PhysxSchema.PhysxCollisionAPI.Apply(prim)
+        physx_collision.CreateContactOffsetAttr().Set(contact_offset)
+        physx_collision.CreateRestOffsetAttr().Set(rest_offset)
     if approximation is not None:
         mesh_collision = UsdPhysics.MeshCollisionAPI.Apply(prim)
         mesh_collision.CreateApproximationAttr().Set(approximation)
-    if sdf_resolution is not None and hasattr(PhysxSchema, "PhysxSDFMeshCollisionAPI"):
+    if sdf_resolution is not None and PhysxSchema is not None and hasattr(PhysxSchema, "PhysxSDFMeshCollisionAPI"):
         sdf_api = PhysxSchema.PhysxSDFMeshCollisionAPI.Apply(prim)
         sdf_api.CreateSdfResolutionAttr().Set(int(sdf_resolution))
         if hasattr(sdf_api, "CreateSdfSubgridResolutionAttr"):
@@ -718,6 +732,312 @@ def _add_native_beaker_reference(stage: Any, config: ColliderConfig, native_usd:
     return [str(mesh_prim.GetPath())]
 
 
+def _set_or_create_labutopia_attr(prim: Any, name: str, type_name: Any, value: Any) -> None:
+    attr = prim.GetAttribute(name)
+    if not attr:
+        attr = prim.CreateAttribute(name, type_name)
+    attr.Set(value)
+
+
+def _ensure_scope_closed_native_material(stage: Any, material_path: Any) -> Any:
+    from pxr import Gf, Sdf, UsdGeom, UsdShade
+
+    UsdGeom.Scope.Define(stage, str(material_path.GetParentPath()))
+    material = UsdShade.Material.Define(stage, material_path)
+    shader = UsdShade.Shader.Define(stage, material_path.AppendChild("PreviewSurface"))
+    shader.CreateIdAttr("UsdPreviewSurface")
+    shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0.80, 0.90, 1.0))
+    shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(0.35)
+    shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.05)
+    material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
+    return material
+
+
+def _bind_scope_closed_native_material(stage: Any, mesh_prim: Any, spec: VariantSpec) -> str:
+    from pxr import Sdf, UsdShade
+
+    material_path = Sdf.Path("/World/SourceContainer/NativeBeaker2/Looks/OmniSurface_Glass")
+    material = _ensure_scope_closed_native_material(stage, material_path)
+    UsdShade.MaterialBindingAPI.Apply(mesh_prim).Bind(material)
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeMaterialBindingStrategy",
+        Sdf.ValueTypeNames.String,
+        spec.native_material_binding_strategy or "local_blue_glass_override",
+    )
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeMaterialBindingScopeClosed",
+        Sdf.ValueTypeNames.Bool,
+        True,
+    )
+    return str(material_path)
+
+
+def _get_or_add_translate_op(xformable: Any) -> Any:
+    from pxr import UsdGeom
+
+    for op in xformable.GetOrderedXformOps():
+        if op.GetOpType() == UsdGeom.XformOp.TypeTranslate and op.GetName() == "xformOp:translate":
+            return op
+    for op in xformable.GetOrderedXformOps():
+        if op.GetOpType() == UsdGeom.XformOp.TypeTranslate:
+            return op
+    return xformable.AddTranslateOp()
+
+
+def _align_native_parent_to_source(stage: Any, parent_prim: Any, mesh_prim: Any, config: ColliderConfig) -> dict[str, Any]:
+    from pxr import Gf, Sdf, Usd, UsdGeom
+
+    cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), ["default", "render", "proxy"], useExtentsHint=True)
+    before_box = cache.ComputeWorldBound(mesh_prim).ComputeAlignedBox()
+    before_min = before_box.GetMin()
+    before_max = before_box.GetMax()
+    midpoint = before_box.GetMidpoint()
+    min_z = before_min[2]
+    delta = Gf.Vec3d(
+        config.source_center[0] - midpoint[0],
+        config.source_center[1] - midpoint[1],
+        config.table_z - min_z,
+    )
+    xformable = UsdGeom.Xformable(parent_prim)
+    translate_op = _get_or_add_translate_op(xformable)
+    current = translate_op.Get() or Gf.Vec3d(0.0, 0.0, 0.0)
+    translate_op.Set(Gf.Vec3d(current[0] + delta[0], current[1] + delta[1], current[2] + delta[2]))
+
+    cache.Clear()
+    after_box = cache.ComputeWorldBound(mesh_prim).ComputeAlignedBox()
+    after_min = after_box.GetMin()
+    after_max = after_box.GetMax()
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativePoseAlignment",
+        Sdf.ValueTypeNames.String,
+        "bbox_recenter_to_source_region",
+    )
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeAabbMinBeforeAlignment",
+        Sdf.ValueTypeNames.Float3,
+        Gf.Vec3f(float(before_min[0]), float(before_min[1]), float(before_min[2])),
+    )
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeAabbMaxBeforeAlignment",
+        Sdf.ValueTypeNames.Float3,
+        Gf.Vec3f(float(before_max[0]), float(before_max[1]), float(before_max[2])),
+    )
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeAabbMinAfterAlignment",
+        Sdf.ValueTypeNames.Float3,
+        Gf.Vec3f(float(after_min[0]), float(after_min[1]), float(after_min[2])),
+    )
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeAabbMaxAfterAlignment",
+        Sdf.ValueTypeNames.Float3,
+        Gf.Vec3f(float(after_max[0]), float(after_max[1]), float(after_max[2])),
+    )
+    return {
+        "before_min": [float(before_min[0]), float(before_min[1]), float(before_min[2])],
+        "before_max": [float(before_max[0]), float(before_max[1]), float(before_max[2])],
+        "after_min": [float(after_min[0]), float(after_min[1]), float(after_min[2])],
+        "after_max": [float(after_max[0]), float(after_max[1]), float(after_max[2])],
+        "delta": [float(delta[0]), float(delta[1]), float(delta[2])],
+    }
+
+
+def _add_box_collider_prim(
+    stage: Any,
+    path: str,
+    *,
+    size: tuple[float, float, float],
+    position: tuple[float, float, float],
+    angle_z: float = 0.0,
+    color: tuple[float, float, float] = (0.72, 0.78, 0.86),
+    contact_offset: float = 0.003,
+    rest_offset: float = 0.0,
+) -> Any:
+    from pxr import Gf, UsdGeom
+
+    cube = UsdGeom.Cube.Define(stage, path)
+    cube.CreateSizeAttr(1.0)
+    cube.CreateDisplayColorAttr().Set([Gf.Vec3f(*color)])
+    xformable = UsdGeom.Xformable(cube.GetPrim())
+    if not cube.GetPrim().GetAttribute("xformOp:translate"):
+        xformable.AddTranslateOp()
+    cube.GetPrim().GetAttribute("xformOp:translate").Set(Gf.Vec3d(*position))
+    if not cube.GetPrim().GetAttribute("xformOp:rotateZ"):
+        xformable.AddRotateZOp()
+    cube.GetPrim().GetAttribute("xformOp:rotateZ").Set(math.degrees(angle_z))
+    if not cube.GetPrim().GetAttribute("xformOp:scale"):
+        xformable.AddScaleOp()
+    cube.GetPrim().GetAttribute("xformOp:scale").Set(Gf.Vec3f(*size))
+    _apply_static_collision(cube.GetPrim(), contact_offset=contact_offset, rest_offset=rest_offset)
+    return cube.GetPrim()
+
+
+def _add_proxy_collision_wrapper(stage: Any, config: ColliderConfig, spec: VariantSpec) -> list[str]:
+    from pxr import Sdf, UsdGeom
+
+    UsdGeom.Xform.Define(stage, "/World/SourceContainer/ProxyCollision")
+    collider_paths: list[str] = []
+    radius = config.source_radius
+    panel_count = spec.panel_count or 24
+    bottom_size = (
+        radius * 2.2 + config.bottom_overlap * 2.0,
+        radius * 2.2 + config.bottom_overlap * 2.0,
+        config.bottom_thickness + config.bottom_overlap,
+    )
+    bottom = _add_box_collider_prim(
+        stage,
+        "/World/SourceContainer/ProxyCollision/Bottom",
+        size=bottom_size,
+        position=(config.source_center[0], config.source_center[1], config.table_z + config.bottom_thickness / 2.0),
+        color=(0.56, 0.64, 0.76),
+        contact_offset=config.collider_contact_offset,
+        rest_offset=config.collider_rest_offset,
+    )
+    collider_paths.append(str(bottom.GetPath()))
+
+    panel_width = 2.0 * math.pi * radius / panel_count * 1.08
+    wall_center_z = config.table_z + config.bottom_thickness - config.bottom_overlap + config.wall_height / 2.0
+    for index in range(panel_count):
+        theta = 2.0 * math.pi * index / panel_count
+        center_radius = radius + config.wall_thickness / 2.0
+        panel = _add_box_collider_prim(
+            stage,
+            f"/World/SourceContainer/ProxyCollision/Wall_{index:02d}",
+            size=(panel_width, config.wall_thickness, config.wall_height),
+            position=(
+                config.source_center[0] + center_radius * math.cos(theta),
+                config.source_center[1] + center_radius * math.sin(theta),
+                wall_center_z,
+            ),
+            angle_z=theta + math.pi / 2.0,
+            color=(0.62, 0.72, 0.88),
+            contact_offset=config.collider_contact_offset,
+            rest_offset=config.collider_rest_offset,
+        )
+        _set_or_create_labutopia_attr(panel, "labutopia:proxyCollisionWrapper", Sdf.ValueTypeNames.Bool, True)
+        _set_or_create_labutopia_attr(
+            panel,
+            "labutopia:nativeCollisionRoute",
+            Sdf.ValueTypeNames.String,
+            "render_mesh_plus_proxy_collision",
+        )
+        collider_paths.append(str(panel.GetPath()))
+    return collider_paths
+
+
+def _add_native_beaker_isolation(stage: Any, config: ColliderConfig, native_usd: Path, spec: VariantSpec) -> list[str]:
+    from pxr import Sdf, UsdGeom, UsdPhysics
+
+    try:
+        from pxr import PhysxSchema
+    except ImportError:
+        PhysxSchema = None
+
+    parent_path = "/World/SourceContainer/NativeBeaker2"
+    parent = UsdGeom.Xform.Define(stage, parent_path)
+    parent_prim = parent.GetPrim()
+    parent_prim.GetReferences().ClearReferences()
+    parent_prim.GetReferences().AddReference(str(native_usd), spec.native_source_path or "/World/beaker2")
+    mesh_prim = stage.GetPrimAtPath(f"{parent_path}/mesh")
+    if not mesh_prim:
+        raise ValueError(f"native_mesh_not_found:{parent_path}/mesh")
+
+    alignment = _align_native_parent_to_source(stage, parent_prim, mesh_prim, config)
+    material_path = _bind_scope_closed_native_material(stage, mesh_prim, spec)
+
+    if mesh_prim.HasAPI(UsdPhysics.RigidBodyAPI):
+        rigid_body = UsdPhysics.RigidBodyAPI.Apply(mesh_prim)
+        rigid_body.CreateRigidBodyEnabledAttr().Set(False)
+        rigid_body.CreateKinematicEnabledAttr().Set(False)
+
+    route = spec.native_collision_route or spec.collision_approximation
+    _set_or_create_labutopia_attr(mesh_prim, "labutopia:nativeSourceUsd", Sdf.ValueTypeNames.String, str(native_usd))
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeSourcePrim",
+        Sdf.ValueTypeNames.String,
+        spec.native_source_path or "/World/beaker2",
+    )
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeMeshSourcePrim",
+        Sdf.ValueTypeNames.String,
+        spec.native_mesh_source_path or "/World/beaker2/mesh",
+    )
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeReferenceScope",
+        Sdf.ValueTypeNames.String,
+        spec.native_reference_scope or "parent_scope",
+    )
+    _set_or_create_labutopia_attr(mesh_prim, "labutopia:nativeCollisionRoute", Sdf.ValueTypeNames.String, route)
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeRenderMeshEnabled",
+        Sdf.ValueTypeNames.Bool,
+        True,
+    )
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeMeshCollisionEnabled",
+        Sdf.ValueTypeNames.Bool,
+        bool(spec.native_mesh_collision_enabled),
+    )
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:proxyCollisionEnabled",
+        Sdf.ValueTypeNames.Bool,
+        bool(spec.proxy_collision_enabled),
+    )
+    _set_or_create_labutopia_attr(mesh_prim, "labutopia:localMaterialPath", Sdf.ValueTypeNames.String, material_path)
+    _set_or_create_labutopia_attr(
+        mesh_prim,
+        "labutopia:nativeAlignmentDelta",
+        Sdf.ValueTypeNames.Float3,
+        tuple(alignment["delta"]),
+    )
+
+    collider_paths = [str(mesh_prim.GetPath())]
+    if route == "render_mesh_plus_proxy_collision":
+        collision_api = UsdPhysics.CollisionAPI.Apply(mesh_prim)
+        collision_api.CreateCollisionEnabledAttr().Set(False)
+        collider_paths.extend(_add_proxy_collision_wrapper(stage, config, spec))
+        return collider_paths
+
+    sdf_resolution = config.sdf_resolution or spec.sdf_resolution
+    _apply_static_collision(
+        mesh_prim,
+        approximation=route,
+        contact_offset=config.collider_contact_offset,
+        rest_offset=config.collider_rest_offset,
+        sdf_resolution=sdf_resolution,
+        sdf_subgrid_resolution=config.sdf_subgrid_resolution or spec.sdf_subgrid_resolution,
+        sdf_margin=config.sdf_margin if config.sdf_margin is not None else spec.sdf_margin,
+        sdf_narrow_band_thickness=(
+            config.sdf_narrow_band_thickness
+            if config.sdf_narrow_band_thickness is not None
+            else spec.sdf_narrow_band_thickness
+        ),
+    )
+    if (
+        route == "convexDecomposition"
+        and PhysxSchema is not None
+        and hasattr(PhysxSchema, "PhysxConvexDecompositionCollisionAPI")
+    ):
+        convex_api = PhysxSchema.PhysxConvexDecompositionCollisionAPI.Apply(mesh_prim)
+        if hasattr(convex_api, "CreateVoxelResolutionAttr"):
+            convex_api.CreateVoxelResolutionAttr().Set(500000)
+        if hasattr(convex_api, "CreateMinThicknessAttr"):
+            convex_api.CreateMinThicknessAttr().Set(0.001)
+    return collider_paths
+
+
 def _add_analytic_cylinder(stage: Any, config: ColliderConfig) -> list[str]:
     from pxr import UsdGeom
 
@@ -765,6 +1085,8 @@ def _add_colliders(stage: Any, config: ColliderConfig, spec: VariantSpec, native
         return _add_sdf_open_beaker(stage, config, spec)
     if spec.variant_id == "C4":
         return _add_native_beaker_reference(stage, config, native_usd, spec)
+    if spec.variant_id.startswith("C4A_"):
+        return _add_native_beaker_isolation(stage, config, native_usd, spec)
     if spec.variant_id == "C5":
         return _add_analytic_cylinder(stage, config)
     raise ValueError(f"unknown_variant:{spec.variant_id}")

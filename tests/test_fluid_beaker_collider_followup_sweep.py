@@ -362,6 +362,560 @@ def test_s2f3_candidate_materializes_sdf_config_and_spec():
     assert spec.sdf_narrow_band_thickness == 0.01
 
 
+def test_s2f4_builds_native_mesh_isolation_candidates():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import build_s2f4_native_mesh_isolation
+
+    candidates = build_s2f4_native_mesh_isolation()
+
+    assert [candidate.candidate_id for candidate in candidates] == [
+        "C4A_convexDecomposition_reference_scope_closed",
+        "C4A_sdf_reference_scope_closed",
+        "C4A_native_render_mesh_plus_proxy_collision",
+    ]
+    assert {candidate.phase for candidate in candidates} == {"S2F4_C4_NATIVE_MESH_ISOLATION"}
+    assert [candidate.native_collision_route for candidate in candidates] == [
+        "convexDecomposition",
+        "sdf",
+        "render_mesh_plus_proxy_collision",
+    ]
+    assert {candidate.native_reference_scope for candidate in candidates} == {"parent_scope"}
+    assert {candidate.native_material_binding_strategy for candidate in candidates} == {
+        "local_blue_glass_override"
+    }
+    assert {candidate.native_material_binding_scope_closed for candidate in candidates} == {True}
+    assert {candidate.native_pose_alignment for candidate in candidates} == {"bbox_recenter_to_source_region"}
+    assert [candidate.native_mesh_collision_enabled for candidate in candidates] == [True, True, False]
+    assert [candidate.proxy_collision_enabled for candidate in candidates] == [False, False, True]
+
+
+def test_s2f4_candidate_materializes_native_variant_spec():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import build_s2f4_native_mesh_isolation
+
+    candidate = build_s2f4_native_mesh_isolation()[1]
+    config = candidate.to_config(base=ColliderConfig(steps=12))
+    spec = candidate.to_variant_spec()
+
+    assert config.steps == 12
+    assert config.sdf_resolution == 128
+    assert spec.variant_id == "C4A_sdf_reference_scope_closed"
+    assert spec.setup == "s2f4_native_beaker_mesh_isolation"
+    assert spec.source_kind == "native_mesh_reference"
+    assert spec.native_source_path == "/World/beaker2"
+    assert spec.native_mesh_source_path == "/World/beaker2/mesh"
+    assert spec.collision_approximation == "sdf"
+    assert spec.native_material_binding_scope_closed is True
+    assert spec.native_pose_alignment == "bbox_recenter_to_source_region"
+
+
+def test_write_s2f4_manifest_promotes_native_candidate_to_s2f5_not_s3(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f4_native_mesh_isolation,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    candidates = build_s2f4_native_mesh_isolation()
+    candidate_results = [
+        {
+            **classify_followup_candidate(
+                candidate_id="C4A_convexDecomposition_reference_scope_closed",
+                source_retention_fraction=1.0,
+                particle_count_final_fraction=1.0,
+                outside_source_count=0,
+                target_count=0,
+                spill_count=0,
+                below_table_count=0,
+                tail_leak_rate_fraction_per_second=0.0,
+                cpu_collision_fallback_detected=False,
+                gpu_collider_unsupported=False,
+                nan_count=0,
+                non_physical_parameter_dependence=False,
+            ),
+            "parent_candidate_id": "C4",
+            "phase": "S2F4_C4_NATIVE_MESH_ISOLATION",
+            "variable_group": "convexDecomposition",
+            "native_collision_route": "convexDecomposition",
+            "native_mesh_collision_enabled": True,
+            "proxy_collision_enabled": False,
+            "readback_available": True,
+            "evidence_files_complete": True,
+        }
+    ]
+    for candidate in candidates[1:]:
+        candidate_results.append(
+            {
+                **classify_followup_candidate(
+                    candidate_id=candidate.candidate_id,
+                    source_retention_fraction=0.0,
+                    particle_count_final_fraction=1.0,
+                    outside_source_count=256,
+                    target_count=0,
+                    spill_count=256,
+                    below_table_count=0,
+                    tail_leak_rate_fraction_per_second=0.5,
+                    cpu_collision_fallback_detected=False,
+                    gpu_collider_unsupported=False,
+                    nan_count=0,
+                    non_physical_parameter_dependence=False,
+                ),
+                "parent_candidate_id": "C4",
+                "phase": "S2F4_C4_NATIVE_MESH_ISOLATION",
+                "variable_group": candidate.variable_group,
+                "native_collision_route": candidate.native_collision_route,
+                "native_mesh_collision_enabled": candidate.native_mesh_collision_enabled,
+                "proxy_collision_enabled": candidate.proxy_collision_enabled,
+                "readback_available": True,
+                "evidence_files_complete": True,
+            }
+        )
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F4_C4_NATIVE_MESH_ISOLATION",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=candidates,
+        candidate_results=candidate_results,
+        command="runner --phase S2F4_C4_NATIVE_MESH_ISOLATION",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+        source_s2f1_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f3_c3_sdf_sweep_20260708.json"
+        ),
+    )
+
+    assert manifest["stage"] == "S2F4_C4_NATIVE_MESH_ISOLATION"
+    assert manifest["status"] == "GO_NEXT"
+    assert manifest["reason"] == "at_least_one_c4a_native_candidate_passed"
+    assert manifest["best_for_s2f5"] == ["C4A_convexDecomposition_reference_scope_closed"]
+    assert manifest["best_for_s3"] == []
+    assert manifest["native_beaker_fluid_safe_collider_status"] == (
+        "NATIVE_BEAKER_FLUID_SAFE_COLLIDER_CANDIDATE_FOUND"
+    )
+    assert manifest["s3_kinematic_pour_released"] is False
+    assert manifest["next_stage"]["id"] == "S2F5_PROMOTION_REVIEW"
+    assert manifest["next_stage"]["not_s3_release"] is True
+    assert manifest["phase_specs"]["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] == "COMPLETE_GO_NEXT"
+    assert manifest["phase_specs"]["S2F5_PROMOTION_REVIEW"]["status"] == "NEXT"
+
+
+def test_write_s2f4_manifest_marks_proxy_wrapper_pass_as_wrapped_route_not_native_collider(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f4_native_mesh_isolation,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    candidates = build_s2f4_native_mesh_isolation()
+    candidate_results = [
+        {
+            **classify_followup_candidate(
+                candidate_id="C4A_native_render_mesh_plus_proxy_collision",
+                source_retention_fraction=1.0,
+                particle_count_final_fraction=1.0,
+                outside_source_count=0,
+                target_count=0,
+                spill_count=0,
+                below_table_count=0,
+                tail_leak_rate_fraction_per_second=0.0,
+                cpu_collision_fallback_detected=False,
+                gpu_collider_unsupported=False,
+                nan_count=0,
+                non_physical_parameter_dependence=False,
+            ),
+            "parent_candidate_id": "C4",
+            "phase": "S2F4_C4_NATIVE_MESH_ISOLATION",
+            "variable_group": "render_mesh_plus_proxy_collision",
+            "native_collision_route": "render_mesh_plus_proxy_collision",
+            "native_mesh_collision_enabled": False,
+            "proxy_collision_enabled": True,
+            "readback_available": True,
+            "evidence_files_complete": True,
+        }
+    ]
+    for candidate in candidates[:2]:
+        candidate_results.append(
+            {
+                **classify_followup_candidate(
+                    candidate_id=candidate.candidate_id,
+                    source_retention_fraction=0.0,
+                    particle_count_final_fraction=1.0,
+                    outside_source_count=256,
+                    target_count=0,
+                    spill_count=256,
+                    below_table_count=0,
+                    tail_leak_rate_fraction_per_second=0.5,
+                    cpu_collision_fallback_detected=False,
+                    gpu_collider_unsupported=False,
+                    nan_count=0,
+                    non_physical_parameter_dependence=False,
+                ),
+                "parent_candidate_id": "C4",
+                "phase": "S2F4_C4_NATIVE_MESH_ISOLATION",
+                "variable_group": candidate.variable_group,
+                "native_collision_route": candidate.native_collision_route,
+                "native_mesh_collision_enabled": candidate.native_mesh_collision_enabled,
+                "proxy_collision_enabled": candidate.proxy_collision_enabled,
+                "readback_available": True,
+                "evidence_files_complete": True,
+            }
+        )
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F4_C4_NATIVE_MESH_ISOLATION",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=candidates,
+        candidate_results=candidate_results,
+        command="runner --phase S2F4_C4_NATIVE_MESH_ISOLATION",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+        source_s2f1_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f3_c3_sdf_sweep_20260708.json"
+        ),
+    )
+
+    assert manifest["status"] == "GO_NEXT"
+    assert manifest["best_for_s2f5"] == ["C4A_native_render_mesh_plus_proxy_collision"]
+    assert manifest["best_for_s3"] == []
+    assert manifest["native_beaker_fluid_safe_collider_status"] == "NATIVE_BEAKER_REQUIRES_PROXY_WRAPPER"
+    assert manifest["native_issue_partition"] == "native_render_mesh_plus_proxy_collision_passed"
+    assert manifest["allowed_claims"] == [
+        "S2F4 found a native render mesh plus proxy collision route for S2F5 review."
+    ]
+    assert manifest["blocked_claims"]
+    assert "native beaker mesh itself is fluid-safe" in manifest["blocked_claims"]
+
+
+def test_write_s2f4_manifest_signs_native_beaker_not_fluid_safe_when_all_fail(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f4_native_mesh_isolation,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    candidates = build_s2f4_native_mesh_isolation()
+    candidate_results = []
+    for candidate in candidates:
+        candidate_results.append(
+            {
+                **classify_followup_candidate(
+                    candidate_id=candidate.candidate_id,
+                    source_retention_fraction=0.0,
+                    particle_count_final_fraction=1.0,
+                    outside_source_count=256,
+                    target_count=0,
+                    spill_count=256,
+                    below_table_count=0,
+                    tail_leak_rate_fraction_per_second=0.5,
+                    cpu_collision_fallback_detected=False,
+                    gpu_collider_unsupported=False,
+                    nan_count=0,
+                    non_physical_parameter_dependence=False,
+                ),
+                "parent_candidate_id": "C4",
+                "phase": "S2F4_C4_NATIVE_MESH_ISOLATION",
+                "variable_group": candidate.variable_group,
+                "native_collision_route": candidate.native_collision_route,
+                "native_mesh_collision_enabled": candidate.native_mesh_collision_enabled,
+                "proxy_collision_enabled": candidate.proxy_collision_enabled,
+                "readback_available": True,
+                "evidence_files_complete": True,
+            }
+        )
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F4_C4_NATIVE_MESH_ISOLATION",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=candidates,
+        candidate_results=candidate_results,
+        command="runner --phase S2F4_C4_NATIVE_MESH_ISOLATION",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+        source_s2f1_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f3_c3_sdf_sweep_20260708.json"
+        ),
+    )
+
+    assert manifest["status"] == "STOP_WITH_EVIDENCE"
+    assert manifest["reason"] == "native_beaker_not_fluid_safe_collider"
+    assert manifest["native_beaker_fluid_safe_collider_status"] == "NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER"
+    assert manifest["best_for_s2f5"] == []
+    assert manifest["best_for_s3"] == []
+    assert manifest["s3_kinematic_pour_released"] is False
+    assert manifest["next_stage"]["id"] == "S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP"
+    assert manifest["next_stage"]["not_s3_release"] is True
+
+
+def test_write_s2f4_manifest_does_not_sign_native_no_go_for_partial_results(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f4_native_mesh_isolation,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    candidates = build_s2f4_native_mesh_isolation()
+    candidate_results = [
+        {
+            **classify_followup_candidate(
+                candidate_id="C4A_convexDecomposition_reference_scope_closed",
+                source_retention_fraction=0.0,
+                particle_count_final_fraction=1.0,
+                outside_source_count=256,
+                target_count=0,
+                spill_count=0,
+                below_table_count=256,
+                tail_leak_rate_fraction_per_second=0.0,
+                cpu_collision_fallback_detected=False,
+                gpu_collider_unsupported=False,
+                nan_count=0,
+                non_physical_parameter_dependence=False,
+            ),
+            "parent_candidate_id": "C4",
+            "phase": "S2F4_C4_NATIVE_MESH_ISOLATION",
+            "variable_group": "convexDecomposition",
+            "native_collision_route": "convexDecomposition",
+            "native_mesh_collision_enabled": True,
+            "proxy_collision_enabled": False,
+            "readback_available": True,
+            "evidence_files_complete": True,
+        }
+    ]
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F4_C4_NATIVE_MESH_ISOLATION",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=candidates,
+        candidate_results=candidate_results,
+        command="runner --phase S2F4_C4_NATIVE_MESH_ISOLATION",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+    )
+
+    assert manifest["status"] == "STOP_WITH_EVIDENCE"
+    assert manifest["reason"] == "s2f4_incomplete_candidate_results"
+    assert manifest["native_beaker_fluid_safe_collider_status"] == "INCOMPLETE_C4A_EVIDENCE"
+    assert manifest["native_issue_partition"] == "incomplete_c4a_runtime_results"
+    assert manifest["best_for_s2f5"] == []
+    assert manifest["best_for_s3"] == []
+    assert manifest["next_stage"]["id"] == "S2F4_C4_NATIVE_MESH_ISOLATION"
+    assert manifest["phase_specs"]["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] == "ACTIVE"
+    assert manifest["next_stage"]["variants"] == [
+        "C4A_sdf_reference_scope_closed",
+        "C4A_native_render_mesh_plus_proxy_collision",
+    ]
+
+
+def test_write_s2f4_manifest_does_not_promote_partial_pass(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f4_native_mesh_isolation,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    candidates = build_s2f4_native_mesh_isolation()
+    candidate_results = [
+        {
+            **classify_followup_candidate(
+                candidate_id="C4A_convexDecomposition_reference_scope_closed",
+                source_retention_fraction=1.0,
+                particle_count_final_fraction=1.0,
+                outside_source_count=0,
+                target_count=0,
+                spill_count=0,
+                below_table_count=0,
+                tail_leak_rate_fraction_per_second=0.0,
+                cpu_collision_fallback_detected=False,
+                gpu_collider_unsupported=False,
+                nan_count=0,
+                non_physical_parameter_dependence=False,
+            ),
+            "parent_candidate_id": "C4",
+            "phase": "S2F4_C4_NATIVE_MESH_ISOLATION",
+            "variable_group": "convexDecomposition",
+            "native_collision_route": "convexDecomposition",
+            "native_mesh_collision_enabled": True,
+            "proxy_collision_enabled": False,
+            "readback_available": True,
+            "evidence_files_complete": True,
+        }
+    ]
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F4_C4_NATIVE_MESH_ISOLATION",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=candidates,
+        candidate_results=candidate_results,
+        command="runner --phase S2F4_C4_NATIVE_MESH_ISOLATION",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+    )
+
+    assert manifest["status"] == "STOP_WITH_EVIDENCE"
+    assert manifest["reason"] == "s2f4_incomplete_candidate_results"
+    assert manifest["native_beaker_fluid_safe_collider_status"] == "INCOMPLETE_C4A_EVIDENCE"
+    assert manifest["best_for_s2f5"] == []
+    assert manifest["best_for_s3"] == []
+    assert manifest["next_stage"]["id"] == "S2F4_C4_NATIVE_MESH_ISOLATION"
+    assert manifest["phase_specs"]["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] == "ACTIVE"
+
+
+def test_write_s2f4_manifest_clears_promotion_on_blocking_runtime_warning(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f4_native_mesh_isolation,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    candidates = build_s2f4_native_mesh_isolation()
+    candidate_results = [
+        {
+            **classify_followup_candidate(
+                candidate_id="C4A_convexDecomposition_reference_scope_closed",
+                source_retention_fraction=1.0,
+                particle_count_final_fraction=1.0,
+                outside_source_count=0,
+                target_count=0,
+                spill_count=0,
+                below_table_count=0,
+                tail_leak_rate_fraction_per_second=0.0,
+                cpu_collision_fallback_detected=False,
+                gpu_collider_unsupported=False,
+                nan_count=0,
+                non_physical_parameter_dependence=False,
+            ),
+            "parent_candidate_id": "C4",
+            "phase": "S2F4_C4_NATIVE_MESH_ISOLATION",
+            "variable_group": "convexDecomposition",
+            "native_collision_route": "convexDecomposition",
+            "native_mesh_collision_enabled": True,
+            "proxy_collision_enabled": False,
+            "readback_available": True,
+            "evidence_files_complete": True,
+        }
+    ]
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F4_C4_NATIVE_MESH_ISOLATION",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=candidates,
+        candidate_results=candidate_results,
+        command="runner --phase S2F4_C4_NATIVE_MESH_ISOLATION",
+        runtime_warning_scan={
+            "blocking_runtime_warning_detected": True,
+            "pattern_counts": {"physx_error": 1},
+        },
+    )
+
+    assert manifest["status"] == "STOP_WITH_EVIDENCE"
+    assert manifest["reason"] == "blocking_runtime_warning_detected"
+    assert manifest["best_for_s2f5"] == []
+    assert manifest["best_for_s3"] == []
+    assert manifest["next_stage"]["id"] == "S2F4_C4_NATIVE_MESH_ISOLATION"
+    assert manifest["next_stage"]["not_s3_release"] is True
+    assert manifest["phase_specs"]["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] == "ACTIVE"
+
+
+def test_s2f4_material_binding_scope_warning_is_blocking(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import _runtime_warning_gate
+
+    gate = _runtime_warning_gate(
+        {
+            "blocking_runtime_warning_detected": False,
+            "pattern_counts": {
+                "cpu_fallback": 0,
+                "gpu_unsupported": 0,
+                "physx_error": 0,
+                "sdf_warning": 0,
+                "material_binding_scope_warning": 1,
+            },
+        },
+        phase="S2F4_C4_NATIVE_MESH_ISOLATION",
+    )
+
+    assert gate["passed"] is False
+    assert gate["blocking_runtime_warning_detected"] is True
+    assert gate["blocking_warning_reasons"] == ["material_binding_scope_warning"]
+
+
+def test_s2f4_plan_only_cli_writes_native_mesh_isolation_manifest(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import main
+
+    manifest_path = tmp_path / "s2f4.json"
+    artifact_dir = tmp_path / "artifacts"
+    scene_dir = tmp_path / "scenes"
+
+    exit_code = main(
+        [
+            "--phase",
+            "S2F4_C4_NATIVE_MESH_ISOLATION",
+            "--manifest-path",
+            str(manifest_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--scene-dir",
+            str(scene_dir),
+            "--plan-only",
+        ]
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert manifest["stage"] == "S2F4_C4_NATIVE_MESH_ISOLATION"
+    assert manifest["status"] == "PLAN_READY"
+    assert manifest["candidate_count"] == 3
+    assert [candidate["candidate_id"] for candidate in manifest["candidate_plan"]] == [
+        "C4A_convexDecomposition_reference_scope_closed",
+        "C4A_sdf_reference_scope_closed",
+        "C4A_native_render_mesh_plus_proxy_collision",
+    ]
+    assert manifest["next_stage"]["id"] == "S2F4_C4_NATIVE_MESH_ISOLATION"
+
+
+def test_s2f4_cli_rejects_candidate_limit_for_evidence_integrity(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import main
+
+    with pytest.raises(SystemExit, match="S2F4_C4_NATIVE_MESH_ISOLATION does not support --candidate-limit"):
+        main(
+            [
+                "--phase",
+                "S2F4_C4_NATIVE_MESH_ISOLATION",
+                "--manifest-path",
+                str(tmp_path / "s2f4.json"),
+                "--artifact-dir",
+                str(tmp_path / "artifacts"),
+                "--scene-dir",
+                str(tmp_path / "scenes"),
+                "--candidate-limit",
+                "1",
+                "--plan-only",
+            ]
+        )
+
+
 def test_write_s2f2_manifest_records_promotion_caveat_when_hashes_are_coupled(tmp_path):
     from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
         build_velocity_contact_offset_sweep,
@@ -797,6 +1351,46 @@ def test_s2f5_builds_trials_for_s2f3_promoted_c3a_candidate(tmp_path):
     assert {candidate.sdf_margin for candidate in candidates} == {0.002}
     assert {candidate.sdf_narrow_band_thickness for candidate in candidates} == {0.01}
     assert candidates[0].candidate_id == "C3A_001_S2F5_P0256_SEED000"
+
+
+def test_s2f5_builds_trials_for_s2f4_promoted_c4a_candidate(tmp_path):
+    from dataclasses import asdict
+
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f4_native_mesh_isolation,
+        build_s2f5_promotion_review_sweep,
+    )
+
+    s2f4_candidate = build_s2f4_native_mesh_isolation()[2]
+    source_manifest = tmp_path / "s2f4_proxy_pass.json"
+    source_manifest.write_text(
+        json.dumps(
+            {
+                "stage": "S2F4_C4_NATIVE_MESH_ISOLATION",
+                "best_for_s2f5": ["C4A_native_render_mesh_plus_proxy_collision"],
+                "candidate_plan": [asdict(s2f4_candidate)],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    candidates = build_s2f5_promotion_review_sweep(s2f2_manifest_path=source_manifest)
+
+    assert len(candidates) == 6
+    assert {candidate.parent_candidate_id for candidate in candidates} == {
+        "C4A_native_render_mesh_plus_proxy_collision"
+    }
+    assert {candidate.phase for candidate in candidates} == {"S2F5_PROMOTION_REVIEW"}
+    assert {candidate.native_source_path for candidate in candidates} == {"/World/beaker2"}
+    assert {candidate.native_mesh_source_path for candidate in candidates} == {"/World/beaker2/mesh"}
+    assert {candidate.native_reference_scope for candidate in candidates} == {"parent_scope"}
+    assert {candidate.native_collision_route for candidate in candidates} == {
+        "render_mesh_plus_proxy_collision"
+    }
+    assert {candidate.native_mesh_collision_enabled for candidate in candidates} == {False}
+    assert {candidate.proxy_collision_enabled for candidate in candidates} == {True}
+    assert {candidate.panel_count for candidate in candidates} == {24}
+    assert candidates[0].candidate_id == "C4A_native_render_mesh_plus_proxy_collision_S2F5_P0256_SEED000"
 
 
 def test_s2f5_aggregation_promotes_only_when_all_required_trials_pass():

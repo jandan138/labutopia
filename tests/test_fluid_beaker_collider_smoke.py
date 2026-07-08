@@ -1,5 +1,6 @@
 import pytest
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 from tools.labutopia_fluid.run_beaker_collider_smoke import (
@@ -63,6 +64,98 @@ def test_c3a_followup_variants_route_to_sdf_open_beaker(monkeypatch):
     assert calls[0][0] == "xform"
     assert calls[1][0] == "sdf"
     assert calls[1][3] == "C3A_001"
+
+
+def _c4a_variant_spec(
+    *,
+    variant_id: str,
+    native_collision_route: str,
+    native_mesh_collision_enabled: bool,
+    proxy_collision_enabled: bool,
+) -> VariantSpec:
+    return VariantSpec(
+        variant_id=variant_id,
+        name="native_mesh_isolation",
+        description="S2F4 native mesh isolation test spec.",
+        setup="s2f4_native_beaker_mesh_isolation",
+        collider_count=25 if proxy_collision_enabled else 1,
+        collision_approximation=native_collision_route,
+        source_kind="native_render_mesh_with_proxy_collision"
+        if proxy_collision_enabled
+        else "native_mesh_reference",
+        native_source_path="/World/beaker2",
+        native_mesh_source_path="/World/beaker2/mesh",
+        native_reference_scope="parent_scope",
+        native_material_binding_strategy="local_blue_glass_override",
+        native_material_binding_scope_closed=True,
+        native_pose_alignment="bbox_recenter_to_source_region",
+        native_collision_route=native_collision_route,
+        native_mesh_collision_enabled=native_mesh_collision_enabled,
+        proxy_collision_enabled=proxy_collision_enabled,
+        sdf_resolution=128 if native_collision_route == "sdf" else None,
+        sdf_subgrid_resolution=8 if native_collision_route == "sdf" else None,
+        sdf_margin=0.002 if native_collision_route == "sdf" else None,
+        sdf_narrow_band_thickness=0.01 if native_collision_route == "sdf" else None,
+        panel_count=24 if proxy_collision_enabled else None,
+    )
+
+
+def test_c4a_native_parent_reference_scope_closed_authoring():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    native_usd = Path("assets/chemistry_lab/lab_001/lab_001.usd").resolve()
+
+    for variant_id, route in (
+        ("C4A_convexDecomposition_reference_scope_closed", "convexDecomposition"),
+        ("C4A_sdf_reference_scope_closed", "sdf"),
+    ):
+        paths = _add_colliders(
+            stage=stage,
+            config=ColliderConfig(),
+            spec=_c4a_variant_spec(
+                variant_id=variant_id,
+                native_collision_route=route,
+                native_mesh_collision_enabled=True,
+                proxy_collision_enabled=False,
+            ),
+            native_usd=native_usd,
+        )
+        mesh_prim = stage.GetPrimAtPath("/World/SourceContainer/NativeBeaker2/mesh")
+
+        assert "/World/SourceContainer/NativeBeaker2/mesh" in paths
+        assert mesh_prim.GetAttribute("labutopia:nativeMaterialBindingScopeClosed").Get() is True
+        assert mesh_prim.GetAttribute("labutopia:nativePoseAlignment").Get() == "bbox_recenter_to_source_region"
+        assert mesh_prim.GetAttribute("labutopia:nativeCollisionRoute").Get() == route
+        assert mesh_prim.GetAttribute("labutopia:nativeReferenceScope").Get() == "parent_scope"
+
+
+def test_c4a_native_render_mesh_plus_proxy_disables_native_collision():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    native_usd = Path("assets/chemistry_lab/lab_001/lab_001.usd").resolve()
+
+    paths = _add_colliders(
+        stage=stage,
+        config=ColliderConfig(),
+        spec=_c4a_variant_spec(
+            variant_id="C4A_native_render_mesh_plus_proxy_collision",
+            native_collision_route="render_mesh_plus_proxy_collision",
+            native_mesh_collision_enabled=False,
+            proxy_collision_enabled=True,
+        ),
+        native_usd=native_usd,
+    )
+    mesh_prim = stage.GetPrimAtPath("/World/SourceContainer/NativeBeaker2/mesh")
+
+    assert "/World/SourceContainer/NativeBeaker2/mesh" in paths
+    assert mesh_prim.GetAttribute("physics:collisionEnabled").Get() is False
+    assert mesh_prim.GetAttribute("labutopia:nativeCollisionRoute").Get() == "render_mesh_plus_proxy_collision"
+    assert mesh_prim.GetAttribute("labutopia:nativeMaterialBindingScopeClosed").Get() is True
+    assert any(path.startswith("/World/SourceContainer/ProxyCollision") for path in paths)
 
 
 def test_region_counts_split_source_target_spill_and_below_table():

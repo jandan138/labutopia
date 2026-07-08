@@ -59,6 +59,17 @@ DEFAULT_S2F3_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f
 DEFAULT_S2F3_SOURCE_MANIFEST = (
     "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json"
 )
+DEFAULT_S2F4_ARTIFACT_DIR = (
+    "docs/labutopia_lab_poc/evidence_manifests/"
+    "fluid_spike_isaacsim41_ebench_s2f4_c4_native_mesh_isolation_20260708_001"
+)
+DEFAULT_S2F4_MANIFEST_PATH = (
+    "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f4_c4_native_mesh_isolation_20260708.json"
+)
+DEFAULT_S2F4_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f4"
+DEFAULT_S2F4_SOURCE_MANIFEST = (
+    "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f3_c3_sdf_sweep_20260708.json"
+)
 DEFAULT_S2F5_ARTIFACT_DIR = (
     "docs/labutopia_lab_poc/evidence_manifests/"
     "fluid_spike_isaacsim41_ebench_s2f5_promotion_review_20260708_001"
@@ -75,6 +86,11 @@ S2F3_SDF_RESOLUTIONS = (64, 96, 128)
 S2F3_SDF_SUBGRID_RESOLUTIONS = (4, 8)
 S2F3_SDF_MARGINS = (0.002, 0.005)
 S2F3_SDF_NARROW_BAND_THICKNESSES = (0.01, 0.02)
+S2F4_NATIVE_SOURCE_PRIM = "/World/beaker2"
+S2F4_NATIVE_MESH_SOURCE_PRIM = "/World/beaker2/mesh"
+S2F4_NATIVE_REFERENCE_SCOPE = "parent_scope"
+S2F4_NATIVE_MATERIAL_BINDING_STRATEGY = "local_blue_glass_override"
+S2F4_NATIVE_POSE_ALIGNMENT = "bbox_recenter_to_source_region"
 REQUIRED_VARIANT_EVIDENCE_FILES = {
     "particle_readback_trace",
     "physics_scene_settings",
@@ -128,6 +144,15 @@ class C2ProxyCandidate:
     sdf_narrow_band_thickness: float | None = None
     mesh_bottom_fan_closure: bool | None = None
     normals_winding_audit: str | None = None
+    native_source_path: str | None = None
+    native_mesh_source_path: str | None = None
+    native_reference_scope: str | None = None
+    native_material_binding_strategy: str | None = None
+    native_material_binding_scope_closed: bool | None = None
+    native_pose_alignment: str | None = None
+    native_collision_route: str | None = None
+    native_mesh_collision_enabled: bool | None = None
+    proxy_collision_enabled: bool | None = None
 
     def to_config(self, *, base: ColliderConfig | None = None) -> ColliderConfig:
         config = base or ColliderConfig()
@@ -194,6 +219,68 @@ class C2ProxyCandidate:
                 sdf_margin=self.sdf_margin,
                 sdf_narrow_band_thickness=self.sdf_narrow_band_thickness,
             )
+        if self.phase == "S2F4_C4_NATIVE_MESH_ISOLATION":
+            return VariantSpec(
+                variant_id=self.candidate_id,
+                name="native_mesh_isolation",
+                description="S2F4 scope-closed LabUtopia native beaker2 mesh isolation candidate.",
+                setup="s2f4_native_beaker_mesh_isolation",
+                collider_count=25 if self.proxy_collision_enabled else 1,
+                collision_approximation=self.native_collision_route or "convexDecomposition",
+                source_kind=(
+                    "native_render_mesh_with_proxy_collision"
+                    if self.proxy_collision_enabled
+                    else "native_mesh_reference"
+                ),
+                native_source_path=self.native_source_path or S2F4_NATIVE_SOURCE_PRIM,
+                native_mesh_source_path=self.native_mesh_source_path or S2F4_NATIVE_MESH_SOURCE_PRIM,
+                native_reference_scope=self.native_reference_scope or S2F4_NATIVE_REFERENCE_SCOPE,
+                native_material_binding_strategy=(
+                    self.native_material_binding_strategy or S2F4_NATIVE_MATERIAL_BINDING_STRATEGY
+                ),
+                native_material_binding_scope_closed=self.native_material_binding_scope_closed,
+                native_pose_alignment=self.native_pose_alignment or S2F4_NATIVE_POSE_ALIGNMENT,
+                native_collision_route=self.native_collision_route,
+                native_mesh_collision_enabled=self.native_mesh_collision_enabled,
+                proxy_collision_enabled=self.proxy_collision_enabled,
+                sdf_resolution=self.sdf_resolution,
+                sdf_subgrid_resolution=self.sdf_subgrid_resolution,
+                sdf_margin=self.sdf_margin,
+                sdf_narrow_band_thickness=self.sdf_narrow_band_thickness,
+                panel_count=self.panel_count if self.proxy_collision_enabled else None,
+            )
+        if self.phase == "S2F5_PROMOTION_REVIEW" and (
+            self.candidate_id.startswith("C4A_") or (self.parent_candidate_id or "").startswith("C4A_")
+        ):
+            return VariantSpec(
+                variant_id=self.candidate_id,
+                name="promotion_review_native_mesh",
+                description="S2F5 repeated static-hold promotion review trial for the S2F4 native-derived candidate.",
+                setup="s2f5_promotion_review_native_mesh",
+                collider_count=25 if self.proxy_collision_enabled else 1,
+                collision_approximation=self.native_collision_route or "convexDecomposition",
+                source_kind=(
+                    "native_render_mesh_with_proxy_collision"
+                    if self.proxy_collision_enabled
+                    else "native_mesh_reference"
+                ),
+                native_source_path=self.native_source_path or S2F4_NATIVE_SOURCE_PRIM,
+                native_mesh_source_path=self.native_mesh_source_path or S2F4_NATIVE_MESH_SOURCE_PRIM,
+                native_reference_scope=self.native_reference_scope or S2F4_NATIVE_REFERENCE_SCOPE,
+                native_material_binding_strategy=(
+                    self.native_material_binding_strategy or S2F4_NATIVE_MATERIAL_BINDING_STRATEGY
+                ),
+                native_material_binding_scope_closed=self.native_material_binding_scope_closed,
+                native_pose_alignment=self.native_pose_alignment or S2F4_NATIVE_POSE_ALIGNMENT,
+                native_collision_route=self.native_collision_route,
+                native_mesh_collision_enabled=self.native_mesh_collision_enabled,
+                proxy_collision_enabled=self.proxy_collision_enabled,
+                sdf_resolution=self.sdf_resolution,
+                sdf_subgrid_resolution=self.sdf_subgrid_resolution,
+                sdf_margin=self.sdf_margin,
+                sdf_narrow_band_thickness=self.sdf_narrow_band_thickness,
+                panel_count=self.panel_count if self.proxy_collision_enabled else None,
+            )
         if self.phase == "S2F5_PROMOTION_REVIEW":
             setup = "s2f5_promotion_review"
             name = "promotion_review"
@@ -227,6 +314,7 @@ def followup_phase_specs(
     status: str | None = None,
     best_for_s2f5: Sequence[str] | None = None,
     best_for_s3: Sequence[str] | None = None,
+    s2f4_contract_complete: bool = True,
 ) -> dict[str, dict[str, Any]]:
     specs = {
         "S2F0_BASELINE_FREEZE": {
@@ -285,6 +373,18 @@ def followup_phase_specs(
             specs["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] = "NEXT"
         else:
             specs["S2F3_C3_SDF_SWEEP"]["status"] = "ACTIVE"
+    if phase == "S2F4_C4_NATIVE_MESH_ISOLATION":
+        specs["S2F1_C2_PROXY_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F2_VELOCITY_CONTACT_OFFSET"]["status"] = "COMPLETE_GO_NEXT"
+        specs["S2F3_C3_SDF_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F5_PROMOTION_REVIEW"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        if status == "GO_NEXT" and best_for_s2f5:
+            specs["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] = "COMPLETE_GO_NEXT"
+            specs["S2F5_PROMOTION_REVIEW"]["status"] = "NEXT"
+        elif status == "STOP_WITH_EVIDENCE" and s2f4_contract_complete:
+            specs["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        else:
+            specs["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] = "ACTIVE"
     return specs
 
 
@@ -385,6 +485,35 @@ def _candidate_from_plan_row(row: dict[str, Any]) -> C2ProxyCandidate:
         ),
         normals_winding_audit=(
             str(row["normals_winding_audit"]) if row.get("normals_winding_audit") is not None else None
+        ),
+        native_source_path=str(row["native_source_path"]) if row.get("native_source_path") is not None else None,
+        native_mesh_source_path=(
+            str(row["native_mesh_source_path"]) if row.get("native_mesh_source_path") is not None else None
+        ),
+        native_reference_scope=(
+            str(row["native_reference_scope"]) if row.get("native_reference_scope") is not None else None
+        ),
+        native_material_binding_strategy=(
+            str(row["native_material_binding_strategy"])
+            if row.get("native_material_binding_strategy") is not None
+            else None
+        ),
+        native_material_binding_scope_closed=(
+            bool(row["native_material_binding_scope_closed"])
+            if row.get("native_material_binding_scope_closed") is not None
+            else None
+        ),
+        native_pose_alignment=str(row["native_pose_alignment"]) if row.get("native_pose_alignment") is not None else None,
+        native_collision_route=(
+            str(row["native_collision_route"]) if row.get("native_collision_route") is not None else None
+        ),
+        native_mesh_collision_enabled=(
+            bool(row["native_mesh_collision_enabled"])
+            if row.get("native_mesh_collision_enabled") is not None
+            else None
+        ),
+        proxy_collision_enabled=(
+            bool(row["proxy_collision_enabled"]) if row.get("proxy_collision_enabled") is not None else None
         ),
     )
 
@@ -527,6 +656,79 @@ def build_s2f3_sdf_sweep(*, limit: int | None = None) -> list[C2ProxyCandidate]:
     return candidates[:limit] if limit is not None else candidates
 
 
+def _s2f4_candidate(
+    *,
+    candidate_id: str,
+    native_collision_route: str,
+    native_mesh_collision_enabled: bool,
+    proxy_collision_enabled: bool,
+    sdf_resolution: int | None = None,
+    sdf_subgrid_resolution: int | None = None,
+    sdf_margin: float | None = None,
+    sdf_narrow_band_thickness: float | None = None,
+) -> C2ProxyCandidate:
+    return C2ProxyCandidate(
+        candidate_id=candidate_id,
+        parent_candidate_id="C4",
+        phase="S2F4_C4_NATIVE_MESH_ISOLATION",
+        variable_group=native_collision_route,
+        panel_count=24 if proxy_collision_enabled else 0,
+        wall_thickness=0.010,
+        bottom_overlap=0.006 if proxy_collision_enabled else 0.0,
+        particle_contact_offset=0.0045,
+        spawn_particle_contact_offset=0.0045,
+        particle_system_contact_offset=0.0054,
+        particle_rest_offset=0.0,
+        fluid_rest_offset=0.0027,
+        solid_rest_offset=0.0027,
+        collider_contact_offset=0.003,
+        collider_rest_offset=0.0,
+        initial_radial_velocity=0.08,
+        particle_max_velocity=5.0,
+        sdf_resolution=sdf_resolution,
+        sdf_subgrid_resolution=sdf_subgrid_resolution,
+        sdf_margin=sdf_margin,
+        sdf_narrow_band_thickness=sdf_narrow_band_thickness,
+        native_source_path=S2F4_NATIVE_SOURCE_PRIM,
+        native_mesh_source_path=S2F4_NATIVE_MESH_SOURCE_PRIM,
+        native_reference_scope=S2F4_NATIVE_REFERENCE_SCOPE,
+        native_material_binding_strategy=S2F4_NATIVE_MATERIAL_BINDING_STRATEGY,
+        native_material_binding_scope_closed=True,
+        native_pose_alignment=S2F4_NATIVE_POSE_ALIGNMENT,
+        native_collision_route=native_collision_route,
+        native_mesh_collision_enabled=native_mesh_collision_enabled,
+        proxy_collision_enabled=proxy_collision_enabled,
+    )
+
+
+def build_s2f4_native_mesh_isolation(*, limit: int | None = None) -> list[C2ProxyCandidate]:
+    candidates = [
+        _s2f4_candidate(
+            candidate_id="C4A_convexDecomposition_reference_scope_closed",
+            native_collision_route="convexDecomposition",
+            native_mesh_collision_enabled=True,
+            proxy_collision_enabled=False,
+        ),
+        _s2f4_candidate(
+            candidate_id="C4A_sdf_reference_scope_closed",
+            native_collision_route="sdf",
+            native_mesh_collision_enabled=True,
+            proxy_collision_enabled=False,
+            sdf_resolution=128,
+            sdf_subgrid_resolution=8,
+            sdf_margin=0.002,
+            sdf_narrow_band_thickness=0.01,
+        ),
+        _s2f4_candidate(
+            candidate_id="C4A_native_render_mesh_plus_proxy_collision",
+            native_collision_route="render_mesh_plus_proxy_collision",
+            native_mesh_collision_enabled=False,
+            proxy_collision_enabled=True,
+        ),
+    ]
+    return candidates[:limit] if limit is not None else candidates
+
+
 def build_s2f5_promotion_review_sweep(
     *,
     s2f2_manifest_path: Path | str = DEFAULT_S2F5_SOURCE_MANIFEST,
@@ -578,6 +780,15 @@ def build_s2f5_promotion_review_sweep(
                     sdf_narrow_band_thickness=parent.sdf_narrow_band_thickness,
                     mesh_bottom_fan_closure=parent.mesh_bottom_fan_closure,
                     normals_winding_audit=parent.normals_winding_audit,
+                    native_source_path=parent.native_source_path,
+                    native_mesh_source_path=parent.native_mesh_source_path,
+                    native_reference_scope=parent.native_reference_scope,
+                    native_material_binding_strategy=parent.native_material_binding_strategy,
+                    native_material_binding_scope_closed=parent.native_material_binding_scope_closed,
+                    native_pose_alignment=parent.native_pose_alignment,
+                    native_collision_route=parent.native_collision_route,
+                    native_mesh_collision_enabled=parent.native_mesh_collision_enabled,
+                    proxy_collision_enabled=parent.proxy_collision_enabled,
                 )
             )
     return candidates
@@ -779,6 +990,65 @@ def rank_followup_candidates(candidate_results: Sequence[dict[str, Any]]) -> dic
         "best_for_s3": best_for_s3,
         "s2f1_status": "GO_NEXT" if best_for_s3 else "STOP_WITH_EVIDENCE",
         "reason": "at_least_one_c2a_candidate_passed" if best_for_s3 else "no_c2a_candidate_passed",
+    }
+
+
+def analyze_s2f4_native_mesh_isolation(
+    candidate_results: Sequence[dict[str, Any]],
+    *,
+    expected_candidate_ids: Sequence[str] = (),
+) -> dict[str, Any]:
+    observed_candidate_ids = {str(result.get("candidate_id", "")) for result in candidate_results}
+    missing_candidate_ids = [candidate_id for candidate_id in expected_candidate_ids if candidate_id not in observed_candidate_ids]
+    passed = [result for result in candidate_results if result.get("classification") == "PASS_SOURCE_HOLD"]
+    direct_native_passes = [
+        result
+        for result in passed
+        if str(result.get("native_collision_route")) != "render_mesh_plus_proxy_collision"
+        and bool(result.get("native_mesh_collision_enabled"))
+        and not bool(result.get("proxy_collision_enabled"))
+    ]
+    proxy_wrapper_passes = [
+        result
+        for result in passed
+        if str(result.get("native_collision_route")) == "render_mesh_plus_proxy_collision"
+        or bool(result.get("proxy_collision_enabled"))
+    ]
+    if candidate_results and missing_candidate_ids:
+        status = "INCOMPLETE_C4A_EVIDENCE"
+        partition = "incomplete_c4a_runtime_results"
+        reason = "s2f4_incomplete_candidate_results"
+        promotable = []
+    elif direct_native_passes:
+        status = "NATIVE_BEAKER_FLUID_SAFE_COLLIDER_CANDIDATE_FOUND"
+        partition = "native_mesh_direct_collider_candidate_passed"
+        reason = "at_least_one_c4a_native_candidate_passed"
+        promotable = [str(result["candidate_id"]) for result in direct_native_passes + proxy_wrapper_passes]
+    elif proxy_wrapper_passes:
+        status = "NATIVE_BEAKER_REQUIRES_PROXY_WRAPPER"
+        partition = "native_render_mesh_plus_proxy_collision_passed"
+        reason = "native_render_mesh_plus_proxy_collision_passed"
+        promotable = [str(result["candidate_id"]) for result in proxy_wrapper_passes]
+    elif candidate_results:
+        status = "NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER"
+        partition = "all_c4a_routes_failed"
+        reason = "native_beaker_not_fluid_safe_collider"
+        promotable = []
+    else:
+        status = "PENDING"
+        partition = "pending_runtime"
+        reason = "candidate_plan_written"
+        promotable = []
+    return {
+        "native_beaker_fluid_safe_collider_status": status,
+        "native_issue_partition": partition,
+        "reason": reason,
+        "best_for_s2f5": promotable,
+        "direct_native_passes": [str(result["candidate_id"]) for result in direct_native_passes],
+        "proxy_wrapper_passes": [str(result["candidate_id"]) for result in proxy_wrapper_passes],
+        "expected_candidate_ids": list(expected_candidate_ids),
+        "observed_candidate_ids": sorted(candidate_id for candidate_id in observed_candidate_ids if candidate_id),
+        "missing_candidate_ids": missing_candidate_ids,
     }
 
 
@@ -1022,6 +1292,19 @@ def _candidate_result_from_summary(summary: dict[str, Any], candidate: C2ProxyCa
             "final_region_counts": summary.get("final_region_counts"),
             "particle_count": candidate.particle_count if candidate is not None else None,
             "particle_seed": candidate.particle_seed if candidate is not None else None,
+            "native_source_path": candidate.native_source_path if candidate is not None else None,
+            "native_mesh_source_path": candidate.native_mesh_source_path if candidate is not None else None,
+            "native_reference_scope": candidate.native_reference_scope if candidate is not None else None,
+            "native_material_binding_strategy": (
+                candidate.native_material_binding_strategy if candidate is not None else None
+            ),
+            "native_material_binding_scope_closed": (
+                candidate.native_material_binding_scope_closed if candidate is not None else None
+            ),
+            "native_pose_alignment": candidate.native_pose_alignment if candidate is not None else None,
+            "native_collision_route": candidate.native_collision_route if candidate is not None else None,
+            "native_mesh_collision_enabled": candidate.native_mesh_collision_enabled if candidate is not None else None,
+            "proxy_collision_enabled": candidate.proxy_collision_enabled if candidate is not None else None,
             "readback_available": bool(summary.get("readback_available")),
             "evidence_files_complete": REQUIRED_VARIANT_EVIDENCE_FILES.issubset(evidence_files.keys())
             and all(Path(evidence_files[key]).exists() for key in REQUIRED_VARIANT_EVIDENCE_FILES),
@@ -1124,11 +1407,23 @@ def _command_history(previous_manifest: dict[str, Any] | None, current_command: 
     }
 
 
-def _runtime_warning_gate(runtime_warning_scan: dict[str, Any] | None) -> dict[str, Any]:
-    blocking = bool(runtime_warning_scan and runtime_warning_scan.get("blocking_runtime_warning_detected"))
+def _runtime_warning_gate(runtime_warning_scan: dict[str, Any] | None, *, phase: str | None = None) -> dict[str, Any]:
+    pattern_counts = runtime_warning_scan.get("pattern_counts", {}) if runtime_warning_scan else {}
+    blocking_keys = ["cpu_fallback", "gpu_unsupported", "physx_error", "sdf_warning"]
+    if phase == "S2F4_C4_NATIVE_MESH_ISOLATION":
+        blocking_keys.append("material_binding_scope_warning")
+    blocking_reasons = [
+        key
+        for key in blocking_keys
+        if int(pattern_counts.get(key, 0) or 0) > 0
+    ]
+    if runtime_warning_scan and runtime_warning_scan.get("blocking_runtime_warning_detected") and not blocking_reasons:
+        blocking_reasons.append("runtime_warning_scan_blocking_flag")
+    blocking = bool(blocking_reasons)
     return {
         "required_blocking_runtime_warning_detected": False,
         "blocking_runtime_warning_detected": blocking,
+        "blocking_warning_reasons": blocking_reasons,
         "passed": not blocking,
     }
 
@@ -1167,7 +1462,15 @@ def write_followup_manifest(
         if phase == "S2F2_VELOCITY_CONTACT_OFFSET"
         else None
     )
-    warning_gate = _runtime_warning_gate(runtime_warning_scan)
+    s2f4_analysis = (
+        analyze_s2f4_native_mesh_isolation(
+            candidate_results,
+            expected_candidate_ids=[candidate.candidate_id for candidate in candidates],
+        )
+        if phase == "S2F4_C4_NATIVE_MESH_ISOLATION"
+        else None
+    )
+    warning_gate = _runtime_warning_gate(runtime_warning_scan, phase=phase)
     if not warning_gate["passed"]:
         ranking = {
             "best_for_s3": [],
@@ -1181,27 +1484,57 @@ def write_followup_manifest(
                 "reason": "blocking_runtime_warning_detected",
                 "best_for_s3": [],
             }
+        if s2f4_analysis is not None:
+            s2f4_analysis = {
+                **s2f4_analysis,
+                "best_for_s2f5": [],
+                "runtime_warning_gate_blocked_promotion": True,
+            }
     if not warning_gate["passed"]:
         status = "STOP_WITH_EVIDENCE"
     elif not candidate_results and fatal_error is None:
         status = "PLAN_READY"
     elif phase == "S2F5_PROMOTION_REVIEW" and s2f5_review is not None:
         status = s2f5_review["status"]
+    elif phase == "S2F4_C4_NATIVE_MESH_ISOLATION" and s2f4_analysis is not None:
+        status = "GO_NEXT" if s2f4_analysis["best_for_s2f5"] else "STOP_WITH_EVIDENCE"
     else:
         status = ranking["s2f1_status"]
     if phase == "S2F5_PROMOTION_REVIEW" and s2f5_review is not None:
         passed_candidates = s2f5_review["best_for_s3"]
+    elif phase == "S2F4_C4_NATIVE_MESH_ISOLATION" and s2f4_analysis is not None:
+        passed_candidates = s2f4_analysis["best_for_s2f5"]
     else:
         passed_candidates = ranking["best_for_s3"]
-    best_for_s2f5 = passed_candidates if phase in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F3_C3_SDF_SWEEP"} else []
-    best_for_s3 = [] if phase in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F3_C3_SDF_SWEEP"} else passed_candidates
+    best_for_s2f5 = (
+        passed_candidates
+        if phase
+        in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F3_C3_SDF_SWEEP", "S2F4_C4_NATIVE_MESH_ISOLATION"}
+        else []
+    )
+    best_for_s3 = (
+        []
+        if phase
+        in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F3_C3_SDF_SWEEP", "S2F4_C4_NATIVE_MESH_ISOLATION"}
+        else passed_candidates
+    )
     s2f5_promotion_review_next = bool(
-        phase in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F3_C3_SDF_SWEEP"}
+        phase
+        in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F3_C3_SDF_SWEEP", "S2F4_C4_NATIVE_MESH_ISOLATION"}
         and status == "GO_NEXT"
         and best_for_s2f5
     )
     s2f5_promotion_review_complete = bool(
         phase == "S2F5_PROMOTION_REVIEW" and status == "GO_NEXT" and best_for_s3
+    )
+    s2f4_contract_complete = bool(
+        phase != "S2F4_C4_NATIVE_MESH_ISOLATION"
+        or (
+            s2f4_analysis is not None
+            and candidate_results
+            and warning_gate["passed"]
+            and not s2f4_analysis.get("missing_candidate_ids")
+        )
     )
     requires_initial_layout_hash_stability_check = bool(
         s2f2_diagnosis and s2f2_diagnosis.get("root_cause_confidence") == "COUPLED_DIAGNOSTIC"
@@ -1231,6 +1564,26 @@ def write_followup_manifest(
         next_stage_id = "S2F4_C4_NATIVE_MESH_ISOLATION"
         next_stage_variants = []
         diagnostic_routes = ["S2F4_C4_NATIVE_MESH_ISOLATION"]
+    elif phase == "S2F4_C4_NATIVE_MESH_ISOLATION" and status == "PLAN_READY":
+        next_stage_id = "S2F4_C4_NATIVE_MESH_ISOLATION"
+        next_stage_variants = [candidate.candidate_id for candidate in candidates]
+        diagnostic_routes = []
+    elif phase == "S2F4_C4_NATIVE_MESH_ISOLATION" and not warning_gate["passed"]:
+        next_stage_id = "S2F4_C4_NATIVE_MESH_ISOLATION"
+        next_stage_variants = [candidate.candidate_id for candidate in candidates]
+        diagnostic_routes = []
+    elif (
+        phase == "S2F4_C4_NATIVE_MESH_ISOLATION"
+        and s2f4_analysis is not None
+        and s2f4_analysis["native_beaker_fluid_safe_collider_status"] == "INCOMPLETE_C4A_EVIDENCE"
+    ):
+        next_stage_id = "S2F4_C4_NATIVE_MESH_ISOLATION"
+        next_stage_variants = s2f4_analysis["missing_candidate_ids"]
+        diagnostic_routes = []
+    elif phase == "S2F4_C4_NATIVE_MESH_ISOLATION":
+        next_stage_id = "S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP"
+        next_stage_variants = []
+        diagnostic_routes = []
     elif phase == "S2F2_VELOCITY_CONTACT_OFFSET":
         next_stage_id = "S2F3_C3_SDF_SWEEP"
         next_stage_variants = near_pass_for_s2f2
@@ -1241,14 +1594,87 @@ def write_followup_manifest(
         diagnostic_routes = []
     if status == "PLAN_READY":
         reason = "candidate_plan_written"
+    elif not warning_gate["passed"]:
+        reason = "blocking_runtime_warning_detected"
     elif s2f5_review is not None:
         reason = s2f5_review["reason"]
+    elif phase == "S2F4_C4_NATIVE_MESH_ISOLATION" and s2f4_analysis is not None:
+        reason = s2f4_analysis["reason"]
     elif phase == "S2F3_C3_SDF_SWEEP" and status == "GO_NEXT":
         reason = "at_least_one_c3a_sdf_candidate_passed"
     elif phase == "S2F3_C3_SDF_SWEEP":
         reason = "no_c3a_sdf_candidate_passed"
     else:
         reason = ranking["reason"]
+    if phase == "S2F4_C4_NATIVE_MESH_ISOLATION" and s2f4_analysis is not None:
+        if not warning_gate["passed"]:
+            allowed_claims = [
+                "S2F4 observed a blocking runtime warning and did not promote any native beaker route."
+            ]
+        elif s2f4_analysis["native_beaker_fluid_safe_collider_status"] == "NATIVE_BEAKER_REQUIRES_PROXY_WRAPPER":
+            allowed_claims = [
+                "S2F4 found a native render mesh plus proxy collision route for S2F5 review."
+            ]
+        elif s2f4_analysis["native_beaker_fluid_safe_collider_status"] == (
+            "NATIVE_BEAKER_FLUID_SAFE_COLLIDER_CANDIDATE_FOUND"
+        ):
+            allowed_claims = [
+                "S2F4 found at least one scope-closed native beaker collider candidate for S2F5 review.",
+                "S2F4 PASS routes to S2F5 promotion review, not directly to S3.",
+            ]
+        elif status == "PLAN_READY":
+            allowed_claims = ["S2F4 native mesh isolation candidate plan is ready before runtime launch."]
+        elif s2f4_analysis["native_beaker_fluid_safe_collider_status"] == "INCOMPLETE_C4A_EVIDENCE":
+            allowed_claims = [
+                "S2F4 has partial C4A runtime evidence and must rerun missing candidates before a native beaker conclusion."
+            ]
+        else:
+            allowed_claims = [
+                "S2F4 completed native beaker mesh isolation and did not find a fluid-safe native collider candidate."
+            ]
+    else:
+        allowed_claims = [
+            (
+                "S2F2 velocity/contact-offset isolation candidate set is bounded and recorded."
+                if phase == "S2F2_VELOCITY_CONTACT_OFFSET"
+                else (
+                    "S2F3 C3 SDF cooking sweep candidate grid is bounded and recorded."
+                    if phase == "S2F3_C3_SDF_SWEEP"
+                    else (
+                        "S2F5 promotion review candidate grid is bounded and recorded."
+                        if phase == "S2F5_PROMOTION_REVIEW"
+                        else "S2F1 C2 proxy sweep candidate set is bounded and recorded."
+                    )
+                )
+            ),
+            (
+                "S2F2 ran only C2A_005/C2A_009/C2A_007 near-pass derived variants in standalone IsaacSim41."
+                if phase == "S2F2_VELOCITY_CONTACT_OFFSET" and candidate_results
+                else (
+                    (
+                        "S2F3 ran only C3A SDF open-beaker collider variants in standalone IsaacSim41."
+                        if phase == "S2F3_C3_SDF_SWEEP"
+                        else (
+                            "S2F5 ran only C2A_009_S2F2_VEL020 promotion-review trials in standalone IsaacSim41."
+                            if phase == "S2F5_PROMOTION_REVIEW"
+                            else "S2F1 ran C2-derived proxy collider variants in standalone IsaacSim41."
+                        )
+                    )
+                    if candidate_results
+                    else f"{phase} candidate plan is ready before runtime launch."
+                )
+            ),
+        ]
+    blocked_claims = [
+        "S3 kinematic pour is released",
+        "level1_pour has true fluid today",
+        "fluid is EBench-scoreable",
+        "policy score claim",
+        "official leaderboard claim",
+        "diagnostic projections equal product-quality render",
+    ]
+    if phase == "S2F4_C4_NATIVE_MESH_ISOLATION":
+        blocked_claims.append("native beaker mesh itself is fluid-safe")
     manifest = {
         "schema_version": 1,
         "manifest_type": (
@@ -1258,9 +1684,13 @@ def write_followup_manifest(
                 "true_physx_pbd_fluid_spike_s2f3_c3_sdf_sweep"
                 if phase == "S2F3_C3_SDF_SWEEP"
                 else (
-                    "true_physx_pbd_fluid_spike_s2f5_promotion_review"
-                    if phase == "S2F5_PROMOTION_REVIEW"
-                    else "true_physx_pbd_fluid_spike_s2f1_c2_proxy_sweep"
+                    "true_physx_pbd_fluid_spike_s2f4_c4_native_mesh_isolation"
+                    if phase == "S2F4_C4_NATIVE_MESH_ISOLATION"
+                    else (
+                        "true_physx_pbd_fluid_spike_s2f5_promotion_review"
+                        if phase == "S2F5_PROMOTION_REVIEW"
+                        else "true_physx_pbd_fluid_spike_s2f1_c2_proxy_sweep"
+                    )
                 )
             )
         ),
@@ -1292,6 +1722,7 @@ def write_followup_manifest(
             status=status,
             best_for_s2f5=best_for_s2f5,
             best_for_s3=best_for_s3,
+            s2f4_contract_complete=s2f4_contract_complete,
         ),
         "candidate_plan": _candidate_plan(candidates),
         "candidate_count": len(candidates),
@@ -1305,6 +1736,11 @@ def write_followup_manifest(
         "s2f5_promotion_review_next": s2f5_promotion_review_next,
         "s2f5_promotion_review_complete": s2f5_promotion_review_complete,
         "s2f5_promotion_review": s2f5_review,
+        "s2f4_native_mesh_isolation": s2f4_analysis,
+        "native_beaker_fluid_safe_collider_status": (
+            s2f4_analysis["native_beaker_fluid_safe_collider_status"] if s2f4_analysis else None
+        ),
+        "native_issue_partition": s2f4_analysis["native_issue_partition"] if s2f4_analysis else None,
         "s3_kinematic_pour_released": bool(
             phase == "S2F5_PROMOTION_REVIEW" and status == "GO_NEXT" and best_for_s3
         ),
@@ -1324,46 +1760,8 @@ def write_followup_manifest(
             "required_non_physical_parameter_dependence": False,
             "required_blocking_runtime_warning_detected": False,
         },
-        "allowed_claims": [
-            (
-                "S2F2 velocity/contact-offset isolation candidate set is bounded and recorded."
-                if phase == "S2F2_VELOCITY_CONTACT_OFFSET"
-                else (
-                    "S2F3 C3 SDF cooking sweep candidate grid is bounded and recorded."
-                    if phase == "S2F3_C3_SDF_SWEEP"
-                    else (
-                        "S2F5 promotion review candidate grid is bounded and recorded."
-                        if phase == "S2F5_PROMOTION_REVIEW"
-                        else "S2F1 C2 proxy sweep candidate set is bounded and recorded."
-                    )
-                )
-            ),
-            (
-                "S2F2 ran only C2A_005/C2A_009/C2A_007 near-pass derived variants in standalone IsaacSim41."
-                if phase == "S2F2_VELOCITY_CONTACT_OFFSET" and candidate_results
-                else (
-                    (
-                        "S2F3 ran only C3A SDF open-beaker collider variants in standalone IsaacSim41."
-                        if phase == "S2F3_C3_SDF_SWEEP"
-                        else (
-                            "S2F5 ran only C2A_009_S2F2_VEL020 promotion-review trials in standalone IsaacSim41."
-                            if phase == "S2F5_PROMOTION_REVIEW"
-                            else "S2F1 ran C2-derived proxy collider variants in standalone IsaacSim41."
-                        )
-                    )
-                    if candidate_results
-                    else f"{phase} candidate plan is ready before runtime launch."
-                )
-            ),
-        ],
-        "blocked_claims": [
-            "S3 kinematic pour is released",
-            "level1_pour has true fluid today",
-            "fluid is EBench-scoreable",
-            "policy score claim",
-            "official leaderboard claim",
-            "diagnostic projections equal product-quality render",
-        ],
+        "allowed_claims": allowed_claims,
+        "blocked_claims": blocked_claims,
         "next_stage": {
             "id": next_stage_id,
             "variants": next_stage_variants,
@@ -1440,6 +1838,15 @@ def _run_c2_proxy_sweep(
                     "variant_summary": str(candidate_dir / "variant_summary.json"),
                     "particle_count": candidate.particle_count,
                     "particle_seed": candidate.particle_seed,
+                    "native_source_path": candidate.native_source_path,
+                    "native_mesh_source_path": candidate.native_mesh_source_path,
+                    "native_reference_scope": candidate.native_reference_scope,
+                    "native_material_binding_strategy": candidate.native_material_binding_strategy,
+                    "native_material_binding_scope_closed": candidate.native_material_binding_scope_closed,
+                    "native_pose_alignment": candidate.native_pose_alignment,
+                    "native_collision_route": candidate.native_collision_route,
+                    "native_mesh_collision_enabled": candidate.native_mesh_collision_enabled,
+                    "proxy_collision_enabled": candidate.proxy_collision_enabled,
                     "readback_available": False,
                     "evidence_files_complete": False,
                 }
@@ -1476,6 +1883,7 @@ def main(argv: list[str]) -> int:
         "S2F1_C2_PROXY_SWEEP",
         "S2F2_VELOCITY_CONTACT_OFFSET",
         "S2F3_C3_SDF_SWEEP",
+        "S2F4_C4_NATIVE_MESH_ISOLATION",
         "S2F5_PROMOTION_REVIEW",
     }:
         raise SystemExit(f"unsupported phase for this runner: {args.phase}")
@@ -1501,6 +1909,18 @@ def main(argv: list[str]) -> int:
         if args.s2f1_manifest == DEFAULT_MANIFEST_PATH:
             args.s2f1_manifest = DEFAULT_S2F3_SOURCE_MANIFEST
         candidates = build_s2f3_sdf_sweep(limit=args.candidate_limit)
+    elif args.phase == "S2F4_C4_NATIVE_MESH_ISOLATION":
+        if args.candidate_limit is not None:
+            raise SystemExit("S2F4_C4_NATIVE_MESH_ISOLATION does not support --candidate-limit")
+        if args.artifact_dir == DEFAULT_ARTIFACT_DIR:
+            args.artifact_dir = DEFAULT_S2F4_ARTIFACT_DIR
+        if args.manifest_path == DEFAULT_MANIFEST_PATH:
+            args.manifest_path = DEFAULT_S2F4_MANIFEST_PATH
+        if args.scene_dir == DEFAULT_SCENE_DIR:
+            args.scene_dir = DEFAULT_S2F4_SCENE_DIR
+        if args.s2f1_manifest == DEFAULT_MANIFEST_PATH:
+            args.s2f1_manifest = DEFAULT_S2F4_SOURCE_MANIFEST
+        candidates = build_s2f4_native_mesh_isolation()
     elif args.phase == "S2F5_PROMOTION_REVIEW":
         if args.candidate_limit is not None:
             raise SystemExit("S2F5_PROMOTION_REVIEW does not support --candidate-limit")
@@ -1530,7 +1950,13 @@ def main(argv: list[str]) -> int:
     baseline_freeze_manifest = Path(args.baseline_freeze_manifest)
     source_s2f1_manifest = (
         Path(args.s2f1_manifest)
-        if args.phase in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F3_C3_SDF_SWEEP", "S2F5_PROMOTION_REVIEW"}
+        if args.phase
+        in {
+            "S2F2_VELOCITY_CONTACT_OFFSET",
+            "S2F3_C3_SDF_SWEEP",
+            "S2F4_C4_NATIVE_MESH_ISOLATION",
+            "S2F5_PROMOTION_REVIEW",
+        }
         else None
     )
     native_usd = Path(args.native_usd).resolve()
@@ -1573,7 +1999,7 @@ def main(argv: list[str]) -> int:
         )
         promotion_field = (
             f"best_for_s2f5={manifest['best_for_s2f5']}"
-            if args.phase == "S2F2_VELOCITY_CONTACT_OFFSET"
+            if args.phase in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F4_C4_NATIVE_MESH_ISOLATION"}
             else f"best_for_s3={manifest['best_for_s3']}"
         )
         print(
@@ -1614,7 +2040,7 @@ def main(argv: list[str]) -> int:
         )
         promotion_field = (
             f"best_for_s2f5={final_manifest['best_for_s2f5']}"
-            if args.phase == "S2F2_VELOCITY_CONTACT_OFFSET"
+            if args.phase in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F4_C4_NATIVE_MESH_ISOLATION"}
             else f"best_for_s3={final_manifest['best_for_s3']}"
         )
         print(
