@@ -1,0 +1,47 @@
+{
+  "broadphase_type": "GPU",
+  "collider_paths": [
+    "/World/SourceContainer/SDFOpenBeaker"
+  ],
+  "fluid_rest_offset": 0.0027,
+  "gpu_dynamics_enabled": true,
+  "particle_contact_offset": 0.0045,
+  "particle_enable_ccd": null,
+  "particle_max_depenetration_velocity": null,
+  "particle_max_velocity": 5.0,
+  "particle_rest_offset": 0.0,
+  "particle_set_path": "/World/ParticleSet",
+  "particle_system_contact_offset": 0.0054,
+  "particle_system_path": "/World/ParticleSystem",
+  "physics_dt": 0.016666666666666666,
+  "physics_scene_path": "/World/PhysicsScene",
+  "region_definitions": {
+    "below_table_region": "finite particles with z < 0.0",
+    "source_region": "cylindrical region around source container interior; center_xy=(0.0, 0.0) radius=0.055 z=[0.0, 0.13]",
+    "spill_region": "finite particles outside source and target regions with z >= table_z",
+    "target_region": "cylindrical region around target container interior; center_xy=(0.22, 0.0) radius=0.055 z=[0.0, 0.13]"
+  },
+  "solid_rest_offset": 0.0027,
+  "solver_type": "TGS",
+  "spawn_particle_contact_offset": 0.0045,
+  "suppress_readback_setting": false,
+  "update_particles_to_usd_setting": true,
+  "update_to_usd_setting": true,
+  "update_velocities_to_usd_setting": true,
+  "variant": {
+    "collider_count": 1,
+    "collision_approximation": "sdf",
+    "description": "S2F3 open concave tri-mesh beaker with swept PhysX SDF cooking attributes.",
+    "name": "sdf_cooking_sweep",
+    "native_source_path": null,
+    "negative_control": false,
+    "panel_count": null,
+    "sdf_margin": 0.005,
+    "sdf_narrow_band_thickness": 0.02,
+    "sdf_resolution": 96,
+    "sdf_subgrid_resolution": 4,
+    "setup": "s2f3_sdf_open_concave_mesh",
+    "source_kind": "procedural_mesh",
+    "variant_id": "C3A_012"
+  }
+}

@@ -305,9 +305,40 @@ SDF/native mesh 诊断。现在复核结果证明它不稳定，所以 F3/F4 不
 | 1024 粒子，seed 0/1/2 | 全部 `FAIL_CONTAINER_LEAK` | 分别有 347、340、338 个粒子到 source 外，说明高粒子数下容器不稳定。 |
 
 给产品经理的一句话版本：我们确实找到了一个“单次 256 粒子静态不漏”的线索，但 S2F5 已经验证它不是稳定
-方案；因此现在不能进入 S3，也不能说 `level1_pour` 已经能真实倒液。下一步不是继续手调这个候选，而是
-按原规划做 F3/F4：F3 用 `SDF` 路线测试凹形容器 collider，F4 用 native beaker mesh isolation 判断原生
-杯子是否能被修成 fluid-safe collider。
+方案；因此现在不能进入 S3，也不能说 `level1_pour` 已经能真实倒液。S2F5 刚结束时的下一步是按原规划做
+F3/F4；现在 F3 已经跑完，结论见下文，当前只剩 F4：用 native beaker mesh isolation 判断原生杯子是否能被
+修成 fluid-safe collider。
+
+S2F3 已完成：我们没有把 SDF 路线混进 C2 proxy，而是单独跑了 24 个 `C3A_*` 候选，系统覆盖
+`sdf_resolution=64/96/128`、`sdf_subgrid_resolution=4/8`、`sdf_margin=0.002/0.005`、
+`sdf_narrow_band_thickness=0.01/0.02`，并固定 `mesh_bottom_fan_closure=true`、
+`normals_winding_audit=pass`。正式证据是：
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f3_c3_sdf_sweep_20260708.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f3_c3_sdf_sweep_20260708_001/
+assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f3/
+```
+
+S2F3 的结果是 `STOP_WITH_EVIDENCE`，`reason=no_c3a_sdf_candidate_passed`，`best_for_s2f5=[]`，
+`best_for_s3=[]`，`s3_kinematic_pour_released=false`。这次不是 `SDF cooking error`，也不是
+`CPU collision fallback` 或 `GPU unsupported`：runtime warning scan 里这几项都是 0，24 个候选也都
+有 particle readback 和完整证据文件。真正的问题是所有 SDF 候选都 `FAIL_CONTAINER_LEAK`：
+每组 256 个粒子最后都在 source 外，且 `below_table_count=256`，说明当前这版开口凹形 SDF beaker
+没有形成可盛液体的有效内部碰撞空间。
+
+| 结果项 | S2F3 结论 | 白话解释 |
+|---|---|---|
+| 候选数量 | 24 | 该测的 SDF resolution / subgrid / margin / narrow band 组合都跑了。 |
+| runtime 阻断 | 无 | 没有 CPU fallback、GPU unsupported、PhysX error 或 SDF warning。 |
+| particle readback | 有 | 不是没读到数据；是读到的数据证明粒子全部漏出。 |
+| 通过候选 | 0 | 没有任何 `C3A_*` 能进入 S2F5 promotion review。 |
+| 下一步 | `S2F4_C4_NATIVE_MESH_ISOLATION` | 继续判断原生 beaker mesh / native-derived route 是否有可救方案。 |
+
+给产品经理的一句话版本：SDF 这条路“技术上能跑起来”，但“物理上没兜住液体”。它没有把项目判死，
+只是说明当前 procedural SDF open beaker 不能作为进入倒液动作的杯子碰撞体。下一步按计划做 F4：
+把 native `beaker2/mesh` 的 convexDecomposition / SDF / render-mesh-plus-proxy route 分开验证，
+看原生复杂资产能否包装成 fluid-safe collider。
 
 ## 调研补充：别人不是没做过 Isaac 液体 demo，但 demo 和 benchmark 不是一回事
 

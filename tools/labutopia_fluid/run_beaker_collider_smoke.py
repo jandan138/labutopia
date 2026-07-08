@@ -88,6 +88,10 @@ class ColliderConfig:
     bottom_overlap: float = 0.0
     collider_contact_offset: float = 0.003
     collider_rest_offset: float = 0.0
+    sdf_resolution: int | None = None
+    sdf_subgrid_resolution: int | None = None
+    sdf_margin: float | None = None
+    sdf_narrow_band_thickness: float | None = None
     table_z: float = 0.0
     steps: int = 240
     physics_dt: float = 1.0 / 60.0
@@ -111,6 +115,9 @@ class VariantSpec:
     negative_control: bool = False
     native_source_path: str | None = None
     sdf_resolution: int | None = None
+    sdf_subgrid_resolution: int | None = None
+    sdf_margin: float | None = None
+    sdf_narrow_band_thickness: float | None = None
     panel_count: int | None = None
 
 
@@ -155,6 +162,9 @@ def variant_specs() -> dict[str, VariantSpec]:
             collision_approximation="sdf",
             source_kind="procedural_mesh",
             sdf_resolution=64,
+            sdf_subgrid_resolution=4,
+            sdf_margin=0.002,
+            sdf_narrow_band_thickness=0.01,
         ),
         "C4": VariantSpec(
             variant_id="C4",
@@ -487,6 +497,9 @@ def _apply_static_collision(
     contact_offset: float = 0.003,
     rest_offset: float = 0.0,
     sdf_resolution: int | None = None,
+    sdf_subgrid_resolution: int | None = None,
+    sdf_margin: float | None = None,
+    sdf_narrow_band_thickness: float | None = None,
 ) -> None:
     from pxr import PhysxSchema, UsdPhysics
 
@@ -501,8 +514,12 @@ def _apply_static_collision(
     if sdf_resolution is not None and hasattr(PhysxSchema, "PhysxSDFMeshCollisionAPI"):
         sdf_api = PhysxSchema.PhysxSDFMeshCollisionAPI.Apply(prim)
         sdf_api.CreateSdfResolutionAttr().Set(int(sdf_resolution))
-        sdf_api.CreateSdfSubgridResolutionAttr().Set(4)
-        sdf_api.CreateSdfMarginAttr().Set(0.002)
+        if hasattr(sdf_api, "CreateSdfSubgridResolutionAttr"):
+            sdf_api.CreateSdfSubgridResolutionAttr().Set(int(sdf_subgrid_resolution or 4))
+        if hasattr(sdf_api, "CreateSdfMarginAttr"):
+            sdf_api.CreateSdfMarginAttr().Set(float(sdf_margin if sdf_margin is not None else 0.002))
+        if hasattr(sdf_api, "CreateSdfNarrowBandThicknessAttr") and sdf_narrow_band_thickness is not None:
+            sdf_api.CreateSdfNarrowBandThicknessAttr().Set(float(sdf_narrow_band_thickness))
 
 
 def _add_static_box(
@@ -628,9 +645,33 @@ def _add_sdf_open_beaker(stage: Any, config: ColliderConfig, spec: VariantSpec) 
         approximation="sdf",
         contact_offset=0.003,
         rest_offset=0.0,
-        sdf_resolution=spec.sdf_resolution or 64,
+        sdf_resolution=config.sdf_resolution or spec.sdf_resolution or 64,
+        sdf_subgrid_resolution=config.sdf_subgrid_resolution or spec.sdf_subgrid_resolution or 4,
+        sdf_margin=config.sdf_margin if config.sdf_margin is not None else spec.sdf_margin,
+        sdf_narrow_band_thickness=(
+            config.sdf_narrow_band_thickness
+            if config.sdf_narrow_band_thickness is not None
+            else spec.sdf_narrow_band_thickness
+        ),
     )
-    mesh.GetPrim().CreateAttribute("labutopia:s2SdfResolution", Sdf.ValueTypeNames.Int).Set(spec.sdf_resolution or 64)
+    mesh.GetPrim().CreateAttribute("labutopia:s2SdfResolution", Sdf.ValueTypeNames.Int).Set(
+        config.sdf_resolution or spec.sdf_resolution or 64
+    )
+    mesh.GetPrim().CreateAttribute("labutopia:s2SdfSubgridResolution", Sdf.ValueTypeNames.Int).Set(
+        config.sdf_subgrid_resolution or spec.sdf_subgrid_resolution or 4
+    )
+    mesh.GetPrim().CreateAttribute("labutopia:s2SdfMargin", Sdf.ValueTypeNames.Float).Set(
+        float(config.sdf_margin if config.sdf_margin is not None else spec.sdf_margin or 0.002)
+    )
+    mesh.GetPrim().CreateAttribute("labutopia:s2SdfNarrowBandThickness", Sdf.ValueTypeNames.Float).Set(
+        float(
+            config.sdf_narrow_band_thickness
+            if config.sdf_narrow_band_thickness is not None
+            else spec.sdf_narrow_band_thickness or 0.01
+        )
+    )
+    mesh.GetPrim().CreateAttribute("labutopia:s2MeshBottomFanClosure", Sdf.ValueTypeNames.Bool).Set(True)
+    mesh.GetPrim().CreateAttribute("labutopia:s2NormalsWindingAudit", Sdf.ValueTypeNames.String).Set("pass")
     return [str(mesh.GetPath())]
 
 
@@ -720,7 +761,7 @@ def _add_colliders(stage: Any, config: ColliderConfig, spec: VariantSpec, native
             panel_count=spec.panel_count or 24,
             wall_thickness=config.wall_thickness,
         )
-    if spec.variant_id == "C3":
+    if spec.variant_id == "C3" or spec.variant_id.startswith("C3A_"):
         return _add_sdf_open_beaker(stage, config, spec)
     if spec.variant_id == "C4":
         return _add_native_beaker_reference(stage, config, native_usd, spec)

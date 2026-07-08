@@ -1,10 +1,14 @@
 import pytest
+import sys
+from types import SimpleNamespace
 
 from tools.labutopia_fluid.run_beaker_collider_smoke import (
     BEAKER_COLLIDER_VARIANT_IDS,
     CLASSIFICATION_CONTRACT_VERSION,
     ColliderConfig,
     DIAGNOSTIC_PROJECTION_VERSION,
+    VariantSpec,
+    _add_colliders,
     _build_manifest,
     _write_diagnostic_png,
     build_source_particle_initial_velocities,
@@ -17,6 +21,48 @@ from tools.labutopia_fluid.run_beaker_collider_smoke import (
 
 def test_s2_matrix_declares_all_required_collider_variants():
     assert BEAKER_COLLIDER_VARIANT_IDS == ("C0", "C1", "C2", "C3", "C4", "C5")
+
+
+def test_c3a_followup_variants_route_to_sdf_open_beaker(monkeypatch):
+    import tools.labutopia_fluid.run_beaker_collider_smoke as smoke
+
+    calls = []
+
+    class FakeXform:
+        @staticmethod
+        def Define(stage, path):
+            calls.append(("xform", stage, path))
+
+    def fake_add_sdf_open_beaker(stage, config, spec):
+        calls.append(("sdf", stage, config, spec.variant_id))
+        return ["/World/SourceContainer/SDFOpenBeaker"]
+
+    monkeypatch.setitem(sys.modules, "pxr", SimpleNamespace(UsdGeom=SimpleNamespace(Xform=FakeXform)))
+    monkeypatch.setattr(smoke, "_add_sdf_open_beaker", fake_add_sdf_open_beaker)
+
+    paths = _add_colliders(
+        stage=object(),
+        config=ColliderConfig(),
+        spec=VariantSpec(
+            variant_id="C3A_001",
+            name="sdf_cooking_sweep",
+            description="SDF follow-up",
+            setup="s2f3_sdf_open_concave_mesh",
+            collider_count=1,
+            collision_approximation="sdf",
+            source_kind="procedural_mesh",
+            sdf_resolution=64,
+            sdf_subgrid_resolution=4,
+            sdf_margin=0.002,
+            sdf_narrow_band_thickness=0.01,
+        ),
+        native_usd=None,
+    )
+
+    assert paths == ["/World/SourceContainer/SDFOpenBeaker"]
+    assert calls[0][0] == "xform"
+    assert calls[1][0] == "sdf"
+    assert calls[1][3] == "C3A_001"
 
 
 def test_region_counts_split_source_target_spill_and_below_table():

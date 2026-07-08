@@ -1,0 +1,73 @@
+{
+  "blocking_runtime_warning_detected": false,
+  "generated_at_utc": "2026-07-08T01:58:50.462647+00:00",
+  "manifest_type": "true_physx_pbd_fluid_spike_s2f1_runtime_warning_scan",
+  "notes": [
+    "Artifact-level stdout/stderr warning scan is authoritative for S2F1 release review.",
+    "SDF cooking warnings/errors are blocking because S2F3 can otherwise report a false collider result.",
+    "Headless GLFW/display warnings are expected in no-window IsaacSim runs."
+  ],
+  "pattern_counts": {
+    "cpu_fallback": 0,
+    "gpu_unsupported": 0,
+    "headless_window_warning": 34,
+    "material_binding_scope_warning": 0,
+    "physx_error": 0,
+    "sdf_warning": 0
+  },
+  "pattern_examples": {
+    "cpu_fallback": [],
+    "gpu_unsupported": [],
+    "headless_window_warning": [
+      {
+        "line": 16,
+        "source": "server_stdout",
+        "text": "2026-07-08 01:40:23 [11,138ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 19,
+        "source": "server_stdout",
+        "text": "2026-07-08 01:40:23 [11,205ms] [Warning] [omni.platforminfo.plugin] failed to open the default display.  Can't verify X Server version."
+      },
+      {
+        "line": 50,
+        "source": "server_stdout",
+        "text": "2026-07-08 01:40:25 [13,148ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 53,
+        "source": "server_stdout",
+        "text": "2026-07-08 01:40:25 [13,159ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 55,
+        "source": "server_stdout",
+        "text": "2026-07-08 01:40:25 [13,167ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 59,
+        "source": "server_stdout",
+        "text": "2026-07-08 01:40:25 [13,230ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 61,
+        "source": "server_stdout",
+        "text": "2026-07-08 01:40:25 [13,232ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      },
+      {
+        "line": 63,
+        "source": "server_stdout",
+        "text": "2026-07-08 01:40:25 [13,233ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed."
+      }
+    ],
+    "material_binding_scope_warning": [],
+    "physx_error": [],
+    "sdf_warning": []
+  },
+  "schema_version": 1,
+  "source_files": {
+    "server_stderr": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f3_c3_sdf_sweep_20260708_001/server.stderr.txt",
+    "server_stdout": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f3_c3_sdf_sweep_20260708_001/server.stdout.txt"
+  },
+  "warning_line_count": 112
+}

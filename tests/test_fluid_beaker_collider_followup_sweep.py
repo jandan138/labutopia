@@ -306,6 +306,62 @@ def test_s2f2_diagnosis_marks_velocity_pass_with_hash_mismatch_as_coupled():
     assert diagnosis["root_cause_confidence"] == "COUPLED_DIAGNOSTIC"
 
 
+def test_s2f3_builds_required_sdf_grid():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import build_s2f3_sdf_sweep
+
+    candidates = build_s2f3_sdf_sweep()
+
+    assert len(candidates) == 24
+    assert [candidate.candidate_id for candidate in candidates] == [f"C3A_{index:03d}" for index in range(1, 25)]
+    assert {candidate.phase for candidate in candidates} == {"S2F3_C3_SDF_SWEEP"}
+    assert {candidate.variable_group for candidate in candidates} == {"sdf_cooking_sweep"}
+    assert {candidate.sdf_resolution for candidate in candidates} == {64, 96, 128}
+    assert {candidate.sdf_subgrid_resolution for candidate in candidates} == {4, 8}
+    assert {candidate.sdf_margin for candidate in candidates} == {0.002, 0.005}
+    assert {candidate.sdf_narrow_band_thickness for candidate in candidates} == {0.01, 0.02}
+    assert {candidate.mesh_bottom_fan_closure for candidate in candidates} == {True}
+    assert {candidate.normals_winding_audit for candidate in candidates} == {"pass"}
+    assert [
+        (
+            candidate.candidate_id,
+            candidate.sdf_resolution,
+            candidate.sdf_subgrid_resolution,
+            candidate.sdf_margin,
+            candidate.sdf_narrow_band_thickness,
+        )
+        for candidate in candidates[:4]
+    ] == [
+        ("C3A_001", 64, 4, 0.002, 0.01),
+        ("C3A_002", 64, 4, 0.002, 0.02),
+        ("C3A_003", 64, 4, 0.005, 0.01),
+        ("C3A_004", 64, 4, 0.005, 0.02),
+    ]
+
+
+def test_s2f3_candidate_materializes_sdf_config_and_spec():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import build_s2f3_sdf_sweep
+
+    candidate = build_s2f3_sdf_sweep(limit=1)[0]
+
+    config = candidate.to_config(base=ColliderConfig(steps=12))
+    spec = candidate.to_variant_spec()
+
+    assert config.steps == 12
+    assert config.sdf_resolution == 64
+    assert config.sdf_subgrid_resolution == 4
+    assert config.sdf_margin == 0.002
+    assert config.sdf_narrow_band_thickness == 0.01
+    assert isinstance(spec, VariantSpec)
+    assert spec.variant_id == "C3A_001"
+    assert spec.setup == "s2f3_sdf_open_concave_mesh"
+    assert spec.collision_approximation == "sdf"
+    assert spec.source_kind == "procedural_mesh"
+    assert spec.sdf_resolution == 64
+    assert spec.sdf_subgrid_resolution == 4
+    assert spec.sdf_margin == 0.002
+    assert spec.sdf_narrow_band_thickness == 0.01
+
+
 def test_write_s2f2_manifest_records_promotion_caveat_when_hashes_are_coupled(tmp_path):
     from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
         build_velocity_contact_offset_sweep,
@@ -533,6 +589,162 @@ def test_write_s2f2_manifest_records_s2f5_candidates_and_keeps_s3_closed(tmp_pat
     assert manifest["phase_specs"]["S2F5_PROMOTION_REVIEW"]["status"] == "NEXT"
 
 
+def test_write_s2f3_manifest_promotes_to_s2f5_not_s3(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f3_sdf_sweep,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    candidates = build_s2f3_sdf_sweep(limit=1)
+    candidate_results = [
+        {
+            **classify_followup_candidate(
+                candidate_id="C3A_001",
+                source_retention_fraction=1.0,
+                particle_count_final_fraction=1.0,
+                outside_source_count=0,
+                target_count=0,
+                spill_count=0,
+                below_table_count=0,
+                tail_leak_rate_fraction_per_second=0.0,
+                cpu_collision_fallback_detected=False,
+                gpu_collider_unsupported=False,
+                nan_count=0,
+                non_physical_parameter_dependence=False,
+            ),
+            "parent_candidate_id": None,
+            "phase": "S2F3_C3_SDF_SWEEP",
+            "variable_group": "sdf_cooking_sweep",
+            "readback_available": True,
+            "evidence_files_complete": True,
+        }
+    ]
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F3_C3_SDF_SWEEP",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=candidates,
+        candidate_results=candidate_results,
+        command="runner --phase S2F3_C3_SDF_SWEEP",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+        source_s2f1_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json"
+        ),
+    )
+
+    assert manifest["stage"] == "S2F3_C3_SDF_SWEEP"
+    assert manifest["manifest_type"] == "true_physx_pbd_fluid_spike_s2f3_c3_sdf_sweep"
+    assert manifest["status"] == "GO_NEXT"
+    assert manifest["reason"] == "at_least_one_c3a_sdf_candidate_passed"
+    assert manifest["best_for_s2f5"] == ["C3A_001"]
+    assert manifest["best_for_s3"] == []
+    assert manifest["s2f5_promotion_review_next"] is True
+    assert manifest["s3_kinematic_pour_released"] is False
+    assert manifest["next_stage"]["id"] == "S2F5_PROMOTION_REVIEW"
+    assert manifest["next_stage"]["variants"] == ["C3A_001"]
+    assert manifest["next_stage"]["not_s3_release"] is True
+    assert manifest["phase_specs"]["S2F3_C3_SDF_SWEEP"]["status"] == "COMPLETE_GO_NEXT"
+    assert manifest["phase_specs"]["S2F5_PROMOTION_REVIEW"]["status"] == "NEXT"
+
+
+def test_write_s2f3_manifest_moves_to_s2f4_when_sdf_fails(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f3_sdf_sweep,
+        classify_followup_candidate,
+        write_followup_manifest,
+    )
+
+    candidates = build_s2f3_sdf_sweep(limit=1)
+    candidate_results = [
+        {
+            **classify_followup_candidate(
+                candidate_id="C3A_001",
+                source_retention_fraction=0.99,
+                particle_count_final_fraction=1.0,
+                outside_source_count=1,
+                target_count=0,
+                spill_count=1,
+                below_table_count=0,
+                tail_leak_rate_fraction_per_second=0.0,
+                cpu_collision_fallback_detected=False,
+                gpu_collider_unsupported=False,
+                nan_count=0,
+                non_physical_parameter_dependence=False,
+            ),
+            "parent_candidate_id": None,
+            "phase": "S2F3_C3_SDF_SWEEP",
+            "variable_group": "sdf_cooking_sweep",
+            "readback_available": True,
+            "evidence_files_complete": True,
+        }
+    ]
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F3_C3_SDF_SWEEP",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=candidates,
+        candidate_results=candidate_results,
+        command="runner --phase S2F3_C3_SDF_SWEEP",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+        source_s2f1_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json"
+        ),
+    )
+
+    assert manifest["status"] == "STOP_WITH_EVIDENCE"
+    assert manifest["reason"] == "no_c3a_sdf_candidate_passed"
+    assert manifest["best_for_s2f5"] == []
+    assert manifest["best_for_s3"] == []
+    assert manifest["s3_kinematic_pour_released"] is False
+    assert manifest["next_stage"]["id"] == "S2F4_C4_NATIVE_MESH_ISOLATION"
+    assert manifest["next_stage"]["diagnostic_routes"] == ["S2F4_C4_NATIVE_MESH_ISOLATION"]
+    assert manifest["next_stage"]["not_s3_release"] is True
+    assert manifest["phase_specs"]["S2F3_C3_SDF_SWEEP"]["status"] == "COMPLETE_STOP_WITH_EVIDENCE"
+    assert manifest["phase_specs"]["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] == "NEXT"
+
+
+def test_s2f3_plan_only_cli_writes_full_sdf_grid_manifest(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import main
+
+    manifest_path = tmp_path / "s2f3.json"
+    artifact_dir = tmp_path / "artifacts"
+    scene_dir = tmp_path / "scenes"
+
+    exit_code = main(
+        [
+            "--phase",
+            "S2F3_C3_SDF_SWEEP",
+            "--manifest-path",
+            str(manifest_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--scene-dir",
+            str(scene_dir),
+            "--plan-only",
+        ]
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert manifest["stage"] == "S2F3_C3_SDF_SWEEP"
+    assert manifest["status"] == "PLAN_READY"
+    assert manifest["candidate_count"] == 24
+    assert {candidate["candidate_id"][:3] for candidate in manifest["candidate_plan"]} == {"C3A"}
+    assert manifest["next_stage"]["id"] == "S2F3_C3_SDF_SWEEP"
+
+
 def test_s2f5_builds_only_promoted_vel020_trials():
     from tools.labutopia_fluid.run_beaker_collider_followup_sweep import build_s2f5_promotion_review_sweep
 
@@ -552,6 +764,39 @@ def test_s2f5_builds_only_promoted_vel020_trials():
         "C2A_009_S2F2_VEL020_S2F5_P1024_SEED001",
         "C2A_009_S2F2_VEL020_S2F5_P1024_SEED002",
     ]
+
+
+def test_s2f5_builds_trials_for_s2f3_promoted_c3a_candidate(tmp_path):
+    from dataclasses import asdict
+
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f3_sdf_sweep,
+        build_s2f5_promotion_review_sweep,
+    )
+
+    s2f3_candidate = build_s2f3_sdf_sweep(limit=1)[0]
+    source_manifest = tmp_path / "s2f3_pass.json"
+    source_manifest.write_text(
+        json.dumps(
+            {
+                "stage": "S2F3_C3_SDF_SWEEP",
+                "best_for_s2f5": ["C3A_001"],
+                "candidate_plan": [asdict(s2f3_candidate)],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    candidates = build_s2f5_promotion_review_sweep(s2f2_manifest_path=source_manifest)
+
+    assert len(candidates) == 6
+    assert {candidate.parent_candidate_id for candidate in candidates} == {"C3A_001"}
+    assert {candidate.phase for candidate in candidates} == {"S2F5_PROMOTION_REVIEW"}
+    assert {candidate.sdf_resolution for candidate in candidates} == {64}
+    assert {candidate.sdf_subgrid_resolution for candidate in candidates} == {4}
+    assert {candidate.sdf_margin for candidate in candidates} == {0.002}
+    assert {candidate.sdf_narrow_band_thickness for candidate in candidates} == {0.01}
+    assert candidates[0].candidate_id == "C3A_001_S2F5_P0256_SEED000"
 
 
 def test_s2f5_aggregation_promotes_only_when_all_required_trials_pass():
@@ -605,6 +850,75 @@ def test_s2f5_aggregation_keeps_s3_closed_on_any_trial_failure():
     assert aggregate["status"] == "STOP_WITH_EVIDENCE"
     assert aggregate["best_for_s3"] == []
     assert aggregate["failed_trials"] == [results[-1]["candidate_id"]]
+
+
+def test_write_s2f5_manifest_promotes_c3a_parent_after_all_trials_pass(tmp_path):
+    from dataclasses import asdict
+
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f3_sdf_sweep,
+        build_s2f5_promotion_review_sweep,
+        write_followup_manifest,
+    )
+
+    s2f3_candidate = build_s2f3_sdf_sweep(limit=1)[0]
+    source_manifest = tmp_path / "s2f3_pass.json"
+    source_manifest.write_text(
+        json.dumps(
+            {
+                "stage": "S2F3_C3_SDF_SWEEP",
+                "best_for_s2f5": ["C3A_001"],
+                "candidate_plan": [asdict(s2f3_candidate)],
+            }
+        ),
+        encoding="utf-8",
+    )
+    candidates = build_s2f5_promotion_review_sweep(s2f2_manifest_path=source_manifest)
+    candidate_results = [
+        {
+            "candidate_id": candidate.candidate_id,
+            "parent_candidate_id": candidate.parent_candidate_id,
+            "phase": "S2F5_PROMOTION_REVIEW",
+            "variable_group": "promotion_review",
+            "classification": "PASS_SOURCE_HOLD",
+            "source_retention_fraction": 1.0,
+            "particle_count_final_fraction": 1.0,
+            "outside_source_count": 0,
+            "target_count": 0,
+            "spill_count": 0,
+            "below_table_count": 0,
+            "tail_leak_rate_fraction_per_second": 0.0,
+            "cpu_collision_fallback_detected": False,
+            "gpu_collider_unsupported": False,
+            "nan_count": 0,
+            "non_physical_parameter_dependence": False,
+            "particle_count": candidate.particle_count,
+            "particle_seed": candidate.particle_seed,
+            "readback_available": True,
+            "evidence_files_complete": True,
+        }
+        for candidate in candidates
+    ]
+
+    manifest = write_followup_manifest(
+        tmp_path / "manifest.json",
+        phase="S2F5_PROMOTION_REVIEW",
+        parent_manifest=Path("docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json"),
+        baseline_freeze_manifest=Path(
+            "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json"
+        ),
+        artifact_dir=tmp_path / "artifacts",
+        candidates=candidates,
+        candidate_results=candidate_results,
+        command="runner --phase S2F5_PROMOTION_REVIEW",
+        runtime_warning_scan={"blocking_runtime_warning_detected": False},
+        source_s2f1_manifest=source_manifest,
+    )
+
+    assert manifest["status"] == "GO_NEXT"
+    assert manifest["best_for_s3"] == ["C3A_001"]
+    assert manifest["s3_kinematic_pour_released"] is True
+    assert manifest["s2f5_promotion_review"]["promotion_candidate_id"] == "C3A_001"
 
 
 def test_write_s2f5_manifest_promotes_after_all_trials_pass(tmp_path):
@@ -934,6 +1248,23 @@ def test_scan_runtime_warnings_does_not_count_extension_startup_as_sdf_warning(t
     assert scan["pattern_counts"]["sdf_warning"] == 0
 
 
+def test_scan_runtime_warnings_blocks_sdf_cooking_warning(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import scan_runtime_warnings
+
+    artifact_dir = tmp_path / "artifacts"
+    artifact_dir.mkdir()
+    (artifact_dir / "server.stdout.txt").write_text(
+        "[Warning] SDF cooking warning: narrow band invalid for mesh\n",
+        encoding="utf-8",
+    )
+    (artifact_dir / "server.stderr.txt").write_text("", encoding="utf-8")
+
+    scan = scan_runtime_warnings(artifact_dir)
+
+    assert scan["pattern_counts"]["sdf_warning"] == 1
+    assert scan["blocking_runtime_warning_detected"] is True
+
+
 def test_load_candidate_results_from_artifacts_rebuilds_manifest_inputs(tmp_path):
     from tools.labutopia_fluid.run_beaker_collider_followup_sweep import load_candidate_results_from_artifacts
 
@@ -1056,3 +1387,57 @@ def test_load_candidate_results_from_artifacts_rejects_unplanned_summaries(tmp_p
 
     with pytest.raises(ValueError, match="unplanned_variant_summaries"):
         load_candidate_results_from_artifacts(tmp_path, candidates=build_velocity_contact_offset_sweep(limit=1))
+
+
+def test_load_candidate_results_from_artifacts_accepts_c3a_sdf_summaries(tmp_path):
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        build_s2f3_sdf_sweep,
+        load_candidate_results_from_artifacts,
+    )
+
+    artifact_root = tmp_path / "artifacts"
+    variant_dir = artifact_root / "C3A_001"
+    variant_dir.mkdir(parents=True)
+    evidence_files = {
+        "particle_readback_trace": variant_dir / "particle_readback_trace.jsonl",
+        "physics_scene_settings": variant_dir / "physics_scene_settings.json",
+        "initial_frame": variant_dir / "initial_frame.png",
+        "mid_frame": variant_dir / "mid_frame.png",
+        "terminal_frame": variant_dir / "terminal_frame.png",
+        "top_collision_overlay": variant_dir / "top_collision_overlay.png",
+        "side_collision_overlay": variant_dir / "side_collision_overlay.png",
+    }
+    for path in evidence_files.values():
+        path.write_bytes(b"evidence")
+    (variant_dir / "variant_summary.json").write_text(
+        json.dumps(
+            {
+                "artifact_dir": str(variant_dir),
+                "classification_detail": {
+                    "below_table_count": 0,
+                    "cpu_collision_fallback_detected": False,
+                    "gpu_collider_unsupported": False,
+                    "nan_count": 0,
+                    "outside_source_count": 0,
+                    "particle_count_final_fraction": 1.0,
+                    "source_retention_fraction": 1.0,
+                    "spill_count": 0,
+                    "tail_leak_rate_fraction_per_second": 0.0,
+                    "target_count": 0,
+                },
+                "evidence_files": {key: str(path) for key, path in evidence_files.items()},
+                "readback_available": True,
+                "scene_path": "scenes/c3a_001.usda",
+                "variant": {"variant_id": "C3A_001"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    results = load_candidate_results_from_artifacts(artifact_root, candidates=build_s2f3_sdf_sweep(limit=1))
+
+    assert len(results) == 1
+    assert results[0]["candidate_id"] == "C3A_001"
+    assert results[0]["phase"] == "S2F3_C3_SDF_SWEEP"
+    assert results[0]["classification"] == "PASS_SOURCE_HOLD"
+    assert results[0]["evidence_files_complete"] is True

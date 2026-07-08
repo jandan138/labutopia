@@ -254,15 +254,17 @@ Current status:
 S2F0_BASELINE_FREEZE=COMPLETE
 S2F1_C2_PROXY_SWEEP=COMPLETE_STOP_WITH_EVIDENCE
 S2F2_VELOCITY_CONTACT_OFFSET=COMPLETE_GO_NEXT
-S2F3_C3_SDF_SWEEP=PENDING
-S2F4_C4_NATIVE_MESH_ISOLATION=PENDING
-S2F5_PROMOTION_REVIEW=NEXT
+S2F3_C3_SDF_SWEEP=COMPLETE_STOP_WITH_EVIDENCE
+S2F4_C4_NATIVE_MESH_ISOLATION=NEXT
+S2F5_PROMOTION_REVIEW=COMPLETE_STOP_WITH_EVIDENCE
 S2F0 result manifest:
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json
 S2F1 result manifest:
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_c2_proxy_sweep_20260707.json
 S2F2 result manifest:
 docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f2_velocity_contact_offset_20260708.json
+S2F3 result manifest:
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f3_c3_sdf_sweep_20260708.json
 ```
 
 Do not repeat S2F0 unless the S2 collider matrix is intentionally regenerated.
@@ -968,7 +970,7 @@ candidate directly. The result is `STOP_WITH_EVIDENCE`: all six promotion review
 trials failed strict `outside_source_count==0` / `spill_count==0` gates. This
 means S2F3/S2F4 are not skipped; they are now the next diagnostic work.
 
-- [ ] **Step 6: Run S2F3 C3 SDF sweep**
+- [x] **Step 6: Run S2F3 C3 SDF sweep**
 
 Run SDF as its own phase, not mixed with C2A. Required variables:
 
@@ -983,6 +985,39 @@ normals/winding audit: pass
 
 Stop S2F3 early if stdout/stderr scan finds CPU fallback, GPU unsupported, SDF
 cooking error, or perf budget exceeded for every candidate.
+
+Created:
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f3_c3_sdf_sweep_20260708.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f3_c3_sdf_sweep_20260708_001/
+assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f3/
+```
+
+Result:
+
+```json
+{
+  "stage": "S2F3_C3_SDF_SWEEP",
+  "status": "STOP_WITH_EVIDENCE",
+  "reason": "no_c3a_sdf_candidate_passed",
+  "best_for_s2f5": [],
+  "best_for_s3": [],
+  "s3_kinematic_pour_released": false,
+  "next_stage": "S2F4_C4_NATIVE_MESH_ISOLATION"
+}
+```
+
+S2F3 ran the full 24-candidate SDF grid: `sdf_resolution=64/96/128`,
+`sdf_subgrid_resolution=4/8`, `sdf_margin=0.002/0.005`, and
+`sdf_narrow_band_thickness=0.01/0.02`, with bottom fan closure on and
+normals/winding audit recorded as pass. Artifact-level warning scan found no
+CPU fallback, GPU unsupported, PhysX error, or SDF warning. All 24 candidates
+had particle readback and complete evidence files, but all 24 classified as
+`FAIL_CONTAINER_LEAK`; each ended with `outside_source_count=256` and
+`below_table_count=256`. This means the current procedural SDF open beaker runs
+in IsaacSim41 but does not form a fluid-safe interior collider. It does not
+release S2F5 or S3. The next diagnostic route is S2F4 native mesh isolation.
 
 - [ ] **Step 7: Run S2F4 C4 native mesh isolation**
 
