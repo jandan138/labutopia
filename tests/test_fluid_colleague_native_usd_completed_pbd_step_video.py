@@ -149,14 +149,16 @@ def test_build_liquid_presentation_isosurface_contract_uses_offsets():
 
     assert contract["enabled"] is True
     assert contract["api_path"] == "/World/CompletedPBD/ParticleSystem"
-    assert math.isclose(contract["grid_spacing"], 0.00048114008037373427)
-    assert math.isclose(contract["surface_distance"], 0.0005132160857319832)
-    assert math.isclose(contract["grid_smoothing_radius"], 0.000641520107164979)
-    assert contract["num_mesh_smoothing_passes"] == 1
-    assert contract["num_mesh_normal_smoothing_passes"] == 1
+    assert math.isclose(contract["grid_spacing"], 0.00028868404822424055)
+    assert math.isclose(contract["surface_distance"], 0.000304722050903365)
+    assert math.isclose(contract["grid_smoothing_radius"], 0.0003207600535824895)
+    assert contract["grid_filtering_passes"] == "GS"
+    assert contract["num_mesh_smoothing_passes"] == 4
+    assert contract["num_mesh_normal_smoothing_passes"] == 4
     assert contract["max_vertices"] >= 1_000_000
     assert contract["max_triangles"] >= 2_000_000
     assert contract["max_subgrids"] >= 4096
+    assert contract["parameter_reference"] == "isaacsim41_fluid_isosurface_cup_demo_style"
     assert contract["claim_boundary"] == "visual_surface_reconstruction_only"
 
 
@@ -182,6 +184,9 @@ def test_build_presentation_visual_contract_separates_visual_video_from_gate():
     assert contract["debug_particle_display_enabled"] is False
     assert contract["presentation_video_does_not_replace_particle_readback"] is True
     assert contract["visual_material_parity_claim_allowed"] is False
+    assert "same simulated particle trajectory" in contract["claim_boundary_text"]
+    assert "particle readback" in contract["claim_boundary_text"]
+    assert "do not change the particle simulation" in contract["claim_boundary_text"]
 
 
 def test_presentation_material_and_lighting_are_authored_with_fixed_paths():
@@ -197,6 +202,8 @@ def test_presentation_material_and_lighting_are_authored_with_fixed_paths():
     assert stage.GetPrimAtPath(LIQUID_PRESENTATION_LIGHT_PATH)
     assert material_info["material_path"] == LIQUID_PRESENTATION_MATERIAL_PATH
     assert material_info["display_name"] == "presentation_water_transparent_blue"
+    assert material_info["opacity"] == 0.90
+    assert material_info["diffuse_color"] == [0.0, 0.62, 1.0]
     assert material_info["visual_material_parity_claim_allowed"] is False
     assert lighting_info["light_path"] == LIQUID_PRESENTATION_LIGHT_PATH
     assert lighting_info["role"] == "leadership_presentation_key_light"
@@ -209,10 +216,10 @@ def test_define_presentation_camera_reuses_leadership_closeup_framing():
     stage = Usd.Stage.CreateInMemory()
     UsdGeom.Xform.Define(stage, "/World")
     config = ColliderConfig(
-        source_center=(0.30, 0.09, 0.80),
-        target_center=(0.50, 0.09, 0.80),
-        source_radius=0.05,
-        target_radius=0.05,
+        source_center=(0.31, 0.09, 0.80),
+        target_center=(0.28, -0.22, 0.80),
+        source_radius=0.06,
+        target_radius=0.08,
         table_z=0.70,
         source_height=0.20,
         target_height=0.20,
@@ -226,7 +233,14 @@ def test_define_presentation_camera_reuses_leadership_closeup_framing():
 
     assert info["camera_path"] == LIQUID_PRESENTATION_CAMERA_PATH
     assert info["role"] == "leadership_presentation_main"
+    assert math.isclose(info["target"][0], 0.3016)
+    assert math.isclose(info["target"][1], 0.0032)
+    assert info["eye"][1] > config.source_center[1]
+    assert info["source_side_y"] == 1.0
+    assert info["pair_span"] > 0.40
+    assert info["focus_source_weight"] == 0.72
     assert info["target"][2] > config.table_z
+    assert info["eye"][2] - info["target"][2] > 0.25
     assert stage.GetPrimAtPath(LIQUID_PRESENTATION_CAMERA_PATH)
 
 

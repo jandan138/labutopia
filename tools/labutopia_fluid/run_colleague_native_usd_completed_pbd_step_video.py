@@ -374,19 +374,20 @@ def build_liquid_presentation_isosurface_contract(
     fluid_rest_offset: float,
     particle_count: int,
 ) -> dict[str, Any]:
-    spacing = float(fluid_rest_offset) * 1.5
+    spacing = float(fluid_rest_offset) * 0.9
     return {
         "enabled": True,
         "api_path": RUNTIME_PARTICLE_SYSTEM_PATH,
         "grid_spacing": spacing,
-        "surface_distance": float(fluid_rest_offset) * 1.6,
-        "grid_filtering_passes": 1,
-        "grid_smoothing_radius": float(fluid_rest_offset) * 2.0,
-        "num_mesh_smoothing_passes": 1,
-        "num_mesh_normal_smoothing_passes": 1,
+        "surface_distance": float(fluid_rest_offset) * 0.95,
+        "grid_filtering_passes": "GS",
+        "grid_smoothing_radius": float(fluid_rest_offset) * 1.0,
+        "num_mesh_smoothing_passes": 4,
+        "num_mesh_normal_smoothing_passes": 4,
         "max_vertices": max(1_000_000, int(particle_count) * 64),
         "max_triangles": max(2_000_000, int(particle_count) * 128),
-        "max_subgrids": max(4096, int(math.ceil(max(int(particle_count), 1) / 8.0))),
+        "max_subgrids": max(8192, int(math.ceil(max(int(particle_count), 1) / 4.0))),
+        "parameter_reference": "isaacsim41_fluid_isosurface_cup_demo_style",
         "claim_boundary": "visual_surface_reconstruction_only",
     }
 
@@ -400,6 +401,14 @@ def build_presentation_visual_contract(
     material_path: str,
     particle_count: int,
 ) -> dict[str, Any]:
+    claim_boundary_text = (
+        "This video is a presentation render of the same simulated particle trajectory used for "
+        "the diagnostic verdict. Leak classification and spike assessment are based on particle "
+        "readback, not on visual appearance. Rendering choices including PhysX Isosurface "
+        "reconstruction, material color/opacity, lighting, and camera framing were adjusted only "
+        "to improve human readability for review. These adjustments do not change the particle "
+        "simulation, collider setup, leak classifier, or benchmark claims."
+    )
     return {
         "variant_id": variant_id,
         "camera_path": camera_info.get("camera_path"),
@@ -412,6 +421,7 @@ def build_presentation_visual_contract(
         "presentation_video_does_not_replace_particle_readback": True,
         "visual_material_parity_claim_allowed": False,
         "claim_boundary": "presentation_lane_only_particle_readback_remains_gate",
+        "claim_boundary_text": claim_boundary_text,
     }
 
 
@@ -425,16 +435,18 @@ def _author_liquid_presentation_water_material(stage: Any) -> dict[str, Any]:
     material = UsdShade.Material.Define(stage, material_path)
     shader = UsdShade.Shader.Define(stage, material_path.AppendChild("PreviewSurface"))
     shader.CreateIdAttr("UsdPreviewSurface")
-    shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0.16, 0.50, 0.78))
-    shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(0.58)
-    shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.18)
+    shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0.0, 0.62, 1.0))
+    shader.CreateInput("emissiveColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0.0, 0.12, 0.20))
+    shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(0.90)
+    shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.10)
     material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
     return {
         "material_path": LIQUID_PRESENTATION_MATERIAL_PATH,
         "shader_path": f"{LIQUID_PRESENTATION_MATERIAL_PATH}/PreviewSurface",
         "display_name": "presentation_water_transparent_blue",
-        "diffuse_color": [0.16, 0.50, 0.78],
-        "opacity": 0.58,
+        "diffuse_color": [0.0, 0.62, 1.0],
+        "emissive_color": [0.0, 0.12, 0.20],
+        "opacity": 0.90,
         "visual_material_parity_claim_allowed": False,
     }
 
@@ -457,22 +469,31 @@ def _author_liquid_presentation_lighting(stage: Any) -> dict[str, Any]:
 def _define_liquid_presentation_camera(stage: Any, config: Any) -> dict[str, Any]:
     from pxr import Gf, UsdGeom
 
+    focus_source_weight = 0.72
+    focus_target_weight = 1.0 - focus_source_weight
+    focus_x = config.source_center[0] * focus_source_weight + config.target_center[0] * focus_target_weight
+    focus_y = config.source_center[1] * focus_source_weight + config.target_center[1] * focus_target_weight
+    pair_span = max(
+        abs(config.source_center[0] - config.target_center[0]) + config.source_radius + config.target_radius,
+        abs(config.source_center[1] - config.target_center[1]) + config.source_radius + config.target_radius,
+    )
+    source_side_y = 1.0 if config.source_center[1] >= config.target_center[1] else -1.0
     target = (
-        config.source_center[0] + 0.08,
-        config.source_center[1],
-        config.table_z + min(max(config.source_height * 0.56, 0.08), 0.13),
+        focus_x,
+        focus_y,
+        config.table_z + min(max(config.source_height * 0.34, 0.055), 0.085),
     )
     eye = (
-        config.source_center[0] + 0.26,
-        config.source_center[1] - 0.42,
-        config.table_z + 0.27,
+        focus_x + max(0.25, pair_span * 0.48),
+        focus_y + source_side_y * max(0.40, pair_span * 0.90),
+        config.table_z + 0.34,
     )
     up = (0.0, 0.0, 1.0)
     camera = UsdGeom.Camera.Define(stage, LIQUID_PRESENTATION_CAMERA_PATH)
     transform = Gf.Matrix4d(1).SetLookAt(Gf.Vec3d(*eye), Gf.Vec3d(*target), Gf.Vec3d(*up)).GetInverse()
     camera.ClearXformOpOrder()
     camera.AddTransformOp().Set(transform)
-    camera.CreateFocalLengthAttr(22.0)
+    camera.CreateFocalLengthAttr(24.0)
     camera.CreateHorizontalApertureAttr(24.0)
     camera.CreateVerticalApertureAttr(16.0)
     camera.CreateClippingRangeAttr(Gf.Vec2f(0.01, 100.0))
@@ -482,6 +503,9 @@ def _define_liquid_presentation_camera(stage: Any, config: Any) -> dict[str, Any
         "eye": list(eye),
         "target": list(target),
         "up": list(up),
+        "source_side_y": source_side_y,
+        "pair_span": pair_span,
+        "focus_source_weight": focus_source_weight,
         "camera_contract_hash": "liquid_presentation_main_camera_v1",
     }
 
@@ -499,6 +523,12 @@ def _particle_isosurface_api_summary(stage: Any, particle_system_path: str) -> d
         "enabled": _read_prim_attr(prim, "physxParticleIsosurface:isosurfaceEnabled"),
         "grid_spacing": _read_prim_attr(prim, "physxParticleIsosurface:gridSpacing"),
         "surface_distance": _read_prim_attr(prim, "physxParticleIsosurface:surfaceDistance"),
+        "grid_filtering_passes": _read_prim_attr(prim, "physxParticleIsosurface:gridFilteringPasses"),
+        "grid_smoothing_radius": _read_prim_attr(prim, "physxParticleIsosurface:gridSmoothingRadius"),
+        "num_mesh_smoothing_passes": _read_prim_attr(prim, "physxParticleIsosurface:numMeshSmoothingPasses"),
+        "num_mesh_normal_smoothing_passes": _read_prim_attr(
+            prim, "physxParticleIsosurface:numMeshNormalSmoothingPasses"
+        ),
         "max_vertices": _read_prim_attr(prim, "physxParticleIsosurface:maxVertices"),
         "max_triangles": _read_prim_attr(prim, "physxParticleIsosurface:maxTriangles"),
         "max_subgrids": _read_prim_attr(prim, "physxParticleIsosurface:maxSubgrids"),
