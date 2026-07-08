@@ -226,8 +226,9 @@ docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260
 
 它固定了四件事：第一，C0-C5 的 S2 矩阵结果不再漂移；第二，C2 是当前最接近但仍失败的 baseline；
 第三，runtime warning scan 和 visual review 已作为 S2F 后续比较的基准；第四，S3 仍然不放行。
-所以 S2F0 当时的产品口径是：先进入 `S2F1_C2_PROXY_SWEEP`，不是进入倒液视频。现在 S2F1 和
-S2F2 都已经完成，当前产品口径应更新为：进入 `S2F5_PROMOTION_REVIEW`，复核唯一通过的静态持液候选。
+所以 S2F0 当时的产品口径是：先进入 `S2F1_C2_PROXY_SWEEP`，不是进入倒液视频。现在 S2F1、S2F2
+和 S2F5 都已经完成，当前产品口径应更新为：S2F5 已经证明唯一静态持液候选不稳定，S3 仍不放行，
+下一步回到 `S2F3_C3_SDF_SWEEP` 和 `S2F4_C4_NATIVE_MESH_ISOLATION` 两条 collider 诊断路线。
 
 当前 S2F1 也已完成：我们优先修了 C2 proxy collider，不是只手调一个参数，而是跑了 12 个 C2A
 候选，系统覆盖 `panel_count`、`wall_thickness`、`bottom_overlap`、`particle_contact_offset`、
@@ -279,10 +280,34 @@ S2F2 的关键结果：
 出现细小的初始稳定状态差异。因此 contact-offset 组只能作为诊断证据；真正进入下一步复核的是低初始速度通过的
 `C2A_009_S2F2_VEL020`，不是那些依赖 contact offset 或 `max_velocity` 的方案。
 
-给产品经理的一句话版本：我们已经找到一个“静态装液不漏”的候选，但它还只通过了单次 256 粒子的
-静态测试。当前 `best_for_s2f5=["C2A_009_S2F2_VEL020"]`，下一步是 `S2F5_PROMOTION_REVIEW`；
-这个 `next_stage` 明确带有 `COUPLED_DIAGNOSTIC_REQUIRES_INITIAL_LAYOUT_RETEST` caveat，第一步要复测
-initial-layout hash 稳定性。`s3_kinematic_pour_released=false`，还不能说 `level1_pour` 已经可以真实倒液。
+S2F5 已完成：我们没有直接把 S2F2 的一次成功升级成倒液候选，而是只复核
+`C2A_009_S2F2_VEL020`，跑了 3 个 `particle_seed` 和 2 个粒子数，合计 6 组 IsaacSim41 headless
+runtime。正式证据是：
+
+```text
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f5_promotion_review_20260708_001/
+assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f5/
+```
+
+S2F5 的结果是 `STOP_WITH_EVIDENCE`，`passed_trial_count=0/6`，`best_for_s3=[]`，
+`s3_kinematic_pour_released=false`。为什么先跑 S2F5、而不是马上做 F3/F4？因为 S2F2 当时已经给出
+唯一 near-pass 候选，最短路径是先验证这个候选能不能直接放行；如果它通过，就可以少走更重的
+SDF/native mesh 诊断。现在复核结果证明它不稳定，所以 F3/F4 不是不要做，而是正式变成下一步。
+
+通俗说，S2F2 的候选不是完全没价值，但它经不起更严格复测：256 粒子组只漏 1-2 个粒子，已经非常接近；
+1024 粒子组三个 seed 都明显漏出，`outside_source_count` 分别是 347、340、338。我们的 benchmark
+放行条件是 0 个粒子漏到 source 外，所以不能把它升级成 S3 倒液。
+
+| 复核组 | 结果 | 白话解释 |
+|---|---|---|
+| 256 粒子，seed 0/1/2 | 全部 `FAIL_CONTAINER_LEAK` | 分别漏 1、1、2 个粒子；接近成功，但严格 gate 要求 0。 |
+| 1024 粒子，seed 0/1/2 | 全部 `FAIL_CONTAINER_LEAK` | 分别有 347、340、338 个粒子到 source 外，说明高粒子数下容器不稳定。 |
+
+给产品经理的一句话版本：我们确实找到了一个“单次 256 粒子静态不漏”的线索，但 S2F5 已经验证它不是稳定
+方案；因此现在不能进入 S3，也不能说 `level1_pour` 已经能真实倒液。下一步不是继续手调这个候选，而是
+按原规划做 F3/F4：F3 用 `SDF` 路线测试凹形容器 collider，F4 用 native beaker mesh isolation 判断原生
+杯子是否能被修成 fluid-safe collider。
 
 ## 调研补充：别人不是没做过 Isaac 液体 demo，但 demo 和 benchmark 不是一回事
 

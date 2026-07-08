@@ -48,6 +48,27 @@ DEFAULT_S2F2_MANIFEST_PATH = (
     "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f2_velocity_contact_offset_20260708.json"
 )
 DEFAULT_S2F2_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f2"
+DEFAULT_S2F5_ARTIFACT_DIR = (
+    "docs/labutopia_lab_poc/evidence_manifests/"
+    "fluid_spike_isaacsim41_ebench_s2f5_promotion_review_20260708_001"
+)
+DEFAULT_S2F5_MANIFEST_PATH = (
+    "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json"
+)
+DEFAULT_S2F5_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f5"
+DEFAULT_S2F5_SOURCE_MANIFEST = DEFAULT_S2F2_MANIFEST_PATH
+S2F5_PROMOTION_CANDIDATE_ID = "C2A_009_S2F2_VEL020"
+S2F5_PARTICLE_COUNTS = (256, 1024)
+S2F5_PARTICLE_SEEDS = (0, 1, 2)
+REQUIRED_VARIANT_EVIDENCE_FILES = {
+    "particle_readback_trace",
+    "physics_scene_settings",
+    "initial_frame",
+    "mid_frame",
+    "terminal_frame",
+    "top_collision_overlay",
+    "side_collision_overlay",
+}
 DEFAULT_NATIVE_USD = "assets/chemistry_lab/lab_001/lab_001.usd"
 FOLLOWUP_CONTRACT_VERSION = "s2f_velocity_contact_offset_v2"
 FOLLOWUP_CLASSIFICATIONS = {
@@ -84,11 +105,15 @@ class C2ProxyCandidate:
     particle_max_velocity: float = 5.0
     particle_max_depenetration_velocity: float | None = None
     non_physical_parameter_dependence_risk: bool = False
+    particle_count: int | None = None
+    particle_seed: int | None = None
 
     def to_config(self, *, base: ColliderConfig | None = None) -> ColliderConfig:
         config = base or ColliderConfig()
         return replace(
             config,
+            particle_count=self.particle_count if self.particle_count is not None else config.particle_count,
+            particle_seed=self.particle_seed if self.particle_seed is not None else config.particle_seed,
             wall_thickness=self.wall_thickness,
             bottom_overlap=self.bottom_overlap,
             particle_contact_offset=self.particle_contact_offset,
@@ -106,19 +131,25 @@ class C2ProxyCandidate:
         )
 
     def to_variant_spec(self) -> VariantSpec:
-        setup = "s2f2_velocity_contact_offset" if self.phase == "S2F2_VELOCITY_CONTACT_OFFSET" else "s2f1_c2_proxy_sweep"
-        name = "velocity_contact_offset" if self.phase == "S2F2_VELOCITY_CONTACT_OFFSET" else "c2_proxy_followup"
+        if self.phase == "S2F5_PROMOTION_REVIEW":
+            setup = "s2f5_promotion_review"
+            name = "promotion_review"
+            description = "S2F5 repeated static-hold promotion review trial for the S2F2 candidate."
+        elif self.phase == "S2F2_VELOCITY_CONTACT_OFFSET":
+            setup = "s2f2_velocity_contact_offset"
+            name = "velocity_contact_offset"
+            description = "S2F2 velocity/contact-offset isolation candidate derived from a near-pass C2A parent."
+        else:
+            setup = "s2f1_c2_proxy_sweep"
+            name = "c2_proxy_followup"
+            description = (
+                "S2F1 C2-derived segmented convex wall proxy with swept panel count, "
+                "wall thickness, bottom overlap, and contact offsets."
+            )
         return VariantSpec(
             variant_id=self.candidate_id,
             name=name,
-            description=(
-                "S2F2 velocity/contact-offset isolation candidate derived from a near-pass C2A parent."
-                if self.phase == "S2F2_VELOCITY_CONTACT_OFFSET"
-                else (
-                    "S2F1 C2-derived segmented convex wall proxy with swept panel count, "
-                    "wall thickness, bottom overlap, and contact offsets."
-                )
-            ),
+            description=description,
             setup=setup,
             collider_count=self.panel_count + 1,
             collision_approximation="convex_panel_boxes",
@@ -132,6 +163,7 @@ def followup_phase_specs(
     phase: str | None = None,
     status: str | None = None,
     best_for_s2f5: Sequence[str] | None = None,
+    best_for_s3: Sequence[str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     specs = {
         "S2F0_BASELINE_FREEZE": {
@@ -169,6 +201,15 @@ def followup_phase_specs(
         specs["S2F1_C2_PROXY_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
         specs["S2F2_VELOCITY_CONTACT_OFFSET"]["status"] = "COMPLETE_GO_NEXT"
         specs["S2F5_PROMOTION_REVIEW"]["status"] = "NEXT"
+    if phase == "S2F5_PROMOTION_REVIEW":
+        specs["S2F1_C2_PROXY_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F2_VELOCITY_CONTACT_OFFSET"]["status"] = "COMPLETE_GO_NEXT"
+        if status == "GO_NEXT" and best_for_s3:
+            specs["S2F5_PROMOTION_REVIEW"]["status"] = "COMPLETE_GO_NEXT"
+        elif status == "STOP_WITH_EVIDENCE":
+            specs["S2F5_PROMOTION_REVIEW"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        else:
+            specs["S2F5_PROMOTION_REVIEW"]["status"] = "ACTIVE"
     return specs
 
 
@@ -354,6 +395,120 @@ def build_velocity_contact_offset_sweep(
             ]
         )
     return candidates[:limit] if limit is not None else candidates
+
+
+def build_s2f5_promotion_review_sweep(
+    *,
+    s2f2_manifest_path: Path | str = DEFAULT_S2F5_SOURCE_MANIFEST,
+    particle_counts: Sequence[int] = S2F5_PARTICLE_COUNTS,
+    particle_seeds: Sequence[int] = S2F5_PARTICLE_SEEDS,
+    promotion_candidate_id: str = S2F5_PROMOTION_CANDIDATE_ID,
+) -> list[C2ProxyCandidate]:
+    manifest = _load_json(Path(s2f2_manifest_path))
+    best_for_s2f5 = [str(candidate_id) for candidate_id in manifest.get("best_for_s2f5", [])]
+    if best_for_s2f5 != [promotion_candidate_id]:
+        raise ValueError(f"unexpected_s2f5_candidates:{best_for_s2f5!r}")
+    plan_by_id = {str(candidate["candidate_id"]): candidate for candidate in manifest["candidate_plan"]}
+    parent = _candidate_from_plan_row(plan_by_id[promotion_candidate_id])
+
+    candidates: list[C2ProxyCandidate] = []
+    for particle_count in particle_counts:
+        for seed in particle_seeds:
+            candidates.append(
+                C2ProxyCandidate(
+                    candidate_id=f"{promotion_candidate_id}_S2F5_P{particle_count:04d}_SEED{seed:03d}",
+                    parent_candidate_id=promotion_candidate_id,
+                    phase="S2F5_PROMOTION_REVIEW",
+                    variable_group="promotion_review",
+                    panel_count=parent.panel_count,
+                    wall_thickness=parent.wall_thickness,
+                    bottom_overlap=parent.bottom_overlap,
+                    particle_contact_offset=parent.particle_contact_offset,
+                    spawn_particle_contact_offset=parent.spawn_particle_contact_offset,
+                    particle_system_contact_offset=parent.particle_system_contact_offset,
+                    particle_rest_offset=parent.particle_rest_offset,
+                    fluid_rest_offset=parent.fluid_rest_offset,
+                    solid_rest_offset=parent.solid_rest_offset,
+                    collider_contact_offset=parent.collider_contact_offset,
+                    collider_rest_offset=parent.collider_rest_offset,
+                    initial_radial_velocity=parent.initial_radial_velocity,
+                    particle_enable_ccd=parent.particle_enable_ccd,
+                    particle_max_velocity=parent.particle_max_velocity,
+                    particle_max_depenetration_velocity=parent.particle_max_depenetration_velocity,
+                    non_physical_parameter_dependence_risk=False,
+                    particle_count=int(particle_count),
+                    particle_seed=int(seed),
+                )
+            )
+    return candidates
+
+
+def aggregate_s2f5_promotion_review(
+    candidate_results: Sequence[dict[str, Any]],
+    *,
+    required_particle_counts: Sequence[int] = S2F5_PARTICLE_COUNTS,
+    required_particle_seeds: Sequence[int] = S2F5_PARTICLE_SEEDS,
+    promotion_candidate_id: str = S2F5_PROMOTION_CANDIDATE_ID,
+) -> dict[str, Any]:
+    required_pairs = {(int(count), int(seed)) for count in required_particle_counts for seed in required_particle_seeds}
+    observed_pairs = {
+        (int(result.get("particle_count", -1)), int(result.get("particle_seed", -1)))
+        for result in candidate_results
+        if result.get("parent_candidate_id") == promotion_candidate_id
+    }
+    missing_pairs = sorted(required_pairs - observed_pairs)
+    extra_pairs = sorted(observed_pairs - required_pairs)
+
+    failed_trials: list[str] = []
+    passed_trials: list[str] = []
+    for result in candidate_results:
+        candidate_id = str(result.get("candidate_id"))
+        pair = (int(result.get("particle_count", -1)), int(result.get("particle_seed", -1)))
+        trial_passed = (
+            result.get("parent_candidate_id") == promotion_candidate_id
+            and pair in required_pairs
+            and result.get("classification") == "PASS_SOURCE_HOLD"
+            and bool(result.get("readback_available"))
+            and bool(result.get("evidence_files_complete"))
+            and not bool(result.get("non_physical_parameter_dependence"))
+        )
+        if trial_passed:
+            passed_trials.append(candidate_id)
+        else:
+            failed_trials.append(candidate_id)
+
+    if missing_pairs or extra_pairs:
+        status = "STOP_WITH_EVIDENCE"
+        reason = "s2f5_trial_grid_mismatch"
+        best_for_s3: list[str] = []
+    elif len(passed_trials) == len(required_pairs) and not failed_trials:
+        status = "GO_NEXT"
+        reason = "all_s2f5_trials_passed"
+        best_for_s3 = [promotion_candidate_id]
+    else:
+        status = "STOP_WITH_EVIDENCE"
+        reason = "one_or_more_s2f5_trials_failed"
+        best_for_s3 = []
+
+    return {
+        "status": status,
+        "reason": reason,
+        "best_for_s3": best_for_s3,
+        "promotion_candidate_id": promotion_candidate_id,
+        "required_particle_counts": [int(count) for count in required_particle_counts],
+        "required_particle_seeds": [int(seed) for seed in required_particle_seeds],
+        "required_trial_count": len(required_pairs),
+        "observed_trial_count": len(candidate_results),
+        "passed_trial_count": len(passed_trials),
+        "passed_trials": passed_trials,
+        "failed_trials": failed_trials,
+        "missing_trials": [
+            {"particle_count": particle_count, "particle_seed": seed} for particle_count, seed in missing_pairs
+        ],
+        "extra_trials": [
+            {"particle_count": particle_count, "particle_seed": seed} for particle_count, seed in extra_pairs
+        ],
+    }
 
 
 def _pass_criteria(
@@ -665,6 +820,7 @@ def _candidate_plan(candidates: Sequence[C2ProxyCandidate]) -> list[dict[str, An
 
 def _candidate_result_from_summary(summary: dict[str, Any], candidate: C2ProxyCandidate | None = None) -> dict[str, Any]:
     detail = summary["classification_detail"]
+    evidence_files = dict(summary.get("evidence_files") or {})
     result = classify_followup_candidate(
         candidate_id=summary["variant"]["variant_id"],
         source_retention_fraction=float(detail["source_retention_fraction"]),
@@ -704,6 +860,11 @@ def _candidate_result_from_summary(summary: dict[str, Any], candidate: C2ProxyCa
             "spawn_position_pinned": summary.get("spawn_position_pinned"),
             "initial_region_counts": summary.get("initial_region_counts"),
             "final_region_counts": summary.get("final_region_counts"),
+            "particle_count": candidate.particle_count if candidate is not None else None,
+            "particle_seed": candidate.particle_seed if candidate is not None else None,
+            "readback_available": bool(summary.get("readback_available")),
+            "evidence_files_complete": REQUIRED_VARIANT_EVIDENCE_FILES.issubset(evidence_files.keys())
+            and all(Path(evidence_files[key]).exists() for key in REQUIRED_VARIANT_EVIDENCE_FILES),
         }
     )
     result["promotable_to_s2f5"] = (
@@ -829,6 +990,11 @@ def write_followup_manifest(
 ) -> dict[str, Any]:
     ranking = rank_followup_candidates(candidate_results)
     near_pass_for_s2f2 = near_pass_candidates_for_s2f2(candidate_results)
+    s2f5_review = (
+        aggregate_s2f5_promotion_review(candidate_results)
+        if phase == "S2F5_PROMOTION_REVIEW" and candidate_results
+        else None
+    )
     s2f2_diagnosis = (
         analyze_s2f2_diagnosis(candidate_results) if phase == "S2F2_VELOCITY_CONTACT_OFFSET" else None
     )
@@ -844,32 +1010,79 @@ def write_followup_manifest(
             "s2f1_status": "STOP_WITH_EVIDENCE",
             "reason": "blocking_runtime_warning_detected",
         }
+        if s2f5_review is not None:
+            s2f5_review = {
+                **s2f5_review,
+                "status": "STOP_WITH_EVIDENCE",
+                "reason": "blocking_runtime_warning_detected",
+                "best_for_s3": [],
+            }
     if not warning_gate["passed"]:
         status = "STOP_WITH_EVIDENCE"
     elif not candidate_results and fatal_error is None:
         status = "PLAN_READY"
+    elif phase == "S2F5_PROMOTION_REVIEW" and s2f5_review is not None:
+        status = s2f5_review["status"]
     else:
         status = ranking["s2f1_status"]
-    passed_candidates = ranking["best_for_s3"]
+    if phase == "S2F5_PROMOTION_REVIEW" and s2f5_review is not None:
+        passed_candidates = s2f5_review["best_for_s3"]
+    else:
+        passed_candidates = ranking["best_for_s3"]
     best_for_s2f5 = passed_candidates if phase == "S2F2_VELOCITY_CONTACT_OFFSET" else []
     best_for_s3 = [] if phase == "S2F2_VELOCITY_CONTACT_OFFSET" else passed_candidates
     s2f5_promotion_review_next = bool(
         phase == "S2F2_VELOCITY_CONTACT_OFFSET" and status == "GO_NEXT" and best_for_s2f5
     )
+    s2f5_promotion_review_complete = bool(
+        phase == "S2F5_PROMOTION_REVIEW" and status == "GO_NEXT" and best_for_s3
+    )
     requires_initial_layout_hash_stability_check = bool(
         s2f2_diagnosis and s2f2_diagnosis.get("root_cause_confidence") == "COUPLED_DIAGNOSTIC"
     )
     command_history = _command_history(previous_manifest, command)
+    if best_for_s2f5:
+        next_stage_id = "S2F5_PROMOTION_REVIEW"
+        next_stage_variants = best_for_s2f5
+        diagnostic_routes: list[str] = []
+    elif phase == "S2F5_PROMOTION_REVIEW" and best_for_s3:
+        next_stage_id = "S3_KINEMATIC_POUR"
+        next_stage_variants = best_for_s3
+        diagnostic_routes = []
+    elif phase == "S2F5_PROMOTION_REVIEW" and status == "PLAN_READY":
+        next_stage_id = "S2F5_PROMOTION_REVIEW"
+        next_stage_variants = [candidate.candidate_id for candidate in candidates]
+        diagnostic_routes = []
+    elif phase == "S2F5_PROMOTION_REVIEW":
+        next_stage_id = "S2F3_C3_SDF_SWEEP"
+        next_stage_variants = []
+        diagnostic_routes = ["S2F3_C3_SDF_SWEEP", "S2F4_C4_NATIVE_MESH_ISOLATION"]
+    elif phase == "S2F2_VELOCITY_CONTACT_OFFSET":
+        next_stage_id = "S2F3_C3_SDF_SWEEP"
+        next_stage_variants = near_pass_for_s2f2
+        diagnostic_routes = ["S2F3_C3_SDF_SWEEP", "S2F4_C4_NATIVE_MESH_ISOLATION"]
+    else:
+        next_stage_id = "S2F2_VELOCITY_CONTACT_OFFSET"
+        next_stage_variants = near_pass_for_s2f2
+        diagnostic_routes = []
     manifest = {
         "schema_version": 1,
         "manifest_type": (
             "true_physx_pbd_fluid_spike_s2f2_velocity_contact_offset"
             if phase == "S2F2_VELOCITY_CONTACT_OFFSET"
-            else "true_physx_pbd_fluid_spike_s2f1_c2_proxy_sweep"
+            else (
+                "true_physx_pbd_fluid_spike_s2f5_promotion_review"
+                if phase == "S2F5_PROMOTION_REVIEW"
+                else "true_physx_pbd_fluid_spike_s2f1_c2_proxy_sweep"
+            )
         ),
         "stage": phase,
         "status": status,
-        "reason": "candidate_plan_written" if status == "PLAN_READY" else ranking["reason"],
+        "reason": (
+            "candidate_plan_written"
+            if status == "PLAN_READY"
+            else (s2f5_review["reason"] if s2f5_review is not None else ranking["reason"])
+        ),
         "run_id": artifact_dir.name,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "contract_version": FOLLOWUP_CONTRACT_VERSION,
@@ -890,7 +1103,12 @@ def write_followup_manifest(
             "omni_kit_accept_eula": os.environ.get("OMNI_KIT_ACCEPT_EULA"),
             "gpu_probe": _gpu_probe(),
         },
-        "phase_specs": followup_phase_specs(phase=phase, status=status, best_for_s2f5=best_for_s2f5),
+        "phase_specs": followup_phase_specs(
+            phase=phase,
+            status=status,
+            best_for_s2f5=best_for_s2f5,
+            best_for_s3=best_for_s3,
+        ),
         "candidate_plan": _candidate_plan(candidates),
         "candidate_count": len(candidates),
         "candidate_results": list(candidate_results),
@@ -901,7 +1119,11 @@ def write_followup_manifest(
         "s2f2_root_cause_classification": s2f2_diagnosis["conclusion"] if s2f2_diagnosis else None,
         "s2f2_initial_layout_hash_audit": s2f2_initial_layout_hash_audit,
         "s2f5_promotion_review_next": s2f5_promotion_review_next,
-        "s3_kinematic_pour_released": False,
+        "s2f5_promotion_review_complete": s2f5_promotion_review_complete,
+        "s2f5_promotion_review": s2f5_review,
+        "s3_kinematic_pour_released": bool(
+            phase == "S2F5_PROMOTION_REVIEW" and status == "GO_NEXT" and best_for_s3
+        ),
         "runtime_warning_scan": runtime_warning_scan,
         "runtime_warning_gate": warning_gate,
         "pass_criteria": {
@@ -922,13 +1144,21 @@ def write_followup_manifest(
             (
                 "S2F2 velocity/contact-offset isolation candidate set is bounded and recorded."
                 if phase == "S2F2_VELOCITY_CONTACT_OFFSET"
-                else "S2F1 C2 proxy sweep candidate set is bounded and recorded."
+                else (
+                    "S2F5 promotion review candidate grid is bounded and recorded."
+                    if phase == "S2F5_PROMOTION_REVIEW"
+                    else "S2F1 C2 proxy sweep candidate set is bounded and recorded."
+                )
             ),
             (
                 "S2F2 ran only C2A_005/C2A_009/C2A_007 near-pass derived variants in standalone IsaacSim41."
                 if phase == "S2F2_VELOCITY_CONTACT_OFFSET" and candidate_results
                 else (
-                    "S2F1 ran C2-derived proxy collider variants in standalone IsaacSim41."
+                    (
+                        "S2F5 ran only C2A_009_S2F2_VEL020 promotion-review trials in standalone IsaacSim41."
+                        if phase == "S2F5_PROMOTION_REVIEW"
+                        else "S2F1 ran C2-derived proxy collider variants in standalone IsaacSim41."
+                    )
                     if candidate_results
                     else f"{phase} candidate plan is ready before runtime launch."
                 )
@@ -943,13 +1173,10 @@ def write_followup_manifest(
             "diagnostic projections equal product-quality render",
         ],
         "next_stage": {
-            "id": (
-                "S2F5_PROMOTION_REVIEW"
-                if best_for_s2f5
-                else ("S2F3_C3_SDF_SWEEP" if phase == "S2F2_VELOCITY_CONTACT_OFFSET" else "S2F2_VELOCITY_CONTACT_OFFSET")
-            ),
-            "variants": best_for_s2f5 if best_for_s2f5 else near_pass_for_s2f2,
-            "not_s3_release": phase == "S2F2_VELOCITY_CONTACT_OFFSET",
+            "id": next_stage_id,
+            "variants": next_stage_variants,
+            "diagnostic_routes": diagnostic_routes,
+            "not_s3_release": next_stage_id != "S3_KINEMATIC_POUR",
             "requires_initial_layout_hash_stability_check": requires_initial_layout_hash_stability_check,
             "promotion_caveat": (
                 "COUPLED_DIAGNOSTIC_REQUIRES_INITIAL_LAYOUT_RETEST"
@@ -1019,6 +1246,10 @@ def _run_c2_proxy_sweep(
                     "artifact_dir": str(candidate_dir),
                     "scene_path": str(scene_path),
                     "variant_summary": str(candidate_dir / "variant_summary.json"),
+                    "particle_count": candidate.particle_count,
+                    "particle_seed": candidate.particle_seed,
+                    "readback_available": False,
+                    "evidence_files_complete": False,
                 }
             )
             _write_json(candidate_dir / "variant_summary.json", result)
@@ -1049,7 +1280,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
-    if args.phase not in {"S2F1_C2_PROXY_SWEEP", "S2F2_VELOCITY_CONTACT_OFFSET"}:
+    if args.phase not in {"S2F1_C2_PROXY_SWEEP", "S2F2_VELOCITY_CONTACT_OFFSET", "S2F5_PROMOTION_REVIEW"}:
         raise SystemExit(f"unsupported phase for this runner: {args.phase}")
 
     if args.phase == "S2F2_VELOCITY_CONTACT_OFFSET":
@@ -1062,6 +1293,20 @@ def main(argv: list[str]) -> int:
         candidates = build_velocity_contact_offset_sweep(
             s2f1_manifest_path=Path(args.s2f1_manifest),
             limit=args.candidate_limit,
+        )
+    elif args.phase == "S2F5_PROMOTION_REVIEW":
+        if args.candidate_limit is not None:
+            raise SystemExit("S2F5_PROMOTION_REVIEW does not support --candidate-limit")
+        if args.artifact_dir == DEFAULT_ARTIFACT_DIR:
+            args.artifact_dir = DEFAULT_S2F5_ARTIFACT_DIR
+        if args.manifest_path == DEFAULT_MANIFEST_PATH:
+            args.manifest_path = DEFAULT_S2F5_MANIFEST_PATH
+        if args.scene_dir == DEFAULT_SCENE_DIR:
+            args.scene_dir = DEFAULT_S2F5_SCENE_DIR
+        if args.s2f1_manifest == DEFAULT_MANIFEST_PATH:
+            args.s2f1_manifest = DEFAULT_S2F5_SOURCE_MANIFEST
+        candidates = build_s2f5_promotion_review_sweep(
+            s2f2_manifest_path=Path(args.s2f1_manifest),
         )
     else:
         candidates = build_c2_proxy_sweep(limit=args.candidate_limit or 12)
@@ -1076,7 +1321,11 @@ def main(argv: list[str]) -> int:
     manifest_path = Path(args.manifest_path)
     parent_manifest = Path(args.parent_manifest)
     baseline_freeze_manifest = Path(args.baseline_freeze_manifest)
-    source_s2f1_manifest = Path(args.s2f1_manifest) if args.phase == "S2F2_VELOCITY_CONTACT_OFFSET" else None
+    source_s2f1_manifest = (
+        Path(args.s2f1_manifest)
+        if args.phase in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F5_PROMOTION_REVIEW"}
+        else None
+    )
     native_usd = Path(args.native_usd).resolve()
     command = " ".join([sys.executable, Path(__file__).as_posix(), *argv])
     previous_manifest = _load_existing_manifest(manifest_path)

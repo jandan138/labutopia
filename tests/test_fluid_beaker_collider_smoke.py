@@ -52,6 +52,21 @@ def test_source_particle_positions_cover_near_wall_while_starting_inside_source_
     assert max_radius >= config.source_radius * 0.75
 
 
+def test_source_particle_positions_are_deterministic_for_same_seed():
+    config = ColliderConfig(particle_count=64, particle_seed=7)
+
+    assert build_source_particle_positions(config) == build_source_particle_positions(config)
+
+
+def test_source_particle_positions_vary_across_seed_without_changing_count():
+    seed_7 = build_source_particle_positions(ColliderConfig(particle_count=64, particle_seed=7))
+    seed_8 = build_source_particle_positions(ColliderConfig(particle_count=64, particle_seed=8))
+
+    assert len(seed_7) == 64
+    assert len(seed_8) == 64
+    assert seed_7 != seed_8
+
+
 def test_source_particle_velocities_apply_radial_wall_stress_without_vertical_launch():
     config = ColliderConfig(initial_radial_velocity=0.08)
     positions = build_source_particle_positions(config)

@@ -960,7 +960,13 @@ as diagnostic evidence, not release evidence.
 ```
 
 PM interpretation: S2F2 found one static-hold promotion-review candidate. It
-does not release S3 or true-fluid `level1_pour`; it releases S2F5 only.
+did not release S3 or true-fluid `level1_pour`; it released S2F5 only.
+
+2026-07-08 S2F5 update: S2F5 was run before S2F3/S2F4 because S2F2 had exactly
+one near-pass candidate and the shortest stop/go check was to retest that
+candidate directly. The result is `STOP_WITH_EVIDENCE`: all six promotion review
+trials failed strict `outside_source_count==0` / `spill_count==0` gates. This
+means S2F3/S2F4 are not skipped; they are now the next diagnostic work.
 
 - [ ] **Step 6: Run S2F3 C3 SDF sweep**
 
@@ -1005,35 +1011,42 @@ NATIVE_BEAKER_NOT_FLUID_SAFE_COLLIDER
 This is not a no-go for fluid overall; it only means native render mesh should be
 wrapped by a fluid-safe physics proxy.
 
-- [ ] **Step 8: Write S2F5 promotion review**
+- [x] **Step 8: Write S2F5 promotion review**
 
-Create:
+Created:
 
 ```text
-docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_followup_promotion_review_20260707.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json
+docs/labutopia_lab_poc/evidence_manifests/fluid_spike_isaacsim41_ebench_s2f5_promotion_review_20260708_001/
+assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f5/
 ```
 
-Required fields:
+Result:
 
 ```json
 {
   "stage": "S2F5_PROMOTION_REVIEW",
-  "status": "GO_NEXT|STOP_WITH_EVIDENCE",
+  "status": "STOP_WITH_EVIDENCE",
   "best_for_s3": [],
   "s3_kinematic_pour_released": false,
-  "ranked_candidates": [],
-  "blocked_claims": [
-    "S3 kinematic pour released without PASS_SOURCE_HOLD",
-    "native beaker mesh is fluid-safe by default",
-    "isosurface render equals physical success",
-    "particle contact report can be used as score evidence"
-  ]
+  "reason": "one_or_more_s2f5_trials_failed"
 }
 ```
 
-Set `s3_kinematic_pour_released=true` only if `best_for_s3` is non-empty and
-every promoted candidate has same-run particle readback, warning scan, and visual
-diagnostic overlays.
+Trial summary:
+
+```text
+C2A_009_S2F2_VEL020_S2F5_P0256_SEED000 FAIL_CONTAINER_LEAK outside=1 spill=1 below=0
+C2A_009_S2F2_VEL020_S2F5_P0256_SEED001 FAIL_CONTAINER_LEAK outside=1 spill=1 below=0
+C2A_009_S2F2_VEL020_S2F5_P0256_SEED002 FAIL_CONTAINER_LEAK outside=2 spill=2 below=0
+C2A_009_S2F2_VEL020_S2F5_P1024_SEED000 FAIL_CONTAINER_LEAK outside=347 spill=214 below=133
+C2A_009_S2F2_VEL020_S2F5_P1024_SEED001 FAIL_CONTAINER_LEAK outside=340 spill=203 below=137
+C2A_009_S2F2_VEL020_S2F5_P1024_SEED002 FAIL_CONTAINER_LEAK outside=338 spill=202 below=136
+```
+
+Keep `s3_kinematic_pour_released=false`. Do not continue by retuning the same
+C2A_009 velocity candidate blindly; run S2F3/S2F4 to test SDF and native-derived
+collider routes.
 
 - [ ] **Step 9: Update docs and commit S2F result**
 

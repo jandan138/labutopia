@@ -63,6 +63,7 @@ DEFAULT_NATIVE_USD = "assets/chemistry_lab/lab_001/lab_001.usd"
 @dataclass(frozen=True)
 class ColliderConfig:
     particle_count: int = 256
+    particle_seed: int | None = None
     grid_dims: tuple[int, int, int] = (8, 8, 4)
     particle_spacing: float = 0.0045
     particle_width: float = 0.0035
@@ -400,12 +401,24 @@ def build_source_particle_positions(config: ColliderConfig) -> list[tuple[float,
                 radius = math.sqrt(x * x + y * y)
                 if radius <= usable_radius:
                     angle = math.atan2(y, x)
+                    sort_metric = radius + angle * 1e-6
+                    if config.particle_seed is not None:
+                        payload = (
+                            f"{config.particle_seed}:"
+                            f"{config.source_center[0] + x:.9f}:"
+                            f"{config.source_center[1] + y:.9f}:"
+                            f"{z:.9f}"
+                        )
+                        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+                        jitter = int(digest[:16], 16) / float(16**16 - 1)
+                        radius_score = radius / usable_radius if usable_radius > 0 else 0.0
+                        sort_metric = radius_score * 0.70 + jitter * 0.30
                     candidates.append(
                         (
                             config.source_center[0] + x,
                             config.source_center[1] + y,
                             z,
-                            radius + angle * 1e-6,
+                            sort_metric,
                         )
                     )
     candidates.sort(key=lambda item: (-item[3], item[2], item[0], item[1]))
