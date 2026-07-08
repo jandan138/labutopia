@@ -1,0 +1,86 @@
+{
+  "generated_at_utc": "2026-07-08T17:20:00+00:00",
+  "manifest_type": "fluid_spike_visual_review",
+  "review_scope": "colleague_native_usd_50k_completed_pbd_step_video_long",
+  "source_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708.json",
+  "overall_verdict": "WARN",
+  "duration_review": {
+    "requested_duration_seconds": 20.0,
+    "actual_duration_seconds": 20.0,
+    "fps": 12,
+    "frame_count": 240,
+    "resolution": "960x540",
+    "duration_requirement_met": true
+  },
+  "images_reviewed": {
+    "A_early_closeup": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/beaker2_closeup_native_material_frames/frame_0001.png",
+    "B_mid_closeup": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/beaker2_closeup_native_material_frames/frame_0060.png",
+    "C_late_closeup": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/beaker2_closeup_native_material_frames/frame_0120.png",
+    "D_terminal_closeup": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/beaker2_closeup_native_material_frames/frame_0240.png",
+    "E_terminal_marker": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/beaker2_closeup_review_marker_frames/frame_0240.png"
+  },
+  "per_image": [
+    {
+      "id": "A_early_closeup",
+      "verdict": "WARN",
+      "visible_evidence": "The transparent beaker rim is visible and red liquid/particle content fills the source beaker.",
+      "main_risk": "The red content reads like a solid mass at the start, so this frame is not visual material parity evidence."
+    },
+    {
+      "id": "B_mid_closeup",
+      "verdict": "PASS",
+      "visible_evidence": "The beaker walls are clear and the red content has collapsed toward the lower/front part of the beaker.",
+      "main_risk": "The below-table leak is not directly visible in this native closeup."
+    },
+    {
+      "id": "C_late_closeup",
+      "verdict": "PASS",
+      "visible_evidence": "The beaker remains visible and the red content continues to sit low in a smaller, separated shape.",
+      "main_risk": "The native render shows failed containment indirectly; readback counts remain the physics evidence."
+    },
+    {
+      "id": "D_terminal_closeup",
+      "verdict": "WARN",
+      "visible_evidence": "Terminal native frame shows transparent beaker and red blobs low/front inside or near the cup boundary.",
+      "main_risk": "Most below-table particles are not visible from this camera angle, so the frame alone under-represents the measured leak."
+    },
+    {
+      "id": "E_terminal_marker",
+      "verdict": "WARN",
+      "visible_evidence": "Review markers make the remaining readback particle positions easier to see inside the cup area.",
+      "main_risk": "Markers are diagnostic overlays and are not physical fluid mesh or material parity evidence."
+    }
+  ],
+  "product_interpretation": {
+    "useful_for_pm_demo": true,
+    "recommended_primary_media": "beaker2_closeup_native_material.mp4",
+    "recommended_supporting_media": [
+      "beaker2_closeup_review_markers.mp4",
+      "camera1_native_material.mp4",
+      "camera2_native_material.mp4"
+    ],
+    "explanation": "The 20-second closeup is useful for showing the full native USD scene and native-material rendering over time. The leak classification should still be explained from particle readback, not from visual inspection alone."
+  },
+  "physics_summary": {
+    "classification": "FAIL_CONTAINER_LEAK",
+    "selected_particle_count": 50000,
+    "below_table_count": 49235,
+    "source_retention_fraction": 0.0153,
+    "readback_position_changed": true
+  },
+  "claim_boundary": {
+    "allowed": [
+      "long_native_material_video_duration_met=true",
+      "native_usd_scene_step_video_recorded=true",
+      "native_closeup_video_shows_time_evolution=true",
+      "leak_status_supported_by_particle_readback=true",
+      "visual_review_overall_verdict=WARN"
+    ],
+    "blocked": [
+      "native_closeup_video_alone_proves_below_table_leak",
+      "marker_video_equals_physical_fluid_mesh",
+      "native_visual_material_parity_complete",
+      "completed_pbd_static_leak_equals_benchmark_ready_fluid"
+    ]
+  }
+}

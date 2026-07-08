@@ -139,6 +139,38 @@ s2f3_c3_sdf_sweep_completed=true
 s2f3_c3_sdf_sweep_status=STOP_WITH_EVIDENCE
 s2f3_c3_sdf_sweep_reason=no_c3a_sdf_candidate_passed
 s2f3_best_for_s2f5=[]
+colleague_liquid_usd_bounded_leak_smoke_executed=true
+colleague_liquid_usd_bounded_classification=FAIL_CONTAINER_LEAK
+colleague_liquid_usd_bounded_sampled_particle_count=512
+colleague_liquid_usd_bounded_original_particle_count=50000
+colleague_liquid_usd_bounded_below_table_count=362
+colleague_liquid_usd_bounded_readback_position_changed=true
+colleague_liquid_usd_red_side_projection_video_available=true
+colleague_raw_50k_liquid_usd_d0_audit_completed=true
+colleague_raw_50k_liquid_usd_d0_classification=STOP_RAW_RUNTIME_INCOMPLETE
+colleague_raw_50k_liquid_usd_particle_count=50000
+colleague_raw_50k_liquid_usd_runtime_step_executed=false
+colleague_raw_50k_liquid_usd_step_skipped_reason=raw_runtime_contract_incomplete
+colleague_raw_50k_liquid_usd_direct_runtime_claim_allowed=false
+colleague_50k_completed_pbd_static_leak_run_executed=true
+colleague_50k_completed_pbd_static_leak_classification=FAIL_CONTAINER_LEAK
+colleague_50k_completed_pbd_static_leak_particle_scope=full_original_50k
+colleague_50k_completed_pbd_static_leak_below_table_count=36013
+colleague_50k_completed_pbd_static_leak_readback_position_changed=true
+colleague_50k_completed_pbd_static_leak_real_rgb_camera_available=true
+colleague_50k_completed_pbd_static_leak_visual_review=PASS
+colleague_native_usd_50k_completed_pbd_step_video_recorded=true
+colleague_native_usd_50k_completed_pbd_classification=FAIL_CONTAINER_LEAK
+colleague_native_usd_50k_completed_pbd_below_table_count=46301
+colleague_native_usd_50k_completed_pbd_source_retention_fraction=0.07398
+colleague_native_usd_50k_material_closure=isaacsim41_core_mdl_local_mirror
+colleague_native_usd_50k_mdl_compile_status=PASS
+colleague_native_usd_50k_visual_review=WARN
+colleague_native_usd_50k_long_video_recorded=true
+colleague_native_usd_50k_long_video_duration_seconds=20.0
+colleague_native_usd_50k_long_video_frame_count=240
+colleague_native_usd_50k_long_completed_pbd_below_table_count=49235
+colleague_native_usd_50k_long_visual_review=WARN
 s3_kinematic_pour_released=false
 next_fluid_work=["S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP"]
 s2_s3_collider_matrix_required=true
@@ -155,6 +187,14 @@ policy_score_claim_allowed
 official_leaderboard_claim_allowed
 visual_only_liquid_equals_true_fluid
 diagnostic_projection_equals_product_camera_render
+original_50k_colleague_liquid_usd_is_benchmark_ready
+direct_original_50k_colleague_liquid_usd_runtime_result
+raw_50k_colleague_liquid_usd_can_direct_step_as_true_pbd_fluid
+completed_pbd_static_leak_equals_benchmark_ready_fluid
+real_rgb_review_marker_equals_physical_fluid_mesh
+native_visual_material_parity_complete
+wide_native_cameras_prove_fluid_leak_detail
+marker_video_equals_physical_fluid_mesh
 ```
 
 S2 canonical evidence:
@@ -276,6 +316,224 @@ PhysX error、SDF warning 或 material binding scope warning；只有 headless w
 视觉 review 结论：direct native 两张 terminal diagnostic frame 为 `PASS`，红色 below-table leak 点清楚；
 proxy-wrapper terminal frame 为 `WARN`，图像非空且 source region 可识别，但粒子颜色和 proxy 底线接近，
 只能作为诊断图，不能升级成产品级 render。
+
+Colleague liquid USD bounded leak smoke 已完成：`fluid_spike_colleague_liquid_usd_leak_smoke_20260708.json`
+记录对同事提供的
+`outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd`
+做的受控漏液诊断。该文件原始 `/World/ParticleSet` 有 `50000` 个 authored positions；本次没有修改原 USD，
+而是确定性抽样 `512` 个点，保留 authored particle width `0.0005940000992268324`，在 IsaacSim41 headless
+minimal native beaker slice 中重新 author 为红色 PBD particles，并用 `native-proxy-wrapper` 碰撞路线 step
+`120` 帧。结果为 `classification=FAIL_CONTAINER_LEAK`：第 0 步 `source_count=512`，终态
+`source_count=150`、`outside_source_count=362`、`below_table_count=362`、`target_count=0`、`spill_count=0`、
+`particle_count_final_fraction=1.0`、`nan_count=0`、`readback_position_changed=true`、
+`max_displacement=0.19574435605145393`。
+
+对应 artifacts：
+
+```text
+fluid_spike_colleague_liquid_usd_leak_smoke_20260708.json
+fluid_spike_colleague_liquid_usd_leak_smoke_20260708_001/runtime_smoke_summary.json
+fluid_spike_colleague_liquid_usd_leak_smoke_20260708_001/particle_readback_trace.jsonl
+fluid_spike_colleague_liquid_usd_leak_smoke_20260708_001/colleague_liquid_leak_red_side_projection.mp4
+fluid_spike_colleague_liquid_usd_leak_smoke_20260708_001/projection_frames/frame_0000.png
+fluid_spike_colleague_liquid_usd_leak_smoke_20260708_001/projection_frames/frame_0060.png
+fluid_spike_colleague_liquid_usd_leak_smoke_20260708_001/projection_frames/frame_0120.png
+fluid_spike_colleague_liquid_usd_leak_smoke_20260708_001/minimal_native_beaker_slice.usda
+```
+
+这条证据的 PM 口径是：同事 USD 的初始液体点位读入正确，但在这次 bounded PBD/readback smoke 中，
+source beaker 没能稳定装住这些粒子。它只释放 `512` 粒子采样 smoke 的 leak 诊断，不释放原始 `50000`
+粒子完整 runtime claim、产品级 RGB render、S3 倒液、S4 Franka replay、EBench score、policy score 或
+leaderboard claim。红色视频是对准 source beaker 的 diagnostic side projection，不是最终视觉效果。
+
+Colleague raw 50k liquid USD D0 direct-step readiness audit 已完成，且
+`runtime_step_executed=false`：
+`fluid_spike_colleague_raw_usd_direct_step_audit_20260708.json` 记录对同一份
+`lab_001_level1_pour_tabletop_with_liquid.usd` 的 immutable raw audit。D0 不重新 author particles、
+不添加 `PhysxPBDMaterialAPI`、不换红色诊断粒子、不加 wrapper collider，只检查原文件是否已经满足
+IsaacSim41 直接按真实 PBD fluid step 的最小 runtime contract。结果为
+`classification=STOP_RAW_RUNTIME_INCOMPLETE`，`direct_original_50k_runtime_claim_allowed=false`：
+原始 `/World/ParticleSet` 有 `50000` 个 points，`/World/ParticleSystem` 和 relationship 存在，
+`gpu_dynamics_authored=true`，但缺少 `PhysxPBDMaterialAPI`，且 `PhysicsScene` 重力为
+`gravity_direction=(0,0,0)`、`gravity_magnitude="-Infinity"`，并记录
+`gravity_invalid_reasons=["zero_gravity_direction", "nonfinite_gravity_magnitude"]`。因此这份 raw USD
+只能说“包含液体初始点位”，不能说“原始 50k 已经可直接 step 成 benchmark-ready 真实液体”。
+
+D0 的 `particle_count_final_fraction=1.0`、`nan_count=0`、`readback_position_changed=false`
+属于 no-step static snapshot 字段，不是 post-timeline survival evidence。因为 raw runtime contract
+已经不完整，runner 记录 `step_skipped_reason=raw_runtime_contract_incomplete`，并把
+`warning_scan_status` 标为 `not_run_due_to_raw_contract_stop`。
+
+对应 artifacts：
+
+```text
+fluid_spike_colleague_raw_usd_direct_step_audit_20260708.json
+fluid_spike_colleague_raw_usd_direct_step_audit_20260708_001/runtime_smoke_summary.json
+fluid_spike_colleague_raw_usd_direct_step_audit_20260708_001/raw_particle_readback_trace.jsonl
+```
+
+Colleague 50k completed-PBD static leak evidence 已完成：
+`fluid_spike_colleague_50k_completed_pbd_static_leak_20260708.json` 记录的是 D1-D3 诊断路线，
+不是 raw USD direct-step。它把同事 raw USD 里的 `/World/ParticleSet` 当成 initial-condition data，
+使用全部 `50000` 个点位，在 IsaacSim41 运行时补齐有效 `ParticleSystem`、`ParticleSet`、PBD material、
+GPU dynamics 和 readback 设置，然后静置 step `120` 帧。结论是 `classification=FAIL_CONTAINER_LEAK`：
+`particle_scope=full_original_50k`、`full_original_50k_completed_pbd_overlay=true`、
+`runtime_step_executed=true`、`readback_position_changed=true`、`particle_count_final_fraction=1.0`、
+`nan_count=0`，但终态 `outside_source_count=36013`、`below_table_count=36013`、
+`source_retention_fraction=0.27974`。这正是当前领导展示需要的证据：补全 PBD 物理后，静置就会漏。
+
+对应 artifacts：
+
+```text
+fluid_spike_colleague_50k_completed_pbd_static_leak_20260708.json
+fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/runtime_smoke_summary.json
+fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/particle_readback_trace.jsonl
+fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/colleague_liquid_leak_red_side_projection.mp4
+fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/colleague_liquid_static_leak_rgb_camera.mp4
+fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/rgb_camera_frames/frame_0120.png
+fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/projection_frames/frame_0120.png
+fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/minimal_native_beaker_slice.usda
+fluid_spike_colleague_50k_completed_pbd_static_leak_visual_review_20260708.json
+```
+
+RGB review camera 是真实 IsaacSim41 camera 证据：`colleague_liquid_static_leak_rgb_camera.mp4`
+可打开，`13` frames、`960x540`、`15 fps`。独立视觉 review 对终帧 `frame_0120.png` 判定为 `PASS`：
+杯子居中可识别，杯底外侧红色漏出区域清楚。红色 D3 review markers 来自同一步的
+`particle_readback_positions`，只是给人看的非碰撞标记，不参与物理；漏液判定仍以
+`particle_readback_trace.jsonl` 和 region counts 为准。
+
+这条 evidence 允许说：
+
+```text
+colleague_50k_completed_pbd_static_leak_run_executed=true
+colleague_50k_completed_pbd_static_leak_classification=FAIL_CONTAINER_LEAK
+colleague_50k_completed_pbd_static_leak_particle_scope=full_original_50k
+colleague_50k_completed_pbd_static_leak_below_table_count=36013
+colleague_50k_completed_pbd_static_leak_real_rgb_camera_available=true
+```
+
+仍然禁止说：
+
+```text
+raw_50k_colleague_liquid_usd_can_direct_step_as_true_pbd_fluid
+completed_pbd_static_leak_equals_benchmark_ready_fluid
+real_rgb_review_marker_equals_physical_fluid_mesh
+s3_kinematic_pour_released
+fluid_score_claim_allowed
+```
+
+Colleague full native USD 50k completed-PBD step video 已完成：
+`fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708.json` 记录的是更强的
+D3N/D4N 证据线。它不是 minimal native beaker slice，而是直接打开同事提供的完整入口
+`lab_001_level1_pour_tabletop_with_liquid.usd`，在原生桌面布局里使用全部 `50000` 个 authored
+particle positions 作为 initial-condition data，并在运行时补齐 `/World/CompletedPBD/ParticleSystem`
+和 `/World/CompletedPBD/ParticleSet`。原始 raw USD 不被修改；原始不完整的 `/World/fluid`、
+`/World/ParticleSet` 和 `/World/ParticleSystem` 只在 runtime session 中 deactivate，避免把 raw
+incomplete contract 和 completed-PBD overlay 混在一起。
+
+关键结果：
+
+```text
+runtime_step_executed=true
+native_scene_opened=true
+particle_scope=full_original_50k
+selected_particle_count=50000
+runtime_pbd_completion_overlay_used=true
+classification=FAIL_CONTAINER_LEAK
+outside_source_count=46301
+below_table_count=46301
+source_retention_fraction=0.07398
+particle_count_final_fraction=1.0
+nan_count=0
+readback_position_changed=true
+max_displacement=3.258722390681572
+```
+
+这条 evidence 的材质处理也已登记：`material_closure_mode=isaacsim41_core_mdl_local_mirror`，
+把 `/isaac-sim/kit/mdl/core` 下的 core MDL 依赖 mirror 到 evidence artifact 目录，并把 native
+`info:mdl:sourceAsset` retarget 到 local mirror。runtime log 扫描为 `mdl_compile_status=PASS`。
+其中 `/World/Looks/OmniSurface_Glass/Shader` 使用
+`OmniSurface_Glass_to_OmniGlass_for_isaacsim41` compatibility fallback。它解决的是 IsaacSim41
+runtime 可编译/可渲染问题，不释放 `LabUtopia51 native visual material parity`。
+
+对应 artifacts：
+
+```text
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708.json
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/runtime_smoke_summary.json
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/particle_readback_trace.jsonl
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/native_scene_completed_pbd_overlay.usda
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/beaker2_closeup_native_material.mp4
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/beaker2_closeup_review_markers.mp4
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/camera1_native_material.mp4
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/camera2_native_material.mp4
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/material_closure_isaacsim41_core/
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_visual_review_20260708.json
+```
+
+视觉 review 是 `WARN`：closeup end frame 能支持“failed containment / leak”叙事，但 first usable
+early closeup frame 的红色粒子团会像实体红块，Camera1/Camera2 太远，只能作为原生桌面上下文。产品展示时应使用
+`beaker2_closeup_native_material.mp4` 作为主视频，`beaker2_closeup_review_markers.mp4` 只作为
+readback 粒子位置诊断，不把 marker 当真实 fluid mesh。
+
+这条 evidence 允许说：
+
+```text
+colleague_native_usd_50k_completed_pbd_step_video_recorded=true
+colleague_native_usd_50k_completed_pbd_classification=FAIL_CONTAINER_LEAK
+colleague_native_usd_50k_completed_pbd_below_table_count=46301
+colleague_native_usd_50k_material_closure=isaacsim41_core_mdl_local_mirror
+colleague_native_usd_50k_mdl_compile_status=PASS
+colleague_native_usd_50k_visual_review=WARN
+```
+
+仍然禁止说：
+
+```text
+raw_50k_colleague_liquid_usd_can_direct_step_as_true_pbd_fluid
+completed_pbd_static_leak_equals_benchmark_ready_fluid
+marker_video_equals_physical_fluid_mesh
+native_visual_material_parity_complete
+s3_kinematic_pour_released
+fluid_score_claim_allowed
+```
+
+Colleague full native USD 50k completed-PBD long video evidence 已完成：
+`fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708.json` 是短版 native
+step video 的 20 秒复跑版本。它使用同一个 full native USD、同一个 `50000` 粒子 initial condition、
+同一个 `/World/CompletedPBD/*` runtime overlay 和同一个 IsaacSim41 core MDL local mirror material closure。
+
+关键结果：
+
+```text
+duration=20.000000s
+fps=12
+frame_count=240
+resolution=960x540
+selected_particle_count=50000
+runtime_step_executed=true
+classification=FAIL_CONTAINER_LEAK
+below_table_count=49235
+source_retention_fraction=0.0153
+mdl_compile_status=PASS
+```
+
+对应 artifacts：
+
+```text
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708.json
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/runtime_smoke_summary.json
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/particle_readback_trace.jsonl
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/beaker2_closeup_native_material.mp4
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/beaker2_closeup_review_markers.mp4
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/camera1_native_material.mp4
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708_001/camera2_native_material.mp4
+fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_visual_review_20260708.json
+```
+
+视觉 review 是 `WARN`：长版 closeup 满足 20 秒展示需求，且能看到原生材质场景和红色液体/粒子团随 step
+塌落；但 below-table leak 主要由 readback 证明，native closeup 画面本身不能单独证明所有 below-table
+粒子。产品展示时主视频使用 `beaker2_closeup_native_material.mp4`，marker 视频只作为 readback 诊断。
 
 `eos2_expert_oracle_s2_readback_render_inventory_20260706.json` 和
 `eos2_expert_oracle_s2_claim_review_20260706.json` 是 S1R-D fresh S1 之后的 no-new-live S2 证据盘点和声明复核。

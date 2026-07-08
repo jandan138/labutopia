@@ -1,0 +1,78 @@
+{
+  "generated_at_utc": "2026-07-08T00:00:00+00:00",
+  "manifest_type": "fluid_spike_visual_review",
+  "review_scope": "colleague_native_usd_50k_completed_pbd_step_video",
+  "source_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708.json",
+  "overall_verdict": "WARN",
+  "review_method": "independent_visual_qa_subagent_plus_local_frame_inspection",
+  "images_reviewed": {
+    "A_early_closeup": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/beaker2_closeup_native_material_frames/frame_0004.png",
+    "A_end_closeup": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/beaker2_closeup_native_material_frames/frame_0024.png",
+    "B_end_marker": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/beaker2_closeup_review_marker_frames/frame_0024.png",
+    "C_wide_camera1_end": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/camera1_native_material_frames/frame_0024.png",
+    "D_wide_camera2_end": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_20260708_001/camera2_native_material_frames/frame_0024.png"
+  },
+  "per_image": [
+    {
+      "id": "A_early_closeup",
+      "verdict": "WARN",
+      "visible_evidence": "The first usable closeup frame has an identifiable beaker rim/spout; red content is clearly present.",
+      "main_risk": "Lower beaker/content reads like a solid red mass, weakening transparent-beaker credibility."
+    },
+    {
+      "id": "A_end_closeup",
+      "verdict": "PASS",
+      "visible_evidence": "Transparent beaker is visible; red material remains inside and a red blob/smear is outside on the tabletop, supporting leak/failed containment.",
+      "main_risk": "Escaped material looks spherical/artifact-like, not clearly falling or spreading."
+    },
+    {
+      "id": "B_end_marker",
+      "verdict": "WARN",
+      "visible_evidence": "Beaker and escaped red material are visible; marker view helps locate contained vs escaped material.",
+      "main_risk": "Cyan/marker overlay is diagnostic, not product-facing native evidence."
+    },
+    {
+      "id": "C_wide_camera1_end",
+      "verdict": "WARN",
+      "visible_evidence": "Tabletop layout and tiny beaker/red material positions are visible.",
+      "main_risk": "Too distant for fluid evidence; large black band makes framing weak."
+    },
+    {
+      "id": "D_wide_camera2_end",
+      "verdict": "WARN",
+      "visible_evidence": "Overhead layout shows tabletop and tiny red/grey objects.",
+      "main_risk": "Too distant to identify transparent beaker or leak behavior clearly."
+    }
+  ],
+  "product_interpretation": {
+    "useful_for_pm_demo": true,
+    "recommended_primary_media": "beaker2_closeup_native_material.mp4",
+    "recommended_supporting_media": [
+      "beaker2_closeup_review_markers.mp4",
+      "camera1_native_material.mp4",
+      "camera2_native_material.mp4"
+    ],
+    "explanation": "The closeup end frame supports the failed-containment story, while wide native cameras are context-only and the marker video is diagnostic-only."
+  },
+  "retake_recommendations": [
+    "Capture a closer native-material end view with the escaped red material in frame and enough angle to show it outside the beaker wall.",
+    "Add an intermediate frame where material is visibly falling/leaving the beaker, not just already separated.",
+    "Fix the start-frame material/readability so the beaker remains visibly transparent instead of reading as a solid red object.",
+    "Keep wide cameras only as context shots; do not rely on them for fluid evidence.",
+    "Reduce black empty framing in camera1."
+  ],
+  "claim_boundary": {
+    "allowed": [
+      "native_closeup_end_frame_supports_failed_containment_story=true",
+      "wide_native_cameras_support_tabletop_context_only=true",
+      "visual_review_overall_verdict=WARN"
+    ],
+    "blocked": [
+      "visual_review_passes_product_quality_without_caveats",
+      "wide_native_cameras_prove_fluid_leak_detail",
+      "marker_video_equals_physical_fluid_mesh",
+      "native_visual_material_parity_complete"
+    ]
+  },
+  "confidence": "high"
+}

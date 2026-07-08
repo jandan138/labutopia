@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LabUtopia 7.07 液体周报：True PhysX/PBD Fluid Spike</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7f8;
+      --paper: #ffffff;
+      --paper-2: #eef5f2;
+      --paper-3: #f8fbfa;
+      --ink: #142126;
+      --muted: #5f7078;
+      --line: #d7e0de;
+      --green: #0f766e;
+      --amber: #b45309;
+      --red: #be123c;
+      --warn: #fff4d6;
+      --shadow: 0 12px 34px rgba(20, 33, 38, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Noto Sans CJK SC", "WenQuanYi Micro Hei", "DejaVu Sans", "Segoe UI", Arial, sans-serif;
+      line-height: 1.62;
+      letter-spacing: 0;
+    }
+
+    main {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 34px 22px 56px;
+    }
+
+    .hero,
+    .card,
+    .note,
+    .panel,
+    .timeline,
+    details.evidence-details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+      gap: 24px;
+      padding: 30px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      color: var(--amber);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    h1 {
+      margin: 8px 0 12px;
+      font-size: clamp(30px, 4.8vw, 56px);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    h2 { margin: 0 0 12px; font-size: 22px; }
+    h3 { margin: 0 0 8px; font-size: 17px; }
+    p { margin: 0 0 12px; }
+    a { color: var(--green); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.92em;
+      overflow-wrap: anywhere;
+    }
+
+    .lede {
+      max-width: 800px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .metric {
+      min-height: 88px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper-2);
+    }
+
+    .metric strong {
+      display: block;
+      color: var(--green);
+      font-size: 31px;
+      line-height: 1;
+    }
+
+    .metric .danger { color: var(--red); }
+    .metric span { color: var(--muted); font-size: 13px; }
+
+    .hero-proof {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--paper-3);
+    }
+
+    .hero-proof .proof-frames {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .hero-proof img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background: #edf1f2;
+    }
+
+    .hero-proof figcaption {
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 18px;
+    }
+
+    .nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .card, .panel, .note { padding: 18px; }
+    .card ul { margin: 0; padding-left: 18px; }
+    .card li { margin: 7px 0; }
+
+    .verdict {
+      border-left: 5px solid var(--red);
+      background: #fff7f8;
+    }
+
+    .pass {
+      border-left: 5px solid var(--green);
+      background: #f3fbf9;
+    }
+
+    .caution {
+      border-left: 5px solid var(--amber);
+      background: var(--warn);
+    }
+
+    .section {
+      margin: 18px 0;
+      padding: 18px;
+    }
+
+    .video-lead {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.5fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .figure-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 14px 0;
+    }
+
+    .video-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 14px 0;
+    }
+
+    figure.diagnostic {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+
+    figure.diagnostic img,
+    figure.diagnostic video {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background: #edf1f2;
+    }
+
+    figure.diagnostic figcaption {
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    figure.diagnostic figcaption strong { color: var(--green); }
+    figure.issue { border-color: #f2a7b5; }
+    figure.issue figcaption { background: #fff1f3; color: var(--ink); }
+    figure.warn { border-color: #efd58d; }
+    figure.warn figcaption { background: var(--warn); color: var(--ink); }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+
+    table {
+      width: 100%;
+      min-width: 780px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: var(--paper-2);
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 2px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .badge.red { color: var(--red); background: #fff1f3; border-color: #f2a7b5; }
+    .badge.green { color: var(--green); background: #eefaf7; border-color: #9ed7ca; }
+    .badge.amber { color: var(--amber); background: var(--warn); border-color: #efd58d; }
+
+    .timeline {
+      padding: 18px;
+      margin: 18px 0;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .step {
+      min-height: 138px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper-3);
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--green);
+      font-size: 14px;
+    }
+
+    .step span { color: var(--muted); font-size: 13px; }
+    .step.stop { background: #fff7f8; border-color: #f2a7b5; }
+    .step.next { background: var(--warn); border-color: #efd58d; }
+
+    details.evidence-details {
+      box-shadow: none;
+      padding: 10px 12px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    details.evidence-details summary {
+      cursor: pointer;
+      color: var(--green);
+      font-weight: 850;
+    }
+
+    details.evidence-details pre {
+      margin: 10px 0 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #0f1720;
+      color: #e6edf3;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .small { color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 900px) {
+      main { padding: 22px 14px 42px; }
+      .hero,
+      .video-lead,
+      .two {
+        grid-template-columns: 1fr;
+      }
+      .grid,
+      .figure-row,
+      .video-row,
+      .steps {
+        grid-template-columns: 1fr 1fr;
+      }
+      h1 { font-size: 34px; }
+    }
+
+    @media (max-width: 600px) {
+      .hero, .card, .panel, .note, .timeline { padding: 16px; }
+      .metrics,
+      .grid,
+      .figure-row,
+      .video-row,
+      .steps {
+        grid-template-columns: 1fr;
+      }
+      table { min-width: 680px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">LabUtopia Weekly · 2026-07-07 · Fluid</div>
+        <h1>真实液体能 step，但当前杯子还装不住</h1>
+        <p class="lede">这份周报把 7.07 液体线的调研、S0-S2F 碰撞体尝试、同事 50k liquid USD 真实场景实验合并成一个产品可读版本。结论很明确：<code>PhysX/PBD</code> 粒子运行链路能闭合；同事原生 <code>level1_pour</code> 场景能补全成可 step/readback 的 50k PBD 证据；但静置就大规模漏液，所以还不能进入 benchmark-ready 或 EBench score 口径。</p>
+      </div>
+      <div class="hero-side">
+        <div class="metrics" aria-label="关键指标">
+          <div class="metric">
+            <strong>50k</strong>
+            <span>同事 USD 中的原始液体点位全部用于 native-scene run</span>
+          </div>
+          <div class="metric">
+            <strong>20s</strong>
+            <span>原生完整 USD 场景 closeup/native-material 视频</span>
+          </div>
+          <div class="metric">
+            <strong class="danger">49,235</strong>
+            <span>20 秒 run 终态低于桌面线的粒子数</span>
+          </div>
+          <div class="metric">
+            <strong class="danger">FAIL</strong>
+            <span>当前分类：<code>FAIL_CONTAINER_LEAK</code></span>
+          </div>
+        </div>
+        <figure class="hero-proof">
+          <div class="proof-frames">
+            <img src="assets/liquid-closeup-frame-0001.png" alt="液体 closeup early frame">
+            <img src="assets/liquid-closeup-frame-0240.png" alt="液体 closeup terminal frame">
+          </div>
+          <figcaption>Before / after：画面帮助理解 step 过程；漏液判定来自 readback。</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <nav class="nav" aria-label="页面导航">
+      <a href="#pm-summary">产品结论</a>
+      <a href="#video-evidence">视频证据</a>
+      <a href="#what-ran">到底跑了什么</a>
+      <a href="#journey">一路尝试</a>
+      <a href="#material">材质与粒子</a>
+      <a href="#next">下一步</a>
+      <a href="#evidence">证据索引</a>
+    </nav>
+
+    <section id="pm-summary" class="grid">
+      <article class="card pass">
+        <h2>已经证明了什么</h2>
+        <p>目标 IsaacSim41 / EBench 环境里，<code>PhysxParticleSystem</code>、<code>ParticleSet</code>、GPU dynamics 和 particle readback 都能工作。也就是说，底层不是“完全不能做液体”。</p>
+      </article>
+      <article class="card verdict">
+        <h2>真正卡在哪里</h2>
+        <p>卡在容器碰撞体。当前 LabUtopia 烧杯 mesh、SDF、segmented proxy、native-derived route 都没有稳定达到 zero-leak。50k native-scene run 的读数说明静置就漏，不是倒液动作太激烈才漏。</p>
+      </article>
+      <article class="card caution">
+        <h2>不能对外怎么说</h2>
+        <p>不能说 <code>level1_pour</code> 已经有真实液体，不能说同事 raw USD 能直接 step 成 benchmark-ready fluid，不能说已经可以 EBench score，也不能说视频里的红色 blob 等于最终产品级水面效果。</p>
+      </article>
+    </section>
+
+    <section id="video-evidence" class="panel section">
+      <h2>最适合给领导看的视频证据</h2>
+      <p>下面这条是主证据：打开同事提供的完整 <code>lab_001_level1_pour_tabletop_with_liquid.usd</code>，保留原生桌面布局和摄像机语境，把 50k 初始点位补成 IsaacSim41 可 step/readback 的 <code>CompletedPBD</code> runtime overlay，然后录 20 秒 closeup。视频负责让人看懂“原生场景里液体随 step 变化”；漏液判定仍以 particle readback 的 region count 为准。</p>
+
+      <div class="video-lead">
+        <figure class="diagnostic issue">
+          <video controls muted preload="metadata" playsinline poster="assets/liquid-closeup-frame-0060.png">
+            <source src="assets/liquid-native-20s-closeup.webm" type="video/webm">
+            <source src="assets/liquid-native-20s-closeup.mp4" type="video/mp4">
+          </video>
+          <figcaption><strong>主视频：</strong>20 秒 native-material closeup。红色液体/粒子团随 step 从满杯状态塌到杯底和前侧；终态读数为 <code>below_table_count=49235</code>。</figcaption>
+        </figure>
+        <article class="note verdict">
+          <h3>这条视频怎么读</h3>
+          <p>它是原生完整 USD 场景，不是只截一个杯子的最小场景。</p>
+          <p>它不是 raw USD 直接 step；raw USD 缺完整 <code>PhysxPBDMaterialAPI</code> 等 runtime contract，所以我们把原始 50k 点位当 initial condition，运行时另建 <code>/World/CompletedPBD/ParticleSystem</code> 和 <code>/World/CompletedPBD/ParticleSet</code>。</p>
+          <p>肉眼 closeup 看不到所有掉到桌下的粒子，所以“漏了多少”不能靠视频猜；数字来自 <code>particle_readback_trace.jsonl</code>。</p>
+        </article>
+      </div>
+
+      <div class="figure-row" aria-label="20 秒关键帧">
+        <figure class="diagnostic warn">
+          <img src="assets/liquid-closeup-frame-0001.png" alt="20 秒液体 closeup 第 1 帧">
+          <figcaption><strong>Early：</strong>杯口可见，红色粒子团很满，容易看成实体块。</figcaption>
+        </figure>
+        <figure class="diagnostic">
+          <img src="assets/liquid-closeup-frame-0060.png" alt="20 秒液体 closeup 第 60 帧">
+          <figcaption><strong>Mid：</strong>粒子团开始塌到杯子下方和前侧。</figcaption>
+        </figure>
+        <figure class="diagnostic">
+          <img src="assets/liquid-closeup-frame-0120.png" alt="20 秒液体 closeup 第 120 帧">
+          <figcaption><strong>Late：</strong>可见红色团块变小；漏液主要由 readback 支撑。</figcaption>
+        </figure>
+        <figure class="diagnostic issue">
+          <img src="assets/liquid-closeup-frame-0240.png" alt="20 秒液体 closeup 终帧">
+          <figcaption><strong>Terminal：</strong>终态仍能看到透明杯子和红色残留，但多数 below-table 粒子不在相机视野内。</figcaption>
+        </figure>
+      </div>
+
+      <div class="video-row">
+        <figure class="diagnostic warn">
+          <video controls muted preload="metadata" playsinline poster="assets/liquid-marker-frame-0240.png">
+            <source src="assets/liquid-native-20s-markers.webm" type="video/webm">
+            <source src="assets/liquid-native-20s-markers.mp4" type="video/mp4">
+          </video>
+          <figcaption><strong>Review markers：</strong>把 readback 粒子位置放大给人看；它是诊断 overlay，不是真实 fluid mesh。</figcaption>
+        </figure>
+        <figure class="diagnostic warn">
+          <video controls muted preload="metadata" playsinline poster="assets/liquid-native-camera1-poster.png">
+            <source src="assets/liquid-native-camera1.webm" type="video/webm">
+            <source src="assets/liquid-native-camera1.mp4" type="video/mp4">
+          </video>
+          <figcaption><strong>Camera1：</strong>原生桌面上下文视角，证明完整场景已打开；距离太远，不用于判断细节漏液。</figcaption>
+        </figure>
+        <figure class="diagnostic warn">
+          <video controls muted preload="metadata" playsinline poster="assets/liquid-native-camera2-poster.png">
+            <source src="assets/liquid-native-camera2.webm" type="video/webm">
+            <source src="assets/liquid-native-camera2.mp4" type="video/mp4">
+          </video>
+          <figcaption><strong>Camera2：</strong>原生桌面辅助视角；用于看布局，不作为最终 fluid parity 证据。</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="what-ran" class="panel section">
+      <h2>同事这个 USD 到底对应我们之前讨论的哪条方案</h2>
+      <p>它对应的是 <code>D0-D3 colleague 50k liquid USD branch</code>，不是已经通过的 <code>S3 kinematic pour</code>，也不是最终 EBench 评测任务。更通俗地说：同事给的是“杯子里摆好了 50k 个液体点位的原生场景包”；我们做的是“把这些点位补成 IsaacSim41 能真正 step/readback 的 PBD 粒子，然后验证静置会不会漏”。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>做了什么</th>
+              <th>结论</th>
+              <th>产品口径</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge amber">D0 raw audit</span></td>
+              <td>只审计 raw USD，不补 <code>PBD material</code>，不加 wrapper collider。</td>
+              <td>raw 文件有 <code>50000</code> 个点，但 runtime contract 不完整。</td>
+              <td>不能说“直接拿同事 USD step 就是可信液体实验”。</td>
+            </tr>
+            <tr>
+              <td><span class="badge red">B0 512 bounded</span></td>
+              <td>从 50k 点中抽样 <code>512</code> 个，补成 PBD 粒子，先做小样本静置诊断。</td>
+              <td><code>FAIL_CONTAINER_LEAK</code>，终态 <code>362</code> 个粒子低于桌面线。</td>
+              <td>小样本已经说明当前碰撞路线装不住。</td>
+            </tr>
+            <tr>
+              <td><span class="badge red">D1-D3 50k</span></td>
+              <td>使用全部 <code>50000</code> 个点，补齐 PBD runtime overlay，录真实 RGB camera。</td>
+              <td>minimal slice 终态 <code>below_table_count=36013</code>。</td>
+              <td>不是抽样问题，原始粒子规模下也会漏。</td>
+            </tr>
+            <tr>
+              <td><span class="badge red">Native 20s</span></td>
+              <td>打开完整原生入口 USD，使用 50k 点位 + <code>CompletedPBD</code> overlay，录 20 秒 closeup。</td>
+              <td><code>below_table_count=49235</code>，<code>source_retention_fraction=0.0153</code>。</td>
+              <td>领导能看到原生场景视频；结论仍是当前不 benchmark-ready。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details class="evidence-details">
+        <summary>关键运行参数</summary>
+        <pre>source_usd=outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd
+source_particle_count=50000
+selected_particle_count=50000
+runtime_step_executed=true
+runtime_pbd_completion_overlay_used=true
+steps=240
+video_stride=1
+video_fps=12
+frame_count=240
+duration=20.000000s
+resolution=960x540
+classification=FAIL_CONTAINER_LEAK
+below_table_count=49235
+source_retention_fraction=0.0153
+particle_count_final_fraction=1.0
+nan_count=0</pre>
+      </details>
+    </section>
+
+    <section id="journey" class="timeline">
+      <h2>7.07 液体线一路怎么走到这个结论</h2>
+      <p>这条线没有一开始就追求“漂亮倒液视频”，而是按 benchmark 需要的顺序拆问题：先证明环境能跑真实粒子，再证明杯子能不能装住，最后才考虑倒液和评分。当前结果停在“静态持液失败”，所以不能直接放行 S3。</p>
+
+      <div class="steps">
+        <div class="step">
+          <strong>S0 · Scope / Schema / GPU</strong>
+          <span>确认 IsaacSim41 runtime 里有 <code>PhysxParticleSystem</code>、<code>PhysxPBDMaterialAPI</code>，并且目标机器有 GPU dynamics 条件。</span>
+        </div>
+        <div class="step">
+          <strong>S1 · Standalone Particle Smoke</strong>
+          <span>最小 PBD 粒子场景跑通：256 粒子能 step、能 readback、无 NaN，说明底层链路可用。</span>
+        </div>
+        <div class="step stop">
+          <strong>S2 · Beaker Collider Matrix</strong>
+          <span>C0-C5 六类 collider 都没有达到 zero-leak；C2 最接近，但仍不能进入 S3。</span>
+        </div>
+        <div class="step stop">
+          <strong>S2F · Collider Follow-up</strong>
+          <span>C2 proxy、SDF、native beaker mesh isolation、promotion review 都已跑；near-pass 不稳定，S3 仍不放行。</span>
+        </div>
+        <div class="step stop">
+          <strong>D0-D3 · Colleague 50k USD</strong>
+          <span>同事原生 USD 经过 PBD overlay 后可 step/readback；静置漏液证据成立。</span>
+        </div>
+        <div class="step next">
+          <strong>D4 · Fluid-safe Wrapper</strong>
+          <span>下一步不是继续调视频，而是设计“外观看原生烧杯、物理上用专门 wrapper 持液”的容器方案。</span>
+        </div>
+        <div class="step">
+          <strong>S3 · Kinematic Pour</strong>
+          <span>只有 D4 静置 zero-leak 在 512/1024/4096/50k 等粒子数通过后，才开始慢速倾倒。</span>
+        </div>
+        <div class="step">
+          <strong>S5 · EBench Consumer</strong>
+          <span>最后再验证 EBench consumer 能加载、step、readback，并定义可解释的 fluid metric。</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="material" class="two">
+      <article class="card">
+        <h2>为什么红色看起来像一坨</h2>
+        <p>这不是粒子物理尺寸真的很大。当前运行使用的实际粒子宽度约 <code>0.000594m</code>，也就是 <code>0.594mm</code>。但 50k 粒子非常密集，camera render 里会叠成红色团块；review marker 版本还会把 readback 点位放大到约 <code>0.012m</code> 方便人看，所以 marker 视频更不能当真实水面材质。</p>
+        <p>后续如果做产品级视觉，需要在物理粒子之外再接 <code>Isosurface</code> / <code>Smoothing</code> / <code>Anisotropy</code> 一类渲染层，把点云变成连续液面。但那是 visual closure，不会替代 zero-leak 物理 gate。</p>
+      </article>
+      <article class="card">
+        <h2>材质问题怎么处理的</h2>
+        <p>早期原生场景出现过红色异常，主要是 <code>MDL</code> runtime compile / import 兼容问题，不是液体本身的结论。现在使用 <code>isaacsim41_core_mdl_local_mirror</code>：把 IsaacSim41 官方 core <code>MDL</code> 依赖复制到证据目录，并把 native shader 指向这套本地 mirror。</p>
+        <p>当前 <code>mdl_compile_status=PASS</code>，所以可以说“这条 native-scene 证据没有明显 solid red fallback”。但仍不能说它已经达到 <code>LabUtopia51 native visual material parity</code>，因为部分玻璃材质为了 IsaacSim41 兼容做了 <code>OmniSurface_Glass -> OmniGlass</code> fallback。</p>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>旧证据为什么不够，现在补强在哪里</h2>
+      <p>最早的漏液视频更像工程诊断：有些是 minimal native beaker slice，有些是 projection，不是完整原生桌面场景。因此它们能证明“readback 统计显示漏”，但不适合回答“是不是同事给的那个 USD 场景”。这次 20 秒 native-scene 证据补强了这个问题：入口文件就是同事提供的 <code>lab_001_level1_pour_tabletop_with_liquid.usd</code>，画面里是完整原生布局，材质也做了 IsaacSim41 local mirror closure。</p>
+      <div class="video-row">
+        <figure class="diagnostic warn">
+          <video controls muted preload="metadata" playsinline poster="assets/liquid-minimal-50k-rgb-poster.png">
+            <source src="assets/liquid-minimal-50k-rgb.webm" type="video/webm">
+            <source src="assets/liquid-minimal-50k-rgb.mp4" type="video/mp4">
+          </video>
+          <figcaption><strong>旧 RGB：</strong>minimal native beaker slice，适合证明 50k completed-PBD 静置会漏，但不是完整原生桌面。</figcaption>
+        </figure>
+        <figure class="diagnostic warn">
+          <video controls muted preload="metadata" playsinline poster="assets/liquid-minimal-50k-projection-poster.png">
+            <source src="assets/liquid-minimal-50k-projection.webm" type="video/webm">
+            <source src="assets/liquid-minimal-50k-projection.mp4" type="video/mp4">
+          </video>
+          <figcaption><strong>旧 projection：</strong>红点/桌面线清楚，适合解释 readback；不是产品级 camera render。</figcaption>
+        </figure>
+        <article class="note pass">
+          <h3>新证据提升点</h3>
+          <p>从“最小切片会漏”提升到“同事完整原生 USD 场景中，50k 点位补成 PBD 后也会漏”。这更接近领导要看的问题，但结论仍是失败证据，不是验收成功。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="next" class="panel section">
+      <h2>下一步应该干什么</h2>
+      <p>接下来不要一味重录视频，也不要直接进入机械臂倒液。正确顺序是先把静态持液 gate 做过，再进入动作和评分。</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>要解决的问题</th>
+              <th>通过标准</th>
+              <th>为什么排在这里</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge amber">D4 wrapper design</span></td>
+              <td>设计 <code>fluid-safe wrapper collider</code>：视觉仍看原生烧杯，物理碰撞用更可控的厚壁/底部/分段 proxy。</td>
+              <td>静置场景里 <code>below_table=0</code>、<code>spill=0</code>、<code>outside_source=0</code>。</td>
+              <td>现在的核心 blocker 是容器装不住，不是相机或材质。</td>
+            </tr>
+            <tr>
+              <td><span class="badge amber">D4 promotion</span></td>
+              <td>用 512 / 1024 / 4096 / 50k 粒子数、多 seed、多 reset 做复核。</td>
+              <td>不能只靠单次 256 粒子通过；必须稳定 zero-leak。</td>
+              <td>S2F2 的 near-pass 已经证明“单次通过”会误导。</td>
+            </tr>
+            <tr>
+              <td><span class="badge">S3 slow pour</span></td>
+              <td>让 source beaker 做慢速 kinematic tilt，看液体能否从 source 流向 target。</td>
+              <td>source 到 target 的 region count 合理变化，无桌下漏穿，无 CPU fallback。</td>
+              <td>静置都装不住时，倒液视频没有 benchmark 意义。</td>
+            </tr>
+            <tr>
+              <td><span class="badge">EBench consumer</span></td>
+              <td>把 fluid scene 接进 EBench consumer，验证加载、step、readback 和 metric。</td>
+              <td>headless 可复现，metric 能解释得分，失败能归因。</td>
+              <td>产品级目标不是“看起来有水”，而是能评测。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="evidence" class="panel section">
+      <h2>证据索引与 claim boundary</h2>
+      <div class="two">
+        <article class="card pass">
+          <h3>现在可以说</h3>
+          <ul>
+            <li><code>native_usd_scene_step_video_recorded=true</code></li>
+            <li><code>50k_colleague_particles_stepped_in_native_scene=true</code></li>
+            <li><code>leak_status_supported_by_particle_readback=true</code></li>
+            <li><code>mdl_compile_status=PASS</code>，没有明显 solid red fallback。</li>
+            <li>当前阶段为 true fluid spike 失败证据闭环，不是 benchmark-ready 成功验收。</li>
+          </ul>
+        </article>
+        <article class="card verdict">
+          <h3>仍然不能说</h3>
+          <ul>
+            <li><code>raw_50k_colleague_liquid_usd_can_direct_step_as_true_pbd_fluid</code></li>
+            <li><code>completed_pbd_static_leak_equals_benchmark_ready_fluid</code></li>
+            <li><code>level1_pour_true_fluid_runtime_passed</code></li>
+            <li><code>s3_kinematic_pour_released</code></li>
+            <li><code>ebench_score_or_policy_claim_allowed</code></li>
+          </ul>
+        </article>
+      </div>
+
+      <details class="evidence-details" open>
+        <summary>主要证据文件</summary>
+        <pre>handoff=../../docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md
+source_usd=../../outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd
+long_native_manifest=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_20260708.json
+long_visual_review=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_visual_review_20260708.json
+minimal_50k_manifest=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_50k_completed_pbd_static_leak_20260708.json
+bounded_512_manifest=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_liquid_usd_leak_smoke_20260708.json
+s2_collider_matrix=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json
+s2f5_promotion=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json</pre>
+      </details>
+
+      <p class="small">周报日期按 2026-07-07 归档；页面证据更新到 2026-07-08 的 20 秒 native-scene visual review。中文用于解释性叙述，英文保留 <code>USD</code>、<code>IsaacSim41</code>、<code>PhysX/PBD</code>、<code>ParticleSet</code>、<code>EBench</code>、<code>MDL</code> 等架构术语。</p>
+    </section>
+  </main>
+</body>
+</html>

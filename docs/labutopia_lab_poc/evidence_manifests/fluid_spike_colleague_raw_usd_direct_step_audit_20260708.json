@@ -1,0 +1,167 @@
+{
+  "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_raw_usd_direct_step_audit_20260708_001",
+  "audit_mode": "static_raw_contract_audit",
+  "claim_boundary": {
+    "allowed": [
+      "This D0 audit reports whether the raw colleague USD, as authored, satisfies direct-step runtime gates.",
+      "Readback/static schema failures may be reported for this raw USD audit."
+    ],
+    "blocked": [
+      "Do not claim B0 bounded overlay results are raw USD direct-step results.",
+      "Do not claim the original 50k colleague USD is benchmark-ready unless classification passes.",
+      "Do not claim S3 pouring, EBench score, policy score, or visual material parity."
+    ]
+  },
+  "classification": {
+    "classification": "STOP_RAW_RUNTIME_INCOMPLETE",
+    "direct_original_50k_runtime_claim_allowed": false,
+    "pass_criteria": {
+      "fatal_error_absent": true,
+      "nan_count_eq_zero": true,
+      "particle_count_final_fraction_ge_0_95": true,
+      "particle_count_initial_gt_zero": true,
+      "perf_budget_not_exceeded": true,
+      "raw_runtime_contract_complete": false,
+      "readback_available": true,
+      "readback_position_changed": false
+    },
+    "status": "STOP_WITH_EVIDENCE"
+  },
+  "elapsed_seconds": 1.4409105032682419,
+  "evaluation_notes": {
+    "readback_diagnostics_are_post_step_survival_evidence": false,
+    "readback_diagnostics_note": "No-step static snapshot fields; not post-timeline survival evidence.",
+    "warning_scan_status": "not_run_due_to_raw_contract_stop"
+  },
+  "force_step": false,
+  "generated_at_utc": "2026-07-08T06:46:02.239488+00:00",
+  "manifest_type": "fluid_spike_colleague_raw_usd_direct_step_audit",
+  "mode": "raw_usd_direct_step_audit",
+  "raw_contract": {
+    "broadphase_type": "GPU",
+    "gpu_dynamics_authored": true,
+    "gpu_dynamics_authored_true": true,
+    "gravity_direction": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "gravity_finite_nonzero": false,
+    "gravity_invalid_reasons": [
+      "zero_gravity_direction",
+      "nonfinite_gravity_magnitude"
+    ],
+    "gravity_magnitude": "-Infinity",
+    "has_particle_set": true,
+    "has_particle_set_api": true,
+    "has_particle_system": true,
+    "has_pbd_material_api": false,
+    "material_binding_targets": [
+      "/World/Looks/OmniGlass_01"
+    ],
+    "particle_aabb": {
+      "max": [
+        0.34288543462753296,
+        0.12349320948123932,
+        0.8962801694869995
+      ],
+      "min": [
+        0.2828861474990845,
+        0.06349339336156845,
+        0.8362801671028137
+      ]
+    },
+    "particle_centroid": [
+      0.30237269879877565,
+      0.0934745594675839,
+      0.8655983787667751
+    ],
+    "particle_count": 50000,
+    "particle_system_relationship_closed": true,
+    "particle_system_relationships": {
+      "physxParticle:particleSystem": [
+        "/World/ParticleSystem"
+      ]
+    },
+    "particle_velocities_count": 50000,
+    "particle_widths_summary": {
+      "count": 50000,
+      "finite_count": 50000,
+      "max": 0.0005940000992268324,
+      "min": 0.0005940000992268324,
+      "unique_preview": [
+        0.000594000099
+      ]
+    },
+    "physics_scene_is_valid": true,
+    "physx_scene_api_is_valid": true,
+    "raw_runtime_contract_complete": false,
+    "raw_runtime_contract_missing_reasons": [
+      "missing_PhysxPBDMaterialAPI",
+      "invalid_or_zero_gravity"
+    ],
+    "solver_type": "TGS"
+  },
+  "raw_particle_set_path": "/World/ParticleSet",
+  "raw_particle_system_path": "/World/ParticleSystem",
+  "raw_physics_scene_path": "/World/PhysicsScene",
+  "raw_usd_sha256": "77607b6bdf3b6cba419e1bc17943bdb3e220b497a77e98d7665e98f779406211",
+  "readback_diagnostics": {
+    "final_aabb": {
+      "max": [
+        0.34288543462753296,
+        0.12349320948123932,
+        0.8962801694869995
+      ],
+      "min": [
+        0.2828861474990845,
+        0.06349339336156845,
+        0.8362801671028137
+      ]
+    },
+    "final_centroid": [
+      0.30237269879877565,
+      0.0934745594675839,
+      0.8655983787667751
+    ],
+    "final_position_hash": "a2ea0ec6ddbcf5b35a18067808df3552bc99e020cc08ab0430bc76fa4976389b",
+    "initial_aabb": {
+      "max": [
+        0.34288543462753296,
+        0.12349320948123932,
+        0.8962801694869995
+      ],
+      "min": [
+        0.2828861474990845,
+        0.06349339336156845,
+        0.8362801671028137
+      ]
+    },
+    "initial_centroid": [
+      0.30237269879877565,
+      0.0934745594675839,
+      0.8655983787667751
+    ],
+    "initial_position_hash": "a2ea0ec6ddbcf5b35a18067808df3552bc99e020cc08ab0430bc76fa4976389b",
+    "max_displacement": 0.0,
+    "nan_count": 0,
+    "particle_count_final": 50000,
+    "particle_count_final_fraction": 1.0,
+    "particle_count_initial": 50000,
+    "readback_available": true,
+    "readback_position_changed": false
+  },
+  "runtime": "isaacsim41",
+  "runtime_settings": {
+    "suppress_readback_setting": false,
+    "update_particles_to_usd_setting": true,
+    "update_to_usd_setting": true,
+    "update_velocities_to_usd_setting": true
+  },
+  "runtime_step_executed": false,
+  "schema_version": 1,
+  "step_skipped_reason": "raw_runtime_contract_incomplete",
+  "steps": 120,
+  "trace_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_raw_usd_direct_step_audit_20260708_001/raw_particle_readback_trace.jsonl",
+  "usd_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd"
+}

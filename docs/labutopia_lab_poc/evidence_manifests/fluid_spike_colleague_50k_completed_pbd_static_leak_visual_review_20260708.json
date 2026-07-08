@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "manifest_type": "fluid_spike_visual_review",
+  "generated_at_utc": "2026-07-08T07:22:51+00:00",
+  "review_target": "colleague_50k_completed_pbd_static_leak",
+  "source_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_50k_completed_pbd_static_leak_20260708.json",
+  "artifact_dir": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001",
+  "review_method": {
+    "skill": "render-visual-reviewer",
+    "review_type": "clean_room_visual_qa",
+    "reviewer_context_boundary": "Reviewer received only image paths and visual expectations; no code, manifest internals, or implementation details were supplied."
+  },
+  "review_inputs": [
+    {
+      "label": "A",
+      "path": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/rgb_camera_frames/frame_0120.png",
+      "sha256": "72dc4950a0db4b6a13a9c2c75d36e97e0183f34b9306088937fb75074464b9f6",
+      "kind": "real_isaacsim41_rgb_camera_terminal_frame",
+      "step_index": 120
+    },
+    {
+      "label": "B",
+      "path": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/projection_frames/frame_0120.png",
+      "sha256": "81c1e1c8d2c3beee197a192ca9d9765ccda7b18d1f3aba7aa2123bb90836238b",
+      "kind": "diagnostic_projection_terminal_frame",
+      "step_index": 120
+    }
+  ],
+  "video_metadata": [
+    {
+      "path": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/colleague_liquid_static_leak_rgb_camera.mp4",
+      "sha256": "9692f0fd2efa36cfb885c2729a72b79cc22603fa5eec752c2ddac83ce0ced3aa",
+      "opened_by_cv2": true,
+      "frame_count": 13,
+      "fps": 15.0,
+      "width": 960,
+      "height": 540
+    },
+    {
+      "path": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_50k_completed_pbd_static_leak_20260708_001/colleague_liquid_leak_red_side_projection.mp4",
+      "sha256": "8c5b999b2df175fce4e2804b07182203007060d87b1342849f826b63b092e666",
+      "opened_by_cv2": true,
+      "frame_count": 13,
+      "fps": 15.0,
+      "width": 960,
+      "height": 540
+    }
+  ],
+  "overall_verdict": "PASS",
+  "per_image_review": [
+    {
+      "label": "A",
+      "verdict": "PASS",
+      "visible_evidence": "The beaker is centered, visible, and identifiable. Red leak evidence is clearly visible as bright red pooled markers directly under/around the beaker bottom. Framing, lighting, and scale are useful for PM/leadership review.",
+      "main_risk": "The red markers are review-only visualization derived from readback positions; physics classification must still come from particle readback counts.",
+      "retake_recommendation": "No retake needed."
+    },
+    {
+      "label": "B",
+      "verdict": "PASS",
+      "visible_evidence": "The projection clearly shows the source beaker region in blue and red sampled leak points as a dense red band below/near the beaker footprint. The count text is visible enough for explanation.",
+      "main_risk": "This is a diagnostic projection, not a product RGB render or visual/material parity image.",
+      "retake_recommendation": "No retake needed."
+    }
+  ],
+  "claim_boundary": {
+    "allowed": [
+      "The terminal RGB camera frame is visually useful for leadership review of the completed-PBD static leak evidence.",
+      "The terminal diagnostic projection is visually useful for explaining the readback leak counts."
+    ],
+    "blocked": [
+      "Do not use visual review alone as the physics classifier.",
+      "Do not claim the red review markers are simulated fluid mesh or physical colliders.",
+      "Do not claim product-level visual/material parity from these images.",
+      "Do not claim benchmark readiness, S3 pouring, S4 replay, policy score, or official leaderboard status."
+    ]
+  }
+}

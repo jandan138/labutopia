@@ -1,0 +1,627 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 1000000
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene" (
+        prepend apiSchemas = ["PhysxSceneAPI"]
+    )
+    {
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.81
+        uniform token physxScene:broadphaseType = "GPU"
+        bool physxScene:enableCCD = 1
+        bool physxScene:enableGPUDynamics = 1
+        bool physxScene:enableStabilization = 1
+        uint physxScene:gpuMaxParticleContacts = 1048576
+        uniform token physxScene:solverType = "TGS"
+        uint physxScene:timeStepsPerSecond = 60
+    }
+
+    def Scope "Looks"
+    {
+        def Material "LeakEvidenceRedPBD" (
+            prepend apiSchemas = ["PhysxPBDMaterialAPI"]
+        )
+        {
+            token outputs:surface.connect = </World/Looks/LeakEvidenceRedPBD/PreviewSurface.outputs:surface>
+            float physxPBDMaterial:cohesion = 0.01
+            float physxPBDMaterial:damping = 0
+            float physxPBDMaterial:density = 1000
+            float physxPBDMaterial:friction = 0.1
+            float physxPBDMaterial:surfaceTension = 0.0074
+            float physxPBDMaterial:viscosity = 0.0000017
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 0.02, 0.02)
+                float inputs:opacity = 0.9
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+    }
+
+    def "SourceContainer"
+    {
+        def Xform "NativeBeaker2" (
+            prepend references = @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001.usd@</World/beaker2>
+        )
+        {
+            double3 xformOp:translate = (0.29499960440205975, 0.07499959361246533, 0.8161047299766828)
+
+            over "mesh" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysicsCollisionAPI"]
+            )
+            {
+                custom string labutopia:localMaterialPath = "/World/SourceContainer/NativeBeaker2/Looks/OmniSurface_Glass"
+                custom float3 labutopia:nativeAabbMaxAfterAlignment = (0.36712855, 0.14712855, 0.863161)
+                custom float3 labutopia:nativeAabbMaxBeforeAlignment = (9.819824, 0.6729381, 0.12191963)
+                custom float3 labutopia:nativeAabbMinAfterAlignment = (0.25647545, 0.036475454, 0.7727606)
+                custom float3 labutopia:nativeAabbMinBeforeAlignment = (9.709171, 0.562285, 0.031519193)
+                custom float3 labutopia:nativeAlignmentDelta = (-9.452696, -0.5258095, 0.7412414)
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:nativeMaterialBindingScopeClosed = 1
+                custom string labutopia:nativeMaterialBindingStrategy = "local_blue_glass_override"
+                custom bool labutopia:nativeMeshCollisionEnabled = 0
+                custom string labutopia:nativeMeshSourcePrim = "/World/beaker2/mesh"
+                custom string labutopia:nativePoseAlignment = "bbox_recenter_to_source_region"
+                custom string labutopia:nativeReferenceScope = "parent_scope"
+                custom bool labutopia:nativeRenderMeshEnabled = 1
+                custom string labutopia:nativeSourcePrim = "/World/beaker2"
+                custom string labutopia:nativeSourceUsd = "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001.usd"
+                custom bool labutopia:proxyCollisionEnabled = 1
+                rel material:binding = </World/SourceContainer/NativeBeaker2/Looks/OmniSurface_Glass> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                bool physics:collisionEnabled = 0
+                bool physics:kinematicEnabled = 0
+                bool physics:rigidBodyEnabled = 0
+            }
+
+            def Scope "Looks"
+            {
+                def Material "OmniSurface_Glass"
+                {
+                    token outputs:surface.connect = </World/SourceContainer/NativeBeaker2/Looks/OmniSurface_Glass/PreviewSurface.outputs:surface>
+
+                    def Shader "PreviewSurface"
+                    {
+                        uniform token info:id = "UsdPreviewSurface"
+                        color3f inputs:diffuseColor = (0.8, 0.9, 1)
+                        float inputs:opacity = 0.35
+                        float inputs:roughness = 0.05
+                        token outputs:surface
+                    }
+                }
+            }
+        }
+
+        def Xform "ProxyCollision"
+        {
+            def Cube "Bottom" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.56, 0.64, 0.76)]
+                double size = 1
+                float xformOp:rotateZ = 0
+                float3 xformOp:scale = (0.1327194, 0.1327194, 0.008)
+                double3 xformOp:translate = (0.311802, 0.091802, 0.7767606155217077)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_00" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 90
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.37712900000000005, 0.091802, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_01" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 105
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.374903036453986, 0.10870987175941237, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_02" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 120
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.368376841553026, 0.12446549999999998, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_03" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 135
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.3579951646945736, 0.13799516469457357, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_04" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 150
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.34446550000000004, 0.148376841553026, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_05" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 165
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.3287098717594124, 0.15490303645398595, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_06" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 180
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.311802, 0.157129, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_07" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 195
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.29489412824058764, 0.15490303645398595, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_08" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 210
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.27913850000000007, 0.14837684155302602, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_09" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 225
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.26560883530542645, 0.13799516469457357, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_10" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 240
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.255227158446974, 0.12446549999999998, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_11" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 255
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.24870096354601406, 0.10870987175941238, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_12" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 270
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.24647500000000003, 0.09180200000000001, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_13" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 285
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.24870096354601406, 0.07489412824058762, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_14" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 300
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.25522715844697397, 0.05913850000000002, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_15" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 315
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.2656088353054264, 0.045608835305426434, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_16" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 330
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.2791385, 0.035227158446973994, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_17" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 345
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.29489412824058764, 0.028700963546014036, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_18" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 360
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.311802, 0.026475, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_19" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 375
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.32870987175941235, 0.02870096354601402, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_20" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 390
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.34446550000000004, 0.03522715844697398, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_21" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 405
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.3579951646945736, 0.0456088353054264, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_22" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 420
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.368376841553026, 0.05913849999999997, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+
+            def Cube "Wall_23" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+            )
+            {
+                custom string labutopia:nativeCollisionRoute = "render_mesh_plus_proxy_collision"
+                custom bool labutopia:proxyCollisionWrapper = 1
+                bool physics:collisionEnabled = 1
+                float physxCollision:contactOffset = 0.003
+                float physxCollision:restOffset = 0
+                color3f[] primvars:displayColor = [(0.62, 0.72, 0.88)]
+                double size = 1
+                float xformOp:rotateZ = 435
+                float3 xformOp:scale = (0.017057057, 0.01, 0.12)
+                double3 xformOp:translate = (0.374903036453986, 0.07489412824058757, 0.8407606155217078)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ", "xformOp:scale"]
+            }
+        }
+    }
+
+    def Cube "TargetRegionMarker" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+    )
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        bool physics:collisionEnabled = 1
+        float physxCollision:contactOffset = 0.003
+        float physxCollision:restOffset = 0
+        color3f[] primvars:displayColor = [(0.78, 0.86, 0.62)]
+        double size = 1
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (0.164914, 0.164914, 0.001)
+        double3 xformOp:translate = (0.2785229980945587, -0.22147700190544128, 0.7477605938911438)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+    }
+
+    def Xform "LeakCatcherGroundPlane"
+    {
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0.3118019998073578, 0.09180200099945068, 0.7227606177330017)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Mesh "CollisionMesh"
+        {
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)]
+            point3f[] points = [(-0.8, -0.8, 0), (0.8, -0.8, 0), (0.8, 0.8, 0), (-0.8, 0.8, 0)]
+            color3f[] primvars:displayColor = [(0.32, 0.32, 0.32)]
+            texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "varying"
+            )
+        }
+
+        def Plane "CollisionPlane" (
+            prepend apiSchemas = ["PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            uniform token purpose = "guide"
+        }
+    }
+
+    def DistantLight "DistantLight"
+    {
+        float inputs:intensity = 700
+        float3 xformOp:rotateXYZ = (55, 0, 35)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+
+    def PhysxParticleSystem "ParticleSystem" (
+        prepend apiSchemas = ["PhysxParticleIsosurfaceAPI", "MaterialBindingAPI"]
+    )
+    {
+        float contactOffset = 0.00064152014
+        float fluidRestOffset = 0.00032076007
+        bool globalSelfCollisionEnabled = 1
+        rel material:binding = </World/Looks/LeakEvidenceRedPBD>
+        rel material:binding:physics = </World/Looks/LeakEvidenceRedPBD> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        int maxNeighborhood = 96
+        float maxVelocity = 5
+        bool nonParticleCollisionEnabled = 1
+        float particleContactOffset = 0.0005346001
+        bool particleSystemEnabled = 1
+        bool physxParticleIsosurface:isosurfaceEnabled = 0
+        float restOffset = 0
+        rel simulationOwner = </World/PhysicsScene>
+        float solidRestOffset = 0.00032076007
+        int solverPositionIterationCount = 4
+    }
+
+    def Points "ParticleSet" (
+        prepend apiSchemas = ["PhysxParticleSetAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </World/Looks/LeakEvidenceRedPBD>
+        float physics:density = 1000
+        float physics:mass = 0.512
+        bool physxParticle:fluid = 1
+        int physxParticle:particleGroup = 0
+        rel physxParticle:particleSystem = </World/ParticleSystem>
+        bool physxParticle:selfCollision = 1
+        point3f[] points = [(0.34271768, 0.0917885, 0.87502897), (0.34262812, 0.09087921, 0.8703968), (0.34281692, 0.092796125, 0.8815478), (0.34275383, 0.092155404, 0.86746675), (0.34233063, 0.099127755, 0.88300836), (0.34283504, 0.09400663, 0.86426634), (0.34259766, 0.096416555, 0.8657776), (0.34242365, 0.088803016, 0.86310935), (0.34248832, 0.0975268, 0.8639437), (0.3412538, 0.10282498, 0.8786788), (0.3402316, 0.08131983, 0.86885244), (0.34239247, 0.09849982, 0.8857672), (0.3421316, 0.0999312, 0.8870432), (0.34196445, 0.10048229, 0.8652376), (0.33812246, 0.07737393, 0.8858042), (0.33994055, 0.08077531, 0.88882273), (0.33945486, 0.10711985, 0.87289107), (0.33897966, 0.07897762, 0.869598), (0.34270158, 0.091625065, 0.8952599), (0.3421969, 0.08727058, 0.85637254), (0.34009343, 0.105925165, 0.8648619), (0.34270015, 0.095375896, 0.8534178), (0.34195405, 0.10051653, 0.85799015), (0.33466092, 0.072965, 0.8858643), (0.34255958, 0.09680334, 0.8556298), (0.34224483, 0.08742854, 0.8544932), (0.33662647, 0.07536006, 0.8905877), (0.3371367, 0.11100478, 0.8724213), (0.3423789, 0.09863755, 0.8543023), (0.3341631, 0.07235842, 0.8770803), (0.33788326, 0.11006014, 0.8831652), (0.33813375, 0.10959151, 0.8866536), (0.33720466, 0.11092195, 0.8662804), (0.33494884, 0.11367069, 0.8731578), (0.3390648, 0.09030102, 0.89628017), (0.33590183, 0.092644885, 0.89628017), (0.33226925, 0.07077858, 0.8897257), (0.33739322, 0.07629434, 0.8564561), (0.3337647, 0.114980645, 0.8744453), (0.3367165, 0.111516766, 0.89056987), (0.3373419, 0.110754736, 0.8604024), (0.34123453, 0.084098056, 0.85234404), (0.33253646, 0.07099789, 0.8948933), (0.330729, 0.06951456, 0.8819148), (0.3305968, 0.069406055, 0.86881477), (0.3344623, 0.07272302, 0.8948062), (0.33626232, 0.08495449, 0.89628017), (0.34081113, 0.08270231, 0.84929293), (0.34270102, 0.09536736, 0.8451654), (0.33150816, 0.116832554, 0.8728847), (0.33567992, 0.08006028, 0.89628017), (0.32741114, 0.06740449, 0.8833567), (0.33137617, 0.116940856, 0.863474), (0.334293, 0.11446981, 0.85847604), (0.33134472, 0.116966665, 0.87670815), (0.338876, 0.10820279, 0.84751964), (0.3378241, 0.11016716, 0.8514809), (0.333056, 0.11556226, 0.89020056), (0.32783845, 0.06763289, 0.8734626), (0.33085626, 0.08543421, 0.89628017), (0.3312696, 0.069958195, 0.852535), (0.33578128, 0.074330166, 0.8509818), (0.33286178, 0.115641765, 0.89628017), (0.33815256, 0.0774302, 0.8470219), (0.32842687, 0.08862608, 0.89628017), (0.3321539, 0.07068392, 0.8503875), (0.32626155, 0.06679002, 0.86530775), (0.32674578, 0.09524539, 0.89628017), (0.32470044, 0.0659556, 0.88510185), (0.32318965, 0.06542001, 0.8720072), (0.32921258, 0.118619144, 0.86000264), (0.32443714, 0.06581486, 0.8876716), (0.33120206, 0.11708376, 0.89273316), (0.34184957, 0.08612555, 0.8383959), (0.32838827, 0.07611577, 0.89628017), (0.32847756, 0.115386926, 0.89628017), (0.32040775, 0.06457613, 0.8716313), (0.33441782, 0.114317745, 0.84951246), (0.34274274, 0.09494373, 0.8372089), (0.32292, 0.09657151, 0.89628017), (0.32035196, 0.06455921, 0.8858283), (0.3245067, 0.12113448, 0.8753467), (0.33950767, 0.102301724, 0.83628017), (0.32321343, 0.089662194, 0.89628017), (0.3208051, 0.06469667, 0.89397776), (0.3248826, 0.1036861, 0.89628017), (0.32019764, 0.06681774, 0.89628017), (0.33071634, 0.11748238, 0.85243934), (0.334236, 0.11453929, 0.84626776), (0.33922932, 0.08934842, 0.83628017), (0.32374993, 0.07244082, 0.89628017), (0.3245697, 0.121100806, 0.8903827), (0.31913036, 0.06418864, 0.86304486), (0.33723432, 0.0884802, 0.83628017), (0.331728, 0.11665212, 0.84549856), (0.32285434, 0.0653183, 0.85780334), (0.3324201, 0.11608411, 0.8457102), (0.31808412, 0.100216694, 0.89628017), (0.31938538, 0.07348776, 0.89628017), (0.32707417, 0.111403964, 0.89628017), (0.31727183, 0.06392527, 0.88853794), (0.3401897, 0.08574608, 0.83628017), (0.31943396, 0.088746436, 0.89628017), (0.33453363, 0.0728099, 0.8395178), (0.31756908, 0.06395455, 0.8651039), (0.31903836, 0.1228258, 0.8650737), (0.3151745, 0.070513055, 0.89628017), (0.31753013, 0.10353101, 0.89628017), (0.33408687, 0.07265851, 0.83628017), (0.33314383, 0.115456, 0.83628017), (0.31599495, 0.099895775, 0.89628017), (0.31377563, 0.06358092, 0.8686399), (0.3159638, 0.06379644, 0.85886014), (0.32642564, 0.1201088, 0.84697753), (0.31315532, 0.06351983, 0.8711921), (0.33088252, 0.06964054, 0.8393015), (0.32137632, 0.11924534, 0.89628017), (0.32785207, 0.06764017, 0.84176064), (0.33419815, 0.072401114, 0.83821887), (0.33142886, 0.08814161, 0.83628017), (0.33275414, 0.076153435, 0.83628017), (0.32618636, 0.066749826, 0.8414807), (0.31331256, 0.06733924, 0.89628017), (0.31271905, 0.063509665, 0.8583051), (0.32495075, 0.120897144, 0.8431585), (0.31929514, 0.11483647, 0.89628017), (0.32909563, 0.09084589, 0.83628017), (0.329478, 0.11847727, 0.83947104), (0.31996122, 0.12254585, 0.85240954), (0.32923654, 0.111414164, 0.83628017), (0.3149023, 0.0903782, 0.89628017), (0.32774058, 0.09290431, 0.83628017), (0.32875276, 0.11073162, 0.83628017), (0.32970425, 0.07304433, 0.83628017), (0.31021458, 0.06375634, 0.8782567), (0.31627128, 0.063826725, 0.845738), (0.32968116, 0.07973232, 0.83628017), (0.3121049, 0.06840837, 0.89628017), (0.32828277, 0.068976104, 0.83628017), (0.31246486, 0.0635347, 0.8942806), (0.32930666, 0.08440198, 0.83628017), (0.31432983, 0.063635506, 0.849242), (0.30999544, 0.063777916, 0.85977966), (0.32492763, 0.10473934, 0.83628017), (0.3145522, 0.12332912, 0.89278454), (0.31276467, 0.06350517, 0.84781116), (0.31351525, 0.12343124, 0.8529184), (0.3098937, 0.06378794, 0.855113), (0.30871588, 0.12308258, 0.8786232), (0.30919936, 0.063856326, 0.87939), (0.31695762, 0.063894324, 0.83979404), (0.30598623, 0.098564506, 0.89628017), (0.32195374, 0.111378714, 0.83628017), (0.31575328, 0.0637757, 0.83927536), (0.30821845, 0.06395294, 0.8837218), (0.31694245, 0.06592696, 0.83628017), (0.3206732, 0.11071786, 0.83628017), (0.32478416, 0.10543067, 0.83628017), (0.31088847, 0.12329657, 0.88344604), (0.30613393, 0.088360325, 0.89628017), (0.30634004, 0.12270665, 0.8716531), (0.32022956, 0.10922369, 0.83628017), (0.30451125, 0.09054419, 0.89628017), (0.30878574, 0.12308946, 0.8707332), (0.31480405, 0.123304315, 0.85015494), (0.31150204, 0.12335699, 0.8496687), (0.3224339, 0.09913578, 0.83628017), (0.30719957, 0.082645945, 0.89628017), (0.32315788, 0.07233793, 0.83628017), (0.30672115, 0.12282226, 0.88217187), (0.30886862, 0.0638889, 0.8483284), (0.3052293, 0.082366146, 0.89628017), (0.32103252, 0.08711598, 0.83628017), (0.30195233, 0.06561087, 0.8872908), (0.3166124, 0.06643453, 0.83628017), (0.30796862, 0.12300898, 0.85142034), (0.3090043, 0.12311099, 0.8918866), (0.30749664, 0.1229625, 0.8957928), (0.31887132, 0.083845064, 0.83628017), (0.2975687, 0.06782746, 0.8696574), (0.31244895, 0.12345026, 0.84063524), (0.2996311, 0.066725105, 0.8804225), (0.319302, 0.11925853, 0.83628017), (0.2994848, 0.06680331, 0.86561483), (0.31449744, 0.10995918, 0.83628017), (0.31508803, 0.09093988, 0.83628017), (0.3162174, 0.07258005, 0.83628017), (0.3159766, 0.07025324, 0.83628017), (0.3052329, 0.06461573, 0.85023415), (0.2995798, 0.066752516, 0.87469214), (0.30487844, 0.06472325, 0.84816635), (0.3000322, 0.09354433, 0.89628017), (0.29842228, 0.06737121, 0.85802126), (0.29758546, 0.06781851, 0.88000363), (0.29822245, 0.06747804, 0.86130047), (0.30771962, 0.06400207, 0.8428132), (0.29965758, 0.12027559, 0.8575759), (0.2967366, 0.06827224, 0.86723053), (0.3134737, 0.07450111, 0.83628017), (0.30976465, 0.12318588, 0.8369296), (0.30667046, 0.12280688, 0.843564), (0.29581165, 0.06888304, 0.8778093), (0.3055185, 0.06452909, 0.83797956), (0.30178973, 0.12132633, 0.88688993), (0.30353978, 0.121857196, 0.89531016), (0.30556452, 0.06778712, 0.83628017), (0.2978721, 0.07316682, 0.89628017), (0.30018228, 0.12055604, 0.8795111), (0.29899454, 0.11992118, 0.8786012), (0.2975921, 0.07451645, 0.89628017), (0.2954776, 0.095895275, 0.89628017), (0.30668628, 0.06677968, 0.83628017), (0.29679945, 0.10330661, 0.89628017), (0.30286118, 0.12165135, 0.84471816), (0.2960106, 0.07331155, 0.89628017), (0.29390493, 0.080318965, 0.89628017), (0.29391748, 0.096557274, 0.89628017), (0.3086248, 0.072399184, 0.83628017), (0.3111261, 0.10348906, 0.83628017), (0.30168825, 0.06910956, 0.83628017), (0.29470783, 0.113316335, 0.89628017), (0.3047232, 0.12012544, 0.83628017), (0.29436842, 0.11691903, 0.8756807), (0.3094794, 0.09692677, 0.83628017), (0.3010072, 0.06598954, 0.8400938), (0.30952534, 0.08978808, 0.83628017), (0.2963339, 0.11849905, 0.8829623), (0.30221063, 0.121454, 0.83813894), (0.3081031, 0.098928936, 0.83628017), (0.3082698, 0.104149, 0.83628017), (0.29331452, 0.07481253, 0.89628017), (0.29276994, 0.07137932, 0.8521665), (0.30346188, 0.12011509, 0.83628017), (0.29321215, 0.1078192, 0.89628017), (0.2884607, 0.07619351, 0.8621875), (0.29225135, 0.11494652, 0.89628017), (0.29500642, 0.069543876, 0.8449749), (0.2892526, 0.07522858, 0.8572172), (0.2943284, 0.070100345, 0.84632355), (0.29090768, 0.07321185, 0.8960462), (0.29296622, 0.115768276, 0.8614801), (0.29167786, 0.11471097, 0.8962139), (0.29051346, 0.07369221, 0.8838096), (0.29912862, 0.11957103, 0.83628017), (0.2883682, 0.07630622, 0.87182564), (0.2880728, 0.07666618, 0.8579597), (0.30547884, 0.10360676, 0.83628017), (0.29114115, 0.07292736, 0.84774965), (0.3031381, 0.092312515, 0.83628017), (0.3019111, 0.0830931, 0.83628017), (0.29315656, 0.1159245, 0.84981394), (0.2850115, 0.08253266, 0.89603484), (0.290544, 0.11333151, 0.8934083), (0.2901155, 0.11280942, 0.86030996), (0.28525147, 0.09156717, 0.89628017), (0.2895641, 0.074848995, 0.84565103), (0.29082832, 0.113677956, 0.8762362), (0.29462233, 0.072564326, 0.83628017), (0.2861999, 0.08008445, 0.87735426), (0.28883487, 0.111248955, 0.8595694), (0.28995165, 0.112609744, 0.85797536), (0.28989905, 0.11254566, 0.8777825), (0.29903063, 0.09265554, 0.83628017), (0.30225322, 0.10376963, 0.83628017), (0.297498, 0.093840204, 0.83628017), (0.2877744, 0.10984776, 0.86194366), (0.302184, 0.087320596, 0.83628017), (0.3006311, 0.09872506, 0.83628017), (0.2875063, 0.077640355, 0.8446824), (0.28818816, 0.110460944, 0.8692277), (0.2899431, 0.074387185, 0.83682245), (0.28477436, 0.083314404, 0.89003587), (0.28680098, 0.07895992, 0.8406801), (0.28572443, 0.08097403, 0.8699431), (0.2995733, 0.10243947, 0.83628017), (0.2855028, 0.08138865, 0.8536639), (0.2860968, 0.106709175, 0.8600898), (0.2841818, 0.08526778, 0.88959587), (0.28293407, 0.093985565, 0.89320636), (0.28518456, 0.081984006, 0.88466537), (0.2837793, 0.086594686, 0.8904806), (0.28496388, 0.08268961, 0.85307765), (0.2831706, 0.09059941, 0.8724192), (0.2882564, 0.11054408, 0.8422199), (0.28314748, 0.090834126, 0.88918144), (0.28756613, 0.08092433, 0.83628017), (0.28639254, 0.10726244, 0.8883327), (0.28301954, 0.092133254, 0.8905162), (0.2833498, 0.088779874, 0.8633974), (0.28451118, 0.08418196, 0.8486067), (0.2851853, 0.1050039, 0.8530751), (0.28628525, 0.08092994, 0.83628017), (0.2946942, 0.10281801, 0.83628017), (0.28342104, 0.088056855, 0.88421804), (0.29284015, 0.10136676, 0.83628017), (0.29024366, 0.10721335, 0.83628017), (0.2830205, 0.094863124, 0.87492126), (0.28456774, 0.10299104, 0.8453866), (0.28423455, 0.10189267, 0.889192), (0.2833675, 0.088600054, 0.8486871), (0.28335235, 0.08875411, 0.8826676), (0.28362474, 0.09988238, 0.89201784), (0.28648582, 0.107436985, 0.84091306), (0.2871305, 0.0952534, 0.83628017), (0.28339937, 0.0987099, 0.85516137), (0.28290597, 0.09370003, 0.8673703), (0.28342512, 0.098971106, 0.85350394), (0.2833853, 0.08841945, 0.85030067), (0.28684244, 0.10080958, 0.83628017), (0.28342986, 0.087967254, 0.8369767), (0.28511247, 0.10230829, 0.83628017), (0.2830463, 0.09512516, 0.8478486), (0.2842322, 0.0888234, 0.83628017), (0.28295597, 0.0927785, 0.84080565), (0.28349543, 0.09078754, 0.8386611), (0.28345123, 0.093805514, 0.8565273), (0.283536, 0.092592545, 0.8748952), (0.28342092, 0.09318773, 0.89272076), (0.284065, 0.098526195, 0.83925647), (0.28406453, 0.090174444, 0.84160614), (0.28407842, 0.094427265, 0.84457284), (0.2840977, 0.09794966, 0.8475404), (0.28408727, 0.087830745, 0.8499875), (0.28405434, 0.093152754, 0.8529135), (0.28403467, 0.09559649, 0.8558757), (0.28407878, 0.098489106, 0.8588435), (0.2840495, 0.09084904, 0.8611757), (0.2840859, 0.09376482, 0.8641539), (0.28403017, 0.097892314, 0.8671765), (0.28410336, 0.088426866, 0.86956924), (0.28401965, 0.0926588, 0.8724765), (0.2840466, 0.097408414, 0.875512), (0.28405505, 0.08724634, 0.877832), (0.28402764, 0.09079866, 0.8808314), (0.28405336, 0.09501872, 0.88382906), (0.2840884, 0.099125855, 0.88680464), (0.28406373, 0.09082578, 0.8891163), (0.28404814, 0.093207784, 0.89209664), (0.28408837, 0.09801, 0.8950526), (0.28468361, 0.093195826, 0.83802015), (0.28470516, 0.08547343, 0.83982843), (0.28464305, 0.09260229, 0.842211), (0.2846565, 0.100288294, 0.8445445), (0.28463933, 0.091419004, 0.84635496), (0.28464592, 0.09911896, 0.84877896), (0.28469214, 0.08848261, 0.85059524), (0.2847204, 0.09559856, 0.85288936), (0.28463233, 0.086024866, 0.8546978), (0.28462553, 0.09322815, 0.8570804), (0.28469673, 0.09973836, 0.8594833), (0.28468508, 0.0884769, 0.8611867), (0.28461507, 0.095030986, 0.8635701), (0.28470093, 0.086061634, 0.8654244), (0.2846198, 0.09384082, 0.86777073), (0.28465196, 0.10091201, 0.87012964), (0.28463474, 0.09028506, 0.8718865), (0.2846477, 0.096713945, 0.87424886), (0.28468886, 0.08838973, 0.8760627), (0.28472432, 0.096783586, 0.8784381), (0.28472215, 0.087207206, 0.88026696), (0.28471774, 0.093851715, 0.88264096), (0.28472346, 0.10035098, 0.8849838), (0.28468937, 0.090173796, 0.8867288), (0.2847036, 0.09555652, 0.88914394), (0.2847018, 0.08548349, 0.89088285), (0.28463265, 0.09322333, 0.89324605), (0.2846344, 0.098502055, 0.89568233), (0.28523093, 0.09500295, 0.8380419), (0.28522268, 0.09678992, 0.83981454), (0.28527182, 0.09851196, 0.8416746), (0.28523886, 0.10090957, 0.84346116), (0.28525192, 0.10328861, 0.8452028), (0.28524977, 0.08612078, 0.8463721), (0.28529507, 0.09018951, 0.8481233), (0.28521928, 0.093206584, 0.8500002), (0.2852327, 0.09557084, 0.85171187), (0.28525802, 0.09849439, 0.853539), (0.28530943, 0.10206738, 0.85527456), (0.28523582, 0.08432629, 0.8564488), (0.28526047, 0.087898545, 0.85825527), (0.28529617, 0.090275474, 0.860025), (0.28530365, 0.092635535, 0.86176944), (0.28527972, 0.09560821, 0.86362547), (0.28531444, 0.0979251, 0.86544114), (0.28522947, 0.099136665, 0.86718804), (0.2852312, 0.10154325, 0.86900705), (0.28524762, 0.103347264, 0.8707173), (0.2852705, 0.0860418, 0.8718901), (0.2852055, 0.088428065, 0.87368083), (0.28524065, 0.08957912, 0.8754694), (0.28525215, 0.09197906, 0.8772409), (0.28529388, 0.093154095, 0.8790227), (0.28529873, 0.09676562, 0.8808046), (0.28523615, 0.100327775, 0.8825915), (0.28526172, 0.10325298, 0.88439715), (0.28525642, 0.08493499, 0.88561046), (0.2852779, 0.08848782, 0.88739526), (0.2852614, 0.09206535, 0.88914), (0.28528985, 0.09559449, 0.89094037), (0.2852945, 0.097901426, 0.8926571), (0.28527296, 0.100915276, 0.8944404), (0.28589225, 0.10273871, 0.8368505), (0.28591138, 0.0907764, 0.838116), (0.2858391, 0.10269822, 0.83984846), (0.28588393, 0.09077113, 0.8410027), (0.28590912, 0.10268475, 0.84280205), (0.28584445, 0.09146113, 0.84399676), (0.28580716, 0.104439974, 0.8457763), (0.2858776, 0.09264507, 0.8469879), (0.28585508, 0.08186987, 0.84819984), (0.28583953, 0.09494803, 0.849995), (0.28581145, 0.083730824, 0.8511715), (0.2858634, 0.09675478, 0.85288477), (0.2858743, 0.08602404, 0.8540948), (0.28589037, 0.09858695, 0.8558868), (0.28584704, 0.087829486, 0.85701674), (0.28584146, 0.09975583, 0.85886407), (0.2859076, 0.08842183, 0.860017), (0.28590134, 0.10093707, 0.86186224), (0.28588262, 0.09027987, 0.86305434), (0.2859127, 0.10326781, 0.8647523), (0.28583586, 0.09202396, 0.86597466), (0.28587022, 0.10384332, 0.86776686), (0.28582695, 0.0931633, 0.8689578), (0.28581348, 0.08252038, 0.8701171), (0.28588155, 0.09443932, 0.8718862), (0.28590715, 0.08309889, 0.87314814), (0.28590432, 0.094991624, 0.8748629), (0.28590935, 0.084241495, 0.87608045), (0.28591424, 0.09674023, 0.87790906), (0.28589717, 0.08549615, 0.8790918), (0.28590915, 0.09849351, 0.8808519), (0.28584877, 0.08790814, 0.88202107), (0.28587812, 0.09852142, 0.88384175), (0.2858656, 0.08727085, 0.8849605), (0.28587067, 0.10038329, 0.88675016), (0.28583953, 0.089632824, 0.8879808), (0.28580907, 0.102691226, 0.8896962), (0.28580588, 0.090860166, 0.8909706), (0.2858405, 0.10328937, 0.8927082), (0.28582764, 0.092569664, 0.8939029), (0.2858191, 0.10393797, 0.8956967), (0.2864322, 0.09438103, 0.8374214), (0.28639618, 0.08661656, 0.83863425), (0.2864428, 0.08077161, 0.83979666), (0.2864656, 0.09967468, 0.8416514), (0.28641993, 0.09266444, 0.842793), (0.28639817, 0.08543606, 0.84395534), (0.28641602, 0.10275334, 0.8457296), (0.28639454, 0.09620422, 0.84702015), (0.28644195, 0.08960062, 0.84812826), (0.28646123, 0.08315489, 0.84936005), (0.28645682, 0.101464994, 0.8511541), (0.28639132, 0.094427936, 0.85229975), (0.28643674, 0.08731478, 0.85355943), (0.28648055, 0.08075463, 0.8546891), (0.286436, 0.10086274, 0.8564305), (0.28641653, 0.09439678, 0.8576631), (0.28642353, 0.087260306, 0.8588018), (0.28647447, 0.08075139, 0.8599912), (0.28641737, 0.09860385, 0.8618116), (0.2864707, 0.09076555, 0.862961), (0.28647256, 0.08363973, 0.8641928), (0.2864121, 0.10266321, 0.86595047), (0.28640756, 0.09500947, 0.8671495), (0.28646815, 0.08780907, 0.8683137), (0.2864452, 0.10570324, 0.87010074), (0.28647467, 0.09913015, 0.8713447), (0.28650287, 0.0931683, 0.8725585), (0.28640044, 0.08544867, 0.8736988), (0.28648496, 0.104452394, 0.8754422), (0.2864019, 0.09674351, 0.876655), (0.28645098, 0.09027854, 0.87784755), (0.2864118, 0.0831129, 0.8790488), (0.28646, 0.1020751, 0.88085127), (0.2864645, 0.09497978, 0.8820565), (0.2864274, 0.08968237, 0.8831636), (0.28645363, 0.08372789, 0.8843812), (0.28649193, 0.10156269, 0.8861245), (0.2864132, 0.09433813, 0.8873959), (0.2864879, 0.08722088, 0.88852954), (0.28645048, 0.10505683, 0.8903085), (0.28641677, 0.098565795, 0.89157766), (0.28643703, 0.09140847, 0.8927068), (0.28645322, 0.08367961, 0.89392155), (0.28639033, 0.1033212, 0.89564604), (0.2870985, 0.095028125, 0.8374864), (0.28708765, 0.09260961, 0.8387114), (0.28705913, 0.09022241, 0.8398031), (0.287002, 0.08849596, 0.8410073), (0.28705162, 0.08491307, 0.84223545), (0.28710094, 0.08189605, 0.8434599), (0.28703532, 0.07955737, 0.8446366), (0.28701758, 0.10451554, 0.84634346), (0.28700024, 0.100946255, 0.8475983), (0.28709474, 0.0991555, 0.84876233), (0.28708678, 0.096788116, 0.8499246), (0.28705305, 0.09376688, 0.85114765), (0.28708538, 0.09087334, 0.8523626), (0.28700036, 0.08845484, 0.8534578), (0.28700447, 0.08542325, 0.8546465), (0.28709817, 0.08311498, 0.8558268), (0.2870397, 0.08132496, 0.8570265), (0.28706375, 0.105088845, 0.85881114), (0.2870082, 0.10213364, 0.8600001), (0.28699335, 0.0996779, 0.861192), (0.28702325, 0.097995915, 0.8623894), (0.287013, 0.09502356, 0.8635528), (0.28704005, 0.09317254, 0.8647693), (0.28700438, 0.090778865, 0.8660172), (0.28705156, 0.0878591, 0.8671535), (0.28703937, 0.08601324, 0.86835325)]
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+        vector3f[] velocities = [(0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0)]
+        float[] widths = [0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001, 0.0005940001]
+    }
+}
+
