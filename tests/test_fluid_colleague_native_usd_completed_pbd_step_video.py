@@ -1,14 +1,23 @@
+import math
 from pathlib import Path
 
 from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import (
     DEFAULT_USD,
     EVIDENCE_PARTICLE_SET_PATH,
     EVIDENCE_PARTICLE_SYSTEM_PATH,
+    LIQUID_PRESENTATION_CAMERA_PATH,
+    LIQUID_PRESENTATION_LIGHT_PATH,
+    LIQUID_PRESENTATION_MATERIAL_PATH,
     NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
     NativeMaterialExpectation,
     _deactivate_original_fluid_prims,
+    _define_liquid_presentation_camera,
+    _author_liquid_presentation_lighting,
+    _author_liquid_presentation_water_material,
+    build_liquid_presentation_isosurface_contract,
     build_native_scene_claim_boundary,
     build_native_scene_video_summary,
+    build_presentation_visual_contract,
     build_isaacsim41_core_mdl_closure_plan,
     inspect_native_material_bindings,
     scan_mdl_compile_errors,
@@ -130,3 +139,127 @@ def test_deactivate_original_fluid_keeps_prims_active_for_kit_stage_update():
     assert particle_system.GetAttribute("particleSystemEnabled").Get() is False
     assert particle_set.GetAttribute("physxParticle:selfCollision").Get() is False
     assert particle_set.GetAttribute("physxParticle:fluid").Get() is False
+
+
+def test_build_liquid_presentation_isosurface_contract_uses_offsets():
+    contract = build_liquid_presentation_isosurface_contract(
+        fluid_rest_offset=0.0003207600535824895,
+        particle_count=50000,
+    )
+
+    assert contract["enabled"] is True
+    assert contract["api_path"] == "/World/CompletedPBD/ParticleSystem"
+    assert math.isclose(contract["grid_spacing"], 0.00048114008037373427)
+    assert math.isclose(contract["surface_distance"], 0.0005132160857319832)
+    assert math.isclose(contract["grid_smoothing_radius"], 0.000641520107164979)
+    assert contract["num_mesh_smoothing_passes"] == 1
+    assert contract["num_mesh_normal_smoothing_passes"] == 1
+    assert contract["max_vertices"] >= 1_000_000
+    assert contract["max_triangles"] >= 2_000_000
+    assert contract["max_subgrids"] >= 4096
+    assert contract["claim_boundary"] == "visual_surface_reconstruction_only"
+
+
+def test_build_presentation_visual_contract_separates_visual_video_from_gate():
+    contract = build_presentation_visual_contract(
+        variant_id="NATIVE_SDF_128",
+        camera_info={
+            "camera_path": LIQUID_PRESENTATION_CAMERA_PATH,
+            "eye": [0.5, -0.2, 1.0],
+            "target": [0.3, 0.09, 0.86],
+            "up": [0.0, 0.0, 1.0],
+        },
+        lighting_info={"lighting_contract_hash": "abc123"},
+        isosurface_contract={"enabled": True},
+        material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
+        particle_count=50000,
+    )
+
+    assert contract["variant_id"] == "NATIVE_SDF_128"
+    assert contract["camera_path"] == LIQUID_PRESENTATION_CAMERA_PATH
+    assert contract["liquid_material_path"] == LIQUID_PRESENTATION_MATERIAL_PATH
+    assert contract["particle_count"] == 50000
+    assert contract["debug_particle_display_enabled"] is False
+    assert contract["presentation_video_does_not_replace_particle_readback"] is True
+    assert contract["visual_material_parity_claim_allowed"] is False
+
+
+def test_presentation_material_and_lighting_are_authored_with_fixed_paths():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+
+    material_info = _author_liquid_presentation_water_material(stage)
+    lighting_info = _author_liquid_presentation_lighting(stage)
+
+    assert stage.GetPrimAtPath(LIQUID_PRESENTATION_MATERIAL_PATH)
+    assert stage.GetPrimAtPath(LIQUID_PRESENTATION_LIGHT_PATH)
+    assert material_info["material_path"] == LIQUID_PRESENTATION_MATERIAL_PATH
+    assert material_info["display_name"] == "presentation_water_transparent_blue"
+    assert material_info["visual_material_parity_claim_allowed"] is False
+    assert lighting_info["light_path"] == LIQUID_PRESENTATION_LIGHT_PATH
+    assert lighting_info["role"] == "leadership_presentation_key_light"
+
+
+def test_define_presentation_camera_reuses_leadership_closeup_framing():
+    from pxr import Usd, UsdGeom
+    from tools.labutopia_fluid.run_beaker_collider_smoke import ColliderConfig
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    config = ColliderConfig(
+        source_center=(0.30, 0.09, 0.80),
+        target_center=(0.50, 0.09, 0.80),
+        source_radius=0.05,
+        target_radius=0.05,
+        table_z=0.70,
+        source_height=0.20,
+        target_height=0.20,
+        particle_count=50000,
+        steps=120,
+        trace_interval=10,
+        tail_window_steps=30,
+    )
+
+    info = _define_liquid_presentation_camera(stage, config)
+
+    assert info["camera_path"] == LIQUID_PRESENTATION_CAMERA_PATH
+    assert info["role"] == "leadership_presentation_main"
+    assert info["target"][2] > config.table_z
+    assert stage.GetPrimAtPath(LIQUID_PRESENTATION_CAMERA_PATH)
+
+
+def test_native_step_video_parser_accepts_presentation_isosurface_video_flag():
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import build_arg_parser
+
+    args = build_arg_parser().parse_args(
+        [
+            "--presentation-isosurface-video",
+            "--disable-particle-debug-display",
+        ]
+    )
+
+    assert args.presentation_isosurface_video is True
+    assert args.disable_particle_debug_display is True
+
+
+def test_build_native_scene_video_summary_records_presentation_slot():
+    summary = build_native_scene_video_summary(
+        frame_sources={
+            "presentation_isosurface_frames/frame_0001.png": "presentation_isosurface_rgb",
+            "beaker2_closeup_native_material_frames/frame_0001.png": "closeup_native_rgb",
+        }
+    )
+
+    assert summary["presentation_isosurface_rgb_frame_count"] == 1
+    assert "presentation_isosurface" in summary["native_scene_video_slots"]
+
+
+def test_native_scene_claim_boundary_blocks_presentation_overclaims():
+    boundary = build_native_scene_claim_boundary()
+
+    assert "presentation_isosurface_video_recorded=true" in boundary["allowed"]
+    assert "presentation_video_equals_physics_success" in boundary["blocked"]
+    assert "isosurface_reconstruction_equals_zero_leak" in boundary["blocked"]
+    assert "presentation_water_material_equals_labutopia51_visual_parity" in boundary["blocked"]

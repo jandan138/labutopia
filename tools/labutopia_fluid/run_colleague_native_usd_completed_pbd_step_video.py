@@ -64,6 +64,9 @@ NATIVE_CAMERA_PATHS = {
     "camera2_native_material": "/World/Camera2",
 }
 CLOSEUP_CAMERA_PATH = "/World/Beaker2CloseupNativeMaterialCamera"
+LIQUID_PRESENTATION_CAMERA_PATH = "/World/LiquidPresentationMainCamera"
+LIQUID_PRESENTATION_MATERIAL_PATH = "/World/Looks/LiquidPresentationWater"
+LIQUID_PRESENTATION_LIGHT_PATH = "/World/LiquidPresentationKeyLight"
 REVIEW_MARKER_ROOT = "/World/D3ReviewLeakMarkers"
 RUNTIME_PBD_SCOPE_PATH = "/World/CompletedPBD"
 RUNTIME_PARTICLE_SYSTEM_PATH = f"{RUNTIME_PBD_SCOPE_PATH}/ParticleSystem"
@@ -366,15 +369,161 @@ def inspect_native_material_bindings(usd_path: str | Path = DEFAULT_USD) -> dict
     return summary
 
 
-def build_native_scene_video_summary(frame_sources: dict[str, str]) -> dict[str, Any]:
+def build_liquid_presentation_isosurface_contract(
+    *,
+    fluid_rest_offset: float,
+    particle_count: int,
+) -> dict[str, Any]:
+    spacing = float(fluid_rest_offset) * 1.5
     return {
-        "native_scene_video_slots": [
-            "camera1_native_material",
-            "camera2_native_material",
-            "beaker2_closeup_native_material",
-            "beaker2_closeup_review_markers",
-        ],
+        "enabled": True,
+        "api_path": RUNTIME_PARTICLE_SYSTEM_PATH,
+        "grid_spacing": spacing,
+        "surface_distance": float(fluid_rest_offset) * 1.6,
+        "grid_filtering_passes": 1,
+        "grid_smoothing_radius": float(fluid_rest_offset) * 2.0,
+        "num_mesh_smoothing_passes": 1,
+        "num_mesh_normal_smoothing_passes": 1,
+        "max_vertices": max(1_000_000, int(particle_count) * 64),
+        "max_triangles": max(2_000_000, int(particle_count) * 128),
+        "max_subgrids": max(4096, int(math.ceil(max(int(particle_count), 1) / 8.0))),
+        "claim_boundary": "visual_surface_reconstruction_only",
+    }
+
+
+def build_presentation_visual_contract(
+    *,
+    variant_id: str | None,
+    camera_info: dict[str, Any],
+    lighting_info: dict[str, Any],
+    isosurface_contract: dict[str, Any],
+    material_path: str,
+    particle_count: int,
+) -> dict[str, Any]:
+    return {
+        "variant_id": variant_id,
+        "camera_path": camera_info.get("camera_path"),
+        "camera": dict(camera_info),
+        "lighting": dict(lighting_info),
+        "isosurface": dict(isosurface_contract),
+        "liquid_material_path": material_path,
+        "particle_count": int(particle_count),
+        "debug_particle_display_enabled": False,
+        "presentation_video_does_not_replace_particle_readback": True,
+        "visual_material_parity_claim_allowed": False,
+        "claim_boundary": "presentation_lane_only_particle_readback_remains_gate",
+    }
+
+
+def _author_liquid_presentation_water_material(stage: Any) -> dict[str, Any]:
+    from pxr import Gf, Sdf, UsdGeom, UsdShade
+
+    looks_path = Sdf.Path("/World/Looks")
+    if not stage.GetPrimAtPath(looks_path):
+        UsdGeom.Scope.Define(stage, looks_path)
+    material_path = Sdf.Path(LIQUID_PRESENTATION_MATERIAL_PATH)
+    material = UsdShade.Material.Define(stage, material_path)
+    shader = UsdShade.Shader.Define(stage, material_path.AppendChild("PreviewSurface"))
+    shader.CreateIdAttr("UsdPreviewSurface")
+    shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0.16, 0.50, 0.78))
+    shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(0.58)
+    shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.18)
+    material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
+    return {
+        "material_path": LIQUID_PRESENTATION_MATERIAL_PATH,
+        "shader_path": f"{LIQUID_PRESENTATION_MATERIAL_PATH}/PreviewSurface",
+        "display_name": "presentation_water_transparent_blue",
+        "diffuse_color": [0.16, 0.50, 0.78],
+        "opacity": 0.58,
+        "visual_material_parity_claim_allowed": False,
+    }
+
+
+def _author_liquid_presentation_lighting(stage: Any) -> dict[str, Any]:
+    from pxr import Gf, UsdLux
+
+    light = UsdLux.DistantLight.Define(stage, LIQUID_PRESENTATION_LIGHT_PATH)
+    light.CreateIntensityAttr(950.0)
+    light.AddRotateXYZOp().Set(Gf.Vec3f(55.0, 0.0, 35.0))
+    return {
+        "light_path": LIQUID_PRESENTATION_LIGHT_PATH,
+        "role": "leadership_presentation_key_light",
+        "intensity": 950.0,
+        "rotate_xyz": [55.0, 0.0, 35.0],
+        "lighting_contract_hash": "liquid_presentation_key_light_v1",
+    }
+
+
+def _define_liquid_presentation_camera(stage: Any, config: Any) -> dict[str, Any]:
+    from pxr import Gf, UsdGeom
+
+    target = (
+        config.source_center[0] + 0.08,
+        config.source_center[1],
+        config.table_z + min(max(config.source_height * 0.56, 0.08), 0.13),
+    )
+    eye = (
+        config.source_center[0] + 0.26,
+        config.source_center[1] - 0.42,
+        config.table_z + 0.27,
+    )
+    up = (0.0, 0.0, 1.0)
+    camera = UsdGeom.Camera.Define(stage, LIQUID_PRESENTATION_CAMERA_PATH)
+    transform = Gf.Matrix4d(1).SetLookAt(Gf.Vec3d(*eye), Gf.Vec3d(*target), Gf.Vec3d(*up)).GetInverse()
+    camera.ClearXformOpOrder()
+    camera.AddTransformOp().Set(transform)
+    camera.CreateFocalLengthAttr(22.0)
+    camera.CreateHorizontalApertureAttr(24.0)
+    camera.CreateVerticalApertureAttr(16.0)
+    camera.CreateClippingRangeAttr(Gf.Vec2f(0.01, 100.0))
+    return {
+        "camera_path": LIQUID_PRESENTATION_CAMERA_PATH,
+        "role": "leadership_presentation_main",
+        "eye": list(eye),
+        "target": list(target),
+        "up": list(up),
+        "camera_contract_hash": "liquid_presentation_main_camera_v1",
+    }
+
+
+def _particle_isosurface_api_summary(stage: Any, particle_system_path: str) -> dict[str, Any]:
+    prim = stage.GetPrimAtPath(particle_system_path)
+    if not prim:
+        return {"api_path": particle_system_path, "prim_exists": False, "api_applied": False}
+    applied_schemas = list(prim.GetAppliedSchemas())
+    return {
+        "api_path": particle_system_path,
+        "prim_exists": True,
+        "api_applied": "PhysxParticleIsosurfaceAPI" in applied_schemas,
+        "applied_schemas": applied_schemas,
+        "enabled": _read_prim_attr(prim, "physxParticleIsosurface:isosurfaceEnabled"),
+        "grid_spacing": _read_prim_attr(prim, "physxParticleIsosurface:gridSpacing"),
+        "surface_distance": _read_prim_attr(prim, "physxParticleIsosurface:surfaceDistance"),
+        "max_vertices": _read_prim_attr(prim, "physxParticleIsosurface:maxVertices"),
+        "max_triangles": _read_prim_attr(prim, "physxParticleIsosurface:maxTriangles"),
+        "max_subgrids": _read_prim_attr(prim, "physxParticleIsosurface:maxSubgrids"),
+    }
+
+
+def _read_prim_attr(prim: Any, attr_name: str) -> Any:
+    attr = prim.GetAttribute(attr_name)
+    return attr.Get() if attr else None
+
+
+def build_native_scene_video_summary(frame_sources: dict[str, str]) -> dict[str, Any]:
+    presentation_count = sum(1 for value in frame_sources.values() if value == "presentation_isosurface_rgb")
+    slots = [
+        "camera1_native_material",
+        "camera2_native_material",
+        "beaker2_closeup_native_material",
+        "beaker2_closeup_review_markers",
+    ]
+    if presentation_count:
+        slots.insert(0, "presentation_isosurface")
+    return {
+        "native_scene_video_slots": slots,
         "native_camera_rgb_frame_count": sum(1 for value in frame_sources.values() if value == "native_camera_rgb"),
+        "presentation_isosurface_rgb_frame_count": presentation_count,
         "closeup_native_rgb_frame_count": sum(1 for value in frame_sources.values() if value == "closeup_native_rgb"),
         "review_marker_rgb_frame_count": sum(1 for value in frame_sources.values() if value == "review_marker_rgb"),
         "frame_sources": dict(sorted(frame_sources.items())),
@@ -391,11 +540,15 @@ def build_native_scene_claim_boundary() -> dict[str, list[str]]:
             "isaacsim41_core_mdl_local_mirror_can_be_used_for_runtime_material_closure=true",
             "50k_colleague_particles_stepped_in_native_scene=true",
             "leak_status_supported_by_particle_readback=true",
+            "presentation_isosurface_video_recorded=true",
         ],
         "blocked": [
             "raw_usd_direct_step_passed",
             "raw_50k_colleague_liquid_usd_can_direct_step_as_true_pbd_fluid",
             "completed_pbd_static_leak_equals_benchmark_ready_fluid",
+            "presentation_video_equals_physics_success",
+            "isosurface_reconstruction_equals_zero_leak",
+            "presentation_water_material_equals_labutopia51_visual_parity",
             "review_markers_are_physical_fluid_mesh",
             "review_marker_video_equals_native_material_video",
             "isaacsim41_core_mdl_local_mirror_equals_labutopia51_native_visual_parity",
@@ -543,6 +696,8 @@ def _author_completed_pbd_runtime_particles(
     widths: dict[str, float],
     physics_scene_path: str,
     visual_material_path: str,
+    presentation_isosurface_video: bool = False,
+    presentation_visual_material_path: str | None = None,
 ) -> dict[str, Any]:
     from omni.physx.scripts import particleUtils, physicsUtils
     from pxr import Gf, Sdf, UsdGeom, UsdShade
@@ -583,10 +738,32 @@ def _author_completed_pbd_runtime_particles(
         global_self_collision_enabled=True,
         non_particle_collision_enabled=True,
     )
-    particleUtils.add_physx_particle_isosurface(stage, Sdf.Path(RUNTIME_PARTICLE_SYSTEM_PATH), enabled=False)
+    isosurface_contract = {"enabled": False, "api_path": RUNTIME_PARTICLE_SYSTEM_PATH}
+    if presentation_isosurface_video:
+        isosurface_contract = build_liquid_presentation_isosurface_contract(
+            fluid_rest_offset=widths["fluid_rest_offset"],
+            particle_count=len(positions),
+        )
+        particleUtils.add_physx_particle_isosurface(
+            stage,
+            Sdf.Path(RUNTIME_PARTICLE_SYSTEM_PATH),
+            enabled=True,
+            max_vertices=isosurface_contract["max_vertices"],
+            max_triangles=isosurface_contract["max_triangles"],
+            max_subgrids=isosurface_contract["max_subgrids"],
+            grid_spacing=isosurface_contract["grid_spacing"],
+            surface_distance=isosurface_contract["surface_distance"],
+            grid_filtering_passes=isosurface_contract["grid_filtering_passes"],
+            grid_smoothing_radius=isosurface_contract["grid_smoothing_radius"],
+            num_mesh_smoothing_passes=isosurface_contract["num_mesh_smoothing_passes"],
+            num_mesh_normal_smoothing_passes=isosurface_contract["num_mesh_normal_smoothing_passes"],
+        )
+    else:
+        particleUtils.add_physx_particle_isosurface(stage, Sdf.Path(RUNTIME_PARTICLE_SYSTEM_PATH), enabled=False)
     physicsUtils.add_physics_material_to_prim(stage, particle_system.GetPrim(), physics_material_path)
 
-    visual_material = UsdShade.Material(stage.GetPrimAtPath(visual_material_path))
+    render_material_path = presentation_visual_material_path or visual_material_path
+    visual_material = UsdShade.Material(stage.GetPrimAtPath(render_material_path))
     if visual_material:
         UsdShade.MaterialBindingAPI.Apply(particle_system.GetPrim()).Bind(visual_material)
 
@@ -615,10 +792,18 @@ def _author_completed_pbd_runtime_particles(
         "source_particle_system_path": EVIDENCE_PARTICLE_SYSTEM_PATH,
         "source_particle_set_path": EVIDENCE_PARTICLE_SET_PATH,
         "physics_material_path": str(physics_material_path),
-        "visual_material_path": visual_material_path,
+        "visual_material_path": render_material_path,
+        "source_visual_material_path": visual_material_path,
+        "presentation_visual_material_path": presentation_visual_material_path,
         "visual_material_preserved": bool(visual_material),
+        "isosurface_contract": isosurface_contract,
+        "particle_isosurface_api_summary": _particle_isosurface_api_summary(stage, RUNTIME_PARTICLE_SYSTEM_PATH),
         "pre_deactivate_summary": pre_deactivate_summary,
     }
+
+
+def _physx_visualizer_mode_none(pb: Any) -> Any:
+    return getattr(pb.VisualizerMode, "NONE", 0)
 
 
 def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
@@ -679,7 +864,10 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     settings.set(pb.SETTING_UPDATE_TO_USD, True)
     settings.set(pb.SETTING_UPDATE_PARTICLES_TO_USD, True)
     settings.set(pb.SETTING_UPDATE_VELOCITIES_TO_USD, True)
-    settings.set(pb.SETTING_DISPLAY_PARTICLES, pb.VisualizerMode.ALL)
+    if args.presentation_isosurface_video or args.disable_particle_debug_display:
+        settings.set(pb.SETTING_DISPLAY_PARTICLES, _physx_visualizer_mode_none(pb))
+    else:
+        settings.set(pb.SETTING_DISPLAY_PARTICLES, pb.VisualizerMode.ALL)
     settings.set_bool(pb.SETTING_SUPPRESS_READBACK, False)
     settings.set_bool("/physics/suppressReadback", False)
 
@@ -736,13 +924,34 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         light.AddRotateXYZOp().Set(Gf.Vec3f(55.0, 0.0, 35.0))
 
     closeup_camera_info = _define_closeup_camera(stage, config)
+    presentation_material_info: dict[str, Any] = {}
+    presentation_lighting_info: dict[str, Any] = {}
+    presentation_camera_info: dict[str, Any] = {}
+    presentation_visual_contract: dict[str, Any] = {}
+    presentation_visual_material_path = None
+    if args.presentation_isosurface_video:
+        presentation_material_info = _author_liquid_presentation_water_material(stage)
+        presentation_lighting_info = _author_liquid_presentation_lighting(stage)
+        presentation_camera_info = _define_liquid_presentation_camera(stage, config)
+        presentation_visual_material_path = LIQUID_PRESENTATION_MATERIAL_PATH
     authored = _author_completed_pbd_runtime_particles(
         stage=stage,
         positions=selected_positions,
         widths=offsets,
         physics_scene_path="/World/PhysicsScene",
         visual_material_path="/World/Looks/OmniGlass_01",
+        presentation_isosurface_video=bool(args.presentation_isosurface_video),
+        presentation_visual_material_path=presentation_visual_material_path,
     )
+    if args.presentation_isosurface_video:
+        presentation_visual_contract = build_presentation_visual_contract(
+            variant_id=native_collider_variant_id or NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
+            camera_info=presentation_camera_info,
+            lighting_info=presentation_lighting_info,
+            isosurface_contract=authored.get("isosurface_contract") or {},
+            material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
+            particle_count=len(selected_positions),
+        )
     evidence_scene_path = artifact_dir / "native_scene_completed_pbd_overlay.usda"
     stage.GetRootLayer().Export(str(evidence_scene_path))
 
@@ -775,6 +984,16 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             target=closeup_camera_info["target"],
             up=closeup_camera_info["up"],
         )
+    if args.presentation_isosurface_video:
+        cameras["presentation_isosurface"] = _make_positioned_camera_sensor(
+            LIQUID_PRESENTATION_CAMERA_PATH,
+            name="liquid_presentation_main_camera",
+            width=args.width,
+            height=args.height,
+            eye=presentation_camera_info["eye"],
+            target=presentation_camera_info["target"],
+            up=presentation_camera_info["up"],
+        )
 
     frame_dirs = {
         "camera1_native_material": artifact_dir / "camera1_native_material_frames",
@@ -782,6 +1001,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "beaker2_closeup_native_material": artifact_dir / "beaker2_closeup_native_material_frames",
         "beaker2_closeup_review_markers": artifact_dir / "beaker2_closeup_review_marker_frames",
     }
+    if args.presentation_isosurface_video:
+        frame_dirs["presentation_isosurface"] = artifact_dir / "presentation_isosurface_frames"
     frame_paths: dict[str, list[Path]] = {slot: [] for slot in frame_dirs}
     frame_sources: dict[str, str] = {}
     camera_diagnostics: dict[str, dict[str, Any]] = {}
@@ -811,6 +1032,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 native_slots.extend(["camera1_native_material", "camera2_native_material"])
             if args.capture_closeup_camera:
                 native_slots.append("beaker2_closeup_native_material")
+            if args.presentation_isosurface_video:
+                native_slots.insert(0, "presentation_isosurface")
             for slot in native_slots:
                 camera = cameras.get(slot)
                 frame_path = frame_dirs[slot] / f"frame_{step_index:04d}.png"
@@ -818,9 +1041,13 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 camera_diagnostics[str(frame_path.relative_to(artifact_dir))] = diagnostics
                 if source is not None:
                     frame_paths[slot].append(frame_path)
-                    frame_sources[str(frame_path.relative_to(artifact_dir))] = (
-                        "closeup_native_rgb" if slot == "beaker2_closeup_native_material" else "native_camera_rgb"
-                    )
+                    if slot == "presentation_isosurface":
+                        frame_source = "presentation_isosurface_rgb"
+                    elif slot == "beaker2_closeup_native_material":
+                        frame_source = "closeup_native_rgb"
+                    else:
+                        frame_source = "native_camera_rgb"
+                    frame_sources[str(frame_path.relative_to(artifact_dir))] = frame_source
             if args.capture_review_markers:
                 _set_review_markers_visible(stage, True)
                 marker_update = _update_review_markers(
@@ -919,6 +1146,14 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "material_retarget": material_retarget_summary,
         "native_collider_approximation": native_collider_approximation_summary,
         "authored_runtime_paths": authored,
+        "presentation_material": presentation_material_info,
+        "presentation_lighting": presentation_lighting_info,
+        "presentation_visual_contract": presentation_visual_contract,
+        "presentation_video_enabled": bool(args.presentation_isosurface_video),
+        "presentation_isosurface_enabled": bool(args.presentation_isosurface_video),
+        "debug_particle_display_enabled": not bool(
+            args.disable_particle_debug_display or args.presentation_isosurface_video
+        ),
         "region_config": asdict(config),
         "source_bbox": asdict(source_bbox),
         "target_bbox": asdict(target_bbox),
@@ -1011,6 +1246,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--hard-exit-after-run", action="store_true")
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--native-collider-approximation-variant", default=None)
+    parser.add_argument(
+        "--presentation-isosurface-video",
+        action="store_true",
+        help=(
+            "Enable PhysX Isosurface visual reconstruction, fixed presentation camera, "
+            "presentation water material, and MP4 capture."
+        ),
+    )
+    parser.add_argument("--disable-particle-debug-display", action="store_true")
     return parser
 
 
