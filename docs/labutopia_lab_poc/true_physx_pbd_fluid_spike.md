@@ -901,12 +901,18 @@ visual_review=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_na
 只在渲染层开启 `PhysX Isosurface`，把离散 `PBD particles` 重建成更连续、更像液面的蓝色
 `reconstructed render surface`，并使用固定的领导汇报 camera / lighting。
 
-正式证据：
+正式证据。先前 `RAW_AS_IS_runtime_full50k_refined_v2` 是 2 秒 smoke，用于确认
+`PhysX Isosurface` 能出图；给产品/领导看的主展示视频已重跑为 20 秒长版：
 
 ```text
-artifact_dir=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/
-main_manifest=RAW_AS_IS_runtime_full50k_refined_v2.json
-main_video=RAW_AS_IS_runtime_full50k_refined_v2/presentation_isosurface.mp4
+artifact_dir=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/
+main_manifest=RAW_AS_IS_runtime_full50k_refined_20s_v1.json
+main_video=RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface.mp4
+steps=240
+video_stride=1
+video_fps=12
+frame_count=240
+duration=20.000000s
 wide_context_manifest=RAW_AS_IS_runtime_full50k_v1.json
 wide_context_video=RAW_AS_IS_runtime_full50k_v1/presentation_isosurface.mp4
 source_usd=outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd
@@ -922,10 +928,10 @@ debug_particle_display_enabled=false
 
 ```text
 classification=FAIL_CONTAINER_LEAK
-below_table_count=19093
-outside_source_count=24606
-spill_count=5513
-source_retention_fraction=0.50788
+below_table_count=38891
+outside_source_count=40930
+spill_count=2039
+source_retention_fraction=0.1814
 particle_count_final_fraction=1.0
 nan_count=0
 cpu_collision_fallback_detected=false

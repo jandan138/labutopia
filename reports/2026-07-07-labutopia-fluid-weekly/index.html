@@ -532,12 +532,12 @@
             <source src="assets/liquid-surface-reconstruction-main-full50k.webm" type="video/webm">
             <source src="assets/liquid-surface-reconstruction-main-full50k.mp4" type="video/mp4">
           </video>
-          <figcaption><strong>主展示视频：</strong>full 50k initial particles + completed PBD + <code>PhysX Isosurface</code>。蓝色液面更容易看懂；它是 presentation render，不是 raw USD direct step，也不是新的物理判定。</figcaption>
+          <figcaption><strong>主展示视频：</strong>20 秒、240 帧，full 50k initial particles + completed PBD + <code>PhysX Isosurface</code>。蓝色液面更容易看懂；它是 presentation render，不是 raw USD direct step，也不是新的物理判定。</figcaption>
         </figure>
         <article class="note caution">
           <h3>这条视频解决什么、不解决什么</h3>
           <p>解决的是“红色粒子团不像水、领导看不清”的展示问题：关闭 red debug particle display，启用 <code>Isosurface</code>、统一蓝色液面材质、统一光照和主视角。</p>
-          <p>不解决 <code>collider</code> 漏液问题，也不改变 <code>particle_readback_trace.jsonl</code>。这条 run 的结论仍是 <code>FAIL_CONTAINER_LEAK</code>，<code>below_table_count=19093</code>。</p>
+          <p>不解决 <code>collider</code> 漏液问题，也不改变 <code>particle_readback_trace.jsonl</code>。这条 20 秒长版 run 的结论仍是 <code>FAIL_CONTAINER_LEAK</code>，终态 <code>below_table_count=38891</code>。</p>
           <p>独立 visual review 结论是 <code>WARN</code>：画面可作为诊断展示，但漏出部分仍偏 speckled，不能说成 polished pour 或 full visual material parity。</p>
         </article>
       </div>
@@ -560,7 +560,7 @@
             <source src="assets/liquid-surface-reconstruction-wide-full50k.webm" type="video/webm">
             <source src="assets/liquid-surface-reconstruction-wide-full50k.mp4" type="video/mp4">
           </video>
-          <figcaption><strong>Wide/context：</strong>保留更宽上下文，防止主视角因为 closeup 被误解成只挑了局部。</figcaption>
+          <figcaption><strong>Wide/context：</strong>这是 2 秒 context smoke，用来保留更宽上下文；最终给领导看的主视频以上方 20 秒长版为准。</figcaption>
         </figure>
       </div>
 
@@ -913,7 +913,8 @@ s2f5_promotion=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_
 native_approx_dry_run=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708.json
 native_approx_runtime=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_runtime_sweep_20260708.json
 native_approx_videos=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/
-surface_reconstruction_main=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_refined_v2/
+surface_reconstruction_main_20s=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/
+surface_reconstruction_smoke_2s=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_refined_v2/
 surface_reconstruction_wide=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/</pre>
       </details>
 

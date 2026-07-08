@@ -1,0 +1,4075 @@
+{
+  "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1",
+  "authored_runtime_paths": {
+    "isosurface_contract": {
+      "api_path": "/World/CompletedPBD/ParticleSystem",
+      "claim_boundary": "visual_surface_reconstruction_only",
+      "enabled": true,
+      "grid_filtering_passes": "GS",
+      "grid_smoothing_radius": 0.0003207600535824895,
+      "grid_spacing": 0.00028868404822424056,
+      "max_subgrids": 12500,
+      "max_triangles": 6400000,
+      "max_vertices": 3200000,
+      "num_mesh_normal_smoothing_passes": 4,
+      "num_mesh_smoothing_passes": 4,
+      "parameter_reference": "isaacsim41_fluid_isosurface_cup_demo_style",
+      "surface_distance": 0.00030472205090336497
+    },
+    "particle_isosurface_api_summary": {
+      "api_applied": true,
+      "api_path": "/World/CompletedPBD/ParticleSystem",
+      "applied_schemas": [
+        "PhysxParticleIsosurfaceAPI",
+        "MaterialBindingAPI"
+      ],
+      "enabled": true,
+      "grid_filtering_passes": "GS",
+      "grid_smoothing_radius": 0.0003207600675523281,
+      "grid_spacing": 0.00028868403751403093,
+      "max_subgrids": 12500,
+      "max_triangles": 6400000,
+      "max_vertices": 3200000,
+      "num_mesh_normal_smoothing_passes": 4,
+      "num_mesh_smoothing_passes": 4,
+      "prim_exists": true,
+      "surface_distance": 0.0003047220525331795
+    },
+    "particle_set_path": "/World/CompletedPBD/ParticleSet",
+    "particle_system_path": "/World/CompletedPBD/ParticleSystem",
+    "physics_material_path": "/World/Looks/PBDRuntimeFluidPhysics",
+    "pre_deactivate_summary": {
+      "/World/ParticleSet": {
+        "deactivated": false,
+        "disabled_attrs": {
+          "physxParticle:fluid": false,
+          "physxParticle:selfCollision": false
+        },
+        "existed": true,
+        "kept_active_to_avoid_physx_expired_prim": true
+      },
+      "/World/ParticleSystem": {
+        "deactivated": false,
+        "disabled_attrs": {
+          "particleSystemEnabled": false
+        },
+        "existed": true,
+        "kept_active_to_avoid_physx_expired_prim": true
+      },
+      "/World/fluid": {
+        "deactivated": false,
+        "disabled_attrs": {},
+        "existed": true,
+        "kept_active_to_avoid_physx_expired_prim": true
+      }
+    },
+    "presentation_visual_material_path": "/World/Looks/LiquidPresentationWater",
+    "source_particle_set_path": "/World/ParticleSet",
+    "source_particle_system_path": "/World/ParticleSystem",
+    "source_visual_material_path": "/World/Looks/OmniGlass_01",
+    "visual_material_path": "/World/Looks/LiquidPresentationWater",
+    "visual_material_preserved": true
+  },
+  "camera_capture_diagnostics": {
+    "presentation_isosurface_frames/frame_0000.png": {
+      "dtype": "float64",
+      "shape": [
+        0
+      ],
+      "size": 0,
+      "status": "empty_array"
+    },
+    "presentation_isosurface_frames/frame_0001.png": {
+      "dtype": "uint8",
+      "mean": 105.94831661522633,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0001.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 37.192900728213814
+    },
+    "presentation_isosurface_frames/frame_0002.png": {
+      "dtype": "uint8",
+      "mean": 106.08553819444444,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0002.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 36.670989889103275
+    },
+    "presentation_isosurface_frames/frame_0003.png": {
+      "dtype": "uint8",
+      "mean": 106.01008616255145,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0003.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 36.39821616561548
+    },
+    "presentation_isosurface_frames/frame_0004.png": {
+      "dtype": "uint8",
+      "mean": 106.07745048868313,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0004.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 36.45828047625082
+    },
+    "presentation_isosurface_frames/frame_0005.png": {
+      "dtype": "uint8",
+      "mean": 106.08696309156379,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0005.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 36.33877401214417
+    },
+    "presentation_isosurface_frames/frame_0006.png": {
+      "dtype": "uint8",
+      "mean": 106.07097800925926,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0006.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 36.15578673478558
+    },
+    "presentation_isosurface_frames/frame_0007.png": {
+      "dtype": "uint8",
+      "mean": 106.07875643004115,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0007.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.759937715529574
+    },
+    "presentation_isosurface_frames/frame_0008.png": {
+      "dtype": "uint8",
+      "mean": 106.05563464506173,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0008.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.77014601254084
+    },
+    "presentation_isosurface_frames/frame_0009.png": {
+      "dtype": "uint8",
+      "mean": 106.01560828189301,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0009.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.729361624603655
+    },
+    "presentation_isosurface_frames/frame_0010.png": {
+      "dtype": "uint8",
+      "mean": 105.95804719650205,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0010.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.69272778143706
+    },
+    "presentation_isosurface_frames/frame_0011.png": {
+      "dtype": "uint8",
+      "mean": 105.87132330246914,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0011.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.49533607966454
+    },
+    "presentation_isosurface_frames/frame_0012.png": {
+      "dtype": "uint8",
+      "mean": 105.74432098765432,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0012.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.275502367590114
+    },
+    "presentation_isosurface_frames/frame_0013.png": {
+      "dtype": "uint8",
+      "mean": 105.71036008230453,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0013.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.246528722114164
+    },
+    "presentation_isosurface_frames/frame_0014.png": {
+      "dtype": "uint8",
+      "mean": 105.64302983539095,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0014.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.24688712471854
+    },
+    "presentation_isosurface_frames/frame_0015.png": {
+      "dtype": "uint8",
+      "mean": 105.57327803497942,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0015.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.11285229845751
+    },
+    "presentation_isosurface_frames/frame_0016.png": {
+      "dtype": "uint8",
+      "mean": 105.46302211934156,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0016.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 35.03976125047446
+    },
+    "presentation_isosurface_frames/frame_0017.png": {
+      "dtype": "uint8",
+      "mean": 105.3793370627572,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0017.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.9643101487768
+    },
+    "presentation_isosurface_frames/frame_0018.png": {
+      "dtype": "uint8",
+      "mean": 105.28142039609054,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0018.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.88770367935504
+    },
+    "presentation_isosurface_frames/frame_0019.png": {
+      "dtype": "uint8",
+      "mean": 105.17542181069959,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0019.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.8732720057628
+    },
+    "presentation_isosurface_frames/frame_0020.png": {
+      "dtype": "uint8",
+      "mean": 105.09432355967078,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0020.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.84529478793761
+    },
+    "presentation_isosurface_frames/frame_0021.png": {
+      "dtype": "uint8",
+      "mean": 105.05883809156379,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0021.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.846102005639274
+    },
+    "presentation_isosurface_frames/frame_0022.png": {
+      "dtype": "uint8",
+      "mean": 105.03588220164609,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0022.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.820011718384414
+    },
+    "presentation_isosurface_frames/frame_0023.png": {
+      "dtype": "uint8",
+      "mean": 105.00256044238684,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0023.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.80613083497412
+    },
+    "presentation_isosurface_frames/frame_0024.png": {
+      "dtype": "uint8",
+      "mean": 104.93389274691359,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0024.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.79183282943715
+    },
+    "presentation_isosurface_frames/frame_0025.png": {
+      "dtype": "uint8",
+      "mean": 104.91315715020576,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0025.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.73250978319903
+    },
+    "presentation_isosurface_frames/frame_0026.png": {
+      "dtype": "uint8",
+      "mean": 104.90688978909465,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0026.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.745236633738884
+    },
+    "presentation_isosurface_frames/frame_0027.png": {
+      "dtype": "uint8",
+      "mean": 104.90867219650205,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0027.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.750939804309176
+    },
+    "presentation_isosurface_frames/frame_0028.png": {
+      "dtype": "uint8",
+      "mean": 104.91694187242798,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0028.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.75811399793038
+    },
+    "presentation_isosurface_frames/frame_0029.png": {
+      "dtype": "uint8",
+      "mean": 104.8529603909465,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0029.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.707832143780735
+    },
+    "presentation_isosurface_frames/frame_0030.png": {
+      "dtype": "uint8",
+      "mean": 104.7641595936214,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0030.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.70308872543828
+    },
+    "presentation_isosurface_frames/frame_0031.png": {
+      "dtype": "uint8",
+      "mean": 104.77258551954732,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0031.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.73701714598386
+    },
+    "presentation_isosurface_frames/frame_0032.png": {
+      "dtype": "uint8",
+      "mean": 104.80535558127572,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0032.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.718183302070166
+    },
+    "presentation_isosurface_frames/frame_0033.png": {
+      "dtype": "uint8",
+      "mean": 104.76957690329218,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0033.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.67135869913724
+    },
+    "presentation_isosurface_frames/frame_0034.png": {
+      "dtype": "uint8",
+      "mean": 104.73876736111112,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0034.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.70918890832826
+    },
+    "presentation_isosurface_frames/frame_0035.png": {
+      "dtype": "uint8",
+      "mean": 104.73936085390946,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0035.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.716552231174795
+    },
+    "presentation_isosurface_frames/frame_0036.png": {
+      "dtype": "uint8",
+      "mean": 104.7167817644033,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0036.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.72429825657356
+    },
+    "presentation_isosurface_frames/frame_0037.png": {
+      "dtype": "uint8",
+      "mean": 104.7044470164609,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0037.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.68720865043211
+    },
+    "presentation_isosurface_frames/frame_0038.png": {
+      "dtype": "uint8",
+      "mean": 104.64342335390947,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0038.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.69552532134162
+    },
+    "presentation_isosurface_frames/frame_0039.png": {
+      "dtype": "uint8",
+      "mean": 104.68534915123456,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0039.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.72282864452304
+    },
+    "presentation_isosurface_frames/frame_0040.png": {
+      "dtype": "uint8",
+      "mean": 104.66745691872428,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0040.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.77192303474573
+    },
+    "presentation_isosurface_frames/frame_0041.png": {
+      "dtype": "uint8",
+      "mean": 104.63035815329218,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0041.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.727205365576125
+    },
+    "presentation_isosurface_frames/frame_0042.png": {
+      "dtype": "uint8",
+      "mean": 104.66067001028807,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0042.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.70877210553147
+    },
+    "presentation_isosurface_frames/frame_0043.png": {
+      "dtype": "uint8",
+      "mean": 104.65976594650206,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0043.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.74320720751843
+    },
+    "presentation_isosurface_frames/frame_0044.png": {
+      "dtype": "uint8",
+      "mean": 104.66840084876543,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0044.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.78216019604168
+    },
+    "presentation_isosurface_frames/frame_0045.png": {
+      "dtype": "uint8",
+      "mean": 104.65699652777778,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0045.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.78795595990147
+    },
+    "presentation_isosurface_frames/frame_0046.png": {
+      "dtype": "uint8",
+      "mean": 104.64638310185185,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0046.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.80696598590388
+    },
+    "presentation_isosurface_frames/frame_0047.png": {
+      "dtype": "uint8",
+      "mean": 104.62296810699588,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0047.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.82772522988378
+    },
+    "presentation_isosurface_frames/frame_0048.png": {
+      "dtype": "uint8",
+      "mean": 104.59926183127573,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0048.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.79374711707372
+    },
+    "presentation_isosurface_frames/frame_0049.png": {
+      "dtype": "uint8",
+      "mean": 104.58741769547325,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0049.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.81690445785175
+    },
+    "presentation_isosurface_frames/frame_0050.png": {
+      "dtype": "uint8",
+      "mean": 104.60022440843622,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0050.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.77903851661185
+    },
+    "presentation_isosurface_frames/frame_0051.png": {
+      "dtype": "uint8",
+      "mean": 104.61041666666667,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0051.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.79612791359211
+    },
+    "presentation_isosurface_frames/frame_0052.png": {
+      "dtype": "uint8",
+      "mean": 104.6039654063786,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0052.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.80440980631451
+    },
+    "presentation_isosurface_frames/frame_0053.png": {
+      "dtype": "uint8",
+      "mean": 104.55628472222222,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0053.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.751142448479136
+    },
+    "presentation_isosurface_frames/frame_0054.png": {
+      "dtype": "uint8",
+      "mean": 104.56795910493827,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0054.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.73914322330467
+    },
+    "presentation_isosurface_frames/frame_0055.png": {
+      "dtype": "uint8",
+      "mean": 104.54211869855968,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0055.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.76618691723616
+    },
+    "presentation_isosurface_frames/frame_0056.png": {
+      "dtype": "uint8",
+      "mean": 104.51288065843622,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0056.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.76944422228963
+    },
+    "presentation_isosurface_frames/frame_0057.png": {
+      "dtype": "uint8",
+      "mean": 104.45978073559671,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0057.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.77798988521388
+    },
+    "presentation_isosurface_frames/frame_0058.png": {
+      "dtype": "uint8",
+      "mean": 104.48954925411523,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0058.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.764396943506675
+    },
+    "presentation_isosurface_frames/frame_0059.png": {
+      "dtype": "uint8",
+      "mean": 104.50388117283951,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0059.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.746781005365825
+    },
+    "presentation_isosurface_frames/frame_0060.png": {
+      "dtype": "uint8",
+      "mean": 104.49560892489711,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0060.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.74955513094673
+    },
+    "presentation_isosurface_frames/frame_0061.png": {
+      "dtype": "uint8",
+      "mean": 104.51842528292181,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0061.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.78518683672909
+    },
+    "presentation_isosurface_frames/frame_0062.png": {
+      "dtype": "uint8",
+      "mean": 104.47798289609054,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0062.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.76664743306132
+    },
+    "presentation_isosurface_frames/frame_0063.png": {
+      "dtype": "uint8",
+      "mean": 104.44881237139917,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0063.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.737336146768534
+    },
+    "presentation_isosurface_frames/frame_0064.png": {
+      "dtype": "uint8",
+      "mean": 104.4320183899177,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0064.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.778217410880465
+    },
+    "presentation_isosurface_frames/frame_0065.png": {
+      "dtype": "uint8",
+      "mean": 104.47631172839506,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0065.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.78675750206914
+    },
+    "presentation_isosurface_frames/frame_0066.png": {
+      "dtype": "uint8",
+      "mean": 104.50540895061728,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0066.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.71829817178398
+    },
+    "presentation_isosurface_frames/frame_0067.png": {
+      "dtype": "uint8",
+      "mean": 104.5086194701646,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0067.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.714841034497226
+    },
+    "presentation_isosurface_frames/frame_0068.png": {
+      "dtype": "uint8",
+      "mean": 104.49054719650206,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0068.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.69760128043003
+    },
+    "presentation_isosurface_frames/frame_0069.png": {
+      "dtype": "uint8",
+      "mean": 104.45750900205762,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0069.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.70683642554324
+    },
+    "presentation_isosurface_frames/frame_0070.png": {
+      "dtype": "uint8",
+      "mean": 104.45351530349794,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0070.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.695781872720644
+    },
+    "presentation_isosurface_frames/frame_0071.png": {
+      "dtype": "uint8",
+      "mean": 104.48837962962963,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0071.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.71509267541824
+    },
+    "presentation_isosurface_frames/frame_0072.png": {
+      "dtype": "uint8",
+      "mean": 104.51266139403292,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0072.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.708061989332634
+    },
+    "presentation_isosurface_frames/frame_0073.png": {
+      "dtype": "uint8",
+      "mean": 104.44140496399177,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0073.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.66917590940086
+    },
+    "presentation_isosurface_frames/frame_0074.png": {
+      "dtype": "uint8",
+      "mean": 104.48061985596708,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0074.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.71079126545828
+    },
+    "presentation_isosurface_frames/frame_0075.png": {
+      "dtype": "uint8",
+      "mean": 104.53066358024691,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0075.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.699053526868475
+    },
+    "presentation_isosurface_frames/frame_0076.png": {
+      "dtype": "uint8",
+      "mean": 104.50115933641975,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0076.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.70191244824129
+    },
+    "presentation_isosurface_frames/frame_0077.png": {
+      "dtype": "uint8",
+      "mean": 104.47901813271605,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0077.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.71403137965253
+    },
+    "presentation_isosurface_frames/frame_0078.png": {
+      "dtype": "uint8",
+      "mean": 104.4748225308642,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0078.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.69461183861385
+    },
+    "presentation_isosurface_frames/frame_0079.png": {
+      "dtype": "uint8",
+      "mean": 104.49269740226337,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0079.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.677447641266895
+    },
+    "presentation_isosurface_frames/frame_0080.png": {
+      "dtype": "uint8",
+      "mean": 104.46644354423869,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0080.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.69824963925504
+    },
+    "presentation_isosurface_frames/frame_0081.png": {
+      "dtype": "uint8",
+      "mean": 104.45745949074075,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0081.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.67226112602234
+    },
+    "presentation_isosurface_frames/frame_0082.png": {
+      "dtype": "uint8",
+      "mean": 104.39778549382716,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0082.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.61492677429478
+    },
+    "presentation_isosurface_frames/frame_0083.png": {
+      "dtype": "uint8",
+      "mean": 104.42801376028807,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0083.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.65809391906445
+    },
+    "presentation_isosurface_frames/frame_0084.png": {
+      "dtype": "uint8",
+      "mean": 104.45418981481481,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0084.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.66331627680095
+    },
+    "presentation_isosurface_frames/frame_0085.png": {
+      "dtype": "uint8",
+      "mean": 104.48257844650206,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0085.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.63778854526291
+    },
+    "presentation_isosurface_frames/frame_0086.png": {
+      "dtype": "uint8",
+      "mean": 104.47528485082304,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0086.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.61747528232985
+    },
+    "presentation_isosurface_frames/frame_0087.png": {
+      "dtype": "uint8",
+      "mean": 104.45460905349795,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0087.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.58703486588926
+    },
+    "presentation_isosurface_frames/frame_0088.png": {
+      "dtype": "uint8",
+      "mean": 104.4230150462963,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0088.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.55165339129297
+    },
+    "presentation_isosurface_frames/frame_0089.png": {
+      "dtype": "uint8",
+      "mean": 104.4590329218107,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0089.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.55089280484781
+    },
+    "presentation_isosurface_frames/frame_0090.png": {
+      "dtype": "uint8",
+      "mean": 104.45051311728395,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0090.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.600816785761786
+    },
+    "presentation_isosurface_frames/frame_0091.png": {
+      "dtype": "uint8",
+      "mean": 104.40063271604939,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0091.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.58844719160458
+    },
+    "presentation_isosurface_frames/frame_0092.png": {
+      "dtype": "uint8",
+      "mean": 104.37353009259259,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0092.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.59156423637577
+    },
+    "presentation_isosurface_frames/frame_0093.png": {
+      "dtype": "uint8",
+      "mean": 104.41858346193416,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0093.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.61315943049563
+    },
+    "presentation_isosurface_frames/frame_0094.png": {
+      "dtype": "uint8",
+      "mean": 104.40265946502058,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0094.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.5998018965594
+    },
+    "presentation_isosurface_frames/frame_0095.png": {
+      "dtype": "uint8",
+      "mean": 104.40867219650205,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0095.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.59445203197764
+    },
+    "presentation_isosurface_frames/frame_0096.png": {
+      "dtype": "uint8",
+      "mean": 104.38033500514403,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0096.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.58315404149442
+    },
+    "presentation_isosurface_frames/frame_0097.png": {
+      "dtype": "uint8",
+      "mean": 104.35361304012346,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0097.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.54329255915124
+    },
+    "presentation_isosurface_frames/frame_0098.png": {
+      "dtype": "uint8",
+      "mean": 104.3353549382716,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0098.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.51936860929988
+    },
+    "presentation_isosurface_frames/frame_0099.png": {
+      "dtype": "uint8",
+      "mean": 104.37411265432098,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0099.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.53702261234429
+    },
+    "presentation_isosurface_frames/frame_0100.png": {
+      "dtype": "uint8",
+      "mean": 104.39833719135802,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0100.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.54097754398267
+    },
+    "presentation_isosurface_frames/frame_0101.png": {
+      "dtype": "uint8",
+      "mean": 104.38450102880658,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0101.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.55858838450479
+    },
+    "presentation_isosurface_frames/frame_0102.png": {
+      "dtype": "uint8",
+      "mean": 104.40882844650206,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0102.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.603868055525396
+    },
+    "presentation_isosurface_frames/frame_0103.png": {
+      "dtype": "uint8",
+      "mean": 104.40159400720165,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0103.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.583375537759245
+    },
+    "presentation_isosurface_frames/frame_0104.png": {
+      "dtype": "uint8",
+      "mean": 104.38836805555556,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0104.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.53402797168176
+    },
+    "presentation_isosurface_frames/frame_0105.png": {
+      "dtype": "uint8",
+      "mean": 104.3481590792181,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0105.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.50273614266933
+    },
+    "presentation_isosurface_frames/frame_0106.png": {
+      "dtype": "uint8",
+      "mean": 104.28313657407408,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0106.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.49027996218243
+    },
+    "presentation_isosurface_frames/frame_0107.png": {
+      "dtype": "uint8",
+      "mean": 104.24508551954733,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0107.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.45357033507548
+    },
+    "presentation_isosurface_frames/frame_0108.png": {
+      "dtype": "uint8",
+      "mean": 104.23977880658437,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0108.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.43985381897653
+    },
+    "presentation_isosurface_frames/frame_0109.png": {
+      "dtype": "uint8",
+      "mean": 104.24630208333333,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0109.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.461819497928715
+    },
+    "presentation_isosurface_frames/frame_0110.png": {
+      "dtype": "uint8",
+      "mean": 104.26694573045268,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0110.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.462551807968445
+    },
+    "presentation_isosurface_frames/frame_0111.png": {
+      "dtype": "uint8",
+      "mean": 104.24874228395062,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0111.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.49064941144919
+    },
+    "presentation_isosurface_frames/frame_0112.png": {
+      "dtype": "uint8",
+      "mean": 104.24907471707819,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0112.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.48609249533848
+    },
+    "presentation_isosurface_frames/frame_0113.png": {
+      "dtype": "uint8",
+      "mean": 104.2269174382716,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0113.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.503233603588235
+    },
+    "presentation_isosurface_frames/frame_0114.png": {
+      "dtype": "uint8",
+      "mean": 104.21411458333333,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0114.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.5185116955029
+    },
+    "presentation_isosurface_frames/frame_0115.png": {
+      "dtype": "uint8",
+      "mean": 104.22194894547324,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0115.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.49361618426001
+    },
+    "presentation_isosurface_frames/frame_0116.png": {
+      "dtype": "uint8",
+      "mean": 104.22042052469136,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0116.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.47804747432907
+    },
+    "presentation_isosurface_frames/frame_0117.png": {
+      "dtype": "uint8",
+      "mean": 104.21563271604938,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0117.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.43995456042824
+    },
+    "presentation_isosurface_frames/frame_0118.png": {
+      "dtype": "uint8",
+      "mean": 104.17846386316873,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0118.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.4330270698909
+    },
+    "presentation_isosurface_frames/frame_0119.png": {
+      "dtype": "uint8",
+      "mean": 104.19550540123457,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0119.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.44656234698783
+    },
+    "presentation_isosurface_frames/frame_0120.png": {
+      "dtype": "uint8",
+      "mean": 104.17282793209877,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0120.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.42083088581802
+    },
+    "presentation_isosurface_frames/frame_0121.png": {
+      "dtype": "uint8",
+      "mean": 104.13166923868313,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0121.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.40753587278664
+    },
+    "presentation_isosurface_frames/frame_0122.png": {
+      "dtype": "uint8",
+      "mean": 104.13780671296297,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0122.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.39263399810128
+    },
+    "presentation_isosurface_frames/frame_0123.png": {
+      "dtype": "uint8",
+      "mean": 104.12184092078189,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0123.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.35989306773875
+    },
+    "presentation_isosurface_frames/frame_0124.png": {
+      "dtype": "uint8",
+      "mean": 104.15044045781893,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0124.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.369091871609655
+    },
+    "presentation_isosurface_frames/frame_0125.png": {
+      "dtype": "uint8",
+      "mean": 104.1178208590535,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0125.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.36207272913096
+    },
+    "presentation_isosurface_frames/frame_0126.png": {
+      "dtype": "uint8",
+      "mean": 104.11556262860083,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0126.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.36683387605953
+    },
+    "presentation_isosurface_frames/frame_0127.png": {
+      "dtype": "uint8",
+      "mean": 104.12985596707819,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0127.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.36562353720144
+    },
+    "presentation_isosurface_frames/frame_0128.png": {
+      "dtype": "uint8",
+      "mean": 104.13628858024691,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0128.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.33957226756912
+    },
+    "presentation_isosurface_frames/frame_0129.png": {
+      "dtype": "uint8",
+      "mean": 104.14056391460905,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0129.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.29390485759224
+    },
+    "presentation_isosurface_frames/frame_0130.png": {
+      "dtype": "uint8",
+      "mean": 104.16076131687242,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0130.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.3121878906945
+    },
+    "presentation_isosurface_frames/frame_0131.png": {
+      "dtype": "uint8",
+      "mean": 104.1685262345679,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0131.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.3121614443383
+    },
+    "presentation_isosurface_frames/frame_0132.png": {
+      "dtype": "uint8",
+      "mean": 104.17836998456791,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0132.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.306020680119374
+    },
+    "presentation_isosurface_frames/frame_0133.png": {
+      "dtype": "uint8",
+      "mean": 104.14827224794239,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0133.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.2813656510529
+    },
+    "presentation_isosurface_frames/frame_0134.png": {
+      "dtype": "uint8",
+      "mean": 104.1309882973251,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0134.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.27710905409157
+    },
+    "presentation_isosurface_frames/frame_0135.png": {
+      "dtype": "uint8",
+      "mean": 104.15304205246913,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0135.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.30455324772889
+    },
+    "presentation_isosurface_frames/frame_0136.png": {
+      "dtype": "uint8",
+      "mean": 104.1415033436214,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0136.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.286135865772536
+    },
+    "presentation_isosurface_frames/frame_0137.png": {
+      "dtype": "uint8",
+      "mean": 104.13646347736625,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0137.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.245447478268325
+    },
+    "presentation_isosurface_frames/frame_0138.png": {
+      "dtype": "uint8",
+      "mean": 104.16462641460906,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0138.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.26601481372763
+    },
+    "presentation_isosurface_frames/frame_0139.png": {
+      "dtype": "uint8",
+      "mean": 104.16157728909465,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0139.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.281439801637134
+    },
+    "presentation_isosurface_frames/frame_0140.png": {
+      "dtype": "uint8",
+      "mean": 104.12049061213992,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0140.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.299248582649774
+    },
+    "presentation_isosurface_frames/frame_0141.png": {
+      "dtype": "uint8",
+      "mean": 104.0933018261317,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0141.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.26299767476885
+    },
+    "presentation_isosurface_frames/frame_0142.png": {
+      "dtype": "uint8",
+      "mean": 104.139045781893,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0142.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.262376711740316
+    },
+    "presentation_isosurface_frames/frame_0143.png": {
+      "dtype": "uint8",
+      "mean": 104.13475887345679,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0143.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.26787798844574
+    },
+    "presentation_isosurface_frames/frame_0144.png": {
+      "dtype": "uint8",
+      "mean": 104.0921534207819,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0144.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.21636119777173
+    },
+    "presentation_isosurface_frames/frame_0145.png": {
+      "dtype": "uint8",
+      "mean": 104.03166409465021,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0145.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.22088898630018
+    },
+    "presentation_isosurface_frames/frame_0146.png": {
+      "dtype": "uint8",
+      "mean": 104.08118184156379,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0146.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.24324567373799
+    },
+    "presentation_isosurface_frames/frame_0147.png": {
+      "dtype": "uint8",
+      "mean": 104.08701388888889,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0147.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.223631195183884
+    },
+    "presentation_isosurface_frames/frame_0148.png": {
+      "dtype": "uint8",
+      "mean": 104.07399305555556,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0148.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.185749820940174
+    },
+    "presentation_isosurface_frames/frame_0149.png": {
+      "dtype": "uint8",
+      "mean": 104.10442001028807,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0149.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.18794791177502
+    },
+    "presentation_isosurface_frames/frame_0150.png": {
+      "dtype": "uint8",
+      "mean": 104.10125707304526,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0150.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.206067536186296
+    },
+    "presentation_isosurface_frames/frame_0151.png": {
+      "dtype": "uint8",
+      "mean": 104.06695730452675,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0151.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.20563258689989
+    },
+    "presentation_isosurface_frames/frame_0152.png": {
+      "dtype": "uint8",
+      "mean": 104.08645769032921,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0152.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.217931879798634
+    },
+    "presentation_isosurface_frames/frame_0153.png": {
+      "dtype": "uint8",
+      "mean": 104.07430234053498,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0153.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.19374710635715
+    },
+    "presentation_isosurface_frames/frame_0154.png": {
+      "dtype": "uint8",
+      "mean": 104.10855324074075,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0154.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.19140093701176
+    },
+    "presentation_isosurface_frames/frame_0155.png": {
+      "dtype": "uint8",
+      "mean": 104.06545653292181,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0155.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.18202873418553
+    },
+    "presentation_isosurface_frames/frame_0156.png": {
+      "dtype": "uint8",
+      "mean": 104.08481610082305,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0156.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.1774795657869
+    },
+    "presentation_isosurface_frames/frame_0157.png": {
+      "dtype": "uint8",
+      "mean": 104.06118377057614,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0157.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.11135600539315
+    },
+    "presentation_isosurface_frames/frame_0158.png": {
+      "dtype": "uint8",
+      "mean": 104.06954861111112,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0158.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.10187745888994
+    },
+    "presentation_isosurface_frames/frame_0159.png": {
+      "dtype": "uint8",
+      "mean": 104.07539994855966,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0159.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.125054346299294
+    },
+    "presentation_isosurface_frames/frame_0160.png": {
+      "dtype": "uint8",
+      "mean": 104.03432163065844,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0160.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.119424590650226
+    },
+    "presentation_isosurface_frames/frame_0161.png": {
+      "dtype": "uint8",
+      "mean": 104.03400012860082,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0161.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.08783914396203
+    },
+    "presentation_isosurface_frames/frame_0162.png": {
+      "dtype": "uint8",
+      "mean": 103.98511895576132,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0162.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.0601878402024
+    },
+    "presentation_isosurface_frames/frame_0163.png": {
+      "dtype": "uint8",
+      "mean": 104.00605516975308,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0163.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.04932014598603
+    },
+    "presentation_isosurface_frames/frame_0164.png": {
+      "dtype": "uint8",
+      "mean": 104.0162583590535,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0164.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.04073258600485
+    },
+    "presentation_isosurface_frames/frame_0165.png": {
+      "dtype": "uint8",
+      "mean": 104.01971900720164,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0165.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.06466719497155
+    },
+    "presentation_isosurface_frames/frame_0166.png": {
+      "dtype": "uint8",
+      "mean": 104.02086612654321,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0166.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.09643723047253
+    },
+    "presentation_isosurface_frames/frame_0167.png": {
+      "dtype": "uint8",
+      "mean": 104.02095293209877,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0167.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.05831674984336
+    },
+    "presentation_isosurface_frames/frame_0168.png": {
+      "dtype": "uint8",
+      "mean": 104.01154449588478,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0168.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.063784792190184
+    },
+    "presentation_isosurface_frames/frame_0169.png": {
+      "dtype": "uint8",
+      "mean": 103.97074074074074,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0169.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.03627222572001
+    },
+    "presentation_isosurface_frames/frame_0170.png": {
+      "dtype": "uint8",
+      "mean": 103.97391332304527,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0170.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.0609058284362
+    },
+    "presentation_isosurface_frames/frame_0171.png": {
+      "dtype": "uint8",
+      "mean": 103.99646347736625,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0171.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.0562537175914
+    },
+    "presentation_isosurface_frames/frame_0172.png": {
+      "dtype": "uint8",
+      "mean": 104.00077803497942,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0172.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.044727817872406
+    },
+    "presentation_isosurface_frames/frame_0173.png": {
+      "dtype": "uint8",
+      "mean": 104.00053369341563,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0173.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.01769479823631
+    },
+    "presentation_isosurface_frames/frame_0174.png": {
+      "dtype": "uint8",
+      "mean": 103.97931970164609,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0174.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.03288668072695
+    },
+    "presentation_isosurface_frames/frame_0175.png": {
+      "dtype": "uint8",
+      "mean": 103.99533243312757,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0175.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.01610942343996
+    },
+    "presentation_isosurface_frames/frame_0176.png": {
+      "dtype": "uint8",
+      "mean": 103.97864004629629,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0176.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.00464511739522
+    },
+    "presentation_isosurface_frames/frame_0177.png": {
+      "dtype": "uint8",
+      "mean": 103.97475372942387,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0177.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.987430480335775
+    },
+    "presentation_isosurface_frames/frame_0178.png": {
+      "dtype": "uint8",
+      "mean": 103.93302854938271,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0178.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.982205449342814
+    },
+    "presentation_isosurface_frames/frame_0179.png": {
+      "dtype": "uint8",
+      "mean": 103.9088007973251,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0179.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.995341039798696
+    },
+    "presentation_isosurface_frames/frame_0180.png": {
+      "dtype": "uint8",
+      "mean": 103.95619470164608,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0180.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.00668692299432
+    },
+    "presentation_isosurface_frames/frame_0181.png": {
+      "dtype": "uint8",
+      "mean": 103.95337062757201,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0181.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.01851446599678
+    },
+    "presentation_isosurface_frames/frame_0182.png": {
+      "dtype": "uint8",
+      "mean": 103.96635673868313,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0182.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.03039789343182
+    },
+    "presentation_isosurface_frames/frame_0183.png": {
+      "dtype": "uint8",
+      "mean": 103.94701903292182,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0183.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.02306740432779
+    },
+    "presentation_isosurface_frames/frame_0184.png": {
+      "dtype": "uint8",
+      "mean": 103.93465406378601,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0184.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.03802885229051
+    },
+    "presentation_isosurface_frames/frame_0185.png": {
+      "dtype": "uint8",
+      "mean": 103.89919431584362,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0185.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.999614794765506
+    },
+    "presentation_isosurface_frames/frame_0186.png": {
+      "dtype": "uint8",
+      "mean": 103.87085326646091,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0186.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.01138214232551
+    },
+    "presentation_isosurface_frames/frame_0187.png": {
+      "dtype": "uint8",
+      "mean": 103.83484117798353,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0187.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 34.00283126687106
+    },
+    "presentation_isosurface_frames/frame_0188.png": {
+      "dtype": "uint8",
+      "mean": 103.86135416666667,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0188.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.97934732779032
+    },
+    "presentation_isosurface_frames/frame_0189.png": {
+      "dtype": "uint8",
+      "mean": 103.84738554526749,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0189.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.95329090005022
+    },
+    "presentation_isosurface_frames/frame_0190.png": {
+      "dtype": "uint8",
+      "mean": 103.87338155864198,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0190.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.92872004325236
+    },
+    "presentation_isosurface_frames/frame_0191.png": {
+      "dtype": "uint8",
+      "mean": 103.86150720164609,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0191.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.93242464708334
+    },
+    "presentation_isosurface_frames/frame_0192.png": {
+      "dtype": "uint8",
+      "mean": 103.85239583333333,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0192.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.9145206921989
+    },
+    "presentation_isosurface_frames/frame_0193.png": {
+      "dtype": "uint8",
+      "mean": 103.85923096707819,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0193.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.8939350018953
+    },
+    "presentation_isosurface_frames/frame_0194.png": {
+      "dtype": "uint8",
+      "mean": 103.80658050411523,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0194.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.863421197131444
+    },
+    "presentation_isosurface_frames/frame_0195.png": {
+      "dtype": "uint8",
+      "mean": 103.85650077160494,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0195.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.90579594267667
+    },
+    "presentation_isosurface_frames/frame_0196.png": {
+      "dtype": "uint8",
+      "mean": 103.87358474794239,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0196.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.906901573313355
+    },
+    "presentation_isosurface_frames/frame_0197.png": {
+      "dtype": "uint8",
+      "mean": 103.82231545781893,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0197.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.881874601793484
+    },
+    "presentation_isosurface_frames/frame_0198.png": {
+      "dtype": "uint8",
+      "mean": 103.81520640432099,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0198.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.856362188862164
+    },
+    "presentation_isosurface_frames/frame_0199.png": {
+      "dtype": "uint8",
+      "mean": 103.82410429526749,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0199.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.8155841796643
+    },
+    "presentation_isosurface_frames/frame_0200.png": {
+      "dtype": "uint8",
+      "mean": 103.75222929526748,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0200.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.79411614071898
+    },
+    "presentation_isosurface_frames/frame_0201.png": {
+      "dtype": "uint8",
+      "mean": 103.71895061728395,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0201.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.7926823031617
+    },
+    "presentation_isosurface_frames/frame_0202.png": {
+      "dtype": "uint8",
+      "mean": 103.72536908436214,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0202.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.794863904400714
+    },
+    "presentation_isosurface_frames/frame_0203.png": {
+      "dtype": "uint8",
+      "mean": 103.70767296810699,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0203.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.7979203431309
+    },
+    "presentation_isosurface_frames/frame_0204.png": {
+      "dtype": "uint8",
+      "mean": 103.6898482510288,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0204.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.79684143640934
+    },
+    "presentation_isosurface_frames/frame_0205.png": {
+      "dtype": "uint8",
+      "mean": 103.73114519032922,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0205.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.78959086784292
+    },
+    "presentation_isosurface_frames/frame_0206.png": {
+      "dtype": "uint8",
+      "mean": 103.75946244855967,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0206.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.81698668488377
+    },
+    "presentation_isosurface_frames/frame_0207.png": {
+      "dtype": "uint8",
+      "mean": 103.74920781893005,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0207.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.82099968878183
+    },
+    "presentation_isosurface_frames/frame_0208.png": {
+      "dtype": "uint8",
+      "mean": 103.7273559670782,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0208.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.78715218667641
+    },
+    "presentation_isosurface_frames/frame_0209.png": {
+      "dtype": "uint8",
+      "mean": 103.70209940843621,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0209.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.76895029960718
+    },
+    "presentation_isosurface_frames/frame_0210.png": {
+      "dtype": "uint8",
+      "mean": 103.70808063271605,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0210.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.79241057365205
+    },
+    "presentation_isosurface_frames/frame_0211.png": {
+      "dtype": "uint8",
+      "mean": 103.70613233024692,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0211.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.77748281574246
+    },
+    "presentation_isosurface_frames/frame_0212.png": {
+      "dtype": "uint8",
+      "mean": 103.70038130144033,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0212.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.76338583973533
+    },
+    "presentation_isosurface_frames/frame_0213.png": {
+      "dtype": "uint8",
+      "mean": 103.72133294753087,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0213.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.77826136727413
+    },
+    "presentation_isosurface_frames/frame_0214.png": {
+      "dtype": "uint8",
+      "mean": 103.73243377057614,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0214.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.78600218929875
+    },
+    "presentation_isosurface_frames/frame_0215.png": {
+      "dtype": "uint8",
+      "mean": 103.73174897119341,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0215.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.779993169106554
+    },
+    "presentation_isosurface_frames/frame_0216.png": {
+      "dtype": "uint8",
+      "mean": 103.7170357510288,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0216.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.775503824518445
+    },
+    "presentation_isosurface_frames/frame_0217.png": {
+      "dtype": "uint8",
+      "mean": 103.70827610596707,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0217.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.756942749912724
+    },
+    "presentation_isosurface_frames/frame_0218.png": {
+      "dtype": "uint8",
+      "mean": 103.69175218621399,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0218.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.7139009140731
+    },
+    "presentation_isosurface_frames/frame_0219.png": {
+      "dtype": "uint8",
+      "mean": 103.70976337448559,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0219.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.71900852030138
+    },
+    "presentation_isosurface_frames/frame_0220.png": {
+      "dtype": "uint8",
+      "mean": 103.70660558127572,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0220.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.702805889619555
+    },
+    "presentation_isosurface_frames/frame_0221.png": {
+      "dtype": "uint8",
+      "mean": 103.69797518004115,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0221.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.66512339490742
+    },
+    "presentation_isosurface_frames/frame_0222.png": {
+      "dtype": "uint8",
+      "mean": 103.68611818415638,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0222.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.689321290634275
+    },
+    "presentation_isosurface_frames/frame_0223.png": {
+      "dtype": "uint8",
+      "mean": 103.64340084876544,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0223.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.69888916034205
+    },
+    "presentation_isosurface_frames/frame_0224.png": {
+      "dtype": "uint8",
+      "mean": 103.61227301954733,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0224.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.6937917514193
+    },
+    "presentation_isosurface_frames/frame_0225.png": {
+      "dtype": "uint8",
+      "mean": 103.58293402777778,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0225.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.678030806974355
+    },
+    "presentation_isosurface_frames/frame_0226.png": {
+      "dtype": "uint8",
+      "mean": 103.6020524691358,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0226.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.65566305259179
+    },
+    "presentation_isosurface_frames/frame_0227.png": {
+      "dtype": "uint8",
+      "mean": 103.6197633744856,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0227.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.65553694067287
+    },
+    "presentation_isosurface_frames/frame_0228.png": {
+      "dtype": "uint8",
+      "mean": 103.6506204989712,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0228.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.69005261198343
+    },
+    "presentation_isosurface_frames/frame_0229.png": {
+      "dtype": "uint8",
+      "mean": 103.62396090534979,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0229.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.67247694561231
+    },
+    "presentation_isosurface_frames/frame_0230.png": {
+      "dtype": "uint8",
+      "mean": 103.63676826131687,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0230.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.67245533672293
+    },
+    "presentation_isosurface_frames/frame_0231.png": {
+      "dtype": "uint8",
+      "mean": 103.59450360082305,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0231.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.663102203823556
+    },
+    "presentation_isosurface_frames/frame_0232.png": {
+      "dtype": "uint8",
+      "mean": 103.60609889403293,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0232.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.65487301788239
+    },
+    "presentation_isosurface_frames/frame_0233.png": {
+      "dtype": "uint8",
+      "mean": 103.56541216563787,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0233.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.661305014839876
+    },
+    "presentation_isosurface_frames/frame_0234.png": {
+      "dtype": "uint8",
+      "mean": 103.56594071502057,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0234.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.647881647639316
+    },
+    "presentation_isosurface_frames/frame_0235.png": {
+      "dtype": "uint8",
+      "mean": 103.54594521604939,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0235.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.6441503996655
+    },
+    "presentation_isosurface_frames/frame_0236.png": {
+      "dtype": "uint8",
+      "mean": 103.54848572530864,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0236.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.635866361268654
+    },
+    "presentation_isosurface_frames/frame_0237.png": {
+      "dtype": "uint8",
+      "mean": 103.55863747427983,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0237.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.633721567986875
+    },
+    "presentation_isosurface_frames/frame_0238.png": {
+      "dtype": "uint8",
+      "mean": 103.56107767489712,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0238.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.636286851853626
+    },
+    "presentation_isosurface_frames/frame_0239.png": {
+      "dtype": "uint8",
+      "mean": 103.5652996399177,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0239.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.628704269934666
+    },
+    "presentation_isosurface_frames/frame_0240.png": {
+      "dtype": "uint8",
+      "mean": 103.54998713991769,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface_frames/frame_0240.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 33.62407081035723
+    }
+  },
+  "claim_boundary": {
+    "allowed": [
+      "native_usd_scene_step_video_recorded=true",
+      "native_scene_material_paths_preserved=true",
+      "native_scene_mdl_source_assets_retargeted_to_isaacsim41_local_mirror=true",
+      "pbd_completion_overlay_used_for_runtime_step=true",
+      "isaacsim41_core_mdl_local_mirror_can_be_used_for_runtime_material_closure=true",
+      "50k_colleague_particles_stepped_in_native_scene=true",
+      "leak_status_supported_by_particle_readback=true",
+      "presentation_isosurface_video_recorded=true"
+    ],
+    "blocked": [
+      "raw_usd_direct_step_passed",
+      "raw_50k_colleague_liquid_usd_can_direct_step_as_true_pbd_fluid",
+      "completed_pbd_static_leak_equals_benchmark_ready_fluid",
+      "presentation_video_equals_physics_success",
+      "isosurface_reconstruction_equals_zero_leak",
+      "presentation_water_material_equals_labutopia51_visual_parity",
+      "review_markers_are_physical_fluid_mesh",
+      "review_marker_video_equals_native_material_video",
+      "isaacsim41_core_mdl_local_mirror_equals_labutopia51_native_visual_parity",
+      "ebench_score_or_policy_claim_allowed",
+      "s3_kinematic_pour_released"
+    ]
+  },
+  "classification": {
+    "below_table_count": 38891,
+    "classification": "FAIL_CONTAINER_LEAK",
+    "cpu_collision_fallback_detected": false,
+    "fatal_error": null,
+    "gpu_collider_unsupported": false,
+    "nan_count": 0,
+    "outside_source_count": 40930,
+    "particle_count_final_fraction": 1.0,
+    "pass_criteria": {
+      "below_table_count_eq_zero": false,
+      "cpu_collision_fallback_detected_false": true,
+      "nan_count_eq_zero": true,
+      "outside_source_count_eq_zero": false,
+      "particle_count_final_fraction_ge_0_95": true,
+      "particle_motion_observed": true,
+      "source_retention_fraction_ge_0_95": false,
+      "spill_count_eq_zero": false,
+      "tail_leak_rate_lt_0_02": false,
+      "target_count_eq_zero": true
+    },
+    "source_retention_fraction": 0.1814,
+    "spill_count": 2039,
+    "tail_leak_rate_fraction_per_second": 0.066,
+    "target_count": 0,
+    "variant_id": "COLLEAGUE_NATIVE_USD_FULL_50K_COMPLETED_PBD"
+  },
+  "closeup_camera": {
+    "camera_path": "/World/Beaker2CloseupNativeMaterialCamera",
+    "eye": [
+      0.5118020000000001,
+      -0.24819800000000003,
+      1.0227606155217077
+    ],
+    "target": [
+      0.311802,
+      0.091802,
+      0.8680522955217077
+    ],
+    "up": [
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "debug_particle_display_enabled": false,
+  "elapsed_seconds": 233.85801689699292,
+  "evidence_scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/native_scene_completed_pbd_overlay.usda",
+  "generated_at_utc": "2026-07-08T15:05:05.778370+00:00",
+  "isaac_log_summary": {
+    "error_count": 0,
+    "errors": [],
+    "errors_truncated": false,
+    "has_omniglass_compile_error": false,
+    "has_omnipbr_compile_error": false,
+    "has_omnisurface_compile_error": false,
+    "isaac_log_available": true,
+    "isaac_log_path": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.1/site-packages/omni/logs/Kit/Isaac-Sim/4.1/kit_20260708_230036.log",
+    "mdl_compile_status": "PASS"
+  },
+  "local_blue_glass_override_used": false,
+  "manifest_type": "fluid_spike_colleague_native_usd_completed_pbd_step_video",
+  "material_closure": {
+    "closure_base_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base",
+    "closure_omnisurface_module_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/mdl/OmniSurface",
+    "closure_root": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core",
+    "copied_base_file_count": 18,
+    "copied_base_files": [
+      "OmniEmissive.mdl",
+      "OmniGlass.mdl",
+      "OmniGlass_Opacity.mdl",
+      "OmniHair.mdl",
+      "OmniHairPresets.mdl",
+      "OmniPBR.mdl",
+      "OmniPBRBase.mdl",
+      "OmniPBR_ClearCoat.mdl",
+      "OmniPBR_ClearCoat_Opacity.mdl",
+      "OmniPBR_Opacity.mdl",
+      "OmniSurface.mdl",
+      "OmniSurfaceBlend.mdl",
+      "OmniSurfaceLite.mdl",
+      "OmniSurfacePresets.mdl",
+      "SimPBR.mdl",
+      "SimPBR_Model.mdl",
+      "SimPBR_Translucent.mdl",
+      "baking_annotations.mdl"
+    ],
+    "copied_omnisurface_file_count": 6,
+    "copied_omnisurface_files": [
+      "OmniHairBase.mdl",
+      "OmniImage.mdl",
+      "OmniShared.mdl",
+      "OmniSurfaceBase.mdl",
+      "OmniSurfaceBlendBase.mdl",
+      "OmniSurfaceLiteBase.mdl"
+    ],
+    "copies_full_base_mdl_dir": true,
+    "copies_omnisurface_module_dir": true,
+    "material_closure_mode": "isaacsim41_core_mdl_local_mirror",
+    "mdl_files": [
+      "OmniGlass.mdl",
+      "OmniGlass_Opacity.mdl",
+      "OmniPBR.mdl",
+      "OmniPBRBase.mdl",
+      "OmniPBR_ClearCoat.mdl",
+      "OmniSurface.mdl",
+      "OmniSurfaceLite.mdl",
+      "OmniSurfacePresets.mdl"
+    ],
+    "shader_asset_basenames": [
+      "OmniGlass.mdl",
+      "OmniPBR.mdl",
+      "OmniSurfacePresets.mdl"
+    ],
+    "source_base_dir": "/isaac-sim/kit/mdl/core/Base",
+    "source_omnisurface_module_dir": "/isaac-sim/kit/mdl/core/mdl/OmniSurface",
+    "source_root": "/isaac-sim/kit/mdl/core",
+    "visual_material_parity_claim_allowed": false
+  },
+  "material_contract_post": {
+    "beaker1": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker1/mesh",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "beaker2": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniSurface_Glass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker2/mesh",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "runtime_particle_system": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "id",
+      "material_path": "/World/Looks/LiquidPresentationWater",
+      "prim_exists": true,
+      "prim_path": "/World/CompletedPBD/ParticleSystem",
+      "source_asset": null,
+      "source_asset_resolved": false,
+      "source_asset_resolved_path": null,
+      "sub_identifier": null
+    },
+    "source_particle_system": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass_01",
+      "prim_exists": true,
+      "prim_path": "/World/ParticleSystem",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    }
+  },
+  "material_contract_pre": {
+    "all_native_mdl_resolved": true,
+    "beaker1": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker1/mesh",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "beaker2": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniSurface_Glass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker2/mesh",
+      "source_asset": "OmniSurfacePresets.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/OmniSurfacePresets.mdl",
+      "sub_identifier": "OmniSurface_Glass"
+    },
+    "material_resolve_status": "PASS",
+    "native_scene_opened": true,
+    "particle_system": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass_01",
+      "prim_exists": true,
+      "prim_path": "/World/ParticleSystem",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "usd_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd"
+  },
+  "material_resolve_status": "PASS",
+  "material_retarget": {
+    "retarget_enabled": true,
+    "retargeted_shader_count": 10,
+    "retargeted_shaders": [
+      {
+        "compatibility_fallback": "OmniSurface_Glass_to_OmniGlass_for_isaacsim41",
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+        "retargeted_source_asset_basename": "OmniGlass.mdl",
+        "retargeted_sub_identifier": "OmniGlass",
+        "shader_path": "/World/Looks/OmniSurface_Glass/Shader",
+        "source_asset_basename": "OmniSurfacePresets.mdl",
+        "source_sub_identifier": "OmniSurface_Glass"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+        "retargeted_source_asset_basename": "OmniGlass.mdl",
+        "retargeted_sub_identifier": "OmniGlass",
+        "shader_path": "/World/Looks/OmniGlass/Shader",
+        "source_asset_basename": "OmniGlass.mdl",
+        "source_sub_identifier": "OmniGlass"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Blue/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_DeepGray/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Gray/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Green/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Red/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Yellow/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_WhiteBlue/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+        "retargeted_source_asset_basename": "OmniGlass.mdl",
+        "retargeted_sub_identifier": "OmniGlass",
+        "shader_path": "/World/Looks/OmniGlass_01/Shader",
+        "source_asset_basename": "OmniGlass.mdl",
+        "source_sub_identifier": "OmniGlass"
+      }
+    ]
+  },
+  "minimal_native_slice_used": false,
+  "mode": "native_usd_scene_completed_pbd_step_video",
+  "native_beaker_material_override_used": false,
+  "native_collider_approximation": {
+    "enabled": false
+  },
+  "native_scene_opened": true,
+  "original_fluid_deactivate_summary": {
+    "/World/ParticleSet": {
+      "deactivated": false,
+      "disabled_attrs": {
+        "physxParticle:fluid": false,
+        "physxParticle:selfCollision": false
+      },
+      "existed": true,
+      "kept_active_to_avoid_physx_expired_prim": true
+    },
+    "/World/ParticleSystem": {
+      "deactivated": false,
+      "disabled_attrs": {
+        "particleSystemEnabled": false
+      },
+      "existed": true,
+      "kept_active_to_avoid_physx_expired_prim": true
+    },
+    "/World/fluid": {
+      "deactivated": false,
+      "disabled_attrs": {},
+      "existed": true,
+      "kept_active_to_avoid_physx_expired_prim": true
+    }
+  },
+  "particle_scope": {
+    "full_original_50k_completed_pbd_overlay": true,
+    "original_particle_count": 50000,
+    "particle_limit": 0,
+    "particle_scope": "full_original_50k",
+    "sampled_overlay": false,
+    "selected_particle_count": 50000
+  },
+  "physics_dt": 0.016666666666666666,
+  "physics_settings": {
+    "broadphase_type": "GPU",
+    "gpu_dynamics_enabled": true,
+    "gpu_max_particle_contacts": 1048576,
+    "gravity_direction": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "gravity_magnitude": 9.81,
+    "physics_scene_path": "/World/PhysicsScene",
+    "solver_type": "TGS"
+  },
+  "presentation_isosurface_enabled": true,
+  "presentation_lighting": {
+    "intensity": 950.0,
+    "light_path": "/World/LiquidPresentationKeyLight",
+    "lighting_contract_hash": "liquid_presentation_key_light_v1",
+    "role": "leadership_presentation_key_light",
+    "rotate_xyz": [
+      55.0,
+      0.0,
+      35.0
+    ]
+  },
+  "presentation_material": {
+    "diffuse_color": [
+      0.0,
+      0.62,
+      1.0
+    ],
+    "display_name": "presentation_water_transparent_blue",
+    "emissive_color": [
+      0.0,
+      0.12,
+      0.2
+    ],
+    "material_path": "/World/Looks/LiquidPresentationWater",
+    "opacity": 0.9,
+    "shader_path": "/World/Looks/LiquidPresentationWater/PreviewSurface",
+    "visual_material_parity_claim_allowed": false
+  },
+  "presentation_video_enabled": true,
+  "presentation_visual_contract": {
+    "camera": {
+      "camera_contract_hash": "liquid_presentation_main_camera_v1",
+      "camera_path": "/World/LiquidPresentationMainCamera",
+      "eye": [
+        0.55248388,
+        0.41454058,
+        1.1127606155217078
+      ],
+      "focus_source_weight": 0.72,
+      "pair_span": 0.456063,
+      "role": "leadership_presentation_main",
+      "source_side_y": 1.0,
+      "target": [
+        0.30248388000000004,
+        0.004083879999999984,
+        0.8286212555217077
+      ],
+      "up": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "camera_path": "/World/LiquidPresentationMainCamera",
+    "claim_boundary": "presentation_lane_only_particle_readback_remains_gate",
+    "claim_boundary_text": "This video is a presentation render of the same simulated particle trajectory used for the diagnostic verdict. Leak classification and spike assessment are based on particle readback, not on visual appearance. Rendering choices including PhysX Isosurface reconstruction, material color/opacity, lighting, and camera framing were adjusted only to improve human readability for review. These adjustments do not change the particle simulation, collider setup, leak classifier, or benchmark claims.",
+    "debug_particle_display_enabled": false,
+    "isosurface": {
+      "api_path": "/World/CompletedPBD/ParticleSystem",
+      "claim_boundary": "visual_surface_reconstruction_only",
+      "enabled": true,
+      "grid_filtering_passes": "GS",
+      "grid_smoothing_radius": 0.0003207600535824895,
+      "grid_spacing": 0.00028868404822424056,
+      "max_subgrids": 12500,
+      "max_triangles": 6400000,
+      "max_vertices": 3200000,
+      "num_mesh_normal_smoothing_passes": 4,
+      "num_mesh_smoothing_passes": 4,
+      "parameter_reference": "isaacsim41_fluid_isosurface_cup_demo_style",
+      "surface_distance": 0.00030472205090336497
+    },
+    "lighting": {
+      "intensity": 950.0,
+      "light_path": "/World/LiquidPresentationKeyLight",
+      "lighting_contract_hash": "liquid_presentation_key_light_v1",
+      "role": "leadership_presentation_key_light",
+      "rotate_xyz": [
+        55.0,
+        0.0,
+        35.0
+      ]
+    },
+    "liquid_material_path": "/World/Looks/LiquidPresentationWater",
+    "particle_count": 50000,
+    "presentation_video_does_not_replace_particle_readback": true,
+    "variant_id": "COLLEAGUE_NATIVE_USD_FULL_50K_COMPLETED_PBD",
+    "visual_material_parity_claim_allowed": false
+  },
+  "raw_usd_direct_step_claim_allowed": false,
+  "readback_diagnostics": {
+    "final_position_hash": "46683c81de41fe247cee0ca9d75e1cc61de6cb1b82e002b7e6eed43a69f26d1e",
+    "initial_position_hash": "7328e0e5c30d7ec96e1c669263dbf2552d13a9fbb352d66e95d0b51d25daaf6b",
+    "max_displacement": 0.9154059108976325,
+    "readback_available": true,
+    "readback_position_changed": true
+  },
+  "region_config": {
+    "bottom_overlap": 0.0,
+    "bottom_thickness": 0.008,
+    "collider_contact_offset": 0.003,
+    "collider_rest_offset": 0.0,
+    "fluid_rest_offset": 0.0003207600535824895,
+    "grid_dims": [
+      8,
+      8,
+      4
+    ],
+    "initial_radial_velocity": 0.08,
+    "particle_contact_offset": 0.0005346000893041491,
+    "particle_count": 50000,
+    "particle_enable_ccd": null,
+    "particle_max_depenetration_velocity": null,
+    "particle_max_velocity": 5.0,
+    "particle_rest_offset": 0.0,
+    "particle_seed": null,
+    "particle_spacing": 0.0045,
+    "particle_system_contact_offset": 0.000641520107164979,
+    "particle_width": 0.0005940000992268324,
+    "perf_budget_seconds_per_variant": 240.0,
+    "physics_dt": 0.016666666666666666,
+    "render_height": 540,
+    "render_width": 960,
+    "sdf_margin": null,
+    "sdf_narrow_band_thickness": null,
+    "sdf_resolution": null,
+    "sdf_subgrid_resolution": null,
+    "solid_rest_offset": 0.0003207600535824895,
+    "source_center": [
+      0.311802,
+      0.091802,
+      0.7727606155217077
+    ],
+    "source_height": 0.164296,
+    "source_radius": 0.060327,
+    "spawn_particle_contact_offset": 0.0005346000893041491,
+    "steps": 240,
+    "table_z": 0.7727606155217077,
+    "tail_window_steps": 30,
+    "target_center": [
+      0.278523,
+      -0.221477,
+      0.7727606155217077
+    ],
+    "target_height": 0.183118,
+    "target_radius": 0.082457,
+    "trace_interval": 10,
+    "wall_height": 0.12,
+    "wall_thickness": 0.01
+  },
+  "review_markers": {
+    "enabled": false,
+    "review_marker_source": "particle_readback_positions",
+    "review_markers_are_physics": false,
+    "updates": {}
+  },
+  "runtime": "isaacsim41",
+  "runtime_particle_offsets": {
+    "fluid_rest_offset": 0.0003207600535824895,
+    "particle_contact_offset": 0.0005346000893041491,
+    "particle_system_contact_offset": 0.000641520107164979,
+    "particle_width": 0.0005940000992268324,
+    "solid_rest_offset": 0.0003207600535824895
+  },
+  "runtime_pbd_completion_overlay_used": true,
+  "runtime_step_executed": true,
+  "schema_version": 1,
+  "selected_particle_count": 50000,
+  "source_bbox": {
+    "max": [
+      0.36712894390182405,
+      0.1471289546914178,
+      0.917056322425485
+    ],
+    "min": [
+      0.2564758472940577,
+      0.03647585808365142,
+      0.8266558855450249
+    ]
+  },
+  "source_particle_count": 50000,
+  "source_usd_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd",
+  "steps": 240,
+  "table_bbox": {
+    "max": [
+      1.4210249282229273,
+      1.312490858408316,
+      0.7727606155217077
+    ],
+    "min": [
+      -0.9239185074460179,
+      -1.3322193410256615,
+      -0.3997177639585258
+    ]
+  },
+  "target_bbox": {
+    "max": [
+      0.3559805130656398,
+      -0.1440194718289303,
+      0.9358788459176023
+    ],
+    "min": [
+      0.2010661906964822,
+      -0.29893379419808785,
+      0.8093182448089536
+    ]
+  },
+  "trace_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/particle_readback_trace.jsonl",
+  "video_summary": {
+    "closeup_native_rgb_frame_count": 0,
+    "frame_sources": {
+      "presentation_isosurface_frames/frame_0001.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0002.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0003.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0004.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0005.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0006.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0007.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0008.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0009.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0010.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0011.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0012.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0013.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0014.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0015.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0016.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0017.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0018.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0019.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0020.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0021.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0022.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0023.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0024.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0025.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0026.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0027.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0028.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0029.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0030.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0031.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0032.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0033.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0034.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0035.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0036.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0037.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0038.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0039.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0040.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0041.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0042.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0043.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0044.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0045.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0046.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0047.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0048.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0049.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0050.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0051.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0052.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0053.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0054.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0055.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0056.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0057.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0058.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0059.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0060.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0061.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0062.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0063.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0064.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0065.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0066.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0067.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0068.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0069.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0070.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0071.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0072.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0073.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0074.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0075.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0076.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0077.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0078.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0079.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0080.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0081.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0082.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0083.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0084.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0085.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0086.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0087.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0088.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0089.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0090.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0091.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0092.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0093.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0094.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0095.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0096.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0097.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0098.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0099.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0100.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0101.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0102.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0103.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0104.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0105.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0106.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0107.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0108.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0109.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0110.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0111.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0112.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0113.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0114.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0115.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0116.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0117.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0118.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0119.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0120.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0121.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0122.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0123.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0124.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0125.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0126.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0127.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0128.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0129.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0130.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0131.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0132.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0133.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0134.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0135.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0136.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0137.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0138.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0139.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0140.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0141.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0142.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0143.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0144.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0145.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0146.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0147.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0148.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0149.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0150.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0151.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0152.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0153.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0154.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0155.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0156.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0157.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0158.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0159.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0160.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0161.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0162.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0163.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0164.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0165.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0166.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0167.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0168.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0169.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0170.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0171.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0172.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0173.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0174.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0175.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0176.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0177.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0178.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0179.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0180.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0181.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0182.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0183.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0184.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0185.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0186.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0187.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0188.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0189.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0190.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0191.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0192.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0193.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0194.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0195.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0196.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0197.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0198.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0199.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0200.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0201.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0202.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0203.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0204.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0205.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0206.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0207.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0208.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0209.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0210.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0211.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0212.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0213.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0214.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0215.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0216.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0217.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0218.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0219.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0220.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0221.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0222.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0223.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0224.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0225.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0226.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0227.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0228.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0229.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0230.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0231.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0232.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0233.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0234.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0235.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0236.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0237.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0238.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0239.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0240.png": "presentation_isosurface_rgb"
+    },
+    "native_camera_rgb_frame_count": 0,
+    "native_scene_video_slots": [
+      "presentation_isosurface",
+      "camera1_native_material",
+      "camera2_native_material",
+      "beaker2_closeup_native_material",
+      "beaker2_closeup_review_markers"
+    ],
+    "presentation_isosurface_rgb_frame_count": 240,
+    "review_marker_rgb_frame_count": 0
+  },
+  "videos": {
+    "beaker2_closeup_native_material": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "beaker2_closeup_review_markers": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "camera1_native_material": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "camera2_native_material": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "presentation_isosurface": {
+      "frame_count": 240,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/presentation_isosurface.mp4",
+      "written": true
+    }
+  },
+  "visual_material_parity_claim_allowed": false
+}

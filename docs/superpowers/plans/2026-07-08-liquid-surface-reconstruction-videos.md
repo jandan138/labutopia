@@ -12,23 +12,28 @@
 
 ## 2026-07-08 Execution Update
 
-Current status: the presentation-video lane is implemented and has passed the full local liquid test suite. The main full-particle leadership evidence is no longer the red debug particle video; it is now a full 50k `PhysX Isosurface` presentation render using the same colleague native USD initial particles and the same completed-PBD particle trajectory.
+Current status: the presentation-video lane is implemented and has passed the full local liquid test suite. The main full-particle leadership evidence is no longer the red debug particle video; it is now a 20-second full 50k `PhysX Isosurface` presentation render using the same colleague native USD initial particles and the same completed-PBD particle trajectory. The earlier `RAW_AS_IS_runtime_full50k_refined_v2` artifact was only a 2-second smoke (`120` steps, `video_stride=4`, `15 fps`) and should not be treated as the final PM-facing video.
 
 Authoritative result remains unchanged:
 
 ```text
 source_usd=outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd
-main_artifact_dir=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_refined_v2/
+main_artifact_dir=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_long_20260708_001/RAW_AS_IS_runtime_full50k_refined_20s_v1/
 source_particle_count=50000
 selected_particle_count=50000
+steps=240
+video_stride=1
+video_fps=12
+frame_count=240
+duration=20.000000s
 runtime_step_executed=true
 presentation_isosurface_enabled=true
 debug_particle_display_enabled=false
 classification=FAIL_CONTAINER_LEAK
-below_table_count=19093
-outside_source_count=24606
-spill_count=5513
-source_retention_fraction=0.50788
+below_table_count=38891
+outside_source_count=40930
+spill_count=2039
+source_retention_fraction=0.1814
 particle_count_final_fraction=1.0
 nan_count=0
 ```
