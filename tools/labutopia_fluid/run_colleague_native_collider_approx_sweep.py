@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
+import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -35,6 +37,11 @@ DEFAULT_RUNTIME_MANIFEST = (
     "docs/labutopia_lab_poc/evidence_manifests/"
     "fluid_spike_native_collider_approximation_runtime_sweep_20260708.json"
 )
+DEFAULT_ISAACSIM41_PYTHON = (
+    "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/"
+    "embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python"
+)
+DEFAULT_NATIVE_STEP_RUNNER = REPO_ROOT / "tools/labutopia_fluid/run_colleague_native_usd_completed_pbd_step_video.py"
 NEVER_PROMOTABLE_VARIANT_IDS = {"NATIVE_NONE", "NATIVE_BOUNDING_CUBE", "NATIVE_BOUNDING_SPHERE"}
 
 
@@ -100,12 +107,16 @@ def build_claim_boundary() -> dict[str, Any]:
                 "beaker collider under this IsaacSim41/PBD setup."
             ),
             "If one candidate passes smoke, it is only a static-hold candidate for promotion review.",
+            "Presentation videos can make particle motion easier to read, but particle readback remains the gate.",
         ],
         "blocked_claims": [
             "level1_pour is benchmark-ready with true fluid.",
             "Raw colleague 50k USD directly steps as true PBD fluid without runtime completion.",
             "Render/video appearance alone proves physics correctness.",
             "Native beaker mesh is generally fluid-safe.",
+            "presentation_video_equals_physics_success",
+            "isosurface_reconstruction_equals_zero_leak",
+            "presentation_water_material_equals_labutopia51_visual_parity",
             "S3 kinematic pour, S4 replay, EBench score, policy score, or leaderboard readiness is released.",
         ],
         "s3_kinematic_pour_released": False,
@@ -287,6 +298,8 @@ def write_runtime_aggregate_manifest(
                     "classification": "MISSING_RUNTIME_RESULT",
                     "gate": classify_native_approximation_summary({}, variant_id=candidate.variant_id),
                     "closeup_video": {"path": None, "written": False, "frame_count": 0},
+                    "presentation_video": {"path": None, "written": False, "frame_count": 0},
+                    "presentation_visual_contract": {},
                 }
             )
             continue
@@ -301,6 +314,8 @@ def write_runtime_aggregate_manifest(
         classification = summary.get("classification") or {}
         videos = summary.get("videos") or {}
         closeup_video = videos.get("beaker2_closeup_native_material") or {}
+        presentation_video = videos.get("presentation_isosurface") or {}
+        presentation_visual_contract = summary.get("presentation_visual_contract") or {}
         particle_scope = summary.get("particle_scope") or {}
         native_authoring = (summary.get("native_collider_approximation") or {}).get("authoring")
         candidate_results.append(
@@ -334,6 +349,12 @@ def write_runtime_aggregate_manifest(
                     "written": bool(closeup_video.get("written")),
                     "frame_count": int(closeup_video.get("frame_count") or 0),
                 },
+                "presentation_video": {
+                    "path": presentation_video.get("path"),
+                    "written": bool(presentation_video.get("written")),
+                    "frame_count": int(presentation_video.get("frame_count") or 0),
+                },
+                "presentation_visual_contract": presentation_visual_contract,
                 "native_collider_authoring": native_authoring,
             }
         )
@@ -345,6 +366,9 @@ def write_runtime_aggregate_manifest(
     mismatched_variant_ids = [
         item["variant_id"] for item in candidate_results if item.get("variant_identity_matches") is False
     ]
+    presentation_written_count = sum(
+        1 for item in candidate_results if item.get("presentation_video", {}).get("written")
+    )
     payload = {
         "schema_version": 1,
         "manifest_type": "fluid_spike_native_collider_approximation_runtime_sweep",
@@ -356,6 +380,10 @@ def write_runtime_aggregate_manifest(
         "candidate_results": candidate_results,
         "candidate_ids": [candidate.variant_id for candidate in candidates],
         "runtime_step_executed_count": sum(1 for item in candidate_results if item["runtime_step_executed"]),
+        "presentation_video_written_count": presentation_written_count,
+        "all_presentation_videos_written": (
+            presentation_written_count == len(candidate_results) and not missing_result_paths
+        ),
         "failed_to_execute_variant_ids": failed_to_execute_ids,
         "static_hold_pass_count": len(static_hold_pass_ids),
         "static_hold_pass_variant_ids": static_hold_pass_ids,
@@ -376,6 +404,106 @@ def write_runtime_aggregate_manifest(
     return payload
 
 
+def _runtime_stem(candidate: NativeApproximationCandidate, runtime_suffix: str) -> str:
+    suffix = runtime_suffix[:-5] if runtime_suffix.endswith(".json") else runtime_suffix
+    return f"{candidate.variant_id}{suffix}"
+
+
+def build_native_variant_runtime_command(
+    *,
+    python_executable: str | Path,
+    runner_path: str | Path,
+    usd_path: str | Path,
+    runtime_dir: str | Path,
+    candidate: NativeApproximationCandidate,
+    runtime_suffix: str = "_runtime_512.json",
+    particle_limit: int = 512,
+    steps: int = 120,
+    trace_interval: int = 10,
+    presentation_isosurface_videos: bool = False,
+    headless: bool = True,
+    hard_exit_after_run: bool = False,
+) -> list[str]:
+    runtime_root = _repo_path(runtime_dir).resolve()
+    stem = _runtime_stem(candidate, runtime_suffix)
+    cmd = [
+        str(python_executable),
+        str(runner_path),
+        "--usd",
+        str(usd_path),
+        "--native-collider-approximation-variant",
+        candidate.variant_id,
+        "--particle-limit",
+        str(particle_limit),
+        "--steps",
+        str(steps),
+        "--trace-interval",
+        str(trace_interval),
+        "--out-dir",
+        str(runtime_root / stem),
+        "--manifest",
+        str(runtime_root / f"{stem}.json"),
+    ]
+    if presentation_isosurface_videos:
+        cmd.extend(["--presentation-isosurface-video", "--disable-particle-debug-display"])
+    if headless:
+        cmd.append("--headless")
+    if hard_exit_after_run:
+        cmd.append("--hard-exit-after-run")
+    return cmd
+
+
+def run_native_variant_runtime_sweep(
+    *,
+    usd_path: str | Path,
+    runtime_dir: str | Path,
+    manifest_path: str | Path,
+    variant_ids: Sequence[str] | None = None,
+    runtime_suffix: str = "_runtime_512.json",
+    python_executable: str | Path = DEFAULT_ISAACSIM41_PYTHON,
+    runner_path: str | Path = DEFAULT_NATIVE_STEP_RUNNER,
+    particle_limit: int = 512,
+    steps: int = 120,
+    trace_interval: int = 10,
+    presentation_isosurface_videos: bool = False,
+    headless: bool = True,
+) -> dict[str, Any]:
+    candidates = _select_candidates(variant_ids)
+    runtime_root = _repo_path(runtime_dir).resolve()
+    runtime_root.mkdir(parents=True, exist_ok=True)
+    launcher_results = []
+    env = os.environ.copy()
+    env.setdefault("ACCEPT_EULA", "Y")
+    env.setdefault("OMNI_KIT_ACCEPT_EULA", "YES")
+    for candidate in candidates:
+        cmd = build_native_variant_runtime_command(
+            python_executable=python_executable,
+            runner_path=runner_path,
+            usd_path=usd_path,
+            runtime_dir=runtime_root,
+            candidate=candidate,
+            runtime_suffix=runtime_suffix,
+            particle_limit=particle_limit,
+            steps=steps,
+            trace_interval=trace_interval,
+            presentation_isosurface_videos=presentation_isosurface_videos,
+            headless=headless,
+            hard_exit_after_run=True,
+        )
+        completed = subprocess.run(cmd, cwd=REPO_ROOT, env=env, check=False)
+        launcher_results.append({"variant_id": candidate.variant_id, "returncode": int(completed.returncode), "cmd": cmd})
+    payload = write_runtime_aggregate_manifest(
+        runtime_dir=runtime_root,
+        manifest_path=manifest_path,
+        variant_ids=variant_ids,
+        runtime_suffix=runtime_suffix,
+    )
+    payload["runtime_launcher_results"] = launcher_results
+    payload["runtime_launcher_success_count"] = sum(1 for item in launcher_results if item["returncode"] == 0)
+    _write_json(_repo_path(manifest_path).resolve(), payload)
+    return payload
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--usd", default=DEFAULT_USD)
@@ -385,13 +513,41 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--variant", action="append", dest="variants", default=None)
     parser.add_argument("--dry-run-authoring", action="store_true")
     parser.add_argument("--aggregate-runtime", action="store_true")
+    parser.add_argument("--run-runtime-sweep", action="store_true")
     parser.add_argument("--runtime-dir", default=DEFAULT_ARTIFACT_DIR)
     parser.add_argument("--runtime-suffix", default="_runtime_512.json")
+    parser.add_argument("--python-executable", default=DEFAULT_ISAACSIM41_PYTHON)
+    parser.add_argument("--runner-path", default=str(DEFAULT_NATIVE_STEP_RUNNER))
+    parser.add_argument("--presentation-isosurface-videos", action="store_true")
+    parser.add_argument("--particle-limit", type=int, default=512)
+    parser.add_argument("--steps", type=int, default=120)
+    parser.add_argument("--trace-interval", type=int, default=10)
+    parser.add_argument("--headless", action="store_true")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_arg_parser().parse_args(argv)
+    if args.run_runtime_sweep:
+        manifest = args.manifest
+        if manifest == DEFAULT_MANIFEST:
+            manifest = DEFAULT_RUNTIME_MANIFEST
+        payload = run_native_variant_runtime_sweep(
+            usd_path=args.usd,
+            runtime_dir=args.runtime_dir,
+            manifest_path=manifest,
+            variant_ids=args.variants,
+            runtime_suffix=args.runtime_suffix,
+            python_executable=args.python_executable,
+            runner_path=args.runner_path,
+            particle_limit=args.particle_limit,
+            steps=args.steps,
+            trace_interval=args.trace_interval,
+            presentation_isosurface_videos=args.presentation_isosurface_videos,
+            headless=args.headless,
+        )
+        print(json.dumps(_json_safe(payload), indent=2, sort_keys=True))
+        return 0
     if args.aggregate_runtime:
         manifest = args.manifest
         if manifest == DEFAULT_MANIFEST:

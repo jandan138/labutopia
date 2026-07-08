@@ -1,13 +1,18 @@
 import json
+import subprocess
 from copy import deepcopy
+from pathlib import Path
 
 from tools.labutopia_fluid.run_colleague_native_collider_approx_sweep import (
+    DEFAULT_NATIVE_STEP_RUNNER,
     DEFAULT_NATIVE_MESH_PATH,
     NEVER_PROMOTABLE_VARIANT_IDS,
     apply_native_collider_approximation,
     build_claim_boundary,
     build_native_approximation_sweep,
+    build_native_variant_runtime_command,
     classify_native_approximation_summary,
+    run_native_variant_runtime_sweep,
     write_runtime_aggregate_manifest,
     summarize_native_mesh_collision_state,
     write_dry_run_authoring_artifacts,
@@ -277,3 +282,126 @@ def test_runtime_aggregate_flags_variant_identity_mismatches(tmp_path):
     assert manifest["mismatched_variant_ids"] == ["NATIVE_SDF_128"]
     assert manifest["promotable_variant_ids"] == []
     assert manifest["all_tested_candidates_failed_static_hold"] is False
+
+
+def test_runtime_aggregate_manifest_reports_presentation_video_status(tmp_path):
+    runtime_dir = tmp_path / "runtime"
+    runtime_dir.mkdir()
+    summary = _passing_runtime_summary()
+    summary["native_collider_approximation"] = {"candidate": {"variant_id": "NATIVE_SDF_128"}}
+    summary["videos"] = {
+        "presentation_isosurface": {"path": "presentation_isosurface.mp4", "written": True, "frame_count": 120},
+        "beaker2_closeup_native_material": {"path": "closeup.mp4", "written": True, "frame_count": 120},
+    }
+    summary["presentation_visual_contract"] = {
+        "presentation_video_does_not_replace_particle_readback": True,
+        "debug_particle_display_enabled": False,
+    }
+    (runtime_dir / "NATIVE_SDF_128_runtime_512.json").write_text(json.dumps(summary), encoding="utf-8")
+
+    manifest = write_runtime_aggregate_manifest(
+        runtime_dir=runtime_dir,
+        manifest_path=tmp_path / "aggregate.json",
+        variant_ids=["NATIVE_SDF_128"],
+    )
+
+    result = manifest["candidate_results"][0]
+    assert result["presentation_video"]["written"] is True
+    assert result["presentation_video"]["frame_count"] == 120
+    assert result["presentation_visual_contract"]["debug_particle_display_enabled"] is False
+    assert manifest["presentation_video_written_count"] == 1
+    assert manifest["all_presentation_videos_written"] is True
+
+
+def test_runtime_aggregate_defaults_presentation_fields_for_missing_result(tmp_path):
+    runtime_dir = tmp_path / "runtime"
+    runtime_dir.mkdir()
+
+    manifest = write_runtime_aggregate_manifest(
+        runtime_dir=runtime_dir,
+        manifest_path=tmp_path / "aggregate.json",
+        variant_ids=["RAW_AS_IS"],
+    )
+
+    result = manifest["candidate_results"][0]
+    assert result["classification"] == "MISSING_RUNTIME_RESULT"
+    assert result["presentation_video"] == {"path": None, "written": False, "frame_count": 0}
+    assert result["presentation_visual_contract"] == {}
+    assert manifest["presentation_video_written_count"] == 0
+    assert manifest["all_presentation_videos_written"] is False
+
+
+def test_build_native_variant_runtime_command_adds_presentation_video_flags(tmp_path):
+    candidate = next(c for c in build_native_approximation_sweep() if c.variant_id == "NATIVE_SDF_128")
+
+    cmd = build_native_variant_runtime_command(
+        python_executable="/isaac/python",
+        runner_path=DEFAULT_NATIVE_STEP_RUNNER,
+        usd_path="scene.usd",
+        runtime_dir=tmp_path / "runtime",
+        candidate=candidate,
+        runtime_suffix="_runtime_512.json",
+        particle_limit=512,
+        steps=120,
+        trace_interval=10,
+        presentation_isosurface_videos=True,
+        headless=True,
+        hard_exit_after_run=True,
+    )
+
+    assert cmd[0] == "/isaac/python"
+    assert str(DEFAULT_NATIVE_STEP_RUNNER) in cmd
+    assert cmd[cmd.index("--native-collider-approximation-variant") + 1] == "NATIVE_SDF_128"
+    assert cmd[cmd.index("--out-dir") + 1].endswith("NATIVE_SDF_128_runtime_512")
+    assert cmd[cmd.index("--manifest") + 1].endswith("NATIVE_SDF_128_runtime_512.json")
+    assert "--presentation-isosurface-video" in cmd
+    assert "--disable-particle-debug-display" in cmd
+    assert "--headless" in cmd
+    assert "--hard-exit-after-run" in cmd
+
+
+def test_run_native_variant_runtime_sweep_invokes_each_candidate_and_aggregates(tmp_path, monkeypatch):
+    calls = []
+
+    def fake_run(cmd, cwd, env, check):
+        calls.append(cmd)
+        variant_id = cmd[cmd.index("--native-collider-approximation-variant") + 1]
+        manifest_path = Path(cmd[cmd.index("--manifest") + 1])
+        summary = _passing_runtime_summary()
+        summary["native_collider_approximation"] = {"candidate": {"variant_id": variant_id}}
+        summary["videos"] = {
+            "presentation_isosurface": {
+                "path": str(manifest_path.with_suffix("").parent / "presentation_isosurface.mp4"),
+                "written": True,
+                "frame_count": 31,
+            }
+        }
+        summary["presentation_visual_contract"] = {
+            "presentation_video_does_not_replace_particle_readback": True,
+            "debug_particle_display_enabled": False,
+        }
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(json.dumps(summary), encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    manifest = run_native_variant_runtime_sweep(
+        usd_path="scene.usd",
+        runtime_dir=tmp_path / "runtime",
+        manifest_path=tmp_path / "aggregate.json",
+        variant_ids=["RAW_AS_IS", "NATIVE_SDF_128"],
+        python_executable="/isaac/python",
+        runner_path=DEFAULT_NATIVE_STEP_RUNNER,
+        particle_limit=512,
+        steps=120,
+        trace_interval=10,
+        presentation_isosurface_videos=True,
+        headless=True,
+    )
+
+    assert len(calls) == 2
+    assert all("--presentation-isosurface-video" in cmd for cmd in calls)
+    assert manifest["runtime_step_executed_count"] == 2
+    assert manifest["presentation_video_written_count"] == 2
+    assert manifest["runtime_launcher_success_count"] == 2
