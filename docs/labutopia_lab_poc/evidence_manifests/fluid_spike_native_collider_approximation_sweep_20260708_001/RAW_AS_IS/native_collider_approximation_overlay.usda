@@ -1,0 +1,6 @@
+#usda 1.0
+(
+    subLayers = [
+        @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd@
+    ]
+)

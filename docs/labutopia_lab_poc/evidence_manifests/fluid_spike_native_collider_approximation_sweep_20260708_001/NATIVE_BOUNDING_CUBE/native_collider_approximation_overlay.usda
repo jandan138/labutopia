@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    subLayers = [
+        @/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd@
+    ]
+)
+
+over "World"
+{
+    over "beaker2"
+    {
+        over "mesh" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "boundingCube"
+            bool physics:collisionEnabled = 1
+            bool physics:kinematicEnabled = 0
+            bool physics:rigidBodyEnabled = 0
+        }
+    }
+}

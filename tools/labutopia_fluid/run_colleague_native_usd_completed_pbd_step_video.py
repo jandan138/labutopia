@@ -481,14 +481,34 @@ def _set_review_markers_visible(stage: Any, visible: bool) -> None:
 
 
 def _deactivate_original_fluid_prims(stage: Any) -> dict[str, Any]:
+    from pxr import Sdf, UsdGeom
+
     stage.SetEditTarget(stage.GetRootLayer())
     results = {}
     for path in ("/World/fluid", EVIDENCE_PARTICLE_SET_PATH, EVIDENCE_PARTICLE_SYSTEM_PATH):
         prim = stage.GetPrimAtPath(path)
-        results[path] = {"existed": bool(prim), "deactivated": False}
+        results[path] = {
+            "existed": bool(prim),
+            "deactivated": False,
+            "kept_active_to_avoid_physx_expired_prim": bool(prim),
+            "disabled_attrs": {},
+        }
         if prim:
-            prim.SetActive(False)
-            results[path]["deactivated"] = True
+            imageable = UsdGeom.Imageable(prim)
+            imageable.MakeInvisible()
+            if path == EVIDENCE_PARTICLE_SYSTEM_PATH:
+                attr = prim.GetAttribute("particleSystemEnabled")
+                if not attr:
+                    attr = prim.CreateAttribute("particleSystemEnabled", Sdf.ValueTypeNames.Bool)
+                attr.Set(False)
+                results[path]["disabled_attrs"]["particleSystemEnabled"] = False
+            if path == EVIDENCE_PARTICLE_SET_PATH:
+                for attr_name in ("physxParticle:selfCollision", "physxParticle:fluid"):
+                    attr = prim.GetAttribute(attr_name)
+                    if not attr:
+                        attr = prim.CreateAttribute(attr_name, Sdf.ValueTypeNames.Bool)
+                    attr.Set(False)
+                    results[path]["disabled_attrs"][attr_name] = False
     return results
 
 
@@ -682,6 +702,23 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             "visual_material_parity_claim_allowed": False,
         }
         material_retarget_summary = {"retarget_enabled": False, "retargeted_shader_count": 0, "retargeted_shaders": []}
+    native_collider_approximation_summary = {"enabled": False}
+    native_collider_variant_id = getattr(args, "native_collider_approximation_variant", None)
+    if native_collider_variant_id:
+        from tools.labutopia_fluid.run_colleague_native_collider_approx_sweep import (
+            apply_native_collider_approximation,
+            build_native_approximation_sweep,
+        )
+
+        candidates = {candidate.variant_id: candidate for candidate in build_native_approximation_sweep()}
+        if native_collider_variant_id not in candidates:
+            raise ValueError(f"unknown_native_collider_approximation_variant:{native_collider_variant_id}")
+        candidate = candidates[native_collider_variant_id]
+        native_collider_approximation_summary = {
+            "enabled": True,
+            "candidate": asdict(candidate),
+            "authoring": apply_native_collider_approximation(stage, candidate),
+        }
     original_fluid_deactivate_summary = _deactivate_original_fluid_prims(stage)
     for _ in range(args.warmup_updates):
         omni.kit.app.get_app().update()
@@ -880,6 +917,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "material_resolve_status": material_summary.get("material_resolve_status"),
         "material_closure": material_closure_summary,
         "material_retarget": material_retarget_summary,
+        "native_collider_approximation": native_collider_approximation_summary,
         "authored_runtime_paths": authored,
         "region_config": asdict(config),
         "source_bbox": asdict(source_bbox),
@@ -972,6 +1010,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--skip-app-close", action="store_true")
     parser.add_argument("--hard-exit-after-run", action="store_true")
     parser.add_argument("--headless", action="store_true")
+    parser.add_argument("--native-collider-approximation-variant", default=None)
     return parser
 
 

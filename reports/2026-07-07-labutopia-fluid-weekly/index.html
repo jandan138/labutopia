@@ -607,6 +607,10 @@ nan_count=0</pre>
           <span>C2 proxy、SDF、native beaker mesh isolation、promotion review 都已跑；near-pass 不稳定，S3 仍不放行。</span>
         </div>
         <div class="step stop">
+          <strong>S2F6 · Native Approx Sweep</strong>
+          <span>先不设计自定义 wrapper，只切 <code>/World/beaker2/mesh</code> 的 10 个内置 approximation；全部完成 step/readback，全部漏。</span>
+        </div>
+        <div class="step stop">
           <strong>D0-D3 · Colleague 50k USD</strong>
           <span>同事原生 USD 经过 PBD overlay 后可 step/readback；静置漏液证据成立。</span>
         </div>
@@ -684,7 +688,7 @@ nan_count=0</pre>
       <div class="two">
         <article class="card caution">
           <h3>后续 sweep 说明了什么</h3>
-          <p><code>S2F1</code>继续调 C2 的 panel count、wall thickness、bottom overlap、contact offset；<code>S2F2</code>隔离测试 initial velocity、CCD、particle/collider offset；<code>S2F5</code>再做多 seed、多粒子数 promotion review。结论是：单次 256 粒子 near-pass 不稳定，1024 粒子会明显退化，所以不能放行 S3。</p>
+          <p><code>S2F1</code>继续调 C2 的 panel count、wall thickness、bottom overlap、contact offset；<code>S2F2</code>隔离测试 initial velocity、CCD、particle/collider offset；<code>S2F5</code>再做多 seed、多粒子数 promotion review；<code>S2F6</code>再把 native mesh 的内置 approximation 全切一遍。结论是：单次 256 粒子 near-pass 不稳定，原生/内置 collider route 也没有 zero-leak，所以不能放行 S3。</p>
         </article>
         <article class="card verdict">
           <h3>50k 原生 USD 说明了什么</h3>
@@ -692,9 +696,41 @@ nan_count=0</pre>
         </article>
       </div>
 
+      <article class="note verdict">
+        <h3>新增：Native Collider Approximation Sweep 的结论</h3>
+        <p>这一步专门回应“不要急着自定义 collider，先把 Isaac/PhysX 原生默认方式都测一遍”。我们打开同事完整 <code>lab_001_level1_pour_tabletop_with_liquid.usd</code>，只在同一个原生 <code>/World/beaker2/mesh</code> 上改 <code>collision contract</code>：<code>MeshCollisionAPI</code> approximation、contact/rest offset、SDF 参数；non-RAW 方案还会关闭该 prim 上已有的 rigid-body/kinematic flags。它没有加自定义 wrapper，也没有换成 proxy scene。测试项包括 <code>RAW_AS_IS</code>、<code>none</code>、<code>meshSimplification</code>、<code>convexHull</code>、<code>convexDecomposition</code>、<code>SDF 64/128/256</code>、<code>boundingCube</code>、<code>boundingSphere</code>。</p>
+        <p>结果是：10 个 variant 都能在 IsaacSim41 里完成 <code>runtime step</code> 和 <code>particle readback</code>，但全部是 <code>FAIL_CONTAINER_LEAK</code>；<code>static_hold_pass_count=0</code>、<code>promotable_variant_ids=[]</code>。也就是说，内置一键 approximation 没有把原生烧杯变成可靠的 <code>fluid-safe container</code>。</p>
+      </article>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Native approximation</th>
+              <th>结果</th>
+              <th>source retention</th>
+              <th>outside / spill / below table</th>
+              <th>产品理解</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>RAW_AS_IS</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.8027</code></td><td><code>101 / 11 / 90</code></td><td>原始 authored collider 最接近，但仍明显漏。</td></tr>
+            <tr><td><code>NATIVE_NONE</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.3770</code></td><td><code>319 / 0 / 319</code></td><td>负向诊断，几乎直接掉下去。</td></tr>
+            <tr><td><code>NATIVE_MESH_SIMPLIFICATION</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.3750</code></td><td><code>320 / 0 / 320</code></td><td>简化 mesh 没形成可靠杯底/杯壁。</td></tr>
+            <tr><td><code>NATIVE_CONVEX_HULL</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.0918</code></td><td><code>465 / 131 / 334</code></td><td>convex hull 对开口杯内腔不合适。</td></tr>
+            <tr><td><code>NATIVE_CONVEX_DECOMPOSITION</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.6582</code></td><td><code>175 / 11 / 164</code></td><td>比多数模式好，但离 zero-leak 很远。</td></tr>
+            <tr><td><code>NATIVE_SDF_64</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.3809</code></td><td><code>317 / 0 / 317</code></td><td>SDF 64 没兜住。</td></tr>
+            <tr><td><code>NATIVE_SDF_128</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.3535</code></td><td><code>331 / 1 / 330</code></td><td>SDF 128 没兜住。</td></tr>
+            <tr><td><code>NATIVE_SDF_256</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.3887</code></td><td><code>313 / 2 / 311</code></td><td>SDF 256 仍没兜住。</td></tr>
+            <tr><td><code>NATIVE_BOUNDING_CUBE</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.0273</code></td><td><code>498 / 193 / 305</code></td><td>负控，不是生产路线。</td></tr>
+            <tr><td><code>NATIVE_BOUNDING_SPHERE</code></td><td><code>FAIL_CONTAINER_LEAK</code></td><td><code>0.0078</code></td><td><code>508 / 178 / 330</code></td><td>负控，不是生产路线。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
       <article class="note pass">
         <h3>下一步为什么是 fluid-safe wrapper</h3>
-        <p>接下来应该保留原生烧杯做视觉展示，同时给液体单独配一套更保守、更厚、更闭合、<code>GPU-compatible</code>的 invisible <code>fluid-safe wrapper collider</code>。只有静置 zero-leak 在多粒子数、多 seed 下通过后，倒液视频和 EBench metric 才有评测意义。</p>
+        <p>接下来应该保留原生烧杯做视觉展示，同时给液体单独配一套更保守、更厚、更闭合、<code>GPU-compatible</code>的 invisible <code>fluid-safe wrapper collider</code>。这不是跳过官方能力，而是在原生/内置 approximation sweep 全失败后进入更可控的工程方案。只有静置 zero-leak 在多粒子数、多 seed 下通过后，倒液视频和 EBench metric 才有评测意义。</p>
       </article>
     </section>
 
@@ -738,7 +774,7 @@ nan_count=0</pre>
 
     <section id="next" class="panel section">
       <h2>下一步应该干什么</h2>
-      <p>接下来不要一味重录视频，也不要直接进入机械臂倒液。正确顺序是先把静态持液 gate 做过，再进入动作和评分。</p>
+      <p>接下来不要一味重录视频，也不要直接进入机械臂倒液。Native Collider Approximation Sweep 已经完成，证明内置一键模式没有 zero-leak；正确顺序是进入 wrapper design，把静态持液 gate 做过，再进入动作和评分。</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -813,10 +849,13 @@ long_visual_review=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_c
 minimal_50k_manifest=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_50k_completed_pbd_static_leak_20260708.json
 bounded_512_manifest=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_liquid_usd_leak_smoke_20260708.json
 s2_collider_matrix=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json
-s2f5_promotion=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json</pre>
+s2f5_promotion=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json
+native_approx_dry_run=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708.json
+native_approx_runtime=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_runtime_sweep_20260708.json
+native_approx_videos=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/</pre>
       </details>
 
-      <p class="small">周报日期按 2026-07-07 归档；页面证据更新到 2026-07-08 的 20 秒 native-scene visual review。中文用于解释性叙述，英文保留 <code>USD</code>、<code>IsaacSim41</code>、<code>PhysX/PBD</code>、<code>ParticleSet</code>、<code>EBench</code>、<code>MDL</code> 等架构术语。</p>
+      <p class="small">周报日期按 2026-07-07 归档；页面证据更新到 2026-07-08 的 20 秒 native-scene visual review 和 Native Collider Approximation Sweep。中文用于解释性叙述，英文保留 <code>USD</code>、<code>IsaacSim41</code>、<code>PhysX/PBD</code>、<code>ParticleSet</code>、<code>EBench</code>、<code>MDL</code> 等架构术语。</p>
     </section>
   </main>
 </body>

@@ -1,0 +1,680 @@
+{
+  "candidate_ids": [
+    "RAW_AS_IS",
+    "NATIVE_NONE",
+    "NATIVE_MESH_SIMPLIFICATION",
+    "NATIVE_CONVEX_HULL",
+    "NATIVE_CONVEX_DECOMPOSITION",
+    "NATIVE_SDF_64",
+    "NATIVE_SDF_128",
+    "NATIVE_SDF_256",
+    "NATIVE_BOUNDING_CUBE",
+    "NATIVE_BOUNDING_SPHERE"
+  ],
+  "candidate_results": [
+    {
+      "authoring": {
+        "approximation": null,
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": null,
+        "sweep_authored_collision_enabled": false,
+        "variant_id": "RAW_AS_IS"
+      },
+      "candidate": {
+        "approximation": null,
+        "contact_offset": 0.002,
+        "description": "Audit current authored native collision state.",
+        "rest_offset": -0.001,
+        "role": "baseline",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": null,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "RAW_AS_IS"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/RAW_AS_IS/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "RAW_AS_IS"
+    },
+    {
+      "authoring": {
+        "approximation": "none",
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "none",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": false,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": null,
+        "sweep_authored_collision_enabled": true,
+        "variant_id": "NATIVE_NONE"
+      },
+      "candidate": {
+        "approximation": "none",
+        "contact_offset": 0.002,
+        "description": "Direct/none mesh diagnostic.",
+        "rest_offset": -0.001,
+        "role": "diagnostic",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": null,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "NATIVE_NONE"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_NONE/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "NATIVE_NONE"
+    },
+    {
+      "authoring": {
+        "approximation": "meshSimplification",
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "meshSimplification",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": false,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": null,
+        "sweep_authored_collision_enabled": true,
+        "variant_id": "NATIVE_MESH_SIMPLIFICATION"
+      },
+      "candidate": {
+        "approximation": "meshSimplification",
+        "contact_offset": 0.002,
+        "description": "Built-in mesh simplification route.",
+        "rest_offset": -0.001,
+        "role": "candidate",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": null,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "NATIVE_MESH_SIMPLIFICATION"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_MESH_SIMPLIFICATION/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "NATIVE_MESH_SIMPLIFICATION"
+    },
+    {
+      "authoring": {
+        "approximation": "convexHull",
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexHull",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": false,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": null,
+        "sweep_authored_collision_enabled": true,
+        "variant_id": "NATIVE_CONVEX_HULL"
+      },
+      "candidate": {
+        "approximation": "convexHull",
+        "contact_offset": 0.002,
+        "description": "Built-in convex hull route.",
+        "rest_offset": -0.001,
+        "role": "candidate",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": null,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "NATIVE_CONVEX_HULL"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_CONVEX_HULL/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "NATIVE_CONVEX_HULL"
+    },
+    {
+      "authoring": {
+        "approximation": "convexDecomposition",
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": false,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": null,
+        "sweep_authored_collision_enabled": true,
+        "variant_id": "NATIVE_CONVEX_DECOMPOSITION"
+      },
+      "candidate": {
+        "approximation": "convexDecomposition",
+        "contact_offset": 0.002,
+        "description": "Built-in convex decomposition route, baseline regression.",
+        "rest_offset": -0.001,
+        "role": "candidate",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": null,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "NATIVE_CONVEX_DECOMPOSITION"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_CONVEX_DECOMPOSITION/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "NATIVE_CONVEX_DECOMPOSITION"
+    },
+    {
+      "authoring": {
+        "approximation": "sdf",
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "sdf",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": false,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": 64,
+        "sweep_authored_collision_enabled": true,
+        "variant_id": "NATIVE_SDF_64"
+      },
+      "candidate": {
+        "approximation": "sdf",
+        "contact_offset": 0.002,
+        "description": "Built-in SDF mesh collision, resolution 64.",
+        "rest_offset": -0.001,
+        "role": "candidate",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": 64,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "NATIVE_SDF_64"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_SDF_64/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "NATIVE_SDF_64"
+    },
+    {
+      "authoring": {
+        "approximation": "sdf",
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "sdf",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": false,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": 128,
+        "sweep_authored_collision_enabled": true,
+        "variant_id": "NATIVE_SDF_128"
+      },
+      "candidate": {
+        "approximation": "sdf",
+        "contact_offset": 0.002,
+        "description": "Built-in SDF mesh collision, resolution 128.",
+        "rest_offset": -0.001,
+        "role": "candidate",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": 128,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "NATIVE_SDF_128"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_SDF_128/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "NATIVE_SDF_128"
+    },
+    {
+      "authoring": {
+        "approximation": "sdf",
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "sdf",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": false,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": 256,
+        "sweep_authored_collision_enabled": true,
+        "variant_id": "NATIVE_SDF_256"
+      },
+      "candidate": {
+        "approximation": "sdf",
+        "contact_offset": 0.002,
+        "description": "Built-in SDF mesh collision, resolution 256.",
+        "rest_offset": -0.001,
+        "role": "candidate",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": 256,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "NATIVE_SDF_256"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_SDF_256/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "NATIVE_SDF_256"
+    },
+    {
+      "authoring": {
+        "approximation": "boundingCube",
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "boundingCube",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": false,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": null,
+        "sweep_authored_collision_enabled": true,
+        "variant_id": "NATIVE_BOUNDING_CUBE"
+      },
+      "candidate": {
+        "approximation": "boundingCube",
+        "contact_offset": 0.002,
+        "description": "Bounding cube negative control.",
+        "rest_offset": -0.001,
+        "role": "diagnostic",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": null,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "NATIVE_BOUNDING_CUBE"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_BOUNDING_CUBE/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "NATIVE_BOUNDING_CUBE"
+    },
+    {
+      "authoring": {
+        "approximation": "boundingSphere",
+        "authored_collision_enabled": true,
+        "mesh_path": "/World/beaker2/mesh",
+        "post_state": {
+          "applied_schemas": [
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "MaterialBindingAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "boundingSphere",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": false,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "pre_state": {
+          "applied_schemas": [
+            "MaterialBindingAPI",
+            "PhysicsRigidBodyAPI",
+            "PhysicsCollisionAPI",
+            "PhysicsMeshCollisionAPI",
+            "PhysicsMassAPI"
+          ],
+          "approximation": "convexDecomposition",
+          "collision_enabled": true,
+          "contact_offset": 0.0020000000949949026,
+          "exists": true,
+          "kinematic_enabled": false,
+          "mesh_path": "/World/beaker2/mesh",
+          "rest_offset": -0.0010000000474974513,
+          "rigid_body_enabled": true,
+          "sdf_resolution": null,
+          "type_name": "Mesh"
+        },
+        "sdf_resolution": null,
+        "sweep_authored_collision_enabled": true,
+        "variant_id": "NATIVE_BOUNDING_SPHERE"
+      },
+      "candidate": {
+        "approximation": "boundingSphere",
+        "contact_offset": 0.002,
+        "description": "Bounding sphere negative control.",
+        "rest_offset": -0.001,
+        "role": "diagnostic",
+        "sdf_margin": null,
+        "sdf_narrow_band_thickness": null,
+        "sdf_resolution": null,
+        "sdf_subgrid_resolution": null,
+        "variant_id": "NATIVE_BOUNDING_SPHERE"
+      },
+      "dry_run_authoring_only": true,
+      "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_BOUNDING_SPHERE/native_collider_approximation_overlay.usda",
+      "runtime_step_executed": false,
+      "variant_id": "NATIVE_BOUNDING_SPHERE"
+    }
+  ],
+  "claim_boundary": {
+    "allowed_claims": [
+      "We tested built-in/native Isaac/PhysX mesh collision approximation modes before custom wrapper design.",
+      "The test used the full colleague native USD scene, completed-PBD runtime particles, and particle readback.",
+      "If all candidates fail, the tested native approximation modes did not produce a fluid-safe native beaker collider under this IsaacSim41/PBD setup.",
+      "If one candidate passes smoke, it is only a static-hold candidate for promotion review."
+    ],
+    "benchmark_ready_claim_allowed": false,
+    "blocked_claims": [
+      "level1_pour is benchmark-ready with true fluid.",
+      "Raw colleague 50k USD directly steps as true PBD fluid without runtime completion.",
+      "Render/video appearance alone proves physics correctness.",
+      "Native beaker mesh is generally fluid-safe.",
+      "S3 kinematic pour, S4 replay, EBench score, policy score, or leaderboard readiness is released."
+    ],
+    "s3_kinematic_pour_released": false,
+    "visual_only_evidence_allowed_for_physics": false
+  },
+  "dry_run_authoring_only": true,
+  "generated_at_utc": "2026-07-08T12:22:00.186701+00:00",
+  "manifest_type": "fluid_spike_native_collider_approximation_sweep",
+  "mesh_path": "/World/beaker2/mesh",
+  "schema_version": 1,
+  "source_usd_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd"
+}

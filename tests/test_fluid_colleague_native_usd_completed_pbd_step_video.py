@@ -2,8 +2,11 @@ from pathlib import Path
 
 from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import (
     DEFAULT_USD,
+    EVIDENCE_PARTICLE_SET_PATH,
+    EVIDENCE_PARTICLE_SYSTEM_PATH,
     NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
     NativeMaterialExpectation,
+    _deactivate_original_fluid_prims,
     build_native_scene_claim_boundary,
     build_native_scene_video_summary,
     build_isaacsim41_core_mdl_closure_plan,
@@ -102,3 +105,28 @@ def test_build_isaacsim41_core_mdl_closure_plan_includes_transitive_base_depende
 def test_native_scene_completed_pbd_variant_id_is_not_bounded_smoke_label():
     assert NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID == "COLLEAGUE_NATIVE_USD_FULL_50K_COMPLETED_PBD"
     assert NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID != "COLLEAGUE_USD_BOUNDED"
+
+
+def test_deactivate_original_fluid_keeps_prims_active_for_kit_stage_update():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    UsdGeom.Xform.Define(stage, "/World/fluid")
+    UsdGeom.Points.Define(stage, EVIDENCE_PARTICLE_SET_PATH)
+    UsdGeom.Xform.Define(stage, EVIDENCE_PARTICLE_SYSTEM_PATH)
+
+    summary = _deactivate_original_fluid_prims(stage)
+
+    for path in ("/World/fluid", EVIDENCE_PARTICLE_SET_PATH, EVIDENCE_PARTICLE_SYSTEM_PATH):
+        prim = stage.GetPrimAtPath(path)
+        assert prim.IsActive() is True
+        assert summary[path]["deactivated"] is False
+        assert summary[path]["kept_active_to_avoid_physx_expired_prim"] is True
+        assert prim.GetAttribute("visibility").Get() == "invisible"
+
+    particle_system = stage.GetPrimAtPath(EVIDENCE_PARTICLE_SYSTEM_PATH)
+    particle_set = stage.GetPrimAtPath(EVIDENCE_PARTICLE_SET_PATH)
+    assert particle_system.GetAttribute("particleSystemEnabled").Get() is False
+    assert particle_set.GetAttribute("physxParticle:selfCollision").Get() is False
+    assert particle_set.GetAttribute("physxParticle:fluid").Get() is False

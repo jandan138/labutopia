@@ -1,0 +1,64 @@
+{
+  "authoring": {
+    "approximation": "sdf",
+    "authored_collision_enabled": true,
+    "mesh_path": "/World/beaker2/mesh",
+    "post_state": {
+      "applied_schemas": [
+        "PhysicsRigidBodyAPI",
+        "PhysicsCollisionAPI",
+        "PhysicsMeshCollisionAPI",
+        "MaterialBindingAPI",
+        "PhysicsMassAPI"
+      ],
+      "approximation": "sdf",
+      "collision_enabled": true,
+      "contact_offset": 0.0020000000949949026,
+      "exists": true,
+      "kinematic_enabled": false,
+      "mesh_path": "/World/beaker2/mesh",
+      "rest_offset": -0.0010000000474974513,
+      "rigid_body_enabled": false,
+      "sdf_resolution": null,
+      "type_name": "Mesh"
+    },
+    "pre_state": {
+      "applied_schemas": [
+        "MaterialBindingAPI",
+        "PhysicsRigidBodyAPI",
+        "PhysicsCollisionAPI",
+        "PhysicsMeshCollisionAPI",
+        "PhysicsMassAPI"
+      ],
+      "approximation": "convexDecomposition",
+      "collision_enabled": true,
+      "contact_offset": 0.0020000000949949026,
+      "exists": true,
+      "kinematic_enabled": false,
+      "mesh_path": "/World/beaker2/mesh",
+      "rest_offset": -0.0010000000474974513,
+      "rigid_body_enabled": true,
+      "sdf_resolution": null,
+      "type_name": "Mesh"
+    },
+    "sdf_resolution": 64,
+    "sweep_authored_collision_enabled": true,
+    "variant_id": "NATIVE_SDF_64"
+  },
+  "candidate": {
+    "approximation": "sdf",
+    "contact_offset": 0.002,
+    "description": "Built-in SDF mesh collision, resolution 64.",
+    "rest_offset": -0.001,
+    "role": "candidate",
+    "sdf_margin": null,
+    "sdf_narrow_band_thickness": null,
+    "sdf_resolution": 64,
+    "sdf_subgrid_resolution": null,
+    "variant_id": "NATIVE_SDF_64"
+  },
+  "dry_run_authoring_only": true,
+  "overlay_usda": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/native-collider-approx-sweep/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/NATIVE_SDF_64/native_collider_approximation_overlay.usda",
+  "runtime_step_executed": false,
+  "variant_id": "NATIVE_SDF_64"
+}
