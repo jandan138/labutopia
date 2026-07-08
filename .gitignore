@@ -215,3 +215,6 @@ docs/tmp/
 
 # Local generated recordings
 artifacts/videos/
+
+# Local git worktrees
+.worktrees/
