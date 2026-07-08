@@ -434,6 +434,7 @@
     <nav class="nav" aria-label="页面导航">
       <a href="#pm-summary">产品结论</a>
       <a href="#video-evidence">视频证据</a>
+      <a href="#surface-reconstruction">液面诊断</a>
       <a href="#what-ran">到底跑了什么</a>
       <a href="#journey">一路尝试</a>
       <a href="#collider-cause">Collider 结论</a>
@@ -518,6 +519,60 @@
           </video>
           <figcaption><strong>Camera2：</strong>原生桌面辅助视角；用于看布局，不作为最终 fluid parity 证据。</figcaption>
         </figure>
+      </div>
+    </section>
+
+    <section id="surface-reconstruction" class="panel section">
+      <h2>新增：50k 初始点位补齐 PBD 后的静置漏液诊断展示</h2>
+      <p>前面的 20 秒 closeup 是最硬的工程诊断，但红色粒子团容易被误解成“材质坏了”或“粒子本身很大”。这次新增一条单独的 <code>presentation lane</code>：同事 USD 提供的是 <code>50000</code> 个液体初始点位，我们在运行时补齐可 step/readback 的 <code>CompletedPBD</code> diagnostic runtime contract；物理输入、粒子轨迹、collider 设置和 leak classifier 不变，只把渲染层从离散点云切成 <code>PhysX Isosurface</code> reconstructed render surface，并固定一套领导汇报用 camera / lighting。</p>
+
+      <div class="video-lead">
+        <figure class="diagnostic warn">
+          <video controls muted preload="metadata" playsinline poster="assets/liquid-surface-main-frame-02.png">
+            <source src="assets/liquid-surface-reconstruction-main-full50k.webm" type="video/webm">
+            <source src="assets/liquid-surface-reconstruction-main-full50k.mp4" type="video/mp4">
+          </video>
+          <figcaption><strong>主展示视频：</strong>full 50k initial particles + completed PBD + <code>PhysX Isosurface</code>。蓝色液面更容易看懂；它是 presentation render，不是 raw USD direct step，也不是新的物理判定。</figcaption>
+        </figure>
+        <article class="note caution">
+          <h3>这条视频解决什么、不解决什么</h3>
+          <p>解决的是“红色粒子团不像水、领导看不清”的展示问题：关闭 red debug particle display，启用 <code>Isosurface</code>、统一蓝色液面材质、统一光照和主视角。</p>
+          <p>不解决 <code>collider</code> 漏液问题，也不改变 <code>particle_readback_trace.jsonl</code>。这条 run 的结论仍是 <code>FAIL_CONTAINER_LEAK</code>，<code>below_table_count=19093</code>。</p>
+          <p>独立 visual review 结论是 <code>WARN</code>：画面可作为诊断展示，但漏出部分仍偏 speckled，不能说成 polished pour 或 full visual material parity。</p>
+        </article>
+      </div>
+
+      <div class="figure-row" aria-label="液面重建关键帧">
+        <figure class="diagnostic warn">
+          <img src="assets/liquid-surface-main-frame-01.png" alt="液面重建主视频早期帧">
+          <figcaption><strong>Early：</strong>蓝色 reconstructed surface 已经替代红色 debug 点云。</figcaption>
+        </figure>
+        <figure class="diagnostic warn">
+          <img src="assets/liquid-surface-main-frame-02.png" alt="液面重建主视频中期帧">
+          <figcaption><strong>Mid：</strong>可见 source beaker、target beaker 和桌面关系；漏液仍以 readback 判定。</figcaption>
+        </figure>
+        <figure class="diagnostic warn">
+          <img src="assets/liquid-surface-main-frame-03.png" alt="液面重建主视频后期帧">
+          <figcaption><strong>Late：</strong>蓝色泄漏区域可读，但视觉上仍不是产品级水面。</figcaption>
+        </figure>
+        <figure class="diagnostic warn">
+          <video controls muted preload="metadata" playsinline poster="assets/liquid-surface-wide-frame-02.png">
+            <source src="assets/liquid-surface-reconstruction-wide-full50k.webm" type="video/webm">
+            <source src="assets/liquid-surface-reconstruction-wide-full50k.mp4" type="video/mp4">
+          </video>
+          <figcaption><strong>Wide/context：</strong>保留更宽上下文，防止主视角因为 closeup 被误解成只挑了局部。</figcaption>
+        </figure>
+      </div>
+
+      <div class="two">
+        <article class="card pass">
+          <h3>现在可以怎么汇报</h3>
+          <p>我们已经把同事原生 <code>50k</code> 液体点位补全成 IsaacSim41 可 step/readback 的 PBD runtime，并额外做了 <code>PhysX Isosurface</code> 展示层。视频更像液面，方便领导看现象；失败结论仍由粒子 readback 支撑。</p>
+        </article>
+        <article class="card verdict">
+          <h3>现在不能怎么汇报</h3>
+          <p>不能说 <code>Isosurface</code> 修好了漏液，不能说蓝色视频就是 LabUtopia51 原生材质 parity，不能说该场景已经可 EBench score。它只证明“同一条失败轨迹能用更可读的方式展示”。</p>
+        </article>
       </div>
     </section>
 
@@ -738,7 +793,7 @@ nan_count=0</pre>
       <article class="card">
         <h2>为什么红色看起来像一坨</h2>
         <p>这不是粒子物理尺寸真的很大。当前运行使用的实际粒子宽度约 <code>0.000594m</code>，也就是 <code>0.594mm</code>。但 50k 粒子非常密集，camera render 里会叠成红色团块；review marker 版本还会把 readback 点位放大到约 <code>0.012m</code> 方便人看，所以 marker 视频更不能当真实水面材质。</p>
-        <p>后续如果做产品级视觉，需要在物理粒子之外再接 <code>Isosurface</code> / <code>Smoothing</code> / <code>Anisotropy</code> 一类渲染层，把点云变成连续液面。但那是 visual closure，不会替代 zero-leak 物理 gate。</p>
+        <p>这次新增的 <code>PhysX Isosurface</code> presentation render 已经把“点云怎么变成更像液面”的展示链路跑通了一版：它能让领导看懂液体位置和泄漏现象，但仍然只是 visual closure，不会替代 zero-leak 物理 gate。</p>
       </article>
       <article class="card">
         <h2>材质问题怎么处理的</h2>
@@ -823,6 +878,8 @@ nan_count=0</pre>
           <ul>
             <li><code>native_usd_scene_step_video_recorded=true</code></li>
             <li><code>50k_colleague_particles_stepped_in_native_scene=true</code></li>
+            <li><code>presentation_isosurface_video_recorded=true</code></li>
+            <li><code>presentation_video_does_not_replace_particle_readback=true</code></li>
             <li><code>leak_status_supported_by_particle_readback=true</code></li>
             <li><code>mdl_compile_status=PASS</code>，没有明显 solid red fallback。</li>
             <li>当前阶段为 true fluid spike 失败证据闭环，不是 benchmark-ready 成功验收。</li>
@@ -833,6 +890,9 @@ nan_count=0</pre>
           <ul>
             <li><code>raw_50k_colleague_liquid_usd_can_direct_step_as_true_pbd_fluid</code></li>
             <li><code>completed_pbd_static_leak_equals_benchmark_ready_fluid</code></li>
+            <li><code>presentation_video_equals_physics_success</code></li>
+            <li><code>isosurface_reconstruction_equals_zero_leak</code></li>
+            <li><code>presentation_water_material_equals_labutopia51_visual_parity</code></li>
             <li><code>level1_pour_true_fluid_runtime_passed</code></li>
             <li><code>s3_kinematic_pour_released</code></li>
             <li><code>ebench_score_or_policy_claim_allowed</code></li>
@@ -852,10 +912,12 @@ s2_collider_matrix=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s
 s2f5_promotion=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f5_promotion_review_20260708.json
 native_approx_dry_run=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708.json
 native_approx_runtime=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_runtime_sweep_20260708.json
-native_approx_videos=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/</pre>
+native_approx_videos=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_native_collider_approximation_sweep_20260708_001/
+surface_reconstruction_main=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_refined_v2/
+surface_reconstruction_wide=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/</pre>
       </details>
 
-      <p class="small">周报日期按 2026-07-07 归档；页面证据更新到 2026-07-08 的 20 秒 native-scene visual review 和 Native Collider Approximation Sweep。中文用于解释性叙述，英文保留 <code>USD</code>、<code>IsaacSim41</code>、<code>PhysX/PBD</code>、<code>ParticleSet</code>、<code>EBench</code>、<code>MDL</code> 等架构术语。</p>
+      <p class="small">周报日期按 2026-07-07 归档；页面证据更新到 2026-07-08 的 20 秒 native-scene visual review、Native Collider Approximation Sweep 和 full 50k <code>PhysX Isosurface</code> presentation render。中文用于解释性叙述，英文保留 <code>USD</code>、<code>IsaacSim41</code>、<code>PhysX/PBD</code>、<code>ParticleSet</code>、<code>EBench</code>、<code>MDL</code> 等架构术语。</p>
     </section>
   </main>
 </body>

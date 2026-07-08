@@ -10,6 +10,58 @@
 
 ---
 
+## 2026-07-08 Execution Update
+
+Current status: the presentation-video lane is implemented and has passed the full local liquid test suite. The main full-particle leadership evidence is no longer the red debug particle video; it is now a full 50k `PhysX Isosurface` presentation render using the same colleague native USD initial particles and the same completed-PBD particle trajectory.
+
+Authoritative result remains unchanged:
+
+```text
+source_usd=outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd
+main_artifact_dir=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_refined_v2/
+source_particle_count=50000
+selected_particle_count=50000
+runtime_step_executed=true
+presentation_isosurface_enabled=true
+debug_particle_display_enabled=false
+classification=FAIL_CONTAINER_LEAK
+below_table_count=19093
+outside_source_count=24606
+spill_count=5513
+source_retention_fraction=0.50788
+particle_count_final_fraction=1.0
+nan_count=0
+```
+
+Presentation render contract:
+
+```text
+camera=/World/LiquidPresentationMainCamera
+surface_api=/World/CompletedPBD/ParticleSystem
+claim_boundary=visual_surface_reconstruction_only
+parameter_reference=isaacsim41_fluid_isosurface_cup_demo_style
+grid_spacing=0.00028868404822424056
+surface_distance=0.00030472205090336497
+grid_filtering_passes=GS
+grid_smoothing_radius=0.0003207600535824895
+num_mesh_smoothing_passes=4
+num_mesh_normal_smoothing_passes=4
+max_subgrids=12500
+```
+
+Visual QA outcome: `WARN`, not `PASS`. The video is usable as a leadership-readable diagnostic render because it is nonblank, not red debug particles, and shows the beakers plus blue reconstructed liquid. It is not a polished pour, not full visual material parity, and not evidence that the collider passed.
+
+Decision after review: do not make the weekly main story depend on a full 10-variant 50k video sweep. The weekly page should use:
+
+- Main evidence: one full 50k refined `RAW_AS_IS` presentation video.
+- Context evidence: one full 50k wider-context presentation video.
+- Engineering table: the existing Native Collider Approximation Sweep results, which already show 10/10 variants ran and 10/10 leaked.
+- Follow-up lane: if leadership specifically wants one video per collider mode, run a compact 512-particle `visual_preview_subset` first, then decide whether the storage/runtime cost of full 50k per variant is justified.
+
+This preserves the claim boundary: `presentation lane` improves human readability; `particle readback` remains the only pass/fail source.
+
+---
+
 ## Scope And Non-Goals
 
 This plan changes visual evidence production, not the physics gate. It must not claim that `isosurface` fixes leaking, makes a collider benchmark-ready, or replaces `particle_readback_trace.jsonl`.

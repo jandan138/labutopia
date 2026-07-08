@@ -893,6 +893,80 @@ camera2_native_material.mp4          # 原生桌面俯视上下文
 visual_review=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_native_usd_50k_completed_pbd_step_video_long_visual_review_20260708.json
 ```
 
+## 同事 50k USD 的液面重建展示层
+
+20 秒 native-material closeup 证明了完整原生 USD 场景能被补成可 step/readback 的 50k PBD runtime，
+但它使用红色粒子/marker 可视化，给产品和领导看时很容易被误解成“材质坏了”“粒子很大”或“这就是最终水面”。
+因此我们新增了一条独立的 `presentation lane`：物理输入、粒子轨迹、collider 设置和 leak classifier 不变，
+只在渲染层开启 `PhysX Isosurface`，把离散 `PBD particles` 重建成更连续、更像液面的蓝色
+`reconstructed render surface`，并使用固定的领导汇报 camera / lighting。
+
+正式证据：
+
+```text
+artifact_dir=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/
+main_manifest=RAW_AS_IS_runtime_full50k_refined_v2.json
+main_video=RAW_AS_IS_runtime_full50k_refined_v2/presentation_isosurface.mp4
+wide_context_manifest=RAW_AS_IS_runtime_full50k_v1.json
+wide_context_video=RAW_AS_IS_runtime_full50k_v1/presentation_isosurface.mp4
+source_usd=outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd
+source_particle_count=50000
+selected_particle_count=50000
+runtime_step_executed=true
+presentation_video_enabled=true
+presentation_isosurface_enabled=true
+debug_particle_display_enabled=false
+```
+
+主展示 run 的物理结论仍然是失败：
+
+```text
+classification=FAIL_CONTAINER_LEAK
+below_table_count=19093
+outside_source_count=24606
+spill_count=5513
+source_retention_fraction=0.50788
+particle_count_final_fraction=1.0
+nan_count=0
+cpu_collision_fallback_detected=false
+```
+
+主展示 run 的 `Isosurface` 参数采用 Isaac Sim 4.1 demo-style 设置，而不是随意把粒子刷成蓝色：
+
+```text
+api_path=/World/CompletedPBD/ParticleSystem
+claim_boundary=visual_surface_reconstruction_only
+parameter_reference=isaacsim41_fluid_isosurface_cup_demo_style
+grid_spacing=0.00028868404822424056
+surface_distance=0.00030472205090336497
+grid_filtering_passes=GS
+grid_smoothing_radius=0.0003207600535824895
+num_mesh_smoothing_passes=4
+num_mesh_normal_smoothing_passes=4
+max_subgrids=12500
+max_vertices=3200000
+max_triangles=6400000
+```
+
+`presentation_visual_contract.claim_boundary_text` 已写入 manifest，核心口径是：
+
+```text
+This video is a presentation render of the same simulated particle trajectory used for the diagnostic verdict.
+Leak classification and spike assessment are based on particle readback, not on visual appearance.
+Rendering choices including PhysX Isosurface reconstruction, material color/opacity, lighting, and camera framing were adjusted only to improve human readability for review.
+These adjustments do not change the particle simulation, collider setup, leak classifier, or benchmark claims.
+```
+
+给产品经理的白话解释：这条蓝色视频不是“把漏液问题修好了”，而是“把同一条失败轨迹用更像液面的方式展示出来”。
+它解决的是展示层问题：红色点云太像一坨，领导很难判断是不是液体；`PhysX Isosurface` 能让人更直观看到
+source beaker、target beaker、桌面和泄漏区域。它不解决 `collider` 问题，也不能替代 readback：
+能不能放行下一阶段仍看 `below_table_count=0`、`spill_count=0`、`outside_source_count=0` 这些物理 gate。
+
+独立 visual review 对这版仍是 `WARN`，不是无 caveat 的 `PASS`。优点是：不再是红色 debug 粒子、不是黑屏、
+相机能看到杯子和蓝色液面；风险是：泄漏区域仍有 speckled 观感，不能包装成 polished pour，也不能说成
+`LabUtopia51 native visual material parity`。因此周报可以把它作为“更适合领导理解的诊断展示视频”，但不能把它
+升级为 benchmark-ready fluid evidence。
+
 ## 同事 raw 50k liquid USD 的 D0 直接-step 准入审计
 
 D0 的 raw 50k 直接-step 准入审计已完成；它没有跑原始 `50000` 粒子的 timeline step，结论是
@@ -976,6 +1050,8 @@ Raw 50k points exist, but direct original runtime claim is not allowed yet.
 Colleague 50k completed-PBD static leak diagnostic completed with FAIL_CONTAINER_LEAK.
 Colleague 50k completed-PBD static leak is supported by particle readback: below_table_count=36013.
 Colleague 50k completed-PBD real IsaacSim41 RGB review camera evidence is available.
+Colleague 50k completed-PBD PhysX Isosurface presentation render is available for human-readable review.
+Presentation render uses the same simulated particle trajectory and does not replace particle readback.
 ```
 
 禁止：
@@ -993,6 +1069,9 @@ direct original 50k colleague liquid USD runtime result.
 raw 50k colleague liquid USD can be directly stepped as true PBD fluid.
 completed-PBD static leak evidence means benchmark-ready true fluid.
 red RGB review markers are physical fluid mesh or colliders.
+presentation video equals physics success.
+isosurface reconstruction equals zero-leak.
+presentation water material equals LabUtopia51 visual material parity.
 native collider approximation sweep proves benchmark-ready true fluid.
 built-in/native approximation modes have passed static hold.
 ```

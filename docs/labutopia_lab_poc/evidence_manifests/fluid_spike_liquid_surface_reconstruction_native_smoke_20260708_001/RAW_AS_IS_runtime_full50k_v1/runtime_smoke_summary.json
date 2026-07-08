@@ -1,0 +1,1195 @@
+{
+  "artifact_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1",
+  "authored_runtime_paths": {
+    "isosurface_contract": {
+      "api_path": "/World/CompletedPBD/ParticleSystem",
+      "claim_boundary": "visual_surface_reconstruction_only",
+      "enabled": true,
+      "grid_filtering_passes": "S",
+      "grid_smoothing_radius": 0.000641520107164979,
+      "grid_spacing": 0.0004811400803737342,
+      "max_subgrids": 6250,
+      "max_triangles": 6400000,
+      "max_vertices": 3200000,
+      "num_mesh_normal_smoothing_passes": 1,
+      "num_mesh_smoothing_passes": 1,
+      "surface_distance": 0.0005132160857319832
+    },
+    "particle_isosurface_api_summary": {
+      "api_applied": true,
+      "api_path": "/World/CompletedPBD/ParticleSystem",
+      "applied_schemas": [
+        "PhysxParticleIsosurfaceAPI",
+        "MaterialBindingAPI"
+      ],
+      "enabled": true,
+      "grid_spacing": 0.0004811400722246617,
+      "max_subgrids": 6250,
+      "max_triangles": 6400000,
+      "max_vertices": 3200000,
+      "prim_exists": true,
+      "surface_distance": 0.0005132160731591284
+    },
+    "particle_set_path": "/World/CompletedPBD/ParticleSet",
+    "particle_system_path": "/World/CompletedPBD/ParticleSystem",
+    "physics_material_path": "/World/Looks/PBDRuntimeFluidPhysics",
+    "pre_deactivate_summary": {
+      "/World/ParticleSet": {
+        "deactivated": false,
+        "disabled_attrs": {
+          "physxParticle:fluid": false,
+          "physxParticle:selfCollision": false
+        },
+        "existed": true,
+        "kept_active_to_avoid_physx_expired_prim": true
+      },
+      "/World/ParticleSystem": {
+        "deactivated": false,
+        "disabled_attrs": {
+          "particleSystemEnabled": false
+        },
+        "existed": true,
+        "kept_active_to_avoid_physx_expired_prim": true
+      },
+      "/World/fluid": {
+        "deactivated": false,
+        "disabled_attrs": {},
+        "existed": true,
+        "kept_active_to_avoid_physx_expired_prim": true
+      }
+    },
+    "presentation_visual_material_path": "/World/Looks/LiquidPresentationWater",
+    "source_particle_set_path": "/World/ParticleSet",
+    "source_particle_system_path": "/World/ParticleSystem",
+    "source_visual_material_path": "/World/Looks/OmniGlass_01",
+    "visual_material_path": "/World/Looks/LiquidPresentationWater",
+    "visual_material_preserved": true
+  },
+  "camera_capture_diagnostics": {
+    "presentation_isosurface_frames/frame_0000.png": {
+      "dtype": "float64",
+      "shape": [
+        0
+      ],
+      "size": 0,
+      "status": "empty_array"
+    },
+    "presentation_isosurface_frames/frame_0004.png": {
+      "dtype": "uint8",
+      "mean": 125.91798739711935,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0004.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 53.263755393746905
+    },
+    "presentation_isosurface_frames/frame_0008.png": {
+      "dtype": "uint8",
+      "mean": 125.73963220164609,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0008.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 53.15956686377872
+    },
+    "presentation_isosurface_frames/frame_0012.png": {
+      "dtype": "uint8",
+      "mean": 125.54485532407408,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0012.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 53.03081084380034
+    },
+    "presentation_isosurface_frames/frame_0016.png": {
+      "dtype": "uint8",
+      "mean": 125.3247595164609,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0016.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.94435382537897
+    },
+    "presentation_isosurface_frames/frame_0020.png": {
+      "dtype": "uint8",
+      "mean": 125.11186085390946,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0020.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.880346483813135
+    },
+    "presentation_isosurface_frames/frame_0024.png": {
+      "dtype": "uint8",
+      "mean": 124.96778613683128,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0024.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.83510696723572
+    },
+    "presentation_isosurface_frames/frame_0028.png": {
+      "dtype": "uint8",
+      "mean": 124.80459233539095,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0028.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.80087270039011
+    },
+    "presentation_isosurface_frames/frame_0032.png": {
+      "dtype": "uint8",
+      "mean": 124.69518389917695,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0032.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.78589712111849
+    },
+    "presentation_isosurface_frames/frame_0036.png": {
+      "dtype": "uint8",
+      "mean": 124.62923868312757,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0036.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.77605049597136
+    },
+    "presentation_isosurface_frames/frame_0040.png": {
+      "dtype": "uint8",
+      "mean": 124.5230697016461,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0040.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.75401888656378
+    },
+    "presentation_isosurface_frames/frame_0044.png": {
+      "dtype": "uint8",
+      "mean": 124.43005722736625,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0044.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.76958746131879
+    },
+    "presentation_isosurface_frames/frame_0048.png": {
+      "dtype": "uint8",
+      "mean": 124.37299318415639,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0048.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.76138853404386
+    },
+    "presentation_isosurface_frames/frame_0052.png": {
+      "dtype": "uint8",
+      "mean": 124.34030864197531,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0052.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.76393172624009
+    },
+    "presentation_isosurface_frames/frame_0056.png": {
+      "dtype": "uint8",
+      "mean": 124.30172003600823,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0056.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.79829124614423
+    },
+    "presentation_isosurface_frames/frame_0060.png": {
+      "dtype": "uint8",
+      "mean": 124.26548032407408,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0060.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.81447064414051
+    },
+    "presentation_isosurface_frames/frame_0064.png": {
+      "dtype": "uint8",
+      "mean": 124.24394997427983,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0064.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.80408070552819
+    },
+    "presentation_isosurface_frames/frame_0068.png": {
+      "dtype": "uint8",
+      "mean": 124.23092335390946,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0068.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.80727170552131
+    },
+    "presentation_isosurface_frames/frame_0072.png": {
+      "dtype": "uint8",
+      "mean": 124.1949202674897,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0072.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.8300400589715
+    },
+    "presentation_isosurface_frames/frame_0076.png": {
+      "dtype": "uint8",
+      "mean": 124.17581983024691,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0076.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.853123263427115
+    },
+    "presentation_isosurface_frames/frame_0080.png": {
+      "dtype": "uint8",
+      "mean": 124.17650720164609,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0080.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.83089304634195
+    },
+    "presentation_isosurface_frames/frame_0084.png": {
+      "dtype": "uint8",
+      "mean": 124.15712319958848,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0084.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.85862187659791
+    },
+    "presentation_isosurface_frames/frame_0088.png": {
+      "dtype": "uint8",
+      "mean": 124.17044367283951,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0088.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.85480064300691
+    },
+    "presentation_isosurface_frames/frame_0092.png": {
+      "dtype": "uint8",
+      "mean": 124.14782021604938,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0092.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.84862465659058
+    },
+    "presentation_isosurface_frames/frame_0096.png": {
+      "dtype": "uint8",
+      "mean": 124.10447273662551,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0096.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.83487616584001
+    },
+    "presentation_isosurface_frames/frame_0100.png": {
+      "dtype": "uint8",
+      "mean": 124.10381108539094,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0100.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.85749054018819
+    },
+    "presentation_isosurface_frames/frame_0104.png": {
+      "dtype": "uint8",
+      "mean": 124.10059606481481,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0104.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.83056116061934
+    },
+    "presentation_isosurface_frames/frame_0108.png": {
+      "dtype": "uint8",
+      "mean": 124.10468428497943,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0108.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.82283857261151
+    },
+    "presentation_isosurface_frames/frame_0112.png": {
+      "dtype": "uint8",
+      "mean": 124.09261445473251,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0112.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.84618301144983
+    },
+    "presentation_isosurface_frames/frame_0116.png": {
+      "dtype": "uint8",
+      "mean": 124.06486432613168,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0116.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.828521644339034
+    },
+    "presentation_isosurface_frames/frame_0120.png": {
+      "dtype": "uint8",
+      "mean": 124.1098900462963,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface_frames/frame_0120.png",
+      "shape": [
+        540,
+        960,
+        3
+      ],
+      "size": 1555200,
+      "status": "saved_camera_rgb",
+      "std": 52.84808545969179
+    }
+  },
+  "claim_boundary": {
+    "allowed": [
+      "native_usd_scene_step_video_recorded=true",
+      "native_scene_material_paths_preserved=true",
+      "native_scene_mdl_source_assets_retargeted_to_isaacsim41_local_mirror=true",
+      "pbd_completion_overlay_used_for_runtime_step=true",
+      "isaacsim41_core_mdl_local_mirror_can_be_used_for_runtime_material_closure=true",
+      "50k_colleague_particles_stepped_in_native_scene=true",
+      "leak_status_supported_by_particle_readback=true",
+      "presentation_isosurface_video_recorded=true"
+    ],
+    "blocked": [
+      "raw_usd_direct_step_passed",
+      "raw_50k_colleague_liquid_usd_can_direct_step_as_true_pbd_fluid",
+      "completed_pbd_static_leak_equals_benchmark_ready_fluid",
+      "presentation_video_equals_physics_success",
+      "isosurface_reconstruction_equals_zero_leak",
+      "presentation_water_material_equals_labutopia51_visual_parity",
+      "review_markers_are_physical_fluid_mesh",
+      "review_marker_video_equals_native_material_video",
+      "isaacsim41_core_mdl_local_mirror_equals_labutopia51_native_visual_parity",
+      "ebench_score_or_policy_claim_allowed",
+      "s3_kinematic_pour_released"
+    ]
+  },
+  "classification": {
+    "below_table_count": 19046,
+    "classification": "FAIL_CONTAINER_LEAK",
+    "cpu_collision_fallback_detected": false,
+    "fatal_error": null,
+    "gpu_collider_unsupported": false,
+    "nan_count": 0,
+    "outside_source_count": 24435,
+    "particle_count_final_fraction": 1.0,
+    "pass_criteria": {
+      "below_table_count_eq_zero": false,
+      "cpu_collision_fallback_detected_false": true,
+      "nan_count_eq_zero": true,
+      "outside_source_count_eq_zero": false,
+      "particle_count_final_fraction_ge_0_95": true,
+      "particle_motion_observed": true,
+      "source_retention_fraction_ge_0_95": false,
+      "spill_count_eq_zero": false,
+      "tail_leak_rate_lt_0_02": false,
+      "target_count_eq_zero": true
+    },
+    "source_retention_fraction": 0.5113,
+    "spill_count": 5389,
+    "tail_leak_rate_fraction_per_second": 0.14022,
+    "target_count": 0,
+    "variant_id": "COLLEAGUE_NATIVE_USD_FULL_50K_COMPLETED_PBD"
+  },
+  "closeup_camera": {
+    "camera_path": "/World/Beaker2CloseupNativeMaterialCamera",
+    "eye": [
+      0.5118020000000001,
+      -0.24819800000000003,
+      1.0227606155217077
+    ],
+    "target": [
+      0.311802,
+      0.091802,
+      0.8680522955217077
+    ],
+    "up": [
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "debug_particle_display_enabled": false,
+  "elapsed_seconds": 28.709309823811054,
+  "evidence_scene_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/native_scene_completed_pbd_overlay.usda",
+  "generated_at_utc": "2026-07-08T14:07:57.239444+00:00",
+  "isaac_log_summary": {
+    "error_count": 0,
+    "errors": [],
+    "errors_truncated": false,
+    "has_omniglass_compile_error": false,
+    "has_omnipbr_compile_error": false,
+    "has_omnisurface_compile_error": false,
+    "isaac_log_available": true,
+    "isaac_log_path": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.1/site-packages/omni/logs/Kit/Isaac-Sim/4.1/kit_20260708_220701.log",
+    "mdl_compile_status": "PASS"
+  },
+  "local_blue_glass_override_used": false,
+  "manifest_type": "fluid_spike_colleague_native_usd_completed_pbd_step_video",
+  "material_closure": {
+    "closure_base_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base",
+    "closure_omnisurface_module_dir": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/mdl/OmniSurface",
+    "closure_root": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core",
+    "copied_base_file_count": 18,
+    "copied_base_files": [
+      "OmniEmissive.mdl",
+      "OmniGlass.mdl",
+      "OmniGlass_Opacity.mdl",
+      "OmniHair.mdl",
+      "OmniHairPresets.mdl",
+      "OmniPBR.mdl",
+      "OmniPBRBase.mdl",
+      "OmniPBR_ClearCoat.mdl",
+      "OmniPBR_ClearCoat_Opacity.mdl",
+      "OmniPBR_Opacity.mdl",
+      "OmniSurface.mdl",
+      "OmniSurfaceBlend.mdl",
+      "OmniSurfaceLite.mdl",
+      "OmniSurfacePresets.mdl",
+      "SimPBR.mdl",
+      "SimPBR_Model.mdl",
+      "SimPBR_Translucent.mdl",
+      "baking_annotations.mdl"
+    ],
+    "copied_omnisurface_file_count": 6,
+    "copied_omnisurface_files": [
+      "OmniHairBase.mdl",
+      "OmniImage.mdl",
+      "OmniShared.mdl",
+      "OmniSurfaceBase.mdl",
+      "OmniSurfaceBlendBase.mdl",
+      "OmniSurfaceLiteBase.mdl"
+    ],
+    "copies_full_base_mdl_dir": true,
+    "copies_omnisurface_module_dir": true,
+    "material_closure_mode": "isaacsim41_core_mdl_local_mirror",
+    "mdl_files": [
+      "OmniGlass.mdl",
+      "OmniGlass_Opacity.mdl",
+      "OmniPBR.mdl",
+      "OmniPBRBase.mdl",
+      "OmniPBR_ClearCoat.mdl",
+      "OmniSurface.mdl",
+      "OmniSurfaceLite.mdl",
+      "OmniSurfacePresets.mdl"
+    ],
+    "shader_asset_basenames": [
+      "OmniGlass.mdl",
+      "OmniPBR.mdl",
+      "OmniSurfacePresets.mdl"
+    ],
+    "source_base_dir": "/isaac-sim/kit/mdl/core/Base",
+    "source_omnisurface_module_dir": "/isaac-sim/kit/mdl/core/mdl/OmniSurface",
+    "source_root": "/isaac-sim/kit/mdl/core",
+    "visual_material_parity_claim_allowed": false
+  },
+  "material_contract_post": {
+    "beaker1": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker1/mesh",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "beaker2": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniSurface_Glass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker2/mesh",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "runtime_particle_system": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "id",
+      "material_path": "/World/Looks/LiquidPresentationWater",
+      "prim_exists": true,
+      "prim_path": "/World/CompletedPBD/ParticleSystem",
+      "source_asset": null,
+      "source_asset_resolved": false,
+      "source_asset_resolved_path": null,
+      "sub_identifier": null
+    },
+    "source_particle_system": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass_01",
+      "prim_exists": true,
+      "prim_path": "/World/ParticleSystem",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    }
+  },
+  "material_contract_pre": {
+    "all_native_mdl_resolved": true,
+    "beaker1": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker1/mesh",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "beaker2": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniSurface_Glass",
+      "prim_exists": true,
+      "prim_path": "/World/beaker2/mesh",
+      "source_asset": "OmniSurfacePresets.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/OmniSurfacePresets.mdl",
+      "sub_identifier": "OmniSurface_Glass"
+    },
+    "material_resolve_status": "PASS",
+    "native_scene_opened": true,
+    "particle_system": {
+      "binding_relationship": "material:binding",
+      "implementation_source": "sourceAsset",
+      "material_path": "/World/Looks/OmniGlass_01",
+      "prim_exists": true,
+      "prim_path": "/World/ParticleSystem",
+      "source_asset": "OmniGlass.mdl",
+      "source_asset_resolved": true,
+      "source_asset_resolved_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/OmniGlass.mdl",
+      "sub_identifier": "OmniGlass"
+    },
+    "usd_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd"
+  },
+  "material_resolve_status": "PASS",
+  "material_retarget": {
+    "retarget_enabled": true,
+    "retargeted_shader_count": 10,
+    "retargeted_shaders": [
+      {
+        "compatibility_fallback": "OmniSurface_Glass_to_OmniGlass_for_isaacsim41",
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+        "retargeted_source_asset_basename": "OmniGlass.mdl",
+        "retargeted_sub_identifier": "OmniGlass",
+        "shader_path": "/World/Looks/OmniSurface_Glass/Shader",
+        "source_asset_basename": "OmniSurfacePresets.mdl",
+        "source_sub_identifier": "OmniSurface_Glass"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+        "retargeted_source_asset_basename": "OmniGlass.mdl",
+        "retargeted_sub_identifier": "OmniGlass",
+        "shader_path": "/World/Looks/OmniGlass/Shader",
+        "source_asset_basename": "OmniGlass.mdl",
+        "source_sub_identifier": "OmniGlass"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Blue/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_DeepGray/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Gray/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Green/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Red/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_Yellow/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniPBR.mdl",
+        "retargeted_source_asset_basename": "OmniPBR.mdl",
+        "retargeted_sub_identifier": "OmniPBR",
+        "shader_path": "/World/Looks/OmniPBR_Button_WhiteBlue/Shader",
+        "source_asset_basename": "OmniPBR.mdl",
+        "source_sub_identifier": "OmniPBR"
+      },
+      {
+        "compatibility_fallback": null,
+        "retargeted_source_asset": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/material_closure_isaacsim41_core/Base/OmniGlass.mdl",
+        "retargeted_source_asset_basename": "OmniGlass.mdl",
+        "retargeted_sub_identifier": "OmniGlass",
+        "shader_path": "/World/Looks/OmniGlass_01/Shader",
+        "source_asset_basename": "OmniGlass.mdl",
+        "source_sub_identifier": "OmniGlass"
+      }
+    ]
+  },
+  "minimal_native_slice_used": false,
+  "mode": "native_usd_scene_completed_pbd_step_video",
+  "native_beaker_material_override_used": false,
+  "native_collider_approximation": {
+    "authoring": {
+      "approximation": null,
+      "authored_collision_enabled": true,
+      "mesh_path": "/World/beaker2/mesh",
+      "post_state": {
+        "applied_schemas": [
+          "MaterialBindingAPI",
+          "PhysicsRigidBodyAPI",
+          "PhysxRigidBodyAPI",
+          "PhysicsCollisionAPI",
+          "PhysxCollisionAPI",
+          "PhysxConvexHullCollisionAPI",
+          "PhysicsMeshCollisionAPI",
+          "PhysxConvexDecompositionCollisionAPI",
+          "PhysxSDFMeshCollisionAPI",
+          "PhysicsMassAPI"
+        ],
+        "approximation": "convexDecomposition",
+        "collision_enabled": true,
+        "contact_offset": 0.0020000000949949026,
+        "exists": true,
+        "kinematic_enabled": false,
+        "mesh_path": "/World/beaker2/mesh",
+        "rest_offset": -0.0010000000474974513,
+        "rigid_body_enabled": true,
+        "sdf_resolution": 256,
+        "type_name": "Mesh"
+      },
+      "pre_state": {
+        "applied_schemas": [
+          "MaterialBindingAPI",
+          "PhysicsRigidBodyAPI",
+          "PhysxRigidBodyAPI",
+          "PhysicsCollisionAPI",
+          "PhysxCollisionAPI",
+          "PhysxConvexHullCollisionAPI",
+          "PhysicsMeshCollisionAPI",
+          "PhysxConvexDecompositionCollisionAPI",
+          "PhysxSDFMeshCollisionAPI",
+          "PhysicsMassAPI"
+        ],
+        "approximation": "convexDecomposition",
+        "collision_enabled": true,
+        "contact_offset": 0.0020000000949949026,
+        "exists": true,
+        "kinematic_enabled": false,
+        "mesh_path": "/World/beaker2/mesh",
+        "rest_offset": -0.0010000000474974513,
+        "rigid_body_enabled": true,
+        "sdf_resolution": 256,
+        "type_name": "Mesh"
+      },
+      "sdf_resolution": null,
+      "sweep_authored_collision_enabled": false,
+      "variant_id": "RAW_AS_IS"
+    },
+    "candidate": {
+      "approximation": null,
+      "contact_offset": 0.002,
+      "description": "Audit current authored native collision state.",
+      "rest_offset": -0.001,
+      "role": "baseline",
+      "sdf_margin": null,
+      "sdf_narrow_band_thickness": null,
+      "sdf_resolution": null,
+      "sdf_subgrid_resolution": null,
+      "variant_id": "RAW_AS_IS"
+    },
+    "enabled": true
+  },
+  "native_scene_opened": true,
+  "original_fluid_deactivate_summary": {
+    "/World/ParticleSet": {
+      "deactivated": false,
+      "disabled_attrs": {
+        "physxParticle:fluid": false,
+        "physxParticle:selfCollision": false
+      },
+      "existed": true,
+      "kept_active_to_avoid_physx_expired_prim": true
+    },
+    "/World/ParticleSystem": {
+      "deactivated": false,
+      "disabled_attrs": {
+        "particleSystemEnabled": false
+      },
+      "existed": true,
+      "kept_active_to_avoid_physx_expired_prim": true
+    },
+    "/World/fluid": {
+      "deactivated": false,
+      "disabled_attrs": {},
+      "existed": true,
+      "kept_active_to_avoid_physx_expired_prim": true
+    }
+  },
+  "particle_scope": {
+    "full_original_50k_completed_pbd_overlay": true,
+    "original_particle_count": 50000,
+    "particle_limit": 0,
+    "particle_scope": "full_original_50k",
+    "sampled_overlay": false,
+    "selected_particle_count": 50000
+  },
+  "physics_dt": 0.016666666666666666,
+  "physics_settings": {
+    "broadphase_type": "GPU",
+    "gpu_dynamics_enabled": true,
+    "gpu_max_particle_contacts": 1048576,
+    "gravity_direction": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "gravity_magnitude": 9.81,
+    "physics_scene_path": "/World/PhysicsScene",
+    "solver_type": "TGS"
+  },
+  "presentation_isosurface_enabled": true,
+  "presentation_lighting": {
+    "intensity": 950.0,
+    "light_path": "/World/LiquidPresentationKeyLight",
+    "lighting_contract_hash": "liquid_presentation_key_light_v1",
+    "role": "leadership_presentation_key_light",
+    "rotate_xyz": [
+      55.0,
+      0.0,
+      35.0
+    ]
+  },
+  "presentation_material": {
+    "diffuse_color": [
+      0.02,
+      0.38,
+      0.95
+    ],
+    "display_name": "presentation_water_transparent_blue",
+    "emissive_color": [
+      0.0,
+      0.06,
+      0.14
+    ],
+    "material_path": "/World/Looks/LiquidPresentationWater",
+    "opacity": 0.88,
+    "shader_path": "/World/Looks/LiquidPresentationWater/PreviewSurface",
+    "visual_material_parity_claim_allowed": false
+  },
+  "presentation_video_enabled": true,
+  "presentation_visual_contract": {
+    "camera": {
+      "camera_contract_hash": "liquid_presentation_main_camera_v1",
+      "camera_path": "/World/LiquidPresentationMainCamera",
+      "eye": [
+        0.5951625,
+        0.5280444,
+        1.1527606155217076
+      ],
+      "pair_span": 0.456063,
+      "role": "leadership_presentation_main",
+      "source_side_y": 1.0,
+      "target": [
+        0.2951625,
+        -0.0648375,
+        0.8384790155217077
+      ],
+      "up": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "camera_path": "/World/LiquidPresentationMainCamera",
+    "claim_boundary": "presentation_lane_only_particle_readback_remains_gate",
+    "debug_particle_display_enabled": false,
+    "isosurface": {
+      "api_path": "/World/CompletedPBD/ParticleSystem",
+      "claim_boundary": "visual_surface_reconstruction_only",
+      "enabled": true,
+      "grid_filtering_passes": "S",
+      "grid_smoothing_radius": 0.000641520107164979,
+      "grid_spacing": 0.0004811400803737342,
+      "max_subgrids": 6250,
+      "max_triangles": 6400000,
+      "max_vertices": 3200000,
+      "num_mesh_normal_smoothing_passes": 1,
+      "num_mesh_smoothing_passes": 1,
+      "surface_distance": 0.0005132160857319832
+    },
+    "lighting": {
+      "intensity": 950.0,
+      "light_path": "/World/LiquidPresentationKeyLight",
+      "lighting_contract_hash": "liquid_presentation_key_light_v1",
+      "role": "leadership_presentation_key_light",
+      "rotate_xyz": [
+        55.0,
+        0.0,
+        35.0
+      ]
+    },
+    "liquid_material_path": "/World/Looks/LiquidPresentationWater",
+    "particle_count": 50000,
+    "presentation_video_does_not_replace_particle_readback": true,
+    "variant_id": "RAW_AS_IS",
+    "visual_material_parity_claim_allowed": false
+  },
+  "raw_usd_direct_step_claim_allowed": false,
+  "readback_diagnostics": {
+    "final_position_hash": "224f8d48ccf9efcb81db77caf332999e28330fc08b69df6270b0e9c433275f07",
+    "initial_position_hash": "858bda189ccf36bd7b6fecbe4492370d876446fb834366256bf67dd5add6fa64",
+    "max_displacement": 0.8987564977531477,
+    "readback_available": true,
+    "readback_position_changed": true
+  },
+  "region_config": {
+    "bottom_overlap": 0.0,
+    "bottom_thickness": 0.008,
+    "collider_contact_offset": 0.003,
+    "collider_rest_offset": 0.0,
+    "fluid_rest_offset": 0.0003207600535824895,
+    "grid_dims": [
+      8,
+      8,
+      4
+    ],
+    "initial_radial_velocity": 0.08,
+    "particle_contact_offset": 0.0005346000893041491,
+    "particle_count": 50000,
+    "particle_enable_ccd": null,
+    "particle_max_depenetration_velocity": null,
+    "particle_max_velocity": 5.0,
+    "particle_rest_offset": 0.0,
+    "particle_seed": null,
+    "particle_spacing": 0.0045,
+    "particle_system_contact_offset": 0.000641520107164979,
+    "particle_width": 0.0005940000992268324,
+    "perf_budget_seconds_per_variant": 240.0,
+    "physics_dt": 0.016666666666666666,
+    "render_height": 540,
+    "render_width": 960,
+    "sdf_margin": null,
+    "sdf_narrow_band_thickness": null,
+    "sdf_resolution": null,
+    "sdf_subgrid_resolution": null,
+    "solid_rest_offset": 0.0003207600535824895,
+    "source_center": [
+      0.311802,
+      0.091802,
+      0.7727606155217077
+    ],
+    "source_height": 0.164296,
+    "source_radius": 0.060327,
+    "spawn_particle_contact_offset": 0.0005346000893041491,
+    "steps": 120,
+    "table_z": 0.7727606155217077,
+    "tail_window_steps": 30,
+    "target_center": [
+      0.278523,
+      -0.221477,
+      0.7727606155217077
+    ],
+    "target_height": 0.183118,
+    "target_radius": 0.082457,
+    "trace_interval": 10,
+    "wall_height": 0.12,
+    "wall_thickness": 0.01
+  },
+  "review_markers": {
+    "enabled": false,
+    "review_marker_source": "particle_readback_positions",
+    "review_markers_are_physics": false,
+    "updates": {}
+  },
+  "runtime": "isaacsim41",
+  "runtime_particle_offsets": {
+    "fluid_rest_offset": 0.0003207600535824895,
+    "particle_contact_offset": 0.0005346000893041491,
+    "particle_system_contact_offset": 0.000641520107164979,
+    "particle_width": 0.0005940000992268324,
+    "solid_rest_offset": 0.0003207600535824895
+  },
+  "runtime_pbd_completion_overlay_used": true,
+  "runtime_step_executed": true,
+  "schema_version": 1,
+  "selected_particle_count": 50000,
+  "source_bbox": {
+    "max": [
+      0.36712894390182405,
+      0.1471289546914178,
+      0.917056322425485
+    ],
+    "min": [
+      0.2564758472940577,
+      0.03647585808365142,
+      0.8266558855450249
+    ]
+  },
+  "source_particle_count": 50000,
+  "source_usd_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd",
+  "steps": 120,
+  "table_bbox": {
+    "max": [
+      1.4210249282229273,
+      1.312490858408316,
+      0.7727606155217077
+    ],
+    "min": [
+      -0.9239185074460179,
+      -1.3322193410256615,
+      -0.3997177639585258
+    ]
+  },
+  "target_bbox": {
+    "max": [
+      0.3559805130656398,
+      -0.1440194718289303,
+      0.9358788459176023
+    ],
+    "min": [
+      0.2010661906964822,
+      -0.29893379419808785,
+      0.8093182448089536
+    ]
+  },
+  "trace_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/particle_readback_trace.jsonl",
+  "video_summary": {
+    "closeup_native_rgb_frame_count": 0,
+    "frame_sources": {
+      "presentation_isosurface_frames/frame_0004.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0008.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0012.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0016.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0020.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0024.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0028.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0032.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0036.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0040.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0044.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0048.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0052.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0056.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0060.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0064.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0068.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0072.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0076.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0080.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0084.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0088.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0092.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0096.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0100.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0104.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0108.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0112.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0116.png": "presentation_isosurface_rgb",
+      "presentation_isosurface_frames/frame_0120.png": "presentation_isosurface_rgb"
+    },
+    "native_camera_rgb_frame_count": 0,
+    "native_scene_video_slots": [
+      "presentation_isosurface",
+      "camera1_native_material",
+      "camera2_native_material",
+      "beaker2_closeup_native_material",
+      "beaker2_closeup_review_markers"
+    ],
+    "presentation_isosurface_rgb_frame_count": 30,
+    "review_marker_rgb_frame_count": 0
+  },
+  "videos": {
+    "beaker2_closeup_native_material": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "beaker2_closeup_review_markers": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "camera1_native_material": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "camera2_native_material": {
+      "frame_count": 0,
+      "path": null,
+      "written": false
+    },
+    "presentation_isosurface": {
+      "frame_count": 30,
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/.worktrees/liquid-surface-reconstruction-videos/docs/labutopia_lab_poc/evidence_manifests/fluid_spike_liquid_surface_reconstruction_native_smoke_20260708_001/RAW_AS_IS_runtime_full50k_v1/presentation_isosurface.mp4",
+      "written": true
+    }
+  },
+  "visual_material_parity_claim_allowed": false
+}
