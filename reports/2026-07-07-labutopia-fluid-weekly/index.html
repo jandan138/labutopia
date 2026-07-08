@@ -436,6 +436,7 @@
       <a href="#video-evidence">视频证据</a>
       <a href="#what-ran">到底跑了什么</a>
       <a href="#journey">一路尝试</a>
+      <a href="#collider-cause">Collider 结论</a>
       <a href="#material">材质与粒子</a>
       <a href="#next">下一步</a>
       <a href="#evidence">证据索引</a>
@@ -622,6 +623,79 @@ nan_count=0</pre>
           <span>最后再验证 EBench consumer 能加载、step、readback，并定义可解释的 fluid metric。</span>
         </div>
       </div>
+    </section>
+
+    <section id="collider-cause" class="panel section">
+      <h2>为什么说漏液主要是 collider 问题</h2>
+      <p>这里的关键点是：<strong>看得见的烧杯</strong>和<code>PhysX/PBD</code>粒子真正会撞到的<code>physics collider</code>不是一回事。当前视频里能看到完整原生桌面和烧杯，粒子系统也能 step/readback；但 readback 显示大量粒子穿出容器，说明现在的杯壁/杯底碰撞表达还没有形成一个对液体粒子可靠的“物理杯子”。</p>
+      <p>所以这不是“同事 USD 里没有液体”，也不是“IsaacSim41 完全不能跑液体”。更准确的结论是：<code>PhysX/PBD</code>运行链路可用，但当前这批<code>collider representation</code>还不是<code>fluid-safe container</code>。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>尝试方案</th>
+              <th>具体做法</th>
+              <th>结果</th>
+              <th>产品理解</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>C0</code> segmented box / wall proxy</td>
+              <td>用多个 box 拼出杯壁和杯底。</td>
+              <td><code>FAIL_CONTAINER_LEAK</code>，source retention 约 <code>69.5%</code>。</td>
+              <td>像用几块板围成杯子，缝隙和边界对粒子不够稳。</td>
+            </tr>
+            <tr>
+              <td><code>C1</code> thick-wall open cup proxy</td>
+              <td>做一个更厚的简化开口杯形 proxy。</td>
+              <td><code>FAIL_CONTAINER_LEAK</code>，source retention 约 <code>78.1%</code>。</td>
+              <td>加厚有帮助，但仍不是可靠容器。</td>
+            </tr>
+            <tr>
+              <td><code>C2</code> segmented convex wall pieces</td>
+              <td>用多块 convex collider 拼成杯壁，是 S2 里最接近成功的一类。</td>
+              <td><code>FAIL_CONTAINER_LEAK</code>，source retention 约 <code>82.8%</code>。</td>
+              <td>方向最有希望，但“接近成功”不能升级成 benchmark-ready。</td>
+            </tr>
+            <tr>
+              <td><code>C3</code> SDF tri-mesh open beaker</td>
+              <td>尝试用 SDF tri-mesh 表达杯子的复杂内部形状。</td>
+              <td>S2/S2F3 sweep 全部失败，典型结果是粒子掉到桌下。</td>
+              <td>复杂 mesh 看起来像杯子，但当前 SDF route 没能形成稳定内腔。</td>
+            </tr>
+            <tr>
+              <td><code>C4</code> native beaker mesh route</td>
+              <td>直接用 LabUtopia 原生 <code>beaker2/mesh</code> 做 <code>convexDecomposition</code> / <code>SDF</code> / native-derived collision。</td>
+              <td><code>FAIL_NATIVE_CONVEX_INTERIOR_NOT_USABLE</code>，原生 mesh 不能直接当 fluid-safe collider。</td>
+              <td>原生资产适合视觉展示，不等于天然适合真实液体碰撞。</td>
+            </tr>
+            <tr>
+              <td><code>C5</code> analytic/custom cylinder negative control</td>
+              <td>用理想化 cylinder / custom container 做对照。</td>
+              <td><code>FAIL_CONTAINER_LEAK</code>，不作为生产路线。</td>
+              <td>用于确认问题边界，不是最终解决方案。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="two">
+        <article class="card caution">
+          <h3>后续 sweep 说明了什么</h3>
+          <p><code>S2F1</code>继续调 C2 的 panel count、wall thickness、bottom overlap、contact offset；<code>S2F2</code>隔离测试 initial velocity、CCD、particle/collider offset；<code>S2F5</code>再做多 seed、多粒子数 promotion review。结论是：单次 256 粒子 near-pass 不稳定，1024 粒子会明显退化，所以不能放行 S3。</p>
+        </article>
+        <article class="card verdict">
+          <h3>50k 原生 USD 说明了什么</h3>
+          <p>同事给的 <code>50k</code> 粒子 USD 经过 <code>CompletedPBD</code> overlay 后确实能 step/readback，但终态 <code>below_table_count=49235</code>。这说明问题不是“没跑起来”，而是当前 native/proxy collider route 装不住原始粒子规模的液体。</p>
+        </article>
+      </div>
+
+      <article class="note pass">
+        <h3>下一步为什么是 fluid-safe wrapper</h3>
+        <p>接下来应该保留原生烧杯做视觉展示，同时给液体单独配一套更保守、更厚、更闭合、<code>GPU-compatible</code>的 invisible <code>fluid-safe wrapper collider</code>。只有静置 zero-leak 在多粒子数、多 seed 下通过后，倒液视频和 EBench metric 才有评测意义。</p>
+      </article>
     </section>
 
     <section id="material" class="two">
