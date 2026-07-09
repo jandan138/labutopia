@@ -1144,6 +1144,11 @@ def d4_promotion_spawn_layout(particle_count: int) -> dict[str, Any]:
     interior_inset = max(particle_contact_offset, spacing)
     if count >= 1024:
         interior_inset = max(interior_inset, particle_contact_offset * 1.5)
+    # 50k promo v3: inset=0.003 left spawn max_r=0.052 but step-0 readback already
+    # sat at r≈R (wall shell); one particle/seed then punched past outer or below
+    # table by step 30. Absolute inset ≥10mm keeps post-settle centers inside.
+    if count >= 50000:
+        interior_inset = max(interior_inset, 0.010)
     return {
         "particle_spacing": spacing,
         "grid_dims": (8, 8, grid_z),
@@ -1195,7 +1200,12 @@ def build_d4_wrapper_promotion_sweep(
                     panel_count=max(int(parent.panel_count), 72),
                     # Thicker walls under promotion pressure (D4A_018 smoke used 0.022).
                     wall_thickness=max(float(parent.wall_thickness), 0.026),
-                    bottom_overlap=max(parent.bottom_overlap, 0.012),
+                    # 50k single-particle below_table escapes punched the wall/floor
+                    # junction; deepen bottom overlap on that rung only.
+                    bottom_overlap=max(
+                        parent.bottom_overlap,
+                        0.016 if int(particle_count) >= 50000 else 0.012,
+                    ),
                     particle_contact_offset=float(layout["particle_contact_offset"]),
                     spawn_particle_contact_offset=parent.spawn_particle_contact_offset,
                     particle_system_contact_offset=parent.particle_system_contact_offset,

@@ -2257,10 +2257,16 @@ def test_build_d4_wrapper_promotion_matrix_is_12_trials_with_pinned_init():
     assert cfg_50k.particle_spacing <= 0.002
     assert cfg_50k.particle_width <= cfg_50k.particle_spacing
     assert cfg_50k.particle_contact_offset <= cfg_50k.particle_spacing * 1.1
+    # Promo v3 50k: absolute inset ≥10mm so settle push cannot park at inner face.
+    assert cfg_50k.interior_inset >= 0.010
+    assert cfg_50k.bottom_overlap >= 0.016
     from tools.labutopia_fluid.run_beaker_collider_smoke import build_source_particle_positions
+    import math as _math
 
+    pos_50k = build_source_particle_positions(cfg_50k)
+    assert len(pos_50k) == 50000
+    assert max(_math.hypot(p[0], p[1]) for p in pos_50k) <= cfg_50k.source_radius - 0.010 + 1e-9
     assert len(build_source_particle_positions(cfg_4k)) == 4096
-    assert len(build_source_particle_positions(cfg_50k)) == 50000
     cfg_1k = next(c for c in candidates if c.particle_count == 1024).to_config()
     # 1024 stays on the short stack (grid_z=4); taller stacks worsened wall punch-through.
     assert cfg_1k.grid_dims[2] == 4
