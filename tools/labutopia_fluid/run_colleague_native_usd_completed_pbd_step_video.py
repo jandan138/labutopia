@@ -67,6 +67,11 @@ CLOSEUP_CAMERA_PATH = "/World/Beaker2CloseupNativeMaterialCamera"
 LIQUID_PRESENTATION_CAMERA_PATH = "/World/LiquidPresentationMainCamera"
 LIQUID_PRESENTATION_MATERIAL_PATH = "/World/Looks/LiquidPresentationWater"
 LIQUID_PRESENTATION_LIGHT_PATH = "/World/LiquidPresentationKeyLight"
+LIQUID_PRESENTATION_DOME_LIGHT_PATH = "/World/LiquidPresentationDomeLight"
+LIQUID_PRESENTATION_LIGHTING_HASH = "liquid_presentation_dome_key_v2"
+LIQUID_PRESENTATION_RTX_HASH = "liquid_presentation_rtx_v1"
+PRESENTATION_MAX_REFRACTION_BOUNCES = 12
+PRESENTATION_REFRACTION_BOUNCES_SETTING = "/rtx/translucency/maxRefractionBounces"
 REVIEW_MARKER_ROOT = "/World/D3ReviewLeakMarkers"
 RUNTIME_PBD_SCOPE_PATH = "/World/CompletedPBD"
 RUNTIME_PARTICLE_SYSTEM_PATH = f"{RUNTIME_PBD_SCOPE_PATH}/ParticleSystem"
@@ -552,6 +557,35 @@ def build_presentation_postprocess_contract() -> dict[str, Any]:
     }
 
 
+def build_presentation_render_settings_contract(
+    *,
+    max_refraction_bounces: int | None = None,
+) -> dict[str, Any]:
+    """Spec §5.3 RTX presentation render settings (refraction bounces)."""
+    bounces = (
+        int(PRESENTATION_MAX_REFRACTION_BOUNCES)
+        if max_refraction_bounces is None
+        else int(max_refraction_bounces)
+    )
+    return {
+        "rtx_hash": LIQUID_PRESENTATION_RTX_HASH,
+        "max_refraction_bounces": bounces,
+        "setting_path": PRESENTATION_REFRACTION_BOUNCES_SETTING,
+        "claim_boundary": "presentation_render_settings_only",
+    }
+
+
+def apply_presentation_render_settings(settings: Any) -> dict[str, Any]:
+    """Apply RTX translucency refraction bounces and record the actual value."""
+    settings.set(PRESENTATION_REFRACTION_BOUNCES_SETTING, int(PRESENTATION_MAX_REFRACTION_BOUNCES))
+    actual = settings.get(PRESENTATION_REFRACTION_BOUNCES_SETTING)
+    try:
+        recorded = int(actual) if actual is not None else int(PRESENTATION_MAX_REFRACTION_BOUNCES)
+    except (TypeError, ValueError):
+        recorded = int(PRESENTATION_MAX_REFRACTION_BOUNCES)
+    return build_presentation_render_settings_contract(max_refraction_bounces=recorded)
+
+
 def build_presentation_visual_contract(
     *,
     variant_id: str | None,
@@ -561,6 +595,7 @@ def build_presentation_visual_contract(
     material_path: str,
     particle_count: int,
     postprocess_contract: dict[str, Any] | None = None,
+    render_settings: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     claim_boundary_text = (
         "This video is a presentation render of the same simulated particle trajectory used for "
@@ -575,6 +610,11 @@ def build_presentation_visual_contract(
         if postprocess_contract is not None
         else build_presentation_postprocess_contract()
     )
+    resolved_render_settings = (
+        dict(render_settings)
+        if render_settings is not None
+        else build_presentation_render_settings_contract()
+    )
     return {
         "variant_id": variant_id,
         "camera_path": camera_info.get("camera_path"),
@@ -582,6 +622,7 @@ def build_presentation_visual_contract(
         "lighting": dict(lighting_info),
         "isosurface": dict(isosurface_contract),
         "postprocess": resolved_postprocess,
+        "presentation_render_settings": resolved_render_settings,
         "liquid_material_path": material_path,
         "particle_count": int(particle_count),
         "debug_particle_display_enabled": False,
@@ -789,17 +830,31 @@ def _author_liquid_presentation_water_material(
 
 
 def _author_liquid_presentation_lighting(stage: Any) -> dict[str, Any]:
+    """Spec §5.3: DomeLight fill + DistantLight key; lighting_contract_hash v2."""
     from pxr import Gf, UsdLux
 
-    light = UsdLux.DistantLight.Define(stage, LIQUID_PRESENTATION_LIGHT_PATH)
-    light.CreateIntensityAttr(950.0)
-    light.AddRotateXYZOp().Set(Gf.Vec3f(55.0, 0.0, 35.0))
+    key_intensity = 950.0
+    key_rotate_xyz = [55.0, 0.0, 35.0]
+    dome_intensity = 400.0
+
+    key_light = UsdLux.DistantLight.Define(stage, LIQUID_PRESENTATION_LIGHT_PATH)
+    key_light.CreateIntensityAttr(key_intensity)
+    key_light.ClearXformOpOrder()
+    key_light.AddRotateXYZOp().Set(Gf.Vec3f(*key_rotate_xyz))
+
+    dome_light = UsdLux.DomeLight.Define(stage, LIQUID_PRESENTATION_DOME_LIGHT_PATH)
+    dome_light.CreateIntensityAttr(dome_intensity)
+
     return {
         "light_path": LIQUID_PRESENTATION_LIGHT_PATH,
-        "role": "leadership_presentation_key_light",
-        "intensity": 950.0,
-        "rotate_xyz": [55.0, 0.0, 35.0],
-        "lighting_contract_hash": "liquid_presentation_key_light_v1",
+        "key_light_path": LIQUID_PRESENTATION_LIGHT_PATH,
+        "dome_light_path": LIQUID_PRESENTATION_DOME_LIGHT_PATH,
+        "role": "leadership_presentation_dome_key",
+        "intensity": key_intensity,
+        "key_intensity": key_intensity,
+        "dome_intensity": dome_intensity,
+        "rotate_xyz": list(key_rotate_xyz),
+        "lighting_contract_hash": LIQUID_PRESENTATION_LIGHTING_HASH,
     }
 
 
@@ -1271,6 +1326,9 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     )
 
     settings = carb.settings.get_settings()
+    presentation_render_settings: dict[str, Any] = {}
+    if args.presentation_isosurface_video:
+        presentation_render_settings = apply_presentation_render_settings(settings)
     settings.set(pb.SETTING_UPDATE_TO_USD, True)
     settings.set(pb.SETTING_UPDATE_PARTICLES_TO_USD, True)
     settings.set(pb.SETTING_UPDATE_VELOCITIES_TO_USD, True)
@@ -1367,6 +1425,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             postprocess_contract=authored.get("postprocess_contract") or {},
             material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
             particle_count=len(selected_positions),
+            render_settings=presentation_render_settings
+            or build_presentation_render_settings_contract(),
         )
     evidence_scene_path = artifact_dir / "native_scene_completed_pbd_overlay.usda"
     stage.GetRootLayer().Export(str(evidence_scene_path))
@@ -1564,7 +1624,20 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "authored_runtime_paths": authored,
         "presentation_material": presentation_material_info,
         "presentation_lighting": presentation_lighting_info,
+        "presentation_render_settings": presentation_render_settings
+        or (
+            presentation_visual_contract.get("presentation_render_settings")
+            if presentation_visual_contract
+            else {}
+        ),
         "presentation_visual_contract": presentation_visual_contract,
+        "product_water_fx": (
+            presentation_visual_contract.get("product_water_fx")
+            if presentation_visual_contract
+            else build_product_water_fx_contract()
+        ),
+        "product_water_fx_authoring": product_water_fx_info,
+        "product_water_fx_cli_enabled": bool(getattr(args, "product_water_fx", False)),
         "presentation_video_enabled": bool(args.presentation_isosurface_video),
         "presentation_isosurface_enabled": bool(args.presentation_isosurface_video),
         "debug_particle_display_enabled": not bool(
@@ -1668,6 +1741,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help=(
             "Enable PhysX Isosurface visual reconstruction, fixed presentation camera, "
             "presentation water material, and MP4 capture."
+        ),
+    )
+    parser.add_argument(
+        "--product-water-fx",
+        action="store_true",
+        default=False,
+        help=(
+            "Reserved Lane C product water FX gate (splash/foam/flow/wetting). "
+            "Default off; orthogonal to --presentation-isosurface-video. "
+            "Authoring remains a no-op stub this round."
         ),
     )
     parser.add_argument("--disable-particle-debug-display", action="store_true")

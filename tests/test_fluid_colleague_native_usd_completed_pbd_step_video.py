@@ -7,9 +7,13 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     EVIDENCE_PARTICLE_SYSTEM_PATH,
     ISAACSIM41_CORE_MDL_ROOT,
     LIQUID_PRESENTATION_CAMERA_PATH,
+    LIQUID_PRESENTATION_DOME_LIGHT_PATH,
     LIQUID_PRESENTATION_LIGHT_PATH,
+    LIQUID_PRESENTATION_LIGHTING_HASH,
     LIQUID_PRESENTATION_MATERIAL_PATH,
+    LIQUID_PRESENTATION_RTX_HASH,
     NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
+    PRESENTATION_MAX_REFRACTION_BOUNCES,
     PRESENTATION_POSTPROCESS_HASH,
     PRESENTATION_WATER_MDL_ASSET,
     PRESENTATION_WATER_MDL_SUB_IDENTIFIER,
@@ -18,10 +22,12 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     _define_liquid_presentation_camera,
     _author_liquid_presentation_lighting,
     _author_liquid_presentation_water_material,
+    apply_presentation_render_settings,
     build_liquid_presentation_isosurface_contract,
     build_native_scene_claim_boundary,
     build_native_scene_video_summary,
     build_presentation_postprocess_contract,
+    build_presentation_render_settings_contract,
     build_presentation_visual_contract,
     build_presentation_water_mdl_material_info,
     build_presentation_water_preview_fallback_info,
@@ -352,7 +358,60 @@ def test_presentation_material_and_lighting_are_authored_with_fixed_paths():
     assert material_info["visual_material_parity_claim_allowed"] is False
     assert material_info["mdl_compile_status"] == "MDL_NOT_ATTEMPTED"
     assert lighting_info["light_path"] == LIQUID_PRESENTATION_LIGHT_PATH
-    assert lighting_info["role"] == "leadership_presentation_key_light"
+    assert lighting_info["role"] == "leadership_presentation_dome_key"
+    assert lighting_info["lighting_contract_hash"] == "liquid_presentation_dome_key_v2"
+
+
+def test_presentation_lighting_authors_dome_and_key_with_v2_contract_hash():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+
+    lighting_info = _author_liquid_presentation_lighting(stage)
+
+    key_prim = stage.GetPrimAtPath(LIQUID_PRESENTATION_LIGHT_PATH)
+    dome_prim = stage.GetPrimAtPath(LIQUID_PRESENTATION_DOME_LIGHT_PATH)
+    assert key_prim
+    assert key_prim.GetTypeName() == "DistantLight"
+    assert dome_prim
+    assert dome_prim.GetTypeName() == "DomeLight"
+    assert lighting_info["light_path"] == LIQUID_PRESENTATION_LIGHT_PATH
+    assert lighting_info["key_light_path"] == LIQUID_PRESENTATION_LIGHT_PATH
+    assert lighting_info["dome_light_path"] == LIQUID_PRESENTATION_DOME_LIGHT_PATH
+    assert lighting_info["role"] == "leadership_presentation_dome_key"
+    assert lighting_info["lighting_contract_hash"] == LIQUID_PRESENTATION_LIGHTING_HASH
+    assert lighting_info["lighting_contract_hash"] == "liquid_presentation_dome_key_v2"
+
+
+def test_build_presentation_render_settings_contract_records_refraction_bounces():
+    contract = build_presentation_render_settings_contract()
+
+    assert contract["rtx_hash"] == LIQUID_PRESENTATION_RTX_HASH
+    assert contract["rtx_hash"] == "liquid_presentation_rtx_v1"
+    assert contract["max_refraction_bounces"] == PRESENTATION_MAX_REFRACTION_BOUNCES
+    assert contract["max_refraction_bounces"] >= 12
+    assert contract["setting_path"] == "/rtx/translucency/maxRefractionBounces"
+    assert contract["claim_boundary"] == "presentation_render_settings_only"
+
+
+def test_apply_presentation_render_settings_records_actual_rtx_value():
+    recorded: dict[str, object] = {}
+
+    class _FakeSettings:
+        def set(self, path: str, value: object) -> None:
+            recorded[path] = value
+
+        def get(self, path: str) -> object:
+            return recorded.get(path)
+
+    contract = apply_presentation_render_settings(_FakeSettings())
+
+    assert recorded["/rtx/translucency/maxRefractionBounces"] == 12
+    assert contract["max_refraction_bounces"] == 12
+    assert contract["max_refraction_bounces"] >= 12
+    assert contract["rtx_hash"] == "liquid_presentation_rtx_v1"
+    assert contract["setting_path"] == "/rtx/translucency/maxRefractionBounces"
 
 
 def test_define_presentation_camera_reuses_leadership_closeup_framing():
@@ -379,6 +438,7 @@ def test_define_presentation_camera_reuses_leadership_closeup_framing():
 
     assert info["camera_path"] == LIQUID_PRESENTATION_CAMERA_PATH
     assert info["role"] == "leadership_presentation_main"
+    assert info["camera_contract_hash"] == "liquid_presentation_main_camera_v1"
     assert math.isclose(info["target"][0], 0.3016)
     assert math.isclose(info["target"][1], 0.0032)
     assert info["eye"][1] > config.source_center[1]
