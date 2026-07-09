@@ -1,0 +1,202 @@
+{
+  "artifact_dir": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_v4_20260709_001/D4A_018_D4P_P4096_SEED000",
+  "classification": "PASS_SOURCE_HOLD",
+  "classification_contract_version": "s2_no_outside_source_v3_outer_face",
+  "classification_detail": {
+    "below_table_count": 0,
+    "classification": "PASS_SOURCE_HOLD",
+    "cpu_collision_fallback_detected": false,
+    "fatal_error": null,
+    "gpu_collider_unsupported": false,
+    "nan_count": 0,
+    "outside_source_count": 0,
+    "particle_count_final_fraction": 1.0,
+    "pass_criteria": {
+      "below_table_count_eq_zero": true,
+      "cpu_collision_fallback_detected_false": true,
+      "nan_count_eq_zero": true,
+      "outside_source_count_eq_zero": true,
+      "particle_count_final_fraction_ge_0_95": true,
+      "particle_motion_observed": true,
+      "source_retention_fraction_ge_0_95": true,
+      "spill_count_eq_zero": true,
+      "tail_leak_rate_lt_0_02": true,
+      "target_count_eq_zero": true
+    },
+    "source_retention_fraction": 1.0,
+    "spill_count": 0,
+    "tail_leak_rate_fraction_per_second": 0.0,
+    "target_count": 0,
+    "variant_id": "D4A_018_D4P_P4096_SEED000"
+  },
+  "config": {
+    "bottom_overlap": 0.012,
+    "bottom_thickness": 0.008,
+    "collider_contact_offset": 0.003,
+    "collider_rest_offset": 0.0,
+    "fluid_rest_offset": null,
+    "grid_dims": [
+      8,
+      8,
+      16
+    ],
+    "initial_radial_velocity": 0.08,
+    "interior_inset": 0.0045000000000000005,
+    "particle_contact_offset": 0.003,
+    "particle_count": 4096,
+    "particle_enable_ccd": true,
+    "particle_max_depenetration_velocity": null,
+    "particle_max_velocity": 5.0,
+    "particle_rest_offset": 0.0,
+    "particle_seed": 0,
+    "particle_spacing": 0.003,
+    "particle_system_contact_offset": null,
+    "particle_width": 0.0024000000000000002,
+    "perf_budget_seconds_per_variant": 240.0,
+    "physics_dt": 0.016666666666666666,
+    "render_height": 512,
+    "render_width": 512,
+    "sdf_margin": null,
+    "sdf_narrow_band_thickness": null,
+    "sdf_resolution": null,
+    "sdf_subgrid_resolution": null,
+    "solid_rest_offset": null,
+    "source_center": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "source_height": 0.13,
+    "source_radius": 0.055,
+    "spawn_particle_contact_offset": null,
+    "steps": 240,
+    "table_z": 0.0,
+    "tail_window_steps": 60,
+    "target_center": [
+      0.22,
+      0.0,
+      0.0
+    ],
+    "target_height": 0.13,
+    "target_radius": 0.055,
+    "trace_interval": 30,
+    "wall_height": 0.12,
+    "wall_thickness": 0.026
+  },
+  "diagnostic_projection_version": "v2_dynamic_z_shows_below_table_leaks",
+  "elapsed_seconds": 7.643130596727133,
+  "evidence_files": {
+    "initial_frame": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_v4_20260709_001/D4A_018_D4P_P4096_SEED000/initial_frame.png",
+    "mid_frame": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_v4_20260709_001/D4A_018_D4P_P4096_SEED000/mid_frame.png",
+    "particle_readback_trace": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_v4_20260709_001/D4A_018_D4P_P4096_SEED000/particle_readback_trace.jsonl",
+    "physics_scene_settings": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_v4_20260709_001/D4A_018_D4P_P4096_SEED000/physics_scene_settings.json",
+    "side_collision_overlay": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_v4_20260709_001/D4A_018_D4P_P4096_SEED000/side_collision_overlay.png",
+    "terminal_frame": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_v4_20260709_001/D4A_018_D4P_P4096_SEED000/terminal_frame.png",
+    "top_collision_overlay": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_v4_20260709_001/D4A_018_D4P_P4096_SEED000/top_collision_overlay.png"
+  },
+  "final_aabb": {
+    "max": [
+      0.056312479078769684,
+      0.05638007074594498,
+      0.024818919599056244
+    ],
+    "min": [
+      -0.05631602928042412,
+      -0.056347962468862534,
+      0.01236103754490614
+    ]
+  },
+  "final_centroid": [
+    -0.00016205264930624352,
+    0.0005373574109976964,
+    0.015792971896189556
+  ],
+  "final_count": 4096,
+  "final_particle_positions_hash": "85a65d9c098ef9111635326ff5126e6eab2980e9a24fdf92c56df47cb9e9008d",
+  "final_region_counts": {
+    "below_table_count": 0,
+    "finite_count": 4096,
+    "source_count": 4096,
+    "spill_count": 0,
+    "target_count": 0,
+    "total_count": 4096
+  },
+  "frame_sources": {
+    "initial_frame.png": "diagnostic_side_projection_v2_dynamic_z",
+    "mid_frame.png": "diagnostic_side_projection_v2_dynamic_z",
+    "side_collision_overlay.png": "diagnostic_side_projection",
+    "terminal_frame.png": "diagnostic_side_projection_v2_dynamic_z",
+    "top_collision_overlay.png": "diagnostic_top_projection"
+  },
+  "generated_at_utc": "2026-07-09T07:55:56.657924+00:00",
+  "initial_aabb": {
+    "max": [
+      0.055880989879369736,
+      0.05571521818637848,
+      0.0463227778673172
+    ],
+    "min": [
+      -0.05534732714295387,
+      -0.0551966167986393,
+      0.012398929335176945
+    ]
+  },
+  "initial_centroid": [
+    0.0005663263673723051,
+    0.00031617543741013776,
+    0.02545559235386463
+  ],
+  "initial_count": 4096,
+  "initial_particle_positions_hash": "0a2f9dcf230ca4b66386657d09162e6a9e7412d7215560d6056ae6d24a5bec35",
+  "initial_region_counts": {
+    "below_table_count": 0,
+    "finite_count": 4096,
+    "source_count": 4096,
+    "spill_count": 0,
+    "target_count": 0,
+    "total_count": 4096
+  },
+  "manifest_type": "true_physx_pbd_fluid_spike_s2_variant_summary",
+  "max_displacement": 0.11088002138270911,
+  "particle_motion_observed": true,
+  "readback_available": true,
+  "runtime_step_executed": true,
+  "runtime_warning_evidence_mode": "variant-level flags are initialized during simulation; artifact-level stdout/stderr warning scan is authoritative for release",
+  "scene_path": "assets/chemistry_lab/lab_001_fluid_spike/colliders_d4pv4/d4a_018_d4p_p4096_seed000_fluid_safe_wrapper.usda",
+  "schema_version": 1,
+  "spawn_position_pinned": false,
+  "stage": "S2_BEAKER_COLLIDER_SMOKE",
+  "tail_leak_rate_fraction_per_second": 0.0,
+  "trace_record_count": 9,
+  "variant": {
+    "collider_count": 145,
+    "collision_approximation": "convex_panel_boxes",
+    "description": "D4 invisible beaker2-local fluid-safe box-panel wrapper; native mesh collision disabled.",
+    "interior_inset": 0.0045000000000000005,
+    "name": "fluid_safe_wrapper",
+    "native_collision_route": null,
+    "native_material_binding_scope_closed": null,
+    "native_material_binding_strategy": null,
+    "native_mesh_collision_enabled": false,
+    "native_mesh_source_path": null,
+    "native_pose_alignment": null,
+    "native_reference_scope": null,
+    "native_source_path": null,
+    "negative_control": false,
+    "panel_arc_overlap_factor": 1.35,
+    "panel_count": 72,
+    "panel_phase_offset_rad": 0.04363323129985824,
+    "panel_ring_count": 2,
+    "proxy_collision_enabled": null,
+    "sdf_margin": null,
+    "sdf_narrow_band_thickness": null,
+    "sdf_resolution": null,
+    "sdf_subgrid_resolution": null,
+    "setup": "fluid_safe_wrapper",
+    "source_kind": "fluid_safe_wrapper",
+    "variant_id": "D4A_018_D4P_P4096_SEED000",
+    "wrapper_collider_mode": "segmented_panels",
+    "wrapper_frame": "local_to_beaker2",
+    "wrapper_parent_path": "/World/beaker2"
+  }
+}

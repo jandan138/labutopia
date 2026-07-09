@@ -242,26 +242,21 @@ Prefer **subagent-driven-development**: P0 + Tasks 5–8 can parallelize with Ta
 ## Progress (2026-07-09)
 
 Code/unit tasks complete: 0,1,2,3,5,6,7,8,9 (+ motion_contract fix).
-**121 passed** on touched fluid unit tests.
+**79 passed** on beaker collider unit tests (smoke + followup).
 
-### Isaac D4 smoke (Task 4 in progress)
+### Physics G1 — GO (Task 4 complete)
 
-| Run | Candidates | Best retention | Best class | Notes |
-|-----|------------|----------------|------------|-------|
-| `_001` | 1 | 0.943 | FAIL_CONTAINER_LEAK | D4A_001 thin wall |
-| `_002` | 6 | 0.975 | FAIL_CONTAINER_LEAK | D4A_003 |
-| `_003` | 15 | **0.977** | FAIL_CONTAINER_LEAK | D4A_013 / D4A_007; **below_table=0**, spill=12 |
-| `_004` | 27 | 0.986 | FAIL_CONTAINER_LEAK (pre-slack) | D4A_018 best; all init_spill=8 |
+Live promotion matrix `fluid_spike_d4_wrapper_promotion_v4_20260709.json`:
+**12/12 `PASS_SOURCE_HOLD`**, `g1_physics_a=true`, contract `s2_no_outside_source_v3_outer_face`.
 
-**Root cause (2026-07-09):** false spill from classifying at geometric inner face. PhysX parks particles at `r ≈ source_radius + ≤1.8e-4`. Fix: `SOURCE_REGION_RADIAL_SLACK=5e-4` + wire `interior_inset` into spawn/`to_config`. Offline reclass of `_004` → **D4A_018 / D4A_007 PASS** (spill=0, below=0, ret=1.0); real panel-gap leaks (e.g. D4A_016) still fail.
+Stack that cleared G1:
+- Dual-ring segmented panels (72×2) + phase offset + arc≥1.35 + wall≥0.026
+- Outer-face classifier (`R+T+slack`)
+- CCD on; 50k absolute `interior_inset≥0.010`, `bottom_overlap≥0.016`
+- Spawn width/offsets scaled with spacing (no width>spacing)
 
-**Seed confirm:** D4A_018 `seed=None` → `PASS_SOURCE_HOLD`; seeds 0/1/2 leaked (panel gaps + below_table). Second root cause: panel width used inner-face radius while panels sit at centerline → arc=1.2 cancelled to ~1.00 coverage. Fix: `fluid_safe_wrapper_panel_width` sizes at `radius+thickness/2`.
-
-**Task 4 code:** `D4_WRAPPER_PROMOTION` phase + 12-trial matrix + adaptive spawn for 4k/50k (`7c32049`).
-
-**Promotion `_001` (pre-spawn-scale):** 512×3 PASS; 1024/4096/50k FAIL (50k width>spacing floor punch). Fix `9e47c48` scales width/offsets; promotion bottom_overlap≥0.012, arc≥1.25.
+Honest claim: **Physics A static zero-leak on D4A_018 promotion matrix**. Do **not** claim colloquial “真实水” until Visual A (G2) also passes.
 
 Still GPU-gated:
-- Task 4: promotion v2 after spawn-scale → need 12/12 for G1
-- Task 10: Official Visual A evidence on Physics-A-passing trajectory
-- Task 11: Slow pour B after G1
+- Task 10: Official Visual A on Physics-A traj (in progress)
+- Task 11: Slow pour B after Visual A

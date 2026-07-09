@@ -193,8 +193,17 @@ unified_realistic_water_visualization_all_liquid_particles_visible=true
 unified_realistic_water_visualization_state_specific_materials=false
 # Do not claim MDL_WATER PASS; presentation water remains FALLBACK / MDL pending.
 s3_kinematic_pour_released=false
-next_fluid_work=["S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP"]
-s2_s3_collider_matrix_required=true
+# Physics A G1 (2026-07-09): D4A_018 dual-ring + outer-face classifier + 50k inset harden.
+d4_wrapper_promotion_g1_physics_a=true
+d4_wrapper_promotion_g1_manifest=fluid_spike_d4_wrapper_promotion_v4_20260709.json
+d4_wrapper_promotion_g1_passed_trial_count=12
+d4_wrapper_promotion_g1_contract=s2_no_outside_source_v3_outer_face
+d4_wrapper_promotion_g1_parent_candidate_id=D4A_018
+d4_wrapper_promotion_g1_wrapper_mode=segmented_panels_dual_ring
+mdl_water_visual_pass_official=false
+mdl_water_visual_a_pending_physics_a_provenance=false
+next_fluid_work=["VISUAL_A_OFFICIAL_ON_PHYSICS_A_TRAJ","S3_KINEMATIC_POUR_AFTER_VISUAL_A"]
+s2_s3_collider_matrix_required=false
 ```
 
 当前禁止 claim：
