@@ -177,9 +177,9 @@
 - Modify: runner summary / manifest writers
 - Test: provenance required when `visual_acceptance_scenario=A_static_clear_water`
 
-- [ ] **Step 1:** Failing test: official Visual A summary requires `physics_trajectory_id`, seed, particle_count, wrapper_variant_id, physics `PASS_SOURCE_HOLD`.
-- [ ] **Step 2:** Implement fields; block official A claim without provenance.
-- [ ] **Step 3:** Commit `feat: require physics provenance for Visual A evidence`
+- [x] **Step 1:** Failing test: official Visual A summary requires `physics_trajectory_id`, seed, particle_count, wrapper_variant_id, physics `PASS_SOURCE_HOLD`.
+- [x] **Step 2:** Implement fields; block official A claim without provenance.
+- [x] **Step 3:** Commit `feat: require physics provenance for Visual A evidence`
 
 ---
 

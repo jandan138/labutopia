@@ -22,6 +22,7 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     RUNTIME_PARTICLE_SYSTEM_PATH,
     VLA_FALLBACK_MATERIAL_HASH,
     VLA_MDL_MATERIAL_HASH,
+    VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER,
     NativeMaterialExpectation,
     _deactivate_original_fluid_prims,
     _define_liquid_presentation_camera,
@@ -39,8 +40,10 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     build_presentation_water_preview_fallback_info,
     build_product_water_fx_contract,
     build_isaacsim41_core_mdl_closure_plan,
+    build_visual_acceptance_provenance,
     build_vla_water_overlay,
     inspect_native_material_bindings,
+    official_visual_a_claim_allowed,
     scan_mdl_compile_errors,
     scan_presentation_water_mdl_compile_errors,
 )
@@ -491,6 +494,8 @@ def test_native_scene_claim_boundary_blocks_presentation_overclaims():
     assert "presentation_video_equals_physics_success" in boundary["blocked"]
     assert "isosurface_reconstruction_equals_zero_leak" in boundary["blocked"]
     assert "presentation_water_material_equals_labutopia51_visual_parity" in boundary["blocked"]
+    assert "official_visual_a_rubric_pass_without_physics_a_provenance" in boundary["blocked"]
+    assert "visual_a_static_clear_water_accepted_without_pass_source_hold" in boundary["blocked"]
 
 def test_build_product_water_fx_contract_is_always_disabled_stub():
     contract = build_product_water_fx_contract()
@@ -616,3 +621,168 @@ def test_native_step_video_parser_product_water_fx_defaults_off():
     )
     assert orthogonal.presentation_isosurface_video is True
     assert orthogonal.product_water_fx is True
+
+
+def test_missing_visual_a_provenance_blocks_official_claim():
+    provenance = build_visual_acceptance_provenance(
+        visual_acceptance_scenario=VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER,
+    )
+
+    assert provenance["visual_acceptance_scenario"] == "A_static_clear_water"
+    assert provenance["physics_trajectory_id"] is None
+    assert provenance["physics_manifest_path"] is None
+    assert provenance["seed"] is None
+    assert provenance["particle_count"] is None
+    assert provenance["wrapper_variant_id"] is None
+    assert provenance["physics_classification"] is None
+    assert provenance["required_for_official_visual_a"] is True
+    assert provenance["missing_fields"]
+    assert "physics_trajectory_id_or_manifest_path" in provenance["missing_fields"]
+    assert "seed" in provenance["missing_fields"]
+    assert "particle_count" in provenance["missing_fields"]
+    assert "wrapper_variant_id" in provenance["missing_fields"]
+    assert "physics_classification_pass_source_hold" in provenance["missing_fields"]
+    assert provenance["official_visual_a_claim_allowed"] is False
+    assert official_visual_a_claim_allowed(provenance) is False
+
+
+def test_complete_visual_a_provenance_with_pass_source_hold_allows_official_claim():
+    provenance = build_visual_acceptance_provenance(
+        visual_acceptance_scenario=VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER,
+        physics_trajectory_id="fluid_spike_d4_wrapper_g1_seed0_50k",
+        seed=0,
+        particle_count=50000,
+        wrapper_variant_id="D4_WRAPPER_PANEL5_T008",
+        physics_classification="PASS_SOURCE_HOLD",
+    )
+
+    assert provenance["visual_acceptance_scenario"] == "A_static_clear_water"
+    assert provenance["physics_trajectory_id"] == "fluid_spike_d4_wrapper_g1_seed0_50k"
+    assert provenance["seed"] == 0
+    assert provenance["particle_count"] == 50000
+    assert provenance["wrapper_variant_id"] == "D4_WRAPPER_PANEL5_T008"
+    assert provenance["physics_classification"] == "PASS_SOURCE_HOLD"
+    assert provenance["missing_fields"] == []
+    assert provenance["official_visual_a_claim_allowed"] is True
+    assert official_visual_a_claim_allowed(provenance) is True
+
+
+def test_visual_a_provenance_accepts_manifest_path_instead_of_trajectory_id():
+    provenance = build_visual_acceptance_provenance(
+        visual_acceptance_scenario=VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER,
+        physics_manifest_path=(
+            "docs/labutopia_lab_poc/evidence_manifests/"
+            "fluid_spike_s2_proxy_wrapper_design_20260709.json"
+        ),
+        seed=1,
+        particle_count=1024,
+        wrapper_variant_id="D4_WRAPPER_PANEL5_T008",
+        physics_classification="PASS_SOURCE_HOLD",
+    )
+
+    assert provenance["physics_trajectory_id"] is None
+    assert provenance["physics_manifest_path"].endswith(
+        "fluid_spike_s2_proxy_wrapper_design_20260709.json"
+    )
+    assert "physics_trajectory_id_or_manifest_path" not in provenance["missing_fields"]
+    assert provenance["official_visual_a_claim_allowed"] is True
+    assert official_visual_a_claim_allowed(provenance) is True
+
+
+def test_non_pass_physics_classification_blocks_official_visual_a():
+    provenance = build_visual_acceptance_provenance(
+        visual_acceptance_scenario=VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER,
+        physics_trajectory_id="traj_fail",
+        seed=0,
+        particle_count=512,
+        wrapper_variant_id="D4_WRAPPER_PANEL5_T008",
+        physics_classification="FAIL_OUTSIDE_SOURCE",
+    )
+
+    assert provenance["physics_classification"] == "FAIL_OUTSIDE_SOURCE"
+    assert "physics_classification_pass_source_hold" in provenance["missing_fields"]
+    assert provenance["official_visual_a_claim_allowed"] is False
+    assert official_visual_a_claim_allowed(provenance) is False
+
+
+def test_build_presentation_visual_contract_embeds_visual_acceptance_provenance():
+    postprocess_contract = build_presentation_postprocess_contract()
+    provenance = build_visual_acceptance_provenance(
+        visual_acceptance_scenario=VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER,
+        physics_trajectory_id="traj_ok",
+        seed=2,
+        particle_count=4096,
+        wrapper_variant_id="D4_WRAPPER_PANEL5_T008",
+        physics_classification="PASS_SOURCE_HOLD",
+    )
+    contract = build_presentation_visual_contract(
+        variant_id="NATIVE_SDF_128",
+        camera_info={
+            "camera_path": LIQUID_PRESENTATION_CAMERA_PATH,
+            "camera_contract_hash": "liquid_presentation_main_camera_v1",
+            "eye": [0.5, -0.2, 1.0],
+            "target": [0.3, 0.09, 0.86],
+            "up": [0.0, 0.0, 1.0],
+        },
+        lighting_info={"lighting_contract_hash": LIQUID_PRESENTATION_LIGHTING_HASH},
+        isosurface_contract={"enabled": True},
+        postprocess_contract=postprocess_contract,
+        material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
+        particle_count=4096,
+        visual_acceptance=provenance,
+    )
+
+    assert contract["visual_acceptance"]["visual_acceptance_scenario"] == "A_static_clear_water"
+    assert contract["visual_acceptance"]["official_visual_a_claim_allowed"] is True
+    assert contract["visual_acceptance"]["physics_trajectory_id"] == "traj_ok"
+    assert contract["visual_acceptance"]["wrapper_variant_id"] == "D4_WRAPPER_PANEL5_T008"
+    assert contract["official_visual_a_claim_allowed"] is True
+
+
+def test_build_presentation_visual_contract_blocks_official_a_without_provenance():
+    contract = build_presentation_visual_contract(
+        variant_id="NATIVE_SDF_128",
+        camera_info={
+            "camera_path": LIQUID_PRESENTATION_CAMERA_PATH,
+            "eye": [0.5, -0.2, 1.0],
+            "target": [0.3, 0.09, 0.86],
+            "up": [0.0, 0.0, 1.0],
+        },
+        lighting_info={"lighting_contract_hash": "abc123"},
+        isosurface_contract={"enabled": True},
+        material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
+        particle_count=50000,
+        visual_acceptance_scenario=VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER,
+    )
+
+    assert contract["visual_acceptance"]["official_visual_a_claim_allowed"] is False
+    assert contract["official_visual_a_claim_allowed"] is False
+    assert official_visual_a_claim_allowed(contract["visual_acceptance"]) is False
+
+
+def test_native_step_video_parser_accepts_visual_a_provenance_args():
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import build_arg_parser
+
+    args = build_arg_parser().parse_args(
+        [
+            "--visual-acceptance-scenario",
+            "A_static_clear_water",
+            "--physics-trajectory-id",
+            "traj_ok",
+            "--physics-seed",
+            "0",
+            "--physics-particle-count",
+            "50000",
+            "--wrapper-variant-id",
+            "D4_WRAPPER_PANEL5_T008",
+            "--physics-classification",
+            "PASS_SOURCE_HOLD",
+        ]
+    )
+    assert args.visual_acceptance_scenario == "A_static_clear_water"
+    assert args.physics_trajectory_id == "traj_ok"
+    assert args.physics_seed == 0
+    assert args.physics_particle_count == 50000
+    assert args.wrapper_variant_id == "D4_WRAPPER_PANEL5_T008"
+    assert args.physics_classification == "PASS_SOURCE_HOLD"
+    assert args.physics_manifest_path is None

@@ -21,10 +21,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from tools.labutopia_fluid.run_beaker_collider_smoke import ColliderConfig
 from tools.labutopia_fluid.run_colleague_liquid_usd_leak_smoke import (
     BBox,
     EVIDENCE_PARTICLE_SET_PATH,
     EVIDENCE_PARTICLE_SYSTEM_PATH,
+    FLUID_SAFE_WRAPPER_COLLIDER_MODE,
     _aabb,
     _bbox_from_stage,
     _centroid,
@@ -38,6 +40,7 @@ from tools.labutopia_fluid.run_colleague_liquid_usd_leak_smoke import (
     _try_write_camera_png_with_diagnostics,
     _update_review_markers,
     _write_mp4_from_frames,
+    apply_fluid_safe_wrapper_overlay,
     build_particle_scope_summary,
     build_tabletop_region_config,
     classify_colleague_trace,
@@ -108,6 +111,8 @@ MDL_COMPILE_STATUS_PASS = "PASS"
 MDL_COMPILE_STATUS_FAIL = "MDL_COMPILE_FAIL"
 MDL_COMPILE_STATUS_FALLBACK_USED = "FALLBACK_USED"
 MDL_COMPILE_STATUS_NOT_ATTEMPTED = "MDL_NOT_ATTEMPTED"
+VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER = "A_static_clear_water"
+PHYSICS_CLASSIFICATION_PASS_SOURCE_HOLD = "PASS_SOURCE_HOLD"
 
 
 @dataclass(frozen=True)
@@ -720,6 +725,78 @@ def build_vla_water_visual_contract(
     }
 
 
+def build_visual_acceptance_provenance(
+    *,
+    visual_acceptance_scenario: str | None = None,
+    physics_trajectory_id: str | None = None,
+    physics_manifest_path: str | None = None,
+    seed: int | None = None,
+    particle_count: int | None = None,
+    wrapper_variant_id: str | None = None,
+    physics_classification: str | None = None,
+) -> dict[str, Any]:
+    """Build Visual A provenance fields and whether an official A claim is allowed.
+
+    Spec §5.4: official Visual A (A_static_clear_water) requires physics_trajectory_id
+    or physics_manifest_path, plus seed, particle_count, wrapper_variant_id, and
+    physics_classification == PASS_SOURCE_HOLD.
+    """
+    scenario = visual_acceptance_scenario
+    required_for_official = scenario == VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER
+    missing: list[str] = []
+    if required_for_official:
+        has_traj = bool(physics_trajectory_id)
+        has_manifest = bool(physics_manifest_path)
+        if not (has_traj or has_manifest):
+            missing.append("physics_trajectory_id_or_manifest_path")
+        if seed is None:
+            missing.append("seed")
+        if particle_count is None:
+            missing.append("particle_count")
+        if not wrapper_variant_id:
+            missing.append("wrapper_variant_id")
+        if physics_classification != PHYSICS_CLASSIFICATION_PASS_SOURCE_HOLD:
+            missing.append("physics_classification_pass_source_hold")
+    allowed = required_for_official and not missing
+    return {
+        "schema_version": 1,
+        "visual_acceptance_scenario": scenario,
+        "physics_trajectory_id": physics_trajectory_id,
+        "physics_manifest_path": physics_manifest_path,
+        "seed": seed,
+        "particle_count": int(particle_count) if particle_count is not None else None,
+        "wrapper_variant_id": wrapper_variant_id,
+        "physics_classification": physics_classification,
+        "required_for_official_visual_a": required_for_official,
+        "missing_fields": missing,
+        "official_visual_a_claim_allowed": allowed,
+        "blocked_claims_when_disallowed": [
+            "official_visual_a_rubric_pass",
+            "visual_a_static_clear_water_accepted",
+            "mdl_clearwater_visual_a_complete_without_physics_a_provenance",
+        ],
+    }
+
+
+def official_visual_a_claim_allowed(visual_acceptance: dict[str, Any] | None) -> bool:
+    """Return whether an official Visual A claim is allowed from provenance fields."""
+    if not visual_acceptance:
+        return False
+    if visual_acceptance.get("visual_acceptance_scenario") != VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER:
+        return False
+    has_traj = bool(visual_acceptance.get("physics_trajectory_id"))
+    has_manifest = bool(visual_acceptance.get("physics_manifest_path"))
+    if not (has_traj or has_manifest):
+        return False
+    if visual_acceptance.get("seed") is None:
+        return False
+    if visual_acceptance.get("particle_count") is None:
+        return False
+    if not visual_acceptance.get("wrapper_variant_id"):
+        return False
+    return visual_acceptance.get("physics_classification") == PHYSICS_CLASSIFICATION_PASS_SOURCE_HOLD
+
+
 def build_presentation_visual_contract(
     *,
     variant_id: str | None,
@@ -732,6 +809,14 @@ def build_presentation_visual_contract(
     render_settings: dict[str, Any] | None = None,
     material_info: dict[str, Any] | None = None,
     product_water_fx: dict[str, Any] | None = None,
+    visual_acceptance: dict[str, Any] | None = None,
+    visual_acceptance_scenario: str | None = None,
+    physics_trajectory_id: str | None = None,
+    physics_manifest_path: str | None = None,
+    physics_seed: int | None = None,
+    physics_particle_count: int | None = None,
+    wrapper_variant_id: str | None = None,
+    physics_classification: str | None = None,
 ) -> dict[str, Any]:
     claim_boundary_text = (
         "This video is a presentation render of the same simulated particle trajectory used for "
@@ -767,6 +852,32 @@ def build_presentation_visual_contract(
         postprocess_contract=resolved_postprocess,
         render_settings=resolved_render_settings,
     )
+    if visual_acceptance is not None:
+        # Normalize through the builder so allow/missing fields stay consistent.
+        resolved_visual_acceptance = build_visual_acceptance_provenance(
+            visual_acceptance_scenario=visual_acceptance.get("visual_acceptance_scenario"),
+            physics_trajectory_id=visual_acceptance.get("physics_trajectory_id"),
+            physics_manifest_path=visual_acceptance.get("physics_manifest_path"),
+            seed=visual_acceptance.get("seed"),
+            particle_count=visual_acceptance.get("particle_count"),
+            wrapper_variant_id=visual_acceptance.get("wrapper_variant_id"),
+            physics_classification=visual_acceptance.get("physics_classification"),
+        )
+    elif visual_acceptance_scenario is not None:
+        resolved_visual_acceptance = build_visual_acceptance_provenance(
+            visual_acceptance_scenario=visual_acceptance_scenario,
+            physics_trajectory_id=physics_trajectory_id,
+            physics_manifest_path=physics_manifest_path,
+            seed=physics_seed,
+            particle_count=physics_particle_count,
+            wrapper_variant_id=wrapper_variant_id,
+            physics_classification=physics_classification,
+        )
+    else:
+        resolved_visual_acceptance = {}
+    official_a_allowed = bool(
+        resolved_visual_acceptance.get("official_visual_a_claim_allowed")
+    ) if resolved_visual_acceptance else False
     return {
         "variant_id": variant_id,
         "camera_path": camera_info.get("camera_path"),
@@ -782,6 +893,8 @@ def build_presentation_visual_contract(
         "debug_particle_display_enabled": False,
         "presentation_video_does_not_replace_particle_readback": True,
         "visual_material_parity_claim_allowed": False,
+        "visual_acceptance": resolved_visual_acceptance,
+        "official_visual_a_claim_allowed": official_a_allowed,
         "claim_boundary": "presentation_lane_only_particle_readback_remains_gate",
         "claim_boundary_text": claim_boundary_text,
     }
@@ -1155,6 +1268,8 @@ def build_native_scene_claim_boundary() -> dict[str, list[str]]:
             "isaacsim41_core_mdl_local_mirror_equals_labutopia51_native_visual_parity",
             "ebench_score_or_policy_claim_allowed",
             "s3_kinematic_pour_released",
+            "official_visual_a_rubric_pass_without_physics_a_provenance",
+            "visual_a_static_clear_water_accepted_without_pass_source_hold",
         ],
     }
 
@@ -1529,6 +1644,33 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             "candidate": asdict(candidate),
             "authoring": apply_native_collider_approximation(stage, candidate),
         }
+    fluid_safe_wrapper_overlay_summary: dict[str, Any] = {"enabled": False}
+    if bool(getattr(args, "fluid_safe_wrapper_overlay", False)):
+        if native_collider_variant_id:
+            raise ValueError(
+                "fluid_safe_wrapper_overlay_conflicts_with_native_collider_approximation_variant"
+            )
+        wrapper_config = ColliderConfig(
+            source_center=config.source_center,
+            source_radius=config.source_radius,
+            wall_height=config.wall_height,
+            table_z=config.table_z,
+            wall_thickness=0.018,
+            bottom_overlap=0.003,
+            particle_contact_offset=offsets["particle_contact_offset"],
+            collider_contact_offset=getattr(config, "collider_contact_offset", 0.003),
+            collider_rest_offset=getattr(config, "collider_rest_offset", 0.0),
+        )
+        fluid_safe_wrapper_overlay_summary = {
+            "enabled": True,
+            "overlay_mode": FLUID_SAFE_WRAPPER_COLLIDER_MODE,
+            "authoring": apply_fluid_safe_wrapper_overlay(
+                stage,
+                wrapper_config,
+                parent_path="/World/beaker2",
+                visual_mesh_path="/World/beaker2/mesh",
+            ),
+        }
     original_fluid_deactivate_summary = _deactivate_original_fluid_prims(stage)
     for _ in range(args.warmup_updates):
         omni.kit.app.get_app().update()
@@ -1574,6 +1716,15 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         presentation_isosurface_video=bool(args.presentation_isosurface_video),
         presentation_visual_material_path=presentation_visual_material_path,
     )
+    visual_acceptance_provenance = build_visual_acceptance_provenance(
+        visual_acceptance_scenario=getattr(args, "visual_acceptance_scenario", None),
+        physics_trajectory_id=getattr(args, "physics_trajectory_id", None),
+        physics_manifest_path=getattr(args, "physics_manifest_path", None),
+        seed=getattr(args, "physics_seed", None),
+        particle_count=getattr(args, "physics_particle_count", None),
+        wrapper_variant_id=getattr(args, "wrapper_variant_id", None),
+        physics_classification=getattr(args, "physics_classification", None),
+    )
     if args.presentation_isosurface_video:
         presentation_visual_contract = build_presentation_visual_contract(
             variant_id=native_collider_variant_id or NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
@@ -1587,6 +1738,9 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             or build_presentation_render_settings_contract(),
             material_info=presentation_material_info,
             product_water_fx=build_product_water_fx_contract(),
+            visual_acceptance=visual_acceptance_provenance
+            if visual_acceptance_provenance.get("visual_acceptance_scenario")
+            else None,
         )
     evidence_scene_path = artifact_dir / "native_scene_completed_pbd_overlay.usda"
     stage.GetRootLayer().Export(str(evidence_scene_path))
@@ -1781,6 +1935,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "material_closure": material_closure_summary,
         "material_retarget": material_retarget_summary,
         "native_collider_approximation": native_collider_approximation_summary,
+        "fluid_safe_wrapper_overlay": fluid_safe_wrapper_overlay_summary,
         "authored_runtime_paths": authored,
         "presentation_material": presentation_material_info,
         "presentation_lighting": presentation_lighting_info,
@@ -1791,6 +1946,18 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             else {}
         ),
         "presentation_visual_contract": presentation_visual_contract,
+        "visual_acceptance": (
+            presentation_visual_contract.get("visual_acceptance")
+            if presentation_visual_contract and presentation_visual_contract.get("visual_acceptance")
+            else visual_acceptance_provenance
+            if visual_acceptance_provenance.get("visual_acceptance_scenario")
+            else {}
+        ),
+        "official_visual_a_claim_allowed": (
+            bool(presentation_visual_contract.get("official_visual_a_claim_allowed"))
+            if presentation_visual_contract
+            else official_visual_a_claim_allowed(visual_acceptance_provenance)
+        ),
         "product_water_fx": (
             presentation_visual_contract.get("product_water_fx")
             if presentation_visual_contract
@@ -1896,6 +2063,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--native-collider-approximation-variant", default=None)
     parser.add_argument(
+        "--fluid-safe-wrapper-overlay",
+        action="store_true",
+        help=(
+            "Overlay invisible /World/beaker2/FluidSafeWrapper on the full colleague native scene "
+            "and disable /World/beaker2/mesh collision. Mutually exclusive with "
+            "--native-collider-approximation-variant."
+        ),
+    )
+    parser.add_argument(
         "--presentation-isosurface-video",
         action="store_true",
         help=(
@@ -1914,6 +2090,50 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--disable-particle-debug-display", action="store_true")
+    parser.add_argument(
+        "--visual-acceptance-scenario",
+        default=None,
+        choices=(VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER,),
+        help=(
+            "Visual acceptance rubric scenario. Official A_static_clear_water requires "
+            "physics provenance (trajectory id or manifest path, seed, particle count, "
+            "wrapper variant, PASS_SOURCE_HOLD)."
+        ),
+    )
+    parser.add_argument(
+        "--physics-trajectory-id",
+        default=None,
+        help="Physics-A trajectory id linked for official Visual A provenance.",
+    )
+    parser.add_argument(
+        "--physics-manifest-path",
+        default=None,
+        help="Physics-A evidence manifest path (alternative to --physics-trajectory-id).",
+    )
+    parser.add_argument(
+        "--physics-seed",
+        type=int,
+        default=None,
+        help="Physics trajectory seed required for official Visual A provenance.",
+    )
+    parser.add_argument(
+        "--physics-particle-count",
+        type=int,
+        default=None,
+        help="Physics trajectory particle count required for official Visual A provenance.",
+    )
+    parser.add_argument(
+        "--wrapper-variant-id",
+        default=None,
+        help="Fluid-safe wrapper variant id required for official Visual A provenance.",
+    )
+    parser.add_argument(
+        "--physics-classification",
+        default=None,
+        help=(
+            "Physics hold classification. Official Visual A requires PASS_SOURCE_HOLD."
+        ),
+    )
     return parser
 
 
