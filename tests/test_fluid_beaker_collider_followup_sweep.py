@@ -2139,7 +2139,7 @@ def test_classify_d4_wrapper_trial_composes_hold_and_non_physical_gate():
         blocking_runtime_warning_detected=False,
     )
     assert pass_result["classification"] == "PASS_SOURCE_HOLD"
-    assert pass_result["contract"] == "s2_no_outside_source_v2+d4_followup"
+    assert pass_result["contract"] == "s2_no_outside_source_v3_outer_face+d4_followup"
     assert pass_result["non_physical_parameter_dependence"] is False
 
     crutch = classify_d4_wrapper_trial(

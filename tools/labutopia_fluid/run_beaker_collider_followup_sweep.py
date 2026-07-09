@@ -129,7 +129,7 @@ REQUIRED_VARIANT_EVIDENCE_FILES = {
 }
 DEFAULT_NATIVE_USD = "assets/chemistry_lab/lab_001/lab_001.usd"
 FOLLOWUP_CONTRACT_VERSION = "s2f_velocity_contact_offset_v2"
-D4_FOLLOWUP_CONTRACT = "s2_no_outside_source_v2+d4_followup"
+D4_FOLLOWUP_CONTRACT = "s2_no_outside_source_v3_outer_face+d4_followup"
 FOLLOWUP_CLASSIFICATIONS = {
     "PASS_SOURCE_HOLD",
     "FAIL_CONTAINER_LEAK",

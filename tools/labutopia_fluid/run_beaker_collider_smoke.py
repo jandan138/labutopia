@@ -36,7 +36,7 @@ from tools.labutopia_fluid.run_standalone_particle_smoke import (
 
 
 BEAKER_COLLIDER_VARIANT_IDS = ("C0", "C1", "C2", "C3", "C4", "C5")
-CLASSIFICATION_CONTRACT_VERSION = "s2_no_outside_source_v2"
+CLASSIFICATION_CONTRACT_VERSION = "s2_no_outside_source_v3_outer_face"
 # Absorb PhysX wall-contact parking past the geometric inner face without
 # hiding real panel-gap leaks (D4 evidence: false spill <= ~1.8e-4; real leaks ~1e-2).
 # PhysX wall contact can park centers slightly past the geometric inner face.
@@ -286,19 +286,23 @@ def target_region_radius(config: ColliderConfig) -> float:
 def region_definitions(config: ColliderConfig) -> dict[str, Any]:
     return {
         "source_region": (
-            "cylindrical region around source container interior; "
+            "cylindrical region around source container including wall shell; "
             f"center_xy={config.source_center[:2]} radius={source_region_radius(config)} "
-            f"(inner_face={config.source_radius}+slack={SOURCE_REGION_RADIAL_SLACK}) "
+            f"(outer_face={config.source_radius}+wall={config.wall_thickness}"
+            f"+slack={SOURCE_REGION_RADIAL_SLACK}) "
             f"z=[{config.table_z}, {config.table_z + config.source_height}]"
         ),
         "target_region": (
-            "cylindrical region around target container interior; "
+            "cylindrical region around target container including wall shell; "
             f"center_xy={config.target_center[:2]} radius={target_region_radius(config)} "
+            f"(outer_face={config.target_radius}+wall={config.wall_thickness}"
+            f"+slack={SOURCE_REGION_RADIAL_SLACK}) "
             f"z=[{config.table_z}, {config.table_z + config.target_height}]"
         ),
         "spill_region": "finite particles outside source and target regions with z >= table_z",
         "below_table_region": f"finite particles with z < {config.table_z}",
         "source_region_radial_slack": SOURCE_REGION_RADIAL_SLACK,
+        "classification_bound": "outer_wall_face_plus_slack",
     }
 
 
