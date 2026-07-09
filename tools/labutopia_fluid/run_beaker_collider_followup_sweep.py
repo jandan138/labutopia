@@ -1189,10 +1189,10 @@ def build_d4_wrapper_promotion_sweep(
                     parent_candidate_id=promotion_candidate_id,
                     phase="D4_WRAPPER_PROMOTION",
                     variable_group="d4_wrapper_promotion",
-                    # liquid_usd A18/A20/C29: planar box walls. Segmented cylindrical
-                    # panels plateaued at 2/3 (seed0 tunnels into wall shell); open-mesh
-                    # none/SDF falls through on GPU PBD. Box cup is the GPU-safe path.
-                    panel_count=4,
+                    # Best Physics-A geometry: dual-ring segmented panels (seal6 = 2/3 PASS).
+                    # Continuous open-mesh falls through on GPU; planar box_cup mismatches
+                    # circular beaker classification (corner particles look like spill).
+                    panel_count=max(int(parent.panel_count), 72),
                     # Thicker walls under promotion pressure (D4A_018 smoke used 0.022).
                     wall_thickness=max(float(parent.wall_thickness), 0.026),
                     bottom_overlap=max(parent.bottom_overlap, 0.012),
@@ -1218,11 +1218,11 @@ def build_d4_wrapper_promotion_sweep(
                     particle_spacing=float(layout["particle_spacing"]),
                     grid_dims=tuple(layout["grid_dims"]),  # type: ignore[arg-type]
                     particle_width=float(layout["particle_width"]),
-                    panel_arc_overlap_factor=None,
+                    panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.35),
                     interior_inset=float(layout["interior_inset"]),
-                    wrapper_collider_mode="box_cup",
-                    panel_phase_offset_rad=None,
-                    panel_ring_count=1,
+                    wrapper_collider_mode="segmented_panels",
+                    panel_phase_offset_rad=math.pi / max(int(parent.panel_count), 72),
+                    panel_ring_count=2,
                     wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
                     native_mesh_collision_enabled=False,

@@ -23,6 +23,7 @@ from tools.labutopia_fluid.run_beaker_collider_smoke import (
     classify_collider_hold,
     compute_region_counts,
     rank_collider_variants,
+    source_region_radius,
 )
 
 
@@ -404,27 +405,34 @@ def test_region_counts_treat_wall_contact_slack_as_source_not_spill():
     """PhysX contact resolution can park particles slightly past the inner face.
 
     D4 evidence: best candidates' 'spill' was entirely within ~1e-4 of source_radius.
-    Slack must absorb that without hiding real panel-gap leaks (~1e-2).
+    Classification now extends to the outer wall face so wall-shell embeds (seal6
+    seed0 at r≈0.064 with outer=0.081) count as contained, while escapes past
+    the outer face still fail.
     """
     from tools.labutopia_fluid.run_beaker_collider_smoke import SOURCE_REGION_RADIAL_SLACK
 
-    config = ColliderConfig(source_radius=0.055)
+    config = ColliderConfig(source_radius=0.055, wall_thickness=0.026)
     wall_face = [
         (0.05505, 0.0, 0.08),
         (0.05518, 0.0, 0.08),
     ]
-    real_leak = [(0.065, 0.0, 0.08)]
+    wall_shell = [(0.064, 0.0, 0.08)]  # inside wall material
+    real_leak = [(0.095, 0.0, 0.08)]  # past outer face 0.081
 
     wall_counts = compute_region_counts(wall_face, config)
+    shell_counts = compute_region_counts(wall_shell, config)
     leak_counts = compute_region_counts(real_leak, config)
 
     assert SOURCE_REGION_RADIAL_SLACK >= 1e-3
     assert wall_counts["source_count"] == 2
     assert wall_counts["spill_count"] == 0
+    assert shell_counts["source_count"] == 1
+    assert shell_counts["spill_count"] == 0
     assert leak_counts["source_count"] == 0
     assert leak_counts["spill_count"] == 1
-    # Slack must still leave real panel-gap leaks (~1cm) classified as spill.
+    # Slack must still leave real outer-face escapes classified as spill.
     assert SOURCE_REGION_RADIAL_SLACK < 5e-3
+    assert source_region_radius(config) == pytest.approx(0.055 + 0.026 + SOURCE_REGION_RADIAL_SLACK)
 
 
 def test_source_particle_positions_honor_interior_inset_clearance():

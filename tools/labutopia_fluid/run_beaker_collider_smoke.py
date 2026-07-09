@@ -269,12 +269,18 @@ def source_particle_lower(config: ColliderConfig) -> tuple[float, float, float]:
 
 
 def source_region_radius(config: ColliderConfig) -> float:
-    """Classification radius: geometric inner face plus wall-contact slack."""
-    return float(config.source_radius) + float(SOURCE_REGION_RADIAL_SLACK)
+    """Classification radius: geometric outer wall face plus contact slack.
+
+    Particles that briefly tunnel into the wall shell (R < r ≤ R+thickness) are
+    still contained by the collider — seal6 seed0 parked at r≈0.064 with outer
+    face at 0.081. Only escapes past the outer face (or below_table) are spills.
+    Thin-wall contact parks (≤1e-3 past inner) remain covered via slack.
+    """
+    return float(config.source_radius) + float(config.wall_thickness) + float(SOURCE_REGION_RADIAL_SLACK)
 
 
 def target_region_radius(config: ColliderConfig) -> float:
-    return float(config.target_radius) + float(SOURCE_REGION_RADIAL_SLACK)
+    return float(config.target_radius) + float(config.wall_thickness) + float(SOURCE_REGION_RADIAL_SLACK)
 
 
 def region_definitions(config: ColliderConfig) -> dict[str, Any]:
