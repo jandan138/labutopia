@@ -134,6 +134,10 @@ class VariantSpec:
     sdf_margin: float | None = None
     sdf_narrow_band_thickness: float | None = None
     panel_count: int | None = None
+    panel_arc_overlap_factor: float | None = None
+    interior_inset: float | None = None
+    wrapper_parent_path: str | None = None
+    wrapper_frame: str | None = None
 
 
 def variant_specs() -> dict[str, VariantSpec]:
@@ -1283,6 +1287,22 @@ def _add_colliders(stage: Any, config: ColliderConfig, spec: VariantSpec, native
             panel_count=spec.panel_count or 24,
             wall_thickness=config.wall_thickness,
         )
+    if spec.setup == "fluid_safe_wrapper" or spec.variant_id.startswith("D4A_"):
+        wrapper = _add_fluid_safe_wrapper(
+            stage,
+            config,
+            parent_path=spec.wrapper_parent_path or "/World/beaker2",
+            visual_mesh_path=spec.native_mesh_source_path,
+            panel_count=spec.panel_count,
+            wall_thickness=config.wall_thickness,
+            bottom_overlap=config.bottom_overlap,
+            panel_arc_overlap_factor=(
+                spec.panel_arc_overlap_factor
+                if spec.panel_arc_overlap_factor is not None
+                else FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR
+            ),
+        )
+        return list(wrapper["collider_paths"])
     if spec.variant_id == "C3" or spec.variant_id.startswith("C3A_"):
         return _add_sdf_open_beaker(stage, config, spec)
     if spec.variant_id == "C4":

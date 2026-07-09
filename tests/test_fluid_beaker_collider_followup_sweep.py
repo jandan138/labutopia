@@ -17,11 +17,13 @@ def test_followup_matrix_names_do_not_collide_with_s2_baseline():
         "S2F3_C3_SDF_SWEEP",
         "S2F4_C4_NATIVE_MESH_ISOLATION",
         "S2F5_PROMOTION_REVIEW",
+        "D4_WRAPPER_SWEEP",
     ]
     assert phases["S2F0_BASELINE_FREEZE"]["candidate_prefix"] == "S2"
     assert phases["S2F1_C2_PROXY_SWEEP"]["candidate_prefix"] == "C2A"
     assert phases["S2F3_C3_SDF_SWEEP"]["candidate_prefix"] == "C3A"
     assert phases["S2F4_C4_NATIVE_MESH_ISOLATION"]["candidate_prefix"] == "C4A"
+    assert phases["D4_WRAPPER_SWEEP"]["candidate_prefix"] == "D4A"
 
 
 def test_build_c2_proxy_sweep_is_bounded_and_covers_planned_ranges():
@@ -2035,3 +2037,219 @@ def test_load_candidate_results_from_artifacts_accepts_c3a_sdf_summaries(tmp_pat
     assert results[0]["phase"] == "S2F3_C3_SDF_SWEEP"
     assert results[0]["classification"] == "PASS_SOURCE_HOLD"
     assert results[0]["evidence_files_complete"] is True
+
+
+def test_d4_wrapper_sweep_covers_spec_geometry_ranges_with_pinned_init():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import build_d4_wrapper_sweep
+    from tools.labutopia_fluid.run_beaker_collider_smoke import (
+        FLUID_SAFE_WRAPPER_FRAME,
+        PROMOTION_INITIAL_RADIAL_VELOCITY,
+        PROMOTION_PARTICLE_MAX_VELOCITY,
+    )
+
+    candidates = build_d4_wrapper_sweep()
+
+    assert len(candidates) >= 9
+    assert [c.candidate_id for c in candidates] == [f"D4A_{i:03d}" for i in range(1, len(candidates) + 1)]
+    assert {c.phase for c in candidates} == {"D4_WRAPPER_SWEEP"}
+    assert {c.panel_count for c in candidates} == {48, 64, 72}
+    assert {c.wall_thickness for c in candidates} == {0.014, 0.018, 0.022}
+    assert {c.bottom_overlap for c in candidates} == {0.003, 0.005, 0.008}
+    assert {c.panel_arc_overlap_factor for c in candidates} == {1.08, 1.14, 1.20}
+    assert all(c.initial_radial_velocity == PROMOTION_INITIAL_RADIAL_VELOCITY for c in candidates)
+    assert all(c.particle_max_velocity == PROMOTION_PARTICLE_MAX_VELOCITY for c in candidates)
+    assert all(c.wrapper_frame == FLUID_SAFE_WRAPPER_FRAME for c in candidates)
+    assert all(c.native_mesh_collision_enabled is False for c in candidates)
+    assert all(c.interior_inset >= c.particle_contact_offset for c in candidates)
+    assert any(
+        c.panel_count == 48 and c.wall_thickness == 0.018 and c.bottom_overlap == 0.003
+        for c in candidates
+    )
+
+    start = next(
+        c
+        for c in candidates
+        if c.panel_count == 48 and c.wall_thickness == 0.018 and c.bottom_overlap == 0.003
+    )
+    config = start.to_config()
+    spec = start.to_variant_spec()
+    assert config.initial_radial_velocity == 0.08
+    assert config.particle_max_velocity == 5.0
+    assert config.wall_thickness == 0.018
+    assert config.bottom_overlap == 0.003
+    assert isinstance(spec, VariantSpec)
+    assert spec.setup == "fluid_safe_wrapper"
+    assert spec.panel_count == 48
+    assert spec.collision_approximation == "convex_panel_boxes"
+    assert spec.native_mesh_collision_enabled is False
+    assert spec.wrapper_frame == FLUID_SAFE_WRAPPER_FRAME
+    assert spec.panel_arc_overlap_factor == start.panel_arc_overlap_factor
+    assert spec.interior_inset == start.interior_inset
+
+
+def test_evaluate_d4_init_pin_dependence_flags_velocity_crutches():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import evaluate_d4_init_pin_dependence
+
+    assert (
+        evaluate_d4_init_pin_dependence(
+            initial_radial_velocity=0.02,
+            particle_max_velocity=5.0,
+        )
+        is True
+    )
+    assert (
+        evaluate_d4_init_pin_dependence(
+            initial_radial_velocity=0.08,
+            particle_max_velocity=0.10,
+        )
+        is True
+    )
+    assert (
+        evaluate_d4_init_pin_dependence(
+            initial_radial_velocity=0.08,
+            particle_max_velocity=5.0,
+        )
+        is False
+    )
+
+
+def test_classify_d4_wrapper_trial_composes_hold_and_non_physical_gate():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import classify_d4_wrapper_trial
+
+    pass_result = classify_d4_wrapper_trial(
+        variant_id="D4A_001",
+        config=ColliderConfig(initial_radial_velocity=0.08, particle_max_velocity=5.0),
+        initial_count=512,
+        final_count=512,
+        source_count=512,
+        target_count=0,
+        spill_count=0,
+        below_table_count=0,
+        nan_count=0,
+        tail_leak_rate_fraction_per_second=0.0,
+        cpu_collision_fallback_detected=False,
+        gpu_collider_unsupported=False,
+        fatal_error=None,
+        particle_motion_observed=True,
+        readback_position_changed=True,
+        blocking_runtime_warning_detected=False,
+    )
+    assert pass_result["classification"] == "PASS_SOURCE_HOLD"
+    assert pass_result["contract"] == "s2_no_outside_source_v2+d4_followup"
+    assert pass_result["non_physical_parameter_dependence"] is False
+
+    crutch = classify_d4_wrapper_trial(
+        variant_id="D4A_BAD_VEL",
+        config=ColliderConfig(initial_radial_velocity=0.02, particle_max_velocity=5.0),
+        initial_count=512,
+        final_count=512,
+        source_count=512,
+        target_count=0,
+        spill_count=0,
+        below_table_count=0,
+        nan_count=0,
+        tail_leak_rate_fraction_per_second=0.0,
+        cpu_collision_fallback_detected=False,
+        gpu_collider_unsupported=False,
+        fatal_error=None,
+        particle_motion_observed=True,
+        readback_position_changed=True,
+        blocking_runtime_warning_detected=False,
+    )
+    assert crutch["classification"] == "FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE"
+    assert crutch["non_physical_parameter_dependence"] is True
+
+    gpu_fail = classify_d4_wrapper_trial(
+        variant_id="D4A_GPU",
+        config=ColliderConfig(),
+        initial_count=512,
+        final_count=512,
+        source_count=512,
+        target_count=0,
+        spill_count=0,
+        below_table_count=0,
+        nan_count=0,
+        tail_leak_rate_fraction_per_second=0.0,
+        cpu_collision_fallback_detected=False,
+        gpu_collider_unsupported=True,
+        fatal_error=None,
+        particle_motion_observed=True,
+        readback_position_changed=True,
+        blocking_runtime_warning_detected=False,
+    )
+    assert gpu_fail["classification"] == "FAIL_GPU_COLLIDER_UNSUPPORTED"
+
+    leak = classify_d4_wrapper_trial(
+        variant_id="D4A_LEAK",
+        config=ColliderConfig(),
+        initial_count=512,
+        final_count=512,
+        source_count=500,
+        target_count=0,
+        spill_count=12,
+        below_table_count=0,
+        nan_count=0,
+        tail_leak_rate_fraction_per_second=0.0,
+        cpu_collision_fallback_detected=False,
+        gpu_collider_unsupported=False,
+        fatal_error=None,
+        particle_motion_observed=True,
+        readback_position_changed=True,
+        blocking_runtime_warning_detected=False,
+    )
+    assert leak["classification"] == "FAIL_CONTAINER_LEAK"
+
+
+def test_aggregate_d4_wrapper_sweep_incomplete_and_crutch_stop_taxonomy():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        D4_MATRIX_STOP_CLASSIFICATIONS,
+        aggregate_d4_wrapper_sweep,
+        build_d4_wrapper_sweep,
+    )
+
+    expected_ids = [c.candidate_id for c in build_d4_wrapper_sweep()]
+    assert "STOP_WITH_EVIDENCE" in D4_MATRIX_STOP_CLASSIFICATIONS
+    assert "STOP_NON_PHYSICAL_PARAMETER_DEPENDENCE" in D4_MATRIX_STOP_CLASSIFICATIONS
+    assert "STOP_WRAPPER_NOT_FLUID_SAFE" in D4_MATRIX_STOP_CLASSIFICATIONS
+
+    incomplete = [
+        {
+            "candidate_id": "D4A_001",
+            "classification": "PASS_SOURCE_HOLD",
+            "evidence_files_complete": True,
+            "non_physical_parameter_dependence": False,
+            "wrapper_frame": "local_to_beaker2",
+        }
+    ]
+    agg_incomplete = aggregate_d4_wrapper_sweep(incomplete, expected_candidate_ids=expected_ids)
+    assert agg_incomplete["status"] == "STOP_WITH_EVIDENCE"
+    assert agg_incomplete["best_for_promotion"] == []
+    assert agg_incomplete["missing_candidate_ids"]
+
+    crutch_only = [
+        {
+            "candidate_id": candidate_id,
+            "classification": "FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE",
+            "evidence_files_complete": True,
+            "non_physical_parameter_dependence": True,
+            "wrapper_frame": "local_to_beaker2",
+        }
+        for candidate_id in expected_ids
+    ]
+    agg_crutch = aggregate_d4_wrapper_sweep(crutch_only, expected_candidate_ids=expected_ids)
+    assert agg_crutch["status"] == "STOP_NON_PHYSICAL_PARAMETER_DEPENDENCE"
+    assert agg_crutch["best_for_promotion"] == []
+
+    leaking = [
+        {
+            "candidate_id": candidate_id,
+            "classification": "FAIL_CONTAINER_LEAK",
+            "evidence_files_complete": True,
+            "non_physical_parameter_dependence": False,
+            "wrapper_frame": "local_to_beaker2",
+        }
+        for candidate_id in expected_ids
+    ]
+    agg_leak = aggregate_d4_wrapper_sweep(leaking, expected_candidate_ids=expected_ids)
+    assert agg_leak["status"] in {"STOP_WRAPPER_NOT_FLUID_SAFE", "STOP_STATIC_HOLD_LEAK"}
+    assert agg_leak["best_for_promotion"] == []

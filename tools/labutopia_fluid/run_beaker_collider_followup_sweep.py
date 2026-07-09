@@ -21,9 +21,13 @@ if str(REPO_ROOT) not in sys.path:
 from tools.labutopia_fluid.run_beaker_collider_smoke import (
     CLASSIFICATION_CONTRACT_VERSION,
     ColliderConfig,
+    FLUID_SAFE_WRAPPER_FRAME,
+    PROMOTION_INITIAL_RADIAL_VELOCITY,
+    PROMOTION_PARTICLE_MAX_VELOCITY,
     VariantSpec,
     _gpu_probe,
     _run_variant,
+    classify_collider_hold,
 )
 from tools.labutopia_fluid.run_standalone_particle_smoke import _write_json
 
@@ -79,6 +83,14 @@ DEFAULT_S2F5_MANIFEST_PATH = (
 )
 DEFAULT_S2F5_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_s2f5"
 DEFAULT_S2F5_SOURCE_MANIFEST = DEFAULT_S2F2_MANIFEST_PATH
+DEFAULT_D4_ARTIFACT_DIR = (
+    "docs/labutopia_lab_poc/evidence_manifests/"
+    "fluid_spike_isaacsim41_ebench_d4_wrapper_sweep_20260709_001"
+)
+DEFAULT_D4_MANIFEST_PATH = (
+    "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_proxy_wrapper_design_d4_sweep_20260709.json"
+)
+DEFAULT_D4_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_d4"
 S2F5_PROMOTION_CANDIDATE_ID = "C2A_009_S2F2_VEL020"
 S2F5_PARTICLE_COUNTS = (256, 1024)
 S2F5_PARTICLE_SEEDS = (0, 1, 2)
@@ -102,6 +114,7 @@ REQUIRED_VARIANT_EVIDENCE_FILES = {
 }
 DEFAULT_NATIVE_USD = "assets/chemistry_lab/lab_001/lab_001.usd"
 FOLLOWUP_CONTRACT_VERSION = "s2f_velocity_contact_offset_v2"
+D4_FOLLOWUP_CONTRACT = "s2_no_outside_source_v2+d4_followup"
 FOLLOWUP_CLASSIFICATIONS = {
     "PASS_SOURCE_HOLD",
     "FAIL_CONTAINER_LEAK",
@@ -112,6 +125,24 @@ FOLLOWUP_CLASSIFICATIONS = {
     "FAIL_PERF_BUDGET_EXCEEDED",
     "FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE",
 }
+D4_MATRIX_STOP_CLASSIFICATIONS = {
+    "STOP_WITH_EVIDENCE",
+    "STOP_WRAPPER_NOT_FLUID_SAFE",
+    "STOP_STATIC_HOLD_LEAK",
+    "STOP_NON_PHYSICAL_PARAMETER_DEPENDENCE",
+    "STOP_PERF_OR_OOM",
+    "STOP_VISUAL_PHYSICS_MISMATCH",
+    "STOP_READBACK_UNAVAILABLE",
+}
+D4_WRAPPER_PANEL_COUNTS = (48, 64, 72)
+D4_WRAPPER_WALL_THICKNESSES = (0.014, 0.018, 0.022)
+D4_WRAPPER_BOTTOM_OVERLAPS = (0.003, 0.005, 0.008)
+D4_WRAPPER_PANEL_ARC_OVERLAP_FACTORS = (1.08, 1.14, 1.20)
+# C2A_009 contact baseline (limited joint sweep stays on this pin for D4 geometry).
+D4_WRAPPER_PARTICLE_CONTACT_OFFSET = 0.0045
+D4_WRAPPER_COLLIDER_CONTACT_OFFSET = 0.004
+D4_WRAPPER_COLLIDER_REST_OFFSET = 0.0
+D4_WRAPPER_PARENT_PATH = "/World/beaker2"
 
 
 @dataclass(frozen=True)
@@ -153,6 +184,10 @@ class C2ProxyCandidate:
     native_collision_route: str | None = None
     native_mesh_collision_enabled: bool | None = None
     proxy_collision_enabled: bool | None = None
+    panel_arc_overlap_factor: float | None = None
+    interior_inset: float | None = None
+    wrapper_parent_path: str | None = None
+    wrapper_frame: str | None = None
 
     def to_config(self, *, base: ColliderConfig | None = None) -> ColliderConfig:
         config = base or ColliderConfig()
@@ -189,6 +224,30 @@ class C2ProxyCandidate:
         )
 
     def to_variant_spec(self) -> VariantSpec:
+        if self.phase == "D4_WRAPPER_SWEEP" or self.candidate_id.startswith("D4A_"):
+            return VariantSpec(
+                variant_id=self.candidate_id,
+                name="fluid_safe_wrapper",
+                description=(
+                    "D4 invisible beaker2-local fluid-safe box-panel wrapper; "
+                    "native mesh collision disabled."
+                ),
+                setup="fluid_safe_wrapper",
+                collider_count=self.panel_count + 1,
+                collision_approximation="convex_panel_boxes",
+                source_kind="fluid_safe_wrapper",
+                panel_count=self.panel_count,
+                panel_arc_overlap_factor=self.panel_arc_overlap_factor,
+                interior_inset=self.interior_inset,
+                wrapper_parent_path=self.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
+                wrapper_frame=self.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
+                native_mesh_collision_enabled=(
+                    False
+                    if self.native_mesh_collision_enabled is None
+                    else self.native_mesh_collision_enabled
+                ),
+                native_mesh_source_path=self.native_mesh_source_path,
+            )
         if self.phase == "S2F3_C3_SDF_SWEEP":
             return VariantSpec(
                 variant_id=self.candidate_id,
@@ -347,7 +406,24 @@ def followup_phase_specs(
             "status": "PENDING",
             "description": "Promotion review before S3 release.",
         },
+        "D4_WRAPPER_SWEEP": {
+            "candidate_prefix": "D4A",
+            "status": "PENDING",
+            "description": "Fluid-safe wrapper geometry sweep with pinned promotion init.",
+        },
     }
+    if phase == "D4_WRAPPER_SWEEP":
+        specs["S2F1_C2_PROXY_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F2_VELOCITY_CONTACT_OFFSET"]["status"] = "COMPLETE_GO_NEXT"
+        specs["S2F3_C3_SDF_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F5_PROMOTION_REVIEW"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        if status == "GO_NEXT" and best_for_s3:
+            specs["D4_WRAPPER_SWEEP"]["status"] = "COMPLETE_GO_NEXT"
+        elif status in D4_MATRIX_STOP_CLASSIFICATIONS:
+            specs["D4_WRAPPER_SWEEP"]["status"] = f"COMPLETE_{status}"
+        else:
+            specs["D4_WRAPPER_SWEEP"]["status"] = "ACTIVE"
     if phase == "S2F2_VELOCITY_CONTACT_OFFSET" and status == "GO_NEXT" and best_for_s2f5:
         specs["S2F1_C2_PROXY_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
         specs["S2F2_VELOCITY_CONTACT_OFFSET"]["status"] = "COMPLETE_GO_NEXT"
@@ -515,6 +591,12 @@ def _candidate_from_plan_row(row: dict[str, Any]) -> C2ProxyCandidate:
         proxy_collision_enabled=(
             bool(row["proxy_collision_enabled"]) if row.get("proxy_collision_enabled") is not None else None
         ),
+        panel_arc_overlap_factor=(
+            float(row["panel_arc_overlap_factor"]) if row.get("panel_arc_overlap_factor") is not None else None
+        ),
+        interior_inset=float(row["interior_inset"]) if row.get("interior_inset") is not None else None,
+        wrapper_parent_path=str(row["wrapper_parent_path"]) if row.get("wrapper_parent_path") is not None else None,
+        wrapper_frame=str(row["wrapper_frame"]) if row.get("wrapper_frame") is not None else None,
     )
 
 
@@ -859,6 +941,242 @@ def aggregate_s2f5_promotion_review(
         "extra_trials": [
             {"particle_count": particle_count, "particle_seed": seed} for particle_count, seed in extra_pairs
         ],
+    }
+
+
+def build_d4_wrapper_sweep(*, limit: int | None = None) -> list[C2ProxyCandidate]:
+    """Bounded D4 fluid-safe wrapper geometry sweep (spec §4.2).
+
+    Pins promotion init velocity; sweeps panel_count / wall_thickness /
+    bottom_overlap / panel_arc_overlap_factor. interior_inset clears spawn by at
+    least particle_contact_offset.
+    """
+    rows: list[tuple[int, float, float, float]] = []
+    for panel_count in D4_WRAPPER_PANEL_COUNTS:
+        for wall_thickness in D4_WRAPPER_WALL_THICKNESSES:
+            for bottom_overlap in D4_WRAPPER_BOTTOM_OVERLAPS:
+                arc_index = (
+                    D4_WRAPPER_PANEL_COUNTS.index(panel_count)
+                    + D4_WRAPPER_WALL_THICKNESSES.index(wall_thickness)
+                    + D4_WRAPPER_BOTTOM_OVERLAPS.index(bottom_overlap)
+                ) % len(D4_WRAPPER_PANEL_ARC_OVERLAP_FACTORS)
+                rows.append(
+                    (
+                        panel_count,
+                        wall_thickness,
+                        bottom_overlap,
+                        D4_WRAPPER_PANEL_ARC_OVERLAP_FACTORS[arc_index],
+                    )
+                )
+
+    candidates: list[C2ProxyCandidate] = []
+    selected = rows if limit is None else rows[:limit]
+    for index, (panel_count, wall_thickness, bottom_overlap, panel_arc) in enumerate(selected, start=1):
+        particle_contact_offset = D4_WRAPPER_PARTICLE_CONTACT_OFFSET
+        candidates.append(
+            C2ProxyCandidate(
+                candidate_id=f"D4A_{index:03d}",
+                panel_count=panel_count,
+                wall_thickness=wall_thickness,
+                bottom_overlap=bottom_overlap,
+                particle_contact_offset=particle_contact_offset,
+                collider_contact_offset=D4_WRAPPER_COLLIDER_CONTACT_OFFSET,
+                collider_rest_offset=D4_WRAPPER_COLLIDER_REST_OFFSET,
+                initial_radial_velocity=PROMOTION_INITIAL_RADIAL_VELOCITY,
+                particle_max_velocity=PROMOTION_PARTICLE_MAX_VELOCITY,
+                parent_candidate_id="C2A_009",
+                phase="D4_WRAPPER_SWEEP",
+                variable_group="d4_wrapper_geometry",
+                panel_arc_overlap_factor=panel_arc,
+                interior_inset=particle_contact_offset,
+                wrapper_parent_path=D4_WRAPPER_PARENT_PATH,
+                wrapper_frame=FLUID_SAFE_WRAPPER_FRAME,
+                native_mesh_collision_enabled=False,
+                proxy_collision_enabled=True,
+                non_physical_parameter_dependence_risk=False,
+            )
+        )
+    return candidates
+
+
+def evaluate_d4_init_pin_dependence(
+    *,
+    initial_radial_velocity: float,
+    particle_max_velocity: float,
+    pin_initial_radial_velocity: float = PROMOTION_INITIAL_RADIAL_VELOCITY,
+    pin_particle_max_velocity: float = PROMOTION_PARTICLE_MAX_VELOCITY,
+) -> bool:
+    """True when a trial depends on forbidden sub-pin velocity crutches (spec §4.2)."""
+    return (
+        float(initial_radial_velocity) < float(pin_initial_radial_velocity)
+        or float(particle_max_velocity) < float(pin_particle_max_velocity)
+    )
+
+
+def classify_d4_wrapper_trial(
+    *,
+    variant_id: str,
+    config: ColliderConfig,
+    initial_count: int,
+    final_count: int,
+    source_count: int,
+    target_count: int,
+    spill_count: int,
+    below_table_count: int,
+    nan_count: int,
+    tail_leak_rate_fraction_per_second: float,
+    cpu_collision_fallback_detected: bool,
+    gpu_collider_unsupported: bool,
+    fatal_error: dict[str, Any] | None,
+    particle_motion_observed: bool = True,
+    readback_position_changed: bool = True,
+    blocking_runtime_warning_detected: bool = False,
+    non_physical_parameter_dependence: bool | None = None,
+    container_sealed_detected: bool = False,
+    particle_explosion_detected: bool = False,
+    perf_budget_exceeded: bool = False,
+) -> dict[str, Any]:
+    """Compose classify_collider_hold with D4 followup non-physical / motion gates.
+
+    Preserves FAIL_* taxonomy; does not collapse all failures to FAIL_CONTAINER_LEAK.
+    """
+    pin_dependence = evaluate_d4_init_pin_dependence(
+        initial_radial_velocity=config.initial_radial_velocity,
+        particle_max_velocity=config.particle_max_velocity,
+    )
+    if non_physical_parameter_dependence is None:
+        non_physical_parameter_dependence = pin_dependence
+    else:
+        non_physical_parameter_dependence = bool(non_physical_parameter_dependence) or pin_dependence
+
+    hold = classify_collider_hold(
+        variant_id=variant_id,
+        config=config,
+        initial_count=initial_count,
+        final_count=final_count,
+        source_count=source_count,
+        target_count=target_count,
+        spill_count=spill_count,
+        below_table_count=below_table_count,
+        nan_count=nan_count,
+        tail_leak_rate_fraction_per_second=tail_leak_rate_fraction_per_second,
+        cpu_collision_fallback_detected=cpu_collision_fallback_detected,
+        gpu_collider_unsupported=gpu_collider_unsupported,
+        fatal_error=fatal_error,
+        particle_motion_observed=particle_motion_observed and readback_position_changed,
+        container_sealed_detected=container_sealed_detected,
+        particle_explosion_detected=particle_explosion_detected,
+        perf_budget_exceeded=perf_budget_exceeded,
+    )
+    classification = str(hold["classification"])
+    if classification == "PASS_SOURCE_HOLD":
+        if non_physical_parameter_dependence:
+            classification = "FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE"
+        elif blocking_runtime_warning_detected:
+            classification = "FAIL_READBACK_UNAVAILABLE"
+        elif not particle_motion_observed or not readback_position_changed:
+            classification = "FAIL_READBACK_UNAVAILABLE"
+
+    assert classification in FOLLOWUP_CLASSIFICATIONS or classification == "FAIL_CONTAINER_SEALED"
+    result = dict(hold)
+    result["candidate_id"] = variant_id
+    result["classification"] = classification
+    result["contract"] = D4_FOLLOWUP_CONTRACT
+    result["non_physical_parameter_dependence"] = bool(non_physical_parameter_dependence)
+    result["blocking_runtime_warning_detected"] = bool(blocking_runtime_warning_detected)
+    result["particle_motion_observed"] = bool(particle_motion_observed)
+    result["readback_position_changed"] = bool(readback_position_changed)
+    result["pass_criteria"] = {
+        **dict(hold.get("pass_criteria") or {}),
+        "non_physical_parameter_dependence_false": not non_physical_parameter_dependence,
+        "blocking_runtime_warning_detected_false": not blocking_runtime_warning_detected,
+        "particle_motion_observed_true": bool(particle_motion_observed),
+        "readback_position_changed_true": bool(readback_position_changed),
+    }
+    return result
+
+
+def aggregate_d4_wrapper_sweep(
+    candidate_results: Sequence[dict[str, Any]],
+    *,
+    expected_candidate_ids: Sequence[str] = (),
+    grid_complete: bool | None = None,
+    visual_physics_mismatch: bool = False,
+) -> dict[str, Any]:
+    """Matrix-level STOP taxonomy for D4_WRAPPER_SWEEP (spec §4.5)."""
+    observed_ids = {str(result.get("candidate_id", "")) for result in candidate_results}
+    expected_ids = [str(candidate_id) for candidate_id in expected_candidate_ids]
+    missing_candidate_ids = [candidate_id for candidate_id in expected_ids if candidate_id not in observed_ids]
+    if grid_complete is None:
+        grid_complete = not missing_candidate_ids and (
+            not expected_ids or len(candidate_results) >= len(expected_ids)
+        )
+
+    passed = [
+        result
+        for result in candidate_results
+        if result.get("classification") == "PASS_SOURCE_HOLD"
+        and not bool(result.get("non_physical_parameter_dependence"))
+    ]
+    non_physical = [
+        result
+        for result in candidate_results
+        if result.get("classification") == "FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE"
+        or bool(result.get("non_physical_parameter_dependence"))
+    ]
+    readback_fails = [
+        result for result in candidate_results if result.get("classification") == "FAIL_READBACK_UNAVAILABLE"
+    ]
+    perf_fails = [
+        result for result in candidate_results if result.get("classification") == "FAIL_PERF_BUDGET_EXCEEDED"
+    ]
+
+    if visual_physics_mismatch:
+        status = "STOP_VISUAL_PHYSICS_MISMATCH"
+        reason = "wrapper_frame_or_sync_mismatch"
+        best_for_promotion: list[str] = []
+    elif not grid_complete or missing_candidate_ids:
+        status = "STOP_WITH_EVIDENCE"
+        reason = "incomplete_d4_wrapper_sweep_grid"
+        best_for_promotion = []
+    elif passed:
+        status = "GO_NEXT"
+        reason = "at_least_one_d4_wrapper_candidate_passed"
+        best_for_promotion = [str(result["candidate_id"]) for result in passed]
+    elif non_physical and len(non_physical) == len(candidate_results):
+        status = "STOP_NON_PHYSICAL_PARAMETER_DEPENDENCE"
+        reason = "all_d4_candidates_depend_on_forbidden_init_crutches"
+        best_for_promotion = []
+    elif readback_fails and len(readback_fails) == len(candidate_results):
+        status = "STOP_READBACK_UNAVAILABLE"
+        reason = "all_d4_candidates_missing_readback"
+        best_for_promotion = []
+    elif perf_fails and len(perf_fails) == len(candidate_results):
+        status = "STOP_PERF_OR_OOM"
+        reason = "all_d4_candidates_exceeded_perf_budget"
+        best_for_promotion = []
+    else:
+        status = "STOP_WRAPPER_NOT_FLUID_SAFE"
+        reason = "d4_wrapper_sweep_leaks_remain"
+        best_for_promotion = []
+
+    assert status == "GO_NEXT" or status in D4_MATRIX_STOP_CLASSIFICATIONS
+    return {
+        "status": status,
+        "reason": reason,
+        "best_for_promotion": best_for_promotion,
+        "best_for_s3": [],
+        "grid_complete": bool(grid_complete),
+        "expected_candidate_ids": expected_ids,
+        "missing_candidate_ids": missing_candidate_ids,
+        "observed_candidate_count": len(candidate_results),
+        "passed_candidate_ids": [str(result["candidate_id"]) for result in passed],
+        "non_physical_candidate_ids": [str(result["candidate_id"]) for result in non_physical],
+        "allowed_stop_classifications": sorted(D4_MATRIX_STOP_CLASSIFICATIONS),
+        "init_pins": {
+            "initial_radial_velocity": PROMOTION_INITIAL_RADIAL_VELOCITY,
+            "particle_max_velocity": PROMOTION_PARTICLE_MAX_VELOCITY,
+        },
     }
 
 
@@ -1885,6 +2203,7 @@ def main(argv: list[str]) -> int:
         "S2F3_C3_SDF_SWEEP",
         "S2F4_C4_NATIVE_MESH_ISOLATION",
         "S2F5_PROMOTION_REVIEW",
+        "D4_WRAPPER_SWEEP",
     }:
         raise SystemExit(f"unsupported phase for this runner: {args.phase}")
 
@@ -1935,6 +2254,14 @@ def main(argv: list[str]) -> int:
         candidates = build_s2f5_promotion_review_sweep(
             s2f2_manifest_path=Path(args.s2f1_manifest),
         )
+    elif args.phase == "D4_WRAPPER_SWEEP":
+        if args.artifact_dir == DEFAULT_ARTIFACT_DIR:
+            args.artifact_dir = DEFAULT_D4_ARTIFACT_DIR
+        if args.manifest_path == DEFAULT_MANIFEST_PATH:
+            args.manifest_path = DEFAULT_D4_MANIFEST_PATH
+        if args.scene_dir == DEFAULT_SCENE_DIR:
+            args.scene_dir = DEFAULT_D4_SCENE_DIR
+        candidates = build_d4_wrapper_sweep(limit=args.candidate_limit)
     else:
         candidates = build_c2_proxy_sweep(limit=args.candidate_limit or 12)
     base_config = ColliderConfig(
