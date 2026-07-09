@@ -181,6 +181,7 @@ class VariantSpec:
     wrapper_parent_path: str | None = None
     wrapper_frame: str | None = None
     wrapper_collider_mode: str | None = None
+    panel_phase_offset_rad: float | None = None
 
 
 def variant_specs() -> dict[str, VariantSpec]:
@@ -1214,6 +1215,7 @@ def _add_fluid_safe_wrapper(
     wall_thickness: float | None = None,
     bottom_overlap: float | None = None,
     panel_arc_overlap_factor: float = FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR,
+    panel_phase_offset_rad: float = 0.0,
     wrapper_name: str = "FluidSafeWrapper",
 ) -> dict[str, Any]:
     """Author an invisible box-panel collider under parent in parent-local frame.
@@ -1221,12 +1223,16 @@ def _add_fluid_safe_wrapper(
     Panels are children of ``{parent_path}/{wrapper_name}`` with local transforms
     baked once from config (or mesh world AABB → parent local). Do not parent
     world-space poses under a transformed beaker (double transform).
+
+    ``panel_phase_offset_rad`` rotates the whole panel ring so seams are not
+    aligned with a fixed spawn azimuth (seed0 escapes sat on a seam).
     """
     from pxr import Sdf, UsdGeom, UsdPhysics
 
     panels = int(panel_count if panel_count is not None else FLUID_SAFE_WRAPPER_DEFAULT_PANEL_COUNT)
     thickness = float(wall_thickness if wall_thickness is not None else config.wall_thickness)
     overlap = float(bottom_overlap if bottom_overlap is not None else config.bottom_overlap)
+    phase = float(panel_phase_offset_rad)
 
     if visual_mesh_path:
         mesh_prim = stage.GetPrimAtPath(visual_mesh_path)
@@ -1311,7 +1317,7 @@ def _add_fluid_safe_wrapper(
     )
     wall_center_z = local_table_z + config.bottom_thickness - overlap + wall_height / 2.0
     for index in range(panels):
-        theta = 2.0 * math.pi * index / panels
+        theta = 2.0 * math.pi * index / panels + phase
         center_radius = radius + thickness / 2.0
         panel = _add_box_collider_prim(
             stage,
@@ -1347,6 +1353,7 @@ def _add_fluid_safe_wrapper(
         "wall_thickness": thickness,
         "bottom_overlap": overlap,
         "panel_arc_overlap_factor": float(panel_arc_overlap_factor),
+        "panel_phase_offset_rad": phase,
         "local_center": (local_cx, local_cy, local_table_z),
         "radius": radius,
         "wall_height": wall_height,
@@ -1549,6 +1556,7 @@ def _add_colliders(stage: Any, config: ColliderConfig, spec: VariantSpec, native
                 if spec.panel_arc_overlap_factor is not None
                 else FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR
             ),
+            panel_phase_offset_rad=float(spec.panel_phase_offset_rad or 0.0),
         )
         return list(wrapper["collider_paths"])
     if spec.variant_id == "C3" or spec.variant_id.startswith("C3A_"):
