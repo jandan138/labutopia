@@ -89,6 +89,11 @@ PRESENTATION_WATER_PREVIEW_EMISSIVE_COLOR = [0.0, 0.0, 0.0]
 PRESENTATION_WATER_PREVIEW_OPACITY = 0.34
 PRESENTATION_WATER_PREVIEW_ROUGHNESS = 0.02
 PRESENTATION_WATER_PREVIEW_IOR = 1.333
+PRESENTATION_POSTPROCESS_HASH = "anisotropy_5_1_2_smoothing_0_5_v1"
+PRESENTATION_ANISOTROPY_SCALE = 5.0
+PRESENTATION_ANISOTROPY_MIN = 1.0
+PRESENTATION_ANISOTROPY_MAX = 2.0
+PRESENTATION_SMOOTHING_STRENGTH = 0.5
 MDL_COMPILE_STATUS_PASS = "PASS"
 MDL_COMPILE_STATUS_FAIL = "MDL_COMPILE_FAIL"
 MDL_COMPILE_STATUS_FALLBACK_USED = "FALLBACK_USED"
@@ -525,6 +530,28 @@ def build_liquid_presentation_isosurface_contract(
     }
 
 
+def build_presentation_postprocess_contract() -> dict[str, Any]:
+    """Spec §5.1 presentation-only PhysX particle postprocess (anisotropy + smoothing)."""
+    return {
+        "enabled": True,
+        "api_path": RUNTIME_PARTICLE_SYSTEM_PATH,
+        "anisotropy": {
+            "enabled": True,
+            "scale": float(PRESENTATION_ANISOTROPY_SCALE),
+            "min": float(PRESENTATION_ANISOTROPY_MIN),
+            "max": float(PRESENTATION_ANISOTROPY_MAX),
+        },
+        "smoothing": {
+            "enabled": True,
+            "strength": float(PRESENTATION_SMOOTHING_STRENGTH),
+        },
+        "postprocess_hash": PRESENTATION_POSTPROCESS_HASH,
+        "parameter_reference": "nvidia_particle_postprocessing_demo_isosurface_style",
+        "claim_boundary": "visual_surface_reconstruction_only",
+        "affects_leak_classification": False,
+    }
+
+
 def build_presentation_visual_contract(
     *,
     variant_id: str | None,
@@ -533,6 +560,7 @@ def build_presentation_visual_contract(
     isosurface_contract: dict[str, Any],
     material_path: str,
     particle_count: int,
+    postprocess_contract: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     claim_boundary_text = (
         "This video is a presentation render of the same simulated particle trajectory used for "
@@ -542,12 +570,18 @@ def build_presentation_visual_contract(
         "to improve human readability for review. These adjustments do not change the particle "
         "simulation, collider setup, leak classifier, or benchmark claims."
     )
+    resolved_postprocess = (
+        dict(postprocess_contract)
+        if postprocess_contract is not None
+        else build_presentation_postprocess_contract()
+    )
     return {
         "variant_id": variant_id,
         "camera_path": camera_info.get("camera_path"),
         "camera": dict(camera_info),
         "lighting": dict(lighting_info),
         "isosurface": dict(isosurface_contract),
+        "postprocess": resolved_postprocess,
         "liquid_material_path": material_path,
         "particle_count": int(particle_count),
         "debug_particle_display_enabled": False,
@@ -838,6 +872,31 @@ def _particle_isosurface_api_summary(stage: Any, particle_system_path: str) -> d
     }
 
 
+def _particle_postprocess_api_summary(stage: Any, particle_system_path: str) -> dict[str, Any]:
+    prim = stage.GetPrimAtPath(particle_system_path)
+    if not prim:
+        return {
+            "api_path": particle_system_path,
+            "prim_exists": False,
+            "anisotropy_api_applied": False,
+            "smoothing_api_applied": False,
+        }
+    applied_schemas = list(prim.GetAppliedSchemas())
+    return {
+        "api_path": particle_system_path,
+        "prim_exists": True,
+        "anisotropy_api_applied": "PhysxParticleAnisotropyAPI" in applied_schemas,
+        "smoothing_api_applied": "PhysxParticleSmoothingAPI" in applied_schemas,
+        "applied_schemas": applied_schemas,
+        "anisotropy_enabled": _read_prim_attr(prim, "physxParticleAnisotropy:particleAnisotropyEnabled"),
+        "anisotropy_scale": _read_prim_attr(prim, "physxParticleAnisotropy:scale"),
+        "anisotropy_min": _read_prim_attr(prim, "physxParticleAnisotropy:min"),
+        "anisotropy_max": _read_prim_attr(prim, "physxParticleAnisotropy:max"),
+        "smoothing_enabled": _read_prim_attr(prim, "physxParticleSmoothing:particleSmoothingEnabled"),
+        "smoothing_strength": _read_prim_attr(prim, "physxParticleSmoothing:strength"),
+    }
+
+
 def _read_prim_attr(prim: Any, attr_name: str) -> Any:
     attr = prim.GetAttribute(attr_name)
     return attr.Get() if attr else None
@@ -1072,7 +1131,23 @@ def _author_completed_pbd_runtime_particles(
         non_particle_collision_enabled=True,
     )
     isosurface_contract = {"enabled": False, "api_path": RUNTIME_PARTICLE_SYSTEM_PATH}
+    postprocess_contract: dict[str, Any] = {"enabled": False, "api_path": RUNTIME_PARTICLE_SYSTEM_PATH}
     if presentation_isosurface_video:
+        postprocess_contract = build_presentation_postprocess_contract()
+        particleUtils.add_physx_particle_smoothing(
+            stage,
+            Sdf.Path(RUNTIME_PARTICLE_SYSTEM_PATH),
+            enabled=True,
+            strength=postprocess_contract["smoothing"]["strength"],
+        )
+        particleUtils.add_physx_particle_anisotropy(
+            stage,
+            Sdf.Path(RUNTIME_PARTICLE_SYSTEM_PATH),
+            enabled=True,
+            scale=postprocess_contract["anisotropy"]["scale"],
+            min=postprocess_contract["anisotropy"]["min"],
+            max=postprocess_contract["anisotropy"]["max"],
+        )
         isosurface_contract = build_liquid_presentation_isosurface_contract(
             fluid_rest_offset=widths["fluid_rest_offset"],
             particle_count=len(positions),
@@ -1130,7 +1205,9 @@ def _author_completed_pbd_runtime_particles(
         "presentation_visual_material_path": presentation_visual_material_path,
         "visual_material_preserved": bool(visual_material),
         "isosurface_contract": isosurface_contract,
+        "postprocess_contract": postprocess_contract,
         "particle_isosurface_api_summary": _particle_isosurface_api_summary(stage, RUNTIME_PARTICLE_SYSTEM_PATH),
+        "particle_postprocess_api_summary": _particle_postprocess_api_summary(stage, RUNTIME_PARTICLE_SYSTEM_PATH),
         "pre_deactivate_summary": pre_deactivate_summary,
     }
 
@@ -1287,6 +1364,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             camera_info=presentation_camera_info,
             lighting_info=presentation_lighting_info,
             isosurface_contract=authored.get("isosurface_contract") or {},
+            postprocess_contract=authored.get("postprocess_contract") or {},
             material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
             particle_count=len(selected_positions),
         )

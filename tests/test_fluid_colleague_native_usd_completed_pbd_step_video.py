@@ -10,6 +10,7 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     LIQUID_PRESENTATION_LIGHT_PATH,
     LIQUID_PRESENTATION_MATERIAL_PATH,
     NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
+    PRESENTATION_POSTPROCESS_HASH,
     PRESENTATION_WATER_MDL_ASSET,
     PRESENTATION_WATER_MDL_SUB_IDENTIFIER,
     NativeMaterialExpectation,
@@ -20,6 +21,7 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     build_liquid_presentation_isosurface_contract,
     build_native_scene_claim_boundary,
     build_native_scene_video_summary,
+    build_presentation_postprocess_contract,
     build_presentation_visual_contract,
     build_presentation_water_mdl_material_info,
     build_presentation_water_preview_fallback_info,
@@ -190,7 +192,25 @@ def test_build_liquid_presentation_isosurface_contract_uses_offsets():
     assert contract["claim_boundary"] == "visual_surface_reconstruction_only"
 
 
+def test_build_presentation_postprocess_contract_matches_spec_anisotropy_and_smoothing():
+    contract = build_presentation_postprocess_contract()
+
+    assert contract["enabled"] is True
+    assert contract["api_path"] == "/World/CompletedPBD/ParticleSystem"
+    assert contract["anisotropy"]["enabled"] is True
+    assert contract["anisotropy"]["scale"] == 5.0
+    assert contract["anisotropy"]["min"] == 1.0
+    assert contract["anisotropy"]["max"] == 2.0
+    assert contract["smoothing"]["enabled"] is True
+    assert contract["smoothing"]["strength"] == 0.5
+    assert contract["postprocess_hash"] == PRESENTATION_POSTPROCESS_HASH
+    assert contract["postprocess_hash"] == "anisotropy_5_1_2_smoothing_0_5_v1"
+    assert contract["claim_boundary"] == "visual_surface_reconstruction_only"
+    assert contract["affects_leak_classification"] is False
+
+
 def test_build_presentation_visual_contract_separates_visual_video_from_gate():
+    postprocess_contract = build_presentation_postprocess_contract()
     contract = build_presentation_visual_contract(
         variant_id="NATIVE_SDF_128",
         camera_info={
@@ -201,6 +221,7 @@ def test_build_presentation_visual_contract_separates_visual_video_from_gate():
         },
         lighting_info={"lighting_contract_hash": "abc123"},
         isosurface_contract={"enabled": True},
+        postprocess_contract=postprocess_contract,
         material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
         particle_count=50000,
     )
@@ -212,6 +233,10 @@ def test_build_presentation_visual_contract_separates_visual_video_from_gate():
     assert contract["debug_particle_display_enabled"] is False
     assert contract["presentation_video_does_not_replace_particle_readback"] is True
     assert contract["visual_material_parity_claim_allowed"] is False
+    assert contract["postprocess"] == postprocess_contract
+    assert contract["postprocess"]["anisotropy"]["scale"] == 5.0
+    assert contract["postprocess"]["smoothing"]["strength"] == 0.5
+    assert contract["postprocess"]["claim_boundary"] == "visual_surface_reconstruction_only"
     assert "same simulated particle trajectory" in contract["claim_boundary_text"]
     assert "particle readback" in contract["claim_boundary_text"]
     assert "do not change the particle simulation" in contract["claim_boundary_text"]
