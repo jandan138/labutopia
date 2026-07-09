@@ -94,10 +94,10 @@
 - Modify: `tools/labutopia_fluid/run_colleague_native_usd_completed_pbd_step_video.py` (overlay hook)
 - Test: `tests/test_fluid_colleague_liquid_usd_leak_smoke.py`
 
-- [ ] **Step 1:** Failing test: collider mode `fluid-safe-wrapper` disables `/World/beaker2/mesh` collision and authors `FluidSafeWrapper`.
-- [ ] **Step 2:** Implement full-scene overlay path.
-- [ ] **Step 3:** Dry-run/unit pass without requiring GPU if mocked; document Isaac command for 512p smoke.
-- [ ] **Step 4:** Commit `feat: overlay fluid-safe wrapper on colleague native scene`
+- [x] **Step 1:** Failing test: collider mode `fluid-safe-wrapper` disables `/World/beaker2/mesh` collision and authors `FluidSafeWrapper`.
+- [x] **Step 2:** Implement full-scene overlay path.
+- [x] **Step 3:** Dry-run/unit pass without requiring GPU if mocked; document Isaac command for 512p smoke.
+- [x] **Step 4:** Commit `feat: overlay fluid-safe wrapper on colleague native scene`
 
 ---
 

@@ -20,8 +20,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.labutopia_fluid.run_beaker_collider_smoke import (
+    FLUID_SAFE_WRAPPER_DEFAULT_PANEL_COUNT,
+    FLUID_SAFE_WRAPPER_FRAME,
+    FLUID_SAFE_WRAPPER_MOTION_CONTRACT,
     ColliderConfig,
     VariantSpec,
+    _add_fluid_safe_wrapper,
     _add_native_beaker_isolation,
     _add_target_marker,
     classify_collider_hold,
@@ -53,8 +57,10 @@ DEFAULT_MANIFEST = (
 DEFAULT_NATIVE_USD = "outputs/usd_asset_packages/lab_001_localized_20260707/lab_001.usd"
 EVIDENCE_PARTICLE_SYSTEM_PATH = "/World/ParticleSystem"
 EVIDENCE_PARTICLE_SET_PATH = "/World/ParticleSet"
-COLLIDER_MODES = ("native-convex", "native-proxy-wrapper", "none")
+COLLIDER_MODES = ("native-convex", "native-proxy-wrapper", "fluid-safe-wrapper", "none")
 POSITION_MODES = ("colleague-sampled", "source-grid")
+FLUID_SAFE_WRAPPER_COLLIDER_MODE = "fluid-safe-wrapper"
+FLUID_SAFE_WRAPPER_COLLISION_ROUTE = "render_mesh_plus_fluid_safe_wrapper"
 
 
 @dataclass(frozen=True)
@@ -273,6 +279,31 @@ def resolve_particle_runtime_offsets(
 def build_colleague_variant_spec(collider_mode: str) -> VariantSpec:
     if collider_mode not in COLLIDER_MODES:
         raise ValueError(f"unsupported_collider_mode:{collider_mode}")
+    if collider_mode == FLUID_SAFE_WRAPPER_COLLIDER_MODE:
+        return VariantSpec(
+            variant_id="COLLEAGUE_FLUID_SAFE_WRAPPER",
+            name="colleague_fluid-safe-wrapper",
+            description=(
+                "Full-scene beaker2-local fluid-safe wrapper overlay; "
+                "native /World/beaker2/mesh collision disabled."
+            ),
+            setup="fluid_safe_wrapper",
+            collider_count=FLUID_SAFE_WRAPPER_DEFAULT_PANEL_COUNT + 1,
+            collision_approximation=FLUID_SAFE_WRAPPER_COLLISION_ROUTE,
+            source_kind="fluid_safe_wrapper",
+            native_source_path="/World/beaker2",
+            native_mesh_source_path="/World/beaker2/mesh",
+            native_reference_scope="parent_scope",
+            native_material_binding_strategy="local_blue_glass_override",
+            native_material_binding_scope_closed=True,
+            native_pose_alignment="bbox_recenter_to_source_region",
+            native_collision_route=FLUID_SAFE_WRAPPER_COLLISION_ROUTE,
+            native_mesh_collision_enabled=False,
+            proxy_collision_enabled=False,
+            panel_count=FLUID_SAFE_WRAPPER_DEFAULT_PANEL_COUNT,
+            wrapper_parent_path="/World/beaker2",
+            wrapper_frame=FLUID_SAFE_WRAPPER_FRAME,
+        )
     route = "render_mesh_plus_proxy_collision" if collider_mode == "native-proxy-wrapper" else "convexDecomposition"
     proxy_enabled = collider_mode == "native-proxy-wrapper"
     native_collision_enabled = collider_mode == "native-convex"
@@ -295,6 +326,39 @@ def build_colleague_variant_spec(collider_mode: str) -> VariantSpec:
         proxy_collision_enabled=proxy_enabled,
         panel_count=24 if proxy_enabled else None,
     )
+
+
+def apply_fluid_safe_wrapper_overlay(
+    stage: Any,
+    config: ColliderConfig,
+    *,
+    parent_path: str = "/World/beaker2",
+    visual_mesh_path: str = "/World/beaker2/mesh",
+    panel_count: int | None = None,
+    wall_thickness: float | None = None,
+    bottom_overlap: float | None = None,
+) -> dict[str, Any]:
+    """Overlay FluidSafeWrapper on a full colleague native scene under beaker2.
+
+    Disables ``/World/beaker2/mesh`` collision and authors invisible local-frame
+    box panels via ``_add_fluid_safe_wrapper``. Safe for unit tests with an
+    in-memory USD stage (no Isaac GPU required).
+    """
+    result = _add_fluid_safe_wrapper(
+        stage,
+        config,
+        parent_path=parent_path,
+        visual_mesh_path=visual_mesh_path,
+        panel_count=panel_count,
+        wall_thickness=wall_thickness,
+        bottom_overlap=bottom_overlap,
+    )
+    return {
+        **result,
+        "overlay_mode": FLUID_SAFE_WRAPPER_COLLIDER_MODE,
+        "collision_route": FLUID_SAFE_WRAPPER_COLLISION_ROUTE,
+        "motion_contract": result.get("motion_contract") or FLUID_SAFE_WRAPPER_MOTION_CONTRACT,
+    }
 
 
 def _max_displacement(initial: Sequence[Sequence[float]], final: Sequence[Sequence[float]]) -> float:
@@ -832,8 +896,27 @@ def _run_minimal_native_slice(args: argparse.Namespace) -> dict[str, Any]:
 
     UsdGeom.Scope.Define(stage, "/World/Looks")
     spec = build_colleague_variant_spec(args.collider_mode)
-    collider_paths = []
-    if args.collider_mode != "none":
+    collider_paths: list[str] = []
+    fluid_safe_wrapper_overlay: dict[str, Any] | None = None
+    if args.collider_mode == FLUID_SAFE_WRAPPER_COLLIDER_MODE:
+        # Minimal native slice still references beaker2, then overlays FluidSafeWrapper
+        # under the isolation parent (same local-frame contract as full-scene overlay).
+        collider_paths = _add_native_beaker_isolation(stage, config, native_usd, spec)
+        fluid_safe_wrapper_overlay = {
+            "enabled": True,
+            "overlay_mode": FLUID_SAFE_WRAPPER_COLLIDER_MODE,
+            "collision_route": FLUID_SAFE_WRAPPER_COLLISION_ROUTE,
+            "wrapper_frame": FLUID_SAFE_WRAPPER_FRAME,
+            "motion_contract": FLUID_SAFE_WRAPPER_MOTION_CONTRACT,
+            "wrapper_parent_path": "/World/SourceContainer/NativeBeaker2",
+            "visual_mesh_path": "/World/SourceContainer/NativeBeaker2/mesh",
+            "collider_paths": list(collider_paths),
+            "note": (
+                "Leak-smoke uses NativeBeaker2 isolation parent; full-scene overlay "
+                "API apply_fluid_safe_wrapper_overlay targets /World/beaker2 directly."
+            ),
+        }
+    elif args.collider_mode != "none":
         collider_paths = _add_native_beaker_isolation(stage, config, native_usd, spec)
     if args.collider_mode != "none":
         _add_target_marker(stage, config)
@@ -975,6 +1058,7 @@ def _run_minimal_native_slice(args: argparse.Namespace) -> dict[str, Any]:
         "target_bbox": asdict(target_bbox),
         "table_bbox": asdict(table_bbox),
         "collider_paths": collider_paths,
+        "fluid_safe_wrapper_overlay": fluid_safe_wrapper_overlay,
         "variant_spec": asdict(spec),
         "authored_runtime_paths": authored,
         "classification": classification,
@@ -1040,6 +1124,41 @@ def _run_runtime(args: argparse.Namespace) -> dict[str, Any]:
         return summary
     finally:
         app.close()
+
+
+def build_fluid_safe_wrapper_isaac_smoke_command(
+    *,
+    python_executable: str = "/isaac-sim/python.sh",
+    usd: str = DEFAULT_USD,
+    native_usd: str = DEFAULT_NATIVE_USD,
+    out_dir: str = DEFAULT_ARTIFACT_DIR,
+    manifest: str = DEFAULT_MANIFEST,
+    particle_limit: int = 512,
+    steps: int = 120,
+) -> list[str]:
+    """Documented IsaacSim41 command for a 512-particle fluid-safe-wrapper leak smoke.
+
+    Unit tests cover authoring without GPU; this command is the live runtime entrypoint.
+    """
+    return [
+        str(python_executable),
+        str(Path(__file__).resolve()),
+        "--usd",
+        str(usd),
+        "--native-usd",
+        str(native_usd),
+        "--collider-mode",
+        FLUID_SAFE_WRAPPER_COLLIDER_MODE,
+        "--particle-limit",
+        str(particle_limit),
+        "--steps",
+        str(steps),
+        "--out-dir",
+        str(out_dir),
+        "--manifest",
+        str(manifest),
+        "--headless",
+    ]
 
 
 def build_arg_parser() -> argparse.ArgumentParser:

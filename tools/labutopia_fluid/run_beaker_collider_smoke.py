@@ -1217,6 +1217,25 @@ def _add_native_beaker_isolation(stage: Any, config: ColliderConfig, native_usd:
         collision_api.CreateCollisionEnabledAttr().Set(False)
         collider_paths.extend(_add_proxy_collision_wrapper(stage, config, spec))
         return collider_paths
+    if route == "render_mesh_plus_fluid_safe_wrapper":
+        collision_api = UsdPhysics.CollisionAPI.Apply(mesh_prim)
+        collision_api.CreateCollisionEnabledAttr().Set(False)
+        wrapper = _add_fluid_safe_wrapper(
+            stage,
+            config,
+            parent_path=parent_path,
+            visual_mesh_path=f"{parent_path}/mesh",
+            panel_count=spec.panel_count,
+            wall_thickness=config.wall_thickness,
+            bottom_overlap=config.bottom_overlap,
+            panel_arc_overlap_factor=(
+                spec.panel_arc_overlap_factor
+                if spec.panel_arc_overlap_factor is not None
+                else FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR
+            ),
+        )
+        collider_paths.extend(list(wrapper["collider_paths"]))
+        return collider_paths
 
     sdf_resolution = config.sdf_resolution or spec.sdf_resolution
     _apply_static_collision(

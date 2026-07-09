@@ -1,7 +1,9 @@
 import pytest
 
+from tools.labutopia_fluid.run_beaker_collider_smoke import ColliderConfig
 from tools.labutopia_fluid.run_colleague_liquid_usd_leak_smoke import (
     BBox,
+    apply_fluid_safe_wrapper_overlay,
     build_colleague_variant_spec,
     build_particle_scope_summary,
     build_review_camera_summary,
@@ -124,6 +126,82 @@ def test_build_colleague_variant_spec_distinguishes_native_and_proxy_modes():
     assert proxy.native_collision_route == "render_mesh_plus_proxy_collision"
     assert proxy.native_mesh_collision_enabled is False
     assert proxy.proxy_collision_enabled is True
+
+
+def test_build_colleague_variant_spec_fluid_safe_wrapper_mode():
+    spec = build_colleague_variant_spec("fluid-safe-wrapper")
+
+    assert spec.variant_id == "COLLEAGUE_FLUID_SAFE_WRAPPER"
+    assert spec.setup == "fluid_safe_wrapper"
+    assert spec.source_kind == "fluid_safe_wrapper"
+    assert spec.native_source_path == "/World/beaker2"
+    assert spec.native_mesh_source_path == "/World/beaker2/mesh"
+    assert spec.native_mesh_collision_enabled is False
+    assert spec.proxy_collision_enabled is False
+    assert spec.wrapper_parent_path == "/World/beaker2"
+    assert spec.wrapper_frame == "local_to_beaker2"
+    assert spec.native_collision_route == "render_mesh_plus_fluid_safe_wrapper"
+    assert spec.panel_count == 48
+
+
+def _author_full_scene_beaker2_fixture(stage, *, translate=(0.31, 0.09, 0.85)):
+    from pxr import Gf, UsdGeom, UsdPhysics
+
+    UsdGeom.Xform.Define(stage, "/World")
+    parent = UsdGeom.Xform.Define(stage, "/World/beaker2")
+    parent.AddTranslateOp().Set(Gf.Vec3d(*translate))
+    mesh = UsdGeom.Cube.Define(stage, "/World/beaker2/mesh")
+    mesh.CreateSizeAttr(0.12)
+    mesh_prim = mesh.GetPrim()
+    collision_api = UsdPhysics.CollisionAPI.Apply(mesh_prim)
+    collision_api.CreateCollisionEnabledAttr().Set(True)
+    return parent.GetPrim(), mesh_prim
+
+
+def test_apply_fluid_safe_wrapper_overlay_disables_mesh_and_authors_wrapper():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    _author_full_scene_beaker2_fixture(stage)
+    config = ColliderConfig(wall_thickness=0.018, bottom_overlap=0.003)
+
+    result = apply_fluid_safe_wrapper_overlay(
+        stage,
+        config,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        panel_count=8,
+    )
+
+    wrapper = stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper")
+    mesh_prim = stage.GetPrimAtPath("/World/beaker2/mesh")
+
+    assert wrapper.IsValid()
+    assert UsdGeom.Imageable(wrapper).ComputeVisibility() == UsdGeom.Tokens.invisible
+    assert wrapper.GetAttribute("labutopia:fluidSafeWrapper").Get() is True
+    assert wrapper.GetAttribute("labutopia:wrapperFrame").Get() == "local_to_beaker2"
+    assert mesh_prim.GetAttribute("physics:collisionEnabled").Get() is False
+    assert result["wrapper_path"] == "/World/beaker2/FluidSafeWrapper"
+    assert result["wrapper_frame"] == "local_to_beaker2"
+    assert result["motion_contract"] == "static_collision_inherits_beaker2_xform"
+    assert result["wrapper_parent_path"] == "/World/beaker2"
+    assert result["native_mesh_collision_enabled"] is False
+    assert result["overlay_mode"] == "fluid-safe-wrapper"
+    assert "/World/beaker2/FluidSafeWrapper/Bottom" in result["collider_paths"]
+
+
+def test_build_fluid_safe_wrapper_isaac_smoke_command_documents_512p_entrypoint():
+    from tools.labutopia_fluid.run_colleague_liquid_usd_leak_smoke import (
+        build_fluid_safe_wrapper_isaac_smoke_command,
+    )
+
+    cmd = build_fluid_safe_wrapper_isaac_smoke_command(particle_limit=512, steps=120)
+
+    assert "--collider-mode" in cmd
+    assert "fluid-safe-wrapper" in cmd
+    assert "--particle-limit" in cmd
+    assert "512" in cmd
+    assert "--headless" in cmd
 
 
 def test_classify_colleague_trace_marks_any_source_escape_as_leak():
