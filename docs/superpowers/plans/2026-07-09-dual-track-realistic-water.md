@@ -259,7 +259,9 @@ Code/unit tasks complete: 0,1,2,3,5,6,7,8,9 (+ motion_contract fix).
 
 **Task 4 code:** `D4_WRAPPER_PROMOTION` phase + 12-trial matrix + adaptive spawn for 4k/50k (`7c32049`).
 
+**Promotion `_001` (pre-spawn-scale):** 512×3 PASS; 1024/4096/50k FAIL (50k width>spacing floor punch). Fix `9e47c48` scales width/offsets; promotion bottom_overlap≥0.012, arc≥1.25.
+
 Still GPU-gated:
-- Task 4: Isaac reconfirm seeds after centerline width → full 12-trial promotion
+- Task 4: promotion v2 after spawn-scale → need 12/12 for G1
 - Task 10: Official Visual A evidence on Physics-A-passing trajectory
 - Task 11: Slow pour B after G1
