@@ -337,6 +337,9 @@ def apply_fluid_safe_wrapper_overlay(
     panel_count: int | None = None,
     wall_thickness: float | None = None,
     bottom_overlap: float | None = None,
+    panel_arc_overlap_factor: float | None = None,
+    panel_phase_offset_rad: float = 0.0,
+    panel_ring_count: int = 1,
 ) -> dict[str, Any]:
     """Overlay FluidSafeWrapper on a full colleague native scene under beaker2.
 
@@ -344,15 +347,18 @@ def apply_fluid_safe_wrapper_overlay(
     box panels via ``_add_fluid_safe_wrapper``. Safe for unit tests with an
     in-memory USD stage (no Isaac GPU required).
     """
-    result = _add_fluid_safe_wrapper(
-        stage,
-        config,
-        parent_path=parent_path,
-        visual_mesh_path=visual_mesh_path,
-        panel_count=panel_count,
-        wall_thickness=wall_thickness,
-        bottom_overlap=bottom_overlap,
-    )
+    kwargs: dict[str, Any] = {
+        "parent_path": parent_path,
+        "visual_mesh_path": visual_mesh_path,
+        "panel_count": panel_count,
+        "wall_thickness": wall_thickness,
+        "bottom_overlap": bottom_overlap,
+        "panel_phase_offset_rad": panel_phase_offset_rad,
+        "panel_ring_count": panel_ring_count,
+    }
+    if panel_arc_overlap_factor is not None:
+        kwargs["panel_arc_overlap_factor"] = panel_arc_overlap_factor
+    result = _add_fluid_safe_wrapper(stage, config, **kwargs)
     return {
         **result,
         "overlay_mode": FLUID_SAFE_WRAPPER_COLLIDER_MODE,

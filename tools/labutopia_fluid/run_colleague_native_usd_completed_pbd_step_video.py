@@ -167,12 +167,33 @@ def scan_presentation_water_mdl_compile_errors(
             material_token in lower
             or material_name in lower
             or "omnisurface_clearwater" in lower
+            or "createmdlmodule failed" in lower and material_name in lower
             or (
                 "omnisurfacepresets.mdl" in lower
-                and ("clearwater" in lower or material_name in lower)
+                and ("clearwater" in lower or material_name in lower or "liquidpresentation" in lower)
+            )
+            # Local-mirror OmniSurface.mdl often fails before ClearWater resolves; treat as
+            # presentation-water compile failure when the LiquidPresentationWater shade node
+            # also failed in the same log (checked below via createmdlmodule line).
+            or (
+                "omnisurface.mdl" in lower
+                and "round_edges" in lower
+                and any(
+                    material_name in other.lower() or "liquidpresentationwater" in other.lower()
+                    for other in all_errors["errors"]
+                )
             )
         ):
             presentation_lines.append(line)
+    # Deduplicate while preserving order.
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for line in presentation_lines:
+        if line in seen:
+            continue
+        seen.add(line)
+        deduped.append(line)
+    presentation_lines = deduped
     joined = "\n".join(presentation_lines).lower()
     return {
         "mdl_compile_status": (
@@ -186,6 +207,51 @@ def scan_presentation_water_mdl_compile_errors(
         "errors_truncated": len(presentation_lines) > max_errors,
         "native_scene_error_count": int(all_errors["error_count"]),
     }
+
+
+def reconcile_presentation_water_material_with_isaac_log(
+    material_info: dict[str, Any] | None,
+    isaac_log_summary: dict[str, Any] | None,
+    *,
+    log_text: str | None = None,
+) -> dict[str, Any]:
+    """Downgrade authored MDL_WATER PASS when Isaac logs show ClearWater compile failure.
+
+    Authoring records PASS at bind time; Hydra may still fail createMdlModule later.
+    Official Visual A A1 requires honest post-render compile status.
+    """
+    if not material_info:
+        return {}
+    reconciled = dict(material_info)
+    if not bool(reconciled.get("mdl_bind_attempted")):
+        return reconciled
+    if reconciled.get("material_backend") != "MDL_WATER":
+        return reconciled
+
+    text = log_text
+    if text is None and isaac_log_summary and isaac_log_summary.get("isaac_log_available"):
+        log_path = isaac_log_summary.get("isaac_log_path")
+        if log_path:
+            try:
+                text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                text = None
+    if not text:
+        # Fall back to errors already captured in isaac_log_summary.
+        errors = list((isaac_log_summary or {}).get("errors") or [])
+        text = "\n".join(errors)
+    scan = scan_presentation_water_mdl_compile_errors(text or "")
+    reconciled["presentation_mdl_log_scan"] = {
+        "mdl_compile_status": scan["mdl_compile_status"],
+        "error_count": scan["error_count"],
+        "errors": scan["errors"][:10],
+    }
+    if scan["mdl_compile_status"] == MDL_COMPILE_STATUS_FAIL:
+        reconciled["material_backend"] = "USD_PREVIEW_FALLBACK"
+        reconciled["mdl_compile_status"] = MDL_COMPILE_STATUS_FALLBACK_USED
+        reconciled["fallback_reason"] = "mdl_create_module_failed_after_bind"
+        reconciled["visual_material_parity_claim_allowed"] = False
+    return reconciled
 
 
 def _presentation_water_common_fields() -> dict[str, Any]:
@@ -259,13 +325,18 @@ def resolve_presentation_water_mdl_source_asset(
     *,
     closure_base_dir: str | Path | None = None,
 ) -> Path | None:
-    """Resolve OmniSurfacePresets.mdl from explicit path, local mirror, or Isaac core root."""
+    """Resolve OmniSurfacePresets.mdl from explicit path, Isaac core root, or local mirror.
+
+    Prefer the kit core path over the artifact local mirror: Hydra resolves
+    OmniSurfaceBase correctly from ``/isaac-sim/kit/mdl/core``, while the
+    mirrored file:// tree often fails createMdlModule (round_edges params).
+    """
     candidates: list[Path] = []
     if mdl_source_asset is not None:
         candidates.append(Path(mdl_source_asset))
+    candidates.append(ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET)
     if closure_base_dir is not None:
         candidates.append(Path(closure_base_dir) / PRESENTATION_WATER_MDL_ASSET)
-    candidates.append(ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET)
     for candidate in candidates:
         if candidate.exists():
             return candidate
@@ -1650,13 +1721,18 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             raise ValueError(
                 "fluid_safe_wrapper_overlay_conflicts_with_native_collider_approximation_variant"
             )
+        # Pin to Physics-A G1 geometry (D4A_018 promotion): dual-ring 72 panels,
+        # wall≥0.026, bottom_overlap≥0.012, arc≥1.35. Default overlay (48/0.018)
+        # is not the G1-passing stack.
+        import math as _math
+
         wrapper_config = ColliderConfig(
             source_center=config.source_center,
             source_radius=config.source_radius,
             wall_height=config.wall_height,
             table_z=config.table_z,
-            wall_thickness=0.018,
-            bottom_overlap=0.003,
+            wall_thickness=0.026,
+            bottom_overlap=0.012,
             particle_contact_offset=offsets["particle_contact_offset"],
             collider_contact_offset=getattr(config, "collider_contact_offset", 0.003),
             collider_rest_offset=getattr(config, "collider_rest_offset", 0.0),
@@ -1664,11 +1740,19 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         fluid_safe_wrapper_overlay_summary = {
             "enabled": True,
             "overlay_mode": FLUID_SAFE_WRAPPER_COLLIDER_MODE,
+            "g1_geometry_pinned": True,
+            "g1_parent_candidate_id": "D4A_018",
             "authoring": apply_fluid_safe_wrapper_overlay(
                 stage,
                 wrapper_config,
                 parent_path="/World/beaker2",
                 visual_mesh_path="/World/beaker2/mesh",
+                panel_count=72,
+                wall_thickness=0.026,
+                bottom_overlap=0.012,
+                panel_arc_overlap_factor=1.35,
+                panel_phase_offset_rad=_math.pi / 72,
+                panel_ring_count=2,
             ),
         }
     original_fluid_deactivate_summary = _deactivate_original_fluid_prims(stage)
@@ -1702,7 +1786,9 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             stage,
             attempt_mdl=True,
             closure_base_dir=material_closure_summary.get("closure_base_dir"),
-            prefer_kit_bind=False,
+            # Prefer kit library bind so ClearWater resolves OmniSurfaceBase from
+            # /isaac-sim/kit/mdl/core rather than the artifact file:// mirror.
+            prefer_kit_bind=True,
         )
         presentation_lighting_info = _author_liquid_presentation_lighting(stage)
         presentation_camera_info = _define_liquid_presentation_camera(stage, config)
@@ -1993,6 +2079,35 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "physics_settings": physics_settings,
         "isaac_log_summary": _latest_isaac_log_summary(),
     }
+    # Honest MDL status: authoring may record PASS before Hydra createMdlModule.
+    summary["isaac_log_summary"] = _latest_isaac_log_summary()
+    if presentation_material_info:
+        presentation_material_info = reconcile_presentation_water_material_with_isaac_log(
+            presentation_material_info,
+            summary["isaac_log_summary"],
+        )
+        summary["presentation_material"] = presentation_material_info
+        if presentation_visual_contract:
+            presentation_visual_contract = build_presentation_visual_contract(
+                variant_id=native_collider_variant_id or NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
+                camera_info=presentation_camera_info,
+                lighting_info=presentation_lighting_info,
+                isosurface_contract=authored.get("isosurface_contract") or {},
+                postprocess_contract=authored.get("postprocess_contract") or {},
+                material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
+                particle_count=len(selected_positions),
+                render_settings=presentation_render_settings
+                or build_presentation_render_settings_contract(),
+                material_info=presentation_material_info,
+                product_water_fx=build_product_water_fx_contract(),
+                visual_acceptance=visual_acceptance_provenance
+                if visual_acceptance_provenance.get("visual_acceptance_scenario")
+                else None,
+            )
+            summary["presentation_visual_contract"] = presentation_visual_contract
+            summary["official_visual_a_claim_allowed"] = bool(
+                presentation_visual_contract.get("official_visual_a_claim_allowed")
+            )
     _write_json(artifact_dir / "runtime_smoke_summary.json", summary)
     _write_json(Path(args.manifest), summary)
     timeline.stop()
