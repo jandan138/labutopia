@@ -173,6 +173,8 @@ colleague_native_usd_50k_long_completed_pbd_below_table_count=49235
 colleague_native_usd_50k_long_visual_review=WARN
 colleague_50k_completed_pbd_blue_isosurface_diagnostic_baseline=true
 colleague_50k_completed_pbd_blue_isosurface_final_realistic_water_claim_allowed=false
+# Historical registry keys below keep evidence path continuity; PM label is
+# "unified diagnostic surface (MDL target not yet passed)" / presentation water (MDL pending).
 unified_realistic_water_visualization_followup_planned=false
 unified_realistic_water_visualization_executed=true
 unified_realistic_water_visualization_manifest=fluid_spike_unified_realistic_water_visualization_20260709.json
@@ -189,6 +191,7 @@ unified_realistic_water_visualization_mdl_compile_status=FALLBACK_USED
 unified_realistic_water_visualization_visual_review=WARN_REALISM_NOT_YET_PHOTOREAL
 unified_realistic_water_visualization_all_liquid_particles_visible=true
 unified_realistic_water_visualization_state_specific_materials=false
+# Do not claim MDL_WATER PASS; presentation water remains FALLBACK / MDL pending.
 s3_kinematic_pour_released=false
 next_fluid_work=["S2_PROXY_WRAPPER_DESIGN_FOLLOW_UP"]
 s2_s3_collider_matrix_required=true

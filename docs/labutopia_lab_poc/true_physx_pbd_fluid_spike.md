@@ -841,7 +841,7 @@ visual_review=docs/labutopia_lab_poc/evidence_manifests/fluid_spike_colleague_na
 |---|---|---|
 | early closeup | `WARN` | 第一张可用 closeup frame 中杯口可见，但红色粒子团太满，看起来像一个实体红块，不适合单独展示材质；它不是 step 0 原始帧。 |
 | end closeup | `PASS` | 透明杯子可见，杯外有红色团块/痕迹，能支撑“没有装住”的故事。 |
-| review marker | `WARN` | 有助于看粒子位置，但只是诊断 overlay，不是真实水面。 |
+| review marker | `WARN` | 有助于看粒子位置，但只是诊断 overlay，不是 presentation water / 液面材质。 |
 | Camera1/Camera2 | `WARN` | 能证明是原生桌面布局，但离杯子太远，不能作为漏液细节证据。 |
 
 所以给领导汇报时应这样说：我们已经在原生 USD 场景里跑了 50k completed-PBD step，并录到了 closeup/native
@@ -963,7 +963,7 @@ Rendering choices including PhysX Isosurface reconstruction, material color/opac
 These adjustments do not change the particle simulation, collider setup, leak classifier, or benchmark claims.
 ```
 
-给产品经理的白话解释：这条蓝色视频不是“把漏液问题修好了”，而是“把同一条失败轨迹用更像液面的方式展示出来”。
+给产品经理的白话解释：这条蓝色视频不是“把漏液问题修好了”，而是“把同一条失败轨迹用更可读的液面重建方式展示出来”。
 它解决的是展示层问题：红色点云太像一坨，领导很难判断是不是液体；`PhysX Isosurface` 能让人更直观看到
 source beaker、target beaker、桌面和泄漏区域。它不解决 `collider` 问题，也不能替代 readback：
 能不能放行下一阶段仍看 `below_table_count=0`、`spill_count=0`、`outside_source_count=0` 这些物理 gate。
@@ -973,10 +973,10 @@ source beaker、target beaker、桌面和泄漏区域。它不解决 `collider` 
 `LabUtopia51 native visual material parity`。因此周报可以把它作为“更适合领导理解的诊断展示视频”，但不能把它
 升级为 benchmark-ready fluid evidence。
 
-### Unified Realistic Water Visualization Follow-Up 已执行
+### Unified Diagnostic Surface Visualization Follow-Up 已执行（MDL 目标未过）
 
 2026-07-09 的多角度 review 后，展示层口径进一步收窄并已执行：异常粒子不隐藏，漏出来的液体继续可见；
-但主视频里的所有液体都使用同一种 realistic-water-style 可视化，不再把杯内、洒出、桌下分别做成不同颜色或不同风格。
+但主视频里的所有液体都使用同一种统一诊断水面 / presentation water（`USD_PREVIEW_FALLBACK`，MDL pending），不再把杯内、洒出、桌下分别做成不同颜色或不同风格。
 也就是说，问题不是“异常粒子全部可视化不对”，而是“旧可视化太像红色/蓝色 debug 团”。
 
 旧 20 秒蓝色 `PhysX Isosurface` 视频现在保留为 diagnostic baseline：
@@ -1010,10 +1010,11 @@ nan_count=0
 新材质合同：
 
 ```text
-display_name=presentation_water_unified_realistic
+display_name=presentation_water_unified_diagnostic
 material_backend=USD_PREVIEW_FALLBACK
 preferred_backend=MDL_WATER
 mdl_compile_status=FALLBACK_USED
+# presentation water (MDL pending); do not claim MDL_WATER PASS
 emissive_color=[0.0, 0.0, 0.0]
 diffuse_color=[0.74, 0.94, 1.0]
 opacity=0.34
@@ -1026,25 +1027,25 @@ visual_material_parity_claim_allowed=false
 ```
 
 白话解释：这条视频证明了我们可以把同一条 50k `PBD particle trajectory` 通过 `PhysX Isosurface`
-重建成更可读的液面/液体团，并且物理读数仍然支持 `FAIL_CONTAINER_LEAK`。它解决的是“给领导看的水不要像
+重建成更可读的统一诊断水面（MDL 目标未过），并且物理读数仍然支持 `FAIL_CONTAINER_LEAK`。它解决的是“给领导看的水不要像
 红色/蓝色调试团”，不解决 `collider` 漏液问题，也不改变 `particle readback` 判定。
 
 visual review 结论是 `WARN_REALISM_NOT_YET_PHOTOREAL`。优点是异常红色和强蓝色已经消失，source/target beaker
 和桌面关系清楚；风险是水体仍有半透明雾状/冰沙感，漏出区域仍有 speckled 观感。因此它可以作为 PM-facing
-diagnostic video，但不能升级为 polished pour、`MDL_WATER` parity 或 full visual material parity。
+diagnostic video / presentation water (MDL pending)，但不能升级为 polished pour、`MDL_WATER` PASS 或 full visual material parity。
 
 给产品经理的汇报口径：
 
 > 我们没有隐藏漏出来的液体。所有液体仍然来自同一条 50k `PBD particle trajectory`；
-> 区别只是展示层从红色/蓝色 debug 感升级为统一浅色水面。物理结论仍然是
+> 区别只是展示层从红色/蓝色 debug 感升级为统一诊断水面（MDL 目标未过）。物理结论仍然是
 > `FAIL_CONTAINER_LEAK`，因为 pass/fail 只看 `particle readback`，不是视频好不好看。
 
 允许说：
 
 ```text
-Unified realistic water visualization has been executed as a presentation follow-up.
-The old blue Isosurface video is a diagnostic baseline, not final realistic water.
-The new PM-facing fluid media uses one water material for all visible liquid.
+Unified diagnostic surface visualization (MDL target not yet passed) has been executed as a presentation follow-up.
+The old blue Isosurface video is a diagnostic baseline, not final presentation water.
+The new PM-facing fluid media uses one presentation-water material (USD_PREVIEW_FALLBACK; MDL pending) for all visible liquid.
 Leak/pass status remains particle-readback-based.
 ```
 
@@ -1057,6 +1058,7 @@ blue_isosurface_video_equals_final_realistic_water
 unified_realistic_water_visualization_equals_photoreal_water
 visualization_only_liquid_equals_true_fluid
 state_specific_coloring_is_needed_to_show_leaks
+mdl_water_pass
 ```
 
 ## 同事 raw 50k liquid USD 的 D0 直接-step 准入审计
@@ -1105,7 +1107,7 @@ IsaacSim41 里作为真实液体运动”的完整说明书。其中最关键的
 
 | 缺口 | 白话解释 | 为什么会阻止直接 step |
 |---|---|---|
-| 缺 `PhysxPBDMaterialAPI` | 没有告诉 PhysX 这些点的液体材料参数，比如像水还是像胶、粒子如何相互作用。 | 只有点位和普通玻璃材质，不等于 PBD fluid material。 |
+| 缺 `PhysxPBDMaterialAPI` | 没有告诉 PhysX 这些点的液体材料参数，比如偏流体还是偏粘稠、粒子如何相互作用。 | 只有点位和普通玻璃材质，不等于 PBD fluid material。 |
 | 重力无效 | `gravity_direction=(0,0,0)` 且 `gravity_magnitude="-Infinity"`；审计记录为 `zero_gravity_direction` 和 `nonfinite_gravity_magnitude`。 | 物理世界的基础力场不成立，不能把 raw step 结果当成可信液体运动。 |
 
 所以 D0 的正确处理是“停止并留下证据”，而不是强行跑 timeline 然后拿不可信画面当结论。后续如果要把同事这个
@@ -1144,8 +1146,8 @@ Colleague 50k completed-PBD static leak is supported by particle readback: below
 Colleague 50k completed-PBD real IsaacSim41 RGB review camera evidence is available.
 Colleague 50k completed-PBD PhysX Isosurface presentation render is available for human-readable review.
 Presentation render uses the same simulated particle trajectory and does not replace particle readback.
-Unified realistic water visualization is planned as the next PM-facing presentation follow-up.
-Current blue Isosurface render is diagnostic baseline WARN, not final realistic water.
+Unified diagnostic surface visualization (MDL target not yet passed) is the current PM-facing presentation follow-up.
+Current presentation water uses USD_PREVIEW_FALLBACK (MDL pending); blue Isosurface remains diagnostic baseline WARN, not MDL_WATER PASS.
 ```
 
 禁止：
@@ -1169,6 +1171,8 @@ presentation water material equals LabUtopia51 visual material parity.
 realistic water video equals physics success.
 realistic water video fixes collider leak.
 blue Isosurface render equals final realistic water.
+unified realistic water visualization equals photoreal water.
+MDL_WATER PASS / ClearWater bind complete.
 native collider approximation sweep proves benchmark-ready true fluid.
 built-in/native approximation modes have passed static hold.
 ```

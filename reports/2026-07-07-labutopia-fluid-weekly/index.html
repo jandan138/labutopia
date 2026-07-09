@@ -523,7 +523,7 @@
     </section>
 
     <section id="surface-reconstruction" class="panel section">
-      <h2>新增：统一真实水展示 + 旧蓝色视频对照</h2>
+      <h2>新增：统一诊断水面（MDL 目标未过）+ 旧蓝色视频对照</h2>
       <p>前面的 20 秒 closeup 是最硬的工程诊断，但红色粒子团容易被误解成“材质坏了”或“粒子本身很大”。7 月 9 日补了一版更适合汇报的 <code>presentation lane</code>：同事 USD 提供的是 <code>50000</code> 个液体初始点位，我们在运行时补齐可 step/readback 的 <code>CompletedPBD</code> diagnostic runtime contract；物理输入、粒子轨迹、collider 设置和 leak classifier 不变，只把渲染层从离散点云切成 <code>PhysX Isosurface</code> reconstructed render surface，并固定一套领导汇报用 camera / lighting。</p>
 
       <div class="video-lead">
@@ -536,7 +536,7 @@
         </figure>
         <article class="note caution">
           <h3>这条视频解决什么、不解决什么</h3>
-          <p>解决的是“红色粒子团/蓝色诊断水不像真实水、领导看不清”的展示问题：关闭 red debug particle display，启用 <code>Isosurface</code>，改成统一的非发光、低透明度、浅蓝绿色 <code>USD_PREVIEW_FALLBACK</code> 水材质，并固定主视角和光照。</p>
+          <p>解决的是“红色粒子团/蓝色诊断水调试感过强、领导看不清”的展示问题：关闭 red debug particle display，启用 <code>Isosurface</code>，改成统一的非发光、低透明度、浅蓝绿色 <code>USD_PREVIEW_FALLBACK</code> presentation water（MDL pending），并固定主视角和光照。</p>
           <p>不解决 <code>collider</code> 漏液问题，也不改变 <code>particle_readback_trace.jsonl</code>。这条 20 秒长版 run 的结论仍是 <code>FAIL_CONTAINER_LEAK</code>：<code>below_table_count=39024</code>，<code>outside_source_count=41067</code>，source 杯内保留比例约 <code>17.9%</code>。</p>
           <p>visual review 结论是 <code>WARN_REALISM_NOT_YET_PHOTOREAL</code>：异常红色和强蓝色已经去掉，画面更适合汇报；但水体仍偏半透明雾状/冰沙感，漏出部分仍偏 speckled，不能说成 polished pour、MDL water parity 或 full visual material parity。</p>
         </article>
@@ -567,7 +567,7 @@
         </figure>
         <figure class="diagnostic warn">
           <img src="assets/liquid-surface-main-frame-03.png" alt="液面重建主视频后期帧">
-          <figcaption><strong>Late：</strong>漏出粒子仍被完整显示出来；视觉更自然，但仍不是产品级真实水。</figcaption>
+          <figcaption><strong>Late：</strong>漏出粒子仍被完整显示出来；视觉更自然，但仍是统一诊断水面（MDL 目标未过），不是 <code>MDL_WATER</code> PASS。</figcaption>
         </figure>
         <figure class="diagnostic warn">
           <video controls muted preload="metadata" playsinline poster="assets/liquid-surface-wide-frame-02.png">
@@ -806,8 +806,8 @@ nan_count=0</pre>
     <section id="material" class="two">
       <article class="card">
         <h2>为什么红色看起来像一坨</h2>
-        <p>这不是粒子物理尺寸真的很大。当前运行使用的实际粒子宽度约 <code>0.000594m</code>，也就是 <code>0.594mm</code>。但 50k 粒子非常密集，camera render 里会叠成红色团块；review marker 版本还会把 readback 点位放大到约 <code>0.012m</code> 方便人看，所以 marker 视频更不能当真实水面材质。</p>
-        <p>这次新增的 <code>PhysX Isosurface</code> presentation render 已经把“点云怎么变成更像液面”的展示链路跑通了一版：它能让领导看懂液体位置和泄漏现象，但仍然只是 visual closure，不会替代 zero-leak 物理 gate。</p>
+        <p>这不是粒子物理尺寸真的很大。当前运行使用的实际粒子宽度约 <code>0.000594m</code>，也就是 <code>0.594mm</code>。但 50k 粒子非常密集，camera render 里会叠成红色团块；review marker 版本还会把 readback 点位放大到约 <code>0.012m</code> 方便人看，所以 marker 视频更不能当 presentation water / 液面材质证据。</p>
+        <p>这次新增的 <code>PhysX Isosurface</code> presentation render 已经把“点云怎么变成可读诊断水面”的展示链路跑通了一版：它能让领导看懂液体位置和泄漏现象，但仍然只是 visual closure / presentation water（MDL pending），不会替代 zero-leak 物理 gate，也不能说成 <code>MDL_WATER</code> PASS。</p>
       </article>
       <article class="card">
         <h2>材质问题怎么处理的</h2>
@@ -941,7 +941,7 @@ unified_realistic_water_report_video=assets/liquid-surface-reconstruction-main-f
 blue_baseline_report_video=assets/liquid-surface-reconstruction-blue-baseline-full50k.mp4</pre>
       </details>
 
-      <p class="small">周报日期按 2026-07-07 归档；页面证据更新到 2026-07-09 的 20 秒 native-scene visual review、Native Collider Approximation Sweep、full 50k <code>PhysX Isosurface</code> presentation render，以及统一浅色真实水展示对照。中文用于解释性叙述，英文保留 <code>USD</code>、<code>IsaacSim41</code>、<code>PhysX/PBD</code>、<code>ParticleSet</code>、<code>EBench</code>、<code>MDL</code> 等架构术语。</p>
+      <p class="small">周报日期按 2026-07-07 归档；页面证据更新到 2026-07-09 的 20 秒 native-scene visual review、Native Collider Approximation Sweep、full 50k <code>PhysX Isosurface</code> presentation render，以及统一诊断水面（MDL 目标未过）展示对照。中文用于解释性叙述，英文保留 <code>USD</code>、<code>IsaacSim41</code>、<code>PhysX/PBD</code>、<code>ParticleSet</code>、<code>EBench</code>、<code>MDL</code> 等架构术语。</p>
     </section>
   </main>
 </body>
