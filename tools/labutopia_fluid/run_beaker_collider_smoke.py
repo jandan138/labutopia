@@ -69,6 +69,20 @@ def fluid_safe_wrapper_panel_width(
     return 2.0 * math.pi * center_radius / panels * float(panel_arc_overlap_factor)
 
 
+def fluid_safe_wrapper_bottom_xy_extent(
+    *,
+    radius: float,
+    wall_thickness: float,
+    bottom_overlap: float,
+) -> float:
+    """Half-width of the bottom box so it covers past the outer wall face.
+
+    Particles that briefly exit a panel seam must still land on the bottom
+    plate instead of falling through to the table (D4 1024 below_table mode).
+    """
+    return float(radius) + float(wall_thickness) + float(bottom_overlap)
+
+
 HOLD_CLASSIFICATIONS = {
     "PASS_SOURCE_HOLD",
     "FAIL_CONTAINER_SEALED",
@@ -615,9 +629,14 @@ def _add_static_box(
 def _add_segmented_cup(stage: Any, config: ColliderConfig, *, panel_count: int, wall_thickness: float) -> list[str]:
     collider_paths: list[str] = []
     radius = config.source_radius
+    bottom_half = fluid_safe_wrapper_bottom_xy_extent(
+        radius=radius,
+        wall_thickness=wall_thickness,
+        bottom_overlap=config.bottom_overlap,
+    )
     bottom_size = (
-        radius * 2.2 + config.bottom_overlap * 2.0,
-        radius * 2.2 + config.bottom_overlap * 2.0,
+        bottom_half * 2.0,
+        bottom_half * 2.0,
         config.bottom_thickness + config.bottom_overlap,
     )
     bottom_z = config.table_z + config.bottom_thickness / 2.0
@@ -940,9 +959,14 @@ def _add_proxy_collision_wrapper(stage: Any, config: ColliderConfig, spec: Varia
     collider_paths: list[str] = []
     radius = config.source_radius
     panel_count = spec.panel_count or 24
+    bottom_half = fluid_safe_wrapper_bottom_xy_extent(
+        radius=radius,
+        wall_thickness=config.wall_thickness,
+        bottom_overlap=config.bottom_overlap,
+    )
     bottom_size = (
-        radius * 2.2 + config.bottom_overlap * 2.0,
-        radius * 2.2 + config.bottom_overlap * 2.0,
+        bottom_half * 2.0,
+        bottom_half * 2.0,
         config.bottom_thickness + config.bottom_overlap,
     )
     bottom = _add_box_collider_prim(
@@ -1122,9 +1146,14 @@ def _add_fluid_safe_wrapper(
     )
 
     collider_paths: list[str] = []
+    bottom_half = fluid_safe_wrapper_bottom_xy_extent(
+        radius=radius,
+        wall_thickness=thickness,
+        bottom_overlap=overlap,
+    )
     bottom_size = (
-        radius * 2.2 + overlap * 2.0,
-        radius * 2.2 + overlap * 2.0,
+        bottom_half * 2.0,
+        bottom_half * 2.0,
         config.bottom_thickness + overlap,
     )
     bottom = _add_box_collider_prim(

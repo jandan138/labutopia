@@ -53,6 +53,29 @@ def _author_beaker2_fixture(stage, *, translate=(0.0, 0.0, 0.0), with_mesh=True)
     return parent.GetPrim(), mesh_prim
 
 
+def test_fluid_safe_wrapper_bottom_extends_past_outer_wall_face():
+    """Bottom plate must cover the outer wall face so gap-escaped particles cannot fall through.
+
+    D4 1024 evidence: below_table particles sit at r≈0.10–0.14 while bottom half-extent
+    was only ~1.1*R+overlap ≈ 0.068 with wall outer face at R+thickness ≈ 0.077.
+    """
+    from tools.labutopia_fluid.run_beaker_collider_smoke import fluid_safe_wrapper_bottom_xy_extent
+
+    radius = 0.055
+    thickness = 0.022
+    overlap = 0.008
+    half = fluid_safe_wrapper_bottom_xy_extent(
+        radius=radius,
+        wall_thickness=thickness,
+        bottom_overlap=overlap,
+    )
+    outer_face = radius + thickness
+    assert half >= outer_face + overlap - 1e-12
+    # Old buggy sizing under-covers the outer face.
+    buggy_half = radius * 1.1 + overlap
+    assert buggy_half < outer_face
+
+
 def test_fluid_safe_wrapper_panel_width_covers_centerline_circumference():
     """Panel width must be sized at panel centerline radius, not the inner face.
 
