@@ -1,0 +1,372 @@
+{
+  "allowed_claims": [
+    "S2F1 C2 proxy sweep candidate set is bounded and recorded.",
+    "S2F1 ran C2-derived proxy collider variants in standalone IsaacSim41."
+  ],
+  "artifact_dir": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_confirm_20260709_001",
+  "baseline_freeze_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2f0_baseline_freeze_20260707.json",
+  "best_for_promotion": [],
+  "best_for_s2f5": [],
+  "best_for_s3": [],
+  "blocked_claims": [
+    "S3 kinematic pour is released",
+    "level1_pour has true fluid today",
+    "fluid is EBench-scoreable",
+    "policy score claim",
+    "official leaderboard claim",
+    "diagnostic projections equal product-quality render"
+  ],
+  "candidate_count": 1,
+  "candidate_plan": [
+    {
+      "bottom_overlap": 0.008,
+      "candidate_id": "D4A_018_D4P_P0512_SEED000",
+      "collider_contact_offset": 0.004,
+      "collider_rest_offset": 0.0,
+      "fluid_rest_offset": null,
+      "grid_dims": [
+        8,
+        8,
+        4
+      ],
+      "initial_radial_velocity": 0.08,
+      "interior_inset": 0.0045,
+      "mesh_bottom_fan_closure": null,
+      "native_collision_route": null,
+      "native_material_binding_scope_closed": null,
+      "native_material_binding_strategy": null,
+      "native_mesh_collision_enabled": false,
+      "native_mesh_source_path": null,
+      "native_pose_alignment": null,
+      "native_reference_scope": null,
+      "native_source_path": null,
+      "non_physical_parameter_dependence_risk": false,
+      "normals_winding_audit": null,
+      "panel_arc_overlap_factor": 1.2,
+      "panel_count": 64,
+      "parent_candidate_id": "D4A_018",
+      "particle_contact_offset": 0.0045,
+      "particle_count": 512,
+      "particle_enable_ccd": null,
+      "particle_max_depenetration_velocity": null,
+      "particle_max_velocity": 5.0,
+      "particle_rest_offset": 0.0,
+      "particle_seed": 0,
+      "particle_spacing": 0.0045,
+      "particle_system_contact_offset": null,
+      "phase": "D4_WRAPPER_PROMOTION",
+      "proxy_collision_enabled": true,
+      "sdf_margin": null,
+      "sdf_narrow_band_thickness": null,
+      "sdf_resolution": null,
+      "sdf_subgrid_resolution": null,
+      "solid_rest_offset": null,
+      "spawn_particle_contact_offset": null,
+      "variable_group": "d4_wrapper_promotion",
+      "wall_thickness": 0.022,
+      "wrapper_frame": "local_to_beaker2",
+      "wrapper_parent_path": "/World/beaker2"
+    }
+  ],
+  "candidate_results": [
+    {
+      "artifact_dir": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_confirm_20260709_001/D4A_018_D4P_P0512_SEED000",
+      "below_table_count": 1,
+      "candidate_id": "D4A_018_D4P_P0512_SEED000",
+      "classification": "FAIL_CONTAINER_LEAK",
+      "cpu_collision_fallback_detected": false,
+      "evidence_files_complete": true,
+      "fatal_error": null,
+      "final_particle_positions_hash": "8ef58279bd60c48ea9af436c3765feb3fc5e92bc7616f31b8c09fa9ade23467e",
+      "final_region_counts": {
+        "below_table_count": 1,
+        "finite_count": 512,
+        "source_count": 505,
+        "spill_count": 6,
+        "target_count": 0,
+        "total_count": 512
+      },
+      "gpu_collider_unsupported": false,
+      "initial_particle_positions_hash": "83a0053eb486d27a2dbb97a149b44580cd973a2554b578deadd917ef21391e04",
+      "initial_region_counts": {
+        "below_table_count": 0,
+        "finite_count": 512,
+        "source_count": 512,
+        "spill_count": 0,
+        "target_count": 0,
+        "total_count": 512
+      },
+      "nan_count": 0,
+      "native_collision_route": null,
+      "native_material_binding_scope_closed": null,
+      "native_material_binding_strategy": null,
+      "native_mesh_collision_enabled": false,
+      "native_mesh_source_path": null,
+      "native_pose_alignment": null,
+      "native_reference_scope": null,
+      "native_source_path": null,
+      "non_physical_parameter_dependence": false,
+      "non_physical_parameter_dependence_reason": null,
+      "non_physical_parameter_dependence_risk": false,
+      "outside_source_count": 7,
+      "parent_candidate_id": "D4A_018",
+      "particle_count": 512,
+      "particle_count_final_fraction": 1.0,
+      "particle_seed": 0,
+      "pass_criteria": {
+        "below_table_count_eq_zero": false,
+        "cpu_collision_fallback_detected_false": true,
+        "gpu_collider_unsupported_false": true,
+        "nan_count_eq_zero": true,
+        "non_physical_parameter_dependence_false": true,
+        "outside_source_count_eq_zero": false,
+        "particle_count_final_fraction_ge_0_95": true,
+        "source_retention_fraction_ge_0_95": true,
+        "spill_count_eq_zero": false,
+        "tail_leak_rate_lt_0_02": true,
+        "target_count_eq_zero": true
+      },
+      "phase": "D4_WRAPPER_PROMOTION",
+      "promotable_to_s2f5": false,
+      "proxy_collision_enabled": true,
+      "readback_available": true,
+      "s2f2_axis": "d4_wrapper_promotion",
+      "scene_path": "assets/chemistry_lab/lab_001_fluid_spike/colliders_d4p/d4a_018_d4p_p0512_seed000_fluid_safe_wrapper.usda",
+      "source_retention_fraction": 0.986328125,
+      "spawn_position_pinned": false,
+      "spill_count": 6,
+      "tail_leak_rate_fraction_per_second": 0.0,
+      "target_count": 0,
+      "variable_group": "d4_wrapper_promotion",
+      "variant_summary": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_confirm_20260709_001/D4A_018_D4P_P0512_SEED000/variant_summary.json"
+    }
+  ],
+  "classification_contract_version": "s2_no_outside_source_v2",
+  "commands": [
+    "d4_confirm_018_512"
+  ],
+  "contract_version": "s2f_velocity_contact_offset_v2",
+  "created_at_utc": "2026-07-09T06:47:14.979710+00:00",
+  "d4_wrapper_promotion": {
+    "best_for_s3": [],
+    "extra_trials": [],
+    "failed_trials": [
+      "D4A_018_D4P_P0512_SEED000"
+    ],
+    "g1_physics_a": false,
+    "init_pins": {
+      "initial_radial_velocity": 0.08,
+      "particle_max_velocity": 5.0
+    },
+    "missing_trials": [
+      {
+        "particle_count": 512,
+        "particle_seed": 1
+      },
+      {
+        "particle_count": 512,
+        "particle_seed": 2
+      },
+      {
+        "particle_count": 1024,
+        "particle_seed": 0
+      },
+      {
+        "particle_count": 1024,
+        "particle_seed": 1
+      },
+      {
+        "particle_count": 1024,
+        "particle_seed": 2
+      },
+      {
+        "particle_count": 4096,
+        "particle_seed": 0
+      },
+      {
+        "particle_count": 4096,
+        "particle_seed": 1
+      },
+      {
+        "particle_count": 4096,
+        "particle_seed": 2
+      },
+      {
+        "particle_count": 50000,
+        "particle_seed": 0
+      },
+      {
+        "particle_count": 50000,
+        "particle_seed": 1
+      },
+      {
+        "particle_count": 50000,
+        "particle_seed": 2
+      }
+    ],
+    "observed_trial_count": 1,
+    "passed_trial_count": 0,
+    "passed_trials": [],
+    "promotion_candidate_id": "D4A_018",
+    "reason": "d4_promotion_trial_grid_mismatch",
+    "required_particle_counts": [
+      512,
+      1024,
+      4096,
+      50000
+    ],
+    "required_particle_seeds": [
+      0,
+      1,
+      2
+    ],
+    "required_trial_count": 12,
+    "status": "STOP_WITH_EVIDENCE"
+  },
+  "d4_wrapper_sweep": null,
+  "fatal_error": null,
+  "g1_physics_a": false,
+  "manifest_type": "true_physx_pbd_fluid_spike_d4_wrapper_promotion",
+  "native_beaker_fluid_safe_collider_status": null,
+  "native_issue_partition": null,
+  "near_pass_for_s2f2": [
+    "D4A_018_D4P_P0512_SEED000"
+  ],
+  "next_stage": {
+    "diagnostic_routes": [
+      "rerun_failed_d4_promotion_trials"
+    ],
+    "id": "D4_WRAPPER_PROMOTION",
+    "not_s3_release": true,
+    "promotion_caveat": null,
+    "requires_initial_layout_hash_stability_check": false,
+    "variants": []
+  },
+  "parent_s2_manifest": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_collider_matrix_20260707.json",
+  "pass_criteria": {
+    "required_below_table_count": 0,
+    "required_blocking_runtime_warning_detected": false,
+    "required_cpu_collision_fallback_detected": false,
+    "required_gpu_collider_unsupported": false,
+    "required_nan_count": 0,
+    "required_non_physical_parameter_dependence": false,
+    "required_outside_source_count": 0,
+    "required_particle_count_final_fraction": 0.95,
+    "required_source_retention_fraction": 0.95,
+    "required_spill_count": 0,
+    "required_tail_leak_rate_fraction_per_second_lt": 0.02,
+    "required_target_count": 0
+  },
+  "phase_specs": {
+    "D4_WRAPPER_PROMOTION": {
+      "candidate_prefix": "D4P",
+      "description": "D4 wrapper promotion matrix (seeds\u00d7counts) for Physics-A G1.",
+      "status": "COMPLETE_STOP_WITH_EVIDENCE"
+    },
+    "D4_WRAPPER_SWEEP": {
+      "candidate_prefix": "D4A",
+      "description": "Fluid-safe wrapper geometry sweep with pinned promotion init.",
+      "status": "COMPLETE_GO_NEXT"
+    },
+    "S2F0_BASELINE_FREEZE": {
+      "candidate_prefix": "S2",
+      "description": "Frozen S2 collider matrix baseline.",
+      "status": "COMPLETE"
+    },
+    "S2F1_C2_PROXY_SWEEP": {
+      "candidate_prefix": "C2A",
+      "description": "Bounded C2-derived segmented proxy sweep.",
+      "status": "COMPLETE_STOP_WITH_EVIDENCE"
+    },
+    "S2F2_VELOCITY_CONTACT_OFFSET": {
+      "candidate_prefix": "C2A",
+      "description": "Velocity/contact-offset isolation after S2F1.",
+      "status": "COMPLETE_GO_NEXT"
+    },
+    "S2F3_C3_SDF_SWEEP": {
+      "candidate_prefix": "C3A",
+      "description": "SDF open beaker cooking sweep.",
+      "status": "COMPLETE_STOP_WITH_EVIDENCE"
+    },
+    "S2F4_C4_NATIVE_MESH_ISOLATION": {
+      "candidate_prefix": "C4A",
+      "description": "Native beaker mesh isolation.",
+      "status": "COMPLETE_STOP_WITH_EVIDENCE"
+    },
+    "S2F5_PROMOTION_REVIEW": {
+      "candidate_prefix": "S2F",
+      "description": "Promotion review before S3 release.",
+      "status": "COMPLETE_STOP_WITH_EVIDENCE"
+    }
+  },
+  "physics_a_g1_released": false,
+  "plan_commands": [],
+  "reason": "d4_promotion_trial_grid_mismatch",
+  "run_id": "fluid_spike_d4_wrapper_confirm_20260709_001",
+  "runtime_commands": [
+    "d4_confirm_018_512"
+  ],
+  "runtime_warning_gate": {
+    "blocking_runtime_warning_detected": false,
+    "blocking_warning_reasons": [],
+    "passed": true,
+    "required_blocking_runtime_warning_detected": false
+  },
+  "runtime_warning_scan": {
+    "blocking_runtime_warning_detected": false,
+    "generated_at_utc": "2026-07-09T06:47:14.979597+00:00",
+    "manifest_type": "true_physx_pbd_fluid_spike_s2f1_runtime_warning_scan",
+    "notes": [
+      "Artifact-level stdout/stderr warning scan is authoritative for S2F1 release review.",
+      "SDF cooking warnings/errors are blocking because S2F3 can otherwise report a false collider result.",
+      "Headless GLFW/display warnings are expected in no-window IsaacSim runs."
+    ],
+    "pattern_counts": {
+      "cpu_fallback": 0,
+      "gpu_unsupported": 0,
+      "headless_window_warning": 0,
+      "material_binding_scope_warning": 0,
+      "physx_error": 0,
+      "sdf_warning": 0
+    },
+    "pattern_examples": {
+      "cpu_fallback": [],
+      "gpu_unsupported": [],
+      "headless_window_warning": [],
+      "material_binding_scope_warning": [],
+      "physx_error": [],
+      "sdf_warning": []
+    },
+    "schema_version": 1,
+    "source_files": {
+      "server_stderr": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_confirm_20260709_001/server.stderr.txt",
+      "server_stdout": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_confirm_20260709_001/server.stdout.txt"
+    },
+    "warning_line_count": 0
+  },
+  "s2f2_diagnosis": null,
+  "s2f2_initial_layout_hash_audit": null,
+  "s2f2_root_cause_classification": null,
+  "s2f4_native_mesh_isolation": null,
+  "s2f5_promotion_review": null,
+  "s2f5_promotion_review_complete": false,
+  "s2f5_promotion_review_next": false,
+  "s3_kinematic_pour_released": false,
+  "schema_version": 1,
+  "source_s2f1_manifest": null,
+  "stage": "D4_WRAPPER_PROMOTION",
+  "status": "STOP_WITH_EVIDENCE",
+  "summary_commands": [],
+  "target_runtime": {
+    "accept_eula": "Y",
+    "gpu_probe": {
+      "torch_cuda_available": true,
+      "torch_cuda_device_0": "NVIDIA GeForce RTX 4090",
+      "torch_cuda_device_count": 1
+    },
+    "omni_kit_accept_eula": "YES",
+    "platform": "Linux-5.10.134-17.3.al8.x86_64-x86_64-with-glibc2.35",
+    "python": "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python",
+    "python_version": "3.10.20"
+  }
+}

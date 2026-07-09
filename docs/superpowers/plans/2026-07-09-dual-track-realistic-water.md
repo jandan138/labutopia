@@ -255,7 +255,11 @@ Code/unit tasks complete: 0,1,2,3,5,6,7,8,9 (+ motion_contract fix).
 
 **Root cause (2026-07-09):** false spill from classifying at geometric inner face. PhysX parks particles at `r ≈ source_radius + ≤1.8e-4`. Fix: `SOURCE_REGION_RADIAL_SLACK=5e-4` + wire `interior_inset` into spawn/`to_config`. Offline reclass of `_004` → **D4A_018 / D4A_007 PASS** (spill=0, below=0, ret=1.0); real panel-gap leaks (e.g. D4A_016) still fail.
 
+**Seed confirm:** D4A_018 `seed=None` → `PASS_SOURCE_HOLD`; seeds 0/1/2 leaked (panel gaps + below_table). Second root cause: panel width used inner-face radius while panels sit at centerline → arc=1.2 cancelled to ~1.00 coverage. Fix: `fluid_safe_wrapper_panel_width` sizes at `radius+thickness/2`.
+
+**Task 4 code:** `D4_WRAPPER_PROMOTION` phase + 12-trial matrix + adaptive spawn for 4k/50k (`7c32049`).
+
 Still GPU-gated:
-- Task 4: Isaac confirm PASS on D4A_018 → promotion matrix 12 trials
+- Task 4: Isaac reconfirm seeds after centerline width → full 12-trial promotion
 - Task 10: Official Visual A evidence on Physics-A-passing trajectory
 - Task 11: Slow pour B after G1
