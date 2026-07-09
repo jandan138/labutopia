@@ -1,4 +1,5 @@
 import pytest
+import math
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -50,6 +51,34 @@ def _author_beaker2_fixture(stage, *, translate=(0.0, 0.0, 0.0), with_mesh=True)
         collision_api = UsdPhysics.CollisionAPI.Apply(mesh_prim)
         collision_api.CreateCollisionEnabledAttr().Set(True)
     return parent.GetPrim(), mesh_prim
+
+
+def test_fluid_safe_wrapper_panel_width_covers_centerline_circumference():
+    """Panel width must be sized at panel centerline radius, not the inner face.
+
+    D4A_018 used arc=1.2 with width∝inner radius → cov/circ≈1.00 at centerline
+    (zero real overlap); seeds 0/1/2 leaked through panel gaps while seed=None held.
+    """
+    from tools.labutopia_fluid.run_beaker_collider_smoke import fluid_safe_wrapper_panel_width
+
+    radius = 0.055
+    thickness = 0.022
+    panels = 64
+    arc = 1.2
+    width = fluid_safe_wrapper_panel_width(
+        radius=radius,
+        wall_thickness=thickness,
+        panel_count=panels,
+        panel_arc_overlap_factor=arc,
+    )
+    center_radius = radius + thickness / 2.0
+    coverage = panels * width / (2.0 * math.pi * center_radius)
+    assert coverage == pytest.approx(arc, rel=1e-9)
+    # Old (buggy) inner-face sizing under-covers at the centerline.
+    buggy = 2.0 * math.pi * radius / panels * arc
+    buggy_coverage = panels * buggy / (2.0 * math.pi * center_radius)
+    assert buggy_coverage == pytest.approx(radius / center_radius * arc, rel=1e-9)
+    assert buggy_coverage < 1.01
 
 
 def test_add_fluid_safe_wrapper_authors_invisible_local_box_panels():

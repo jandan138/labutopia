@@ -49,6 +49,26 @@ FLUID_SAFE_WRAPPER_DEFAULT_PANEL_COUNT = 48
 FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR = 1.08
 FLUID_SAFE_WRAPPER_FRAME = "local_to_beaker2"
 FLUID_SAFE_WRAPPER_MOTION_CONTRACT = "static_collision_inherits_beaker2_xform"
+
+
+def fluid_safe_wrapper_panel_width(
+    *,
+    radius: float,
+    wall_thickness: float,
+    panel_count: int,
+    panel_arc_overlap_factor: float,
+) -> float:
+    """Tangential panel extent sized at the panel centerline circumference.
+
+    Panels are placed at ``radius + wall_thickness/2``. Width must use that
+    centerline radius so ``panel_arc_overlap_factor`` is real circumferential
+    overlap (not cancelled by the inner-face vs centerline radius ratio).
+    """
+    panels = max(int(panel_count), 1)
+    center_radius = float(radius) + float(wall_thickness) / 2.0
+    return 2.0 * math.pi * center_radius / panels * float(panel_arc_overlap_factor)
+
+
 HOLD_CLASSIFICATIONS = {
     "PASS_SOURCE_HOLD",
     "FAIL_CONTAINER_SEALED",
@@ -612,7 +632,12 @@ def _add_segmented_cup(stage: Any, config: ColliderConfig, *, panel_count: int, 
     )
     collider_paths.append(str(bottom.GetPath()))
 
-    panel_width = 2.0 * math.pi * radius / panel_count * 1.08
+    panel_width = fluid_safe_wrapper_panel_width(
+        radius=radius,
+        wall_thickness=wall_thickness,
+        panel_count=panel_count,
+        panel_arc_overlap_factor=1.08,
+    )
     wall_center_z = config.table_z + config.bottom_thickness - config.bottom_overlap + config.wall_height / 2.0
     for index in range(panel_count):
         theta = 2.0 * math.pi * index / panel_count
@@ -931,7 +956,12 @@ def _add_proxy_collision_wrapper(stage: Any, config: ColliderConfig, spec: Varia
     )
     collider_paths.append(str(bottom.GetPath()))
 
-    panel_width = 2.0 * math.pi * radius / panel_count * 1.08
+    panel_width = fluid_safe_wrapper_panel_width(
+        radius=radius,
+        wall_thickness=config.wall_thickness,
+        panel_count=panel_count,
+        panel_arc_overlap_factor=1.08,
+    )
     wall_center_z = config.table_z + config.bottom_thickness - config.bottom_overlap + config.wall_height / 2.0
     for index in range(panel_count):
         theta = 2.0 * math.pi * index / panel_count
@@ -1109,7 +1139,12 @@ def _add_fluid_safe_wrapper(
     _set_or_create_labutopia_attr(bottom, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
     collider_paths.append(str(bottom.GetPath()))
 
-    panel_width = 2.0 * math.pi * radius / panels * float(panel_arc_overlap_factor)
+    panel_width = fluid_safe_wrapper_panel_width(
+        radius=radius,
+        wall_thickness=thickness,
+        panel_count=panels,
+        panel_arc_overlap_factor=panel_arc_overlap_factor,
+    )
     wall_center_z = local_table_z + config.bottom_thickness - overlap + wall_height / 2.0
     for index in range(panels):
         theta = 2.0 * math.pi * index / panels
