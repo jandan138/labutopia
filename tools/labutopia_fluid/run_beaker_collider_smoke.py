@@ -39,7 +39,10 @@ BEAKER_COLLIDER_VARIANT_IDS = ("C0", "C1", "C2", "C3", "C4", "C5")
 CLASSIFICATION_CONTRACT_VERSION = "s2_no_outside_source_v2"
 # Absorb PhysX wall-contact parking past the geometric inner face without
 # hiding real panel-gap leaks (D4 evidence: false spill <= ~1.8e-4; real leaks ~1e-2).
-SOURCE_REGION_RADIAL_SLACK = 5e-4
+# PhysX wall contact can park centers slightly past the geometric inner face.
+# 5e-4 covered ≤1.8e-4 parks; 1024 evidence parks at ≈5.5e-4–7e-4. Keep well
+# below real panel-gap leaks (~1e-2).
+SOURCE_REGION_RADIAL_SLACK = 1e-3
 DIAGNOSTIC_PROJECTION_VERSION = "v2_dynamic_z_shows_below_table_leaks"
 # Pinned promotion init (spec §4.2 / §4.4). Passes that require lower values are
 # FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE / STOP_NON_PHYSICAL_PARAMETER_DEPENDENCE.

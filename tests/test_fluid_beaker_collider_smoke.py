@@ -350,11 +350,13 @@ def test_region_counts_treat_wall_contact_slack_as_source_not_spill():
     wall_counts = compute_region_counts(wall_face, config)
     leak_counts = compute_region_counts(real_leak, config)
 
-    assert SOURCE_REGION_RADIAL_SLACK >= 5e-4
+    assert SOURCE_REGION_RADIAL_SLACK >= 1e-3
     assert wall_counts["source_count"] == 2
     assert wall_counts["spill_count"] == 0
     assert leak_counts["source_count"] == 0
     assert leak_counts["spill_count"] == 1
+    # Slack must still leave real panel-gap leaks (~1cm) classified as spill.
+    assert SOURCE_REGION_RADIAL_SLACK < 5e-3
 
 
 def test_source_particle_positions_honor_interior_inset_clearance():

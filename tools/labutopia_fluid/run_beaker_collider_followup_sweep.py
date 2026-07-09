@@ -1052,14 +1052,15 @@ def d4_promotion_spawn_layout(particle_count: int) -> dict[str, Any]:
     High-N rungs must keep particle_width ≤ spacing and scale contact offsets with
     spacing; otherwise PhysX explodes through the floor (50k evidence: width 0.0035
     with spacing 0.002 → ~46k below_table).
+
+    Keep 1024 on the same short stack as 512 (grid_z=4). Raising grid_z to 8 for
+    1024 increased wall punch-through (below_table 3–7 → 25–34) without helping
+    capacity — XY disk already holds >1500 candidates at spacing 0.0045.
     """
     count = int(particle_count)
-    if count <= 512:
+    if count <= 1024:
         spacing = 0.0045
         grid_z = 4
-    elif count <= 1024:
-        spacing = 0.0045
-        grid_z = 8
     elif count <= 4096:
         spacing = 0.003
         grid_z = 16
@@ -1070,12 +1071,16 @@ def d4_promotion_spawn_layout(particle_count: int) -> dict[str, Any]:
         raise ValueError(f"unsupported_d4_promotion_particle_count:{particle_count}")
     width = min(0.0035, spacing * 0.8)
     particle_contact_offset = min(D4_WRAPPER_PARTICLE_CONTACT_OFFSET, spacing)
+    # Extra radial clearance at ≥1024: settle push parks centers ~5mm outward.
+    interior_inset = max(particle_contact_offset, spacing)
+    if count >= 1024:
+        interior_inset = max(interior_inset, particle_contact_offset * 1.5)
     return {
         "particle_spacing": spacing,
         "grid_dims": (8, 8, grid_z),
         "particle_width": width,
         "particle_contact_offset": particle_contact_offset,
-        "interior_inset": max(particle_contact_offset, spacing),
+        "interior_inset": interior_inset,
         "collider_contact_offset": min(D4_WRAPPER_COLLIDER_CONTACT_OFFSET, spacing),
     }
 
@@ -1116,7 +1121,8 @@ def build_d4_wrapper_promotion_sweep(
                     phase="D4_WRAPPER_PROMOTION",
                     variable_group="d4_wrapper_promotion",
                     panel_count=parent.panel_count,
-                    wall_thickness=parent.wall_thickness,
+                    # Thicker walls under promotion pressure (D4A_018 smoke used 0.022).
+                    wall_thickness=max(float(parent.wall_thickness), 0.026),
                     bottom_overlap=max(parent.bottom_overlap, 0.012),
                     particle_contact_offset=float(layout["particle_contact_offset"]),
                     spawn_particle_contact_offset=parent.spawn_particle_contact_offset,
@@ -1127,7 +1133,9 @@ def build_d4_wrapper_promotion_sweep(
                     collider_contact_offset=float(layout["collider_contact_offset"]),
                     collider_rest_offset=parent.collider_rest_offset,
                     initial_radial_velocity=PROMOTION_INITIAL_RADIAL_VELOCITY,
-                    particle_enable_ccd=parent.particle_enable_ccd,
+                    # Force CCD on promotion: 1024 wall punch-through is ballistic
+                    # (first below at r≫outer face by step 30). Parent smoke left CCD null.
+                    particle_enable_ccd=True,
                     particle_max_velocity=PROMOTION_PARTICLE_MAX_VELOCITY,
                     particle_max_depenetration_velocity=parent.particle_max_depenetration_velocity,
                     non_physical_parameter_dependence_risk=False,
@@ -1136,7 +1144,8 @@ def build_d4_wrapper_promotion_sweep(
                     particle_spacing=float(layout["particle_spacing"]),
                     grid_dims=tuple(layout["grid_dims"]),  # type: ignore[arg-type]
                     particle_width=float(layout["particle_width"]),
-                    panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.25),
+                    # Centerline-corrected arc: 1.25 was still insufficient under 1024 pressure.
+                    panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.35),
                     interior_inset=float(layout["interior_inset"]),
                     wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
