@@ -1732,10 +1732,12 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             wall_height=config.wall_height,
             table_z=config.table_z,
             wall_thickness=0.026,
-            bottom_overlap=0.012,
+            bottom_overlap=0.016,
+            bottom_thickness=0.012,
             particle_contact_offset=offsets["particle_contact_offset"],
-            collider_contact_offset=getattr(config, "collider_contact_offset", 0.003),
+            collider_contact_offset=max(getattr(config, "collider_contact_offset", 0.003), 0.004),
             collider_rest_offset=getattr(config, "collider_rest_offset", 0.0),
+            particle_enable_ccd=True,
         )
         fluid_safe_wrapper_overlay_summary = {
             "enabled": True,
@@ -1749,7 +1751,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 visual_mesh_path="/World/beaker2/mesh",
                 panel_count=72,
                 wall_thickness=0.026,
-                bottom_overlap=0.012,
+                bottom_overlap=0.016,
                 panel_arc_overlap_factor=1.35,
                 panel_phase_offset_rad=_math.pi / 72,
                 panel_ring_count=2,
@@ -1785,10 +1787,11 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         presentation_material_info = _author_liquid_presentation_water_material(
             stage,
             attempt_mdl=True,
-            closure_base_dir=material_closure_summary.get("closure_base_dir"),
-            # Prefer kit library bind so ClearWater resolves OmniSurfaceBase from
-            # /isaac-sim/kit/mdl/core rather than the artifact file:// mirror.
-            prefer_kit_bind=True,
+            closure_base_dir=None,
+            # Kit CreateAndBind leaves relative @OmniSurfacePresets.mdl@ which still
+            # fails createMdlModule in this headless path. Author absolute kit path.
+            prefer_kit_bind=False,
+            mdl_source_asset=ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET,
         )
         presentation_lighting_info = _author_liquid_presentation_lighting(stage)
         presentation_camera_info = _define_liquid_presentation_camera(stage, config)
