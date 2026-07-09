@@ -91,9 +91,23 @@ DEFAULT_D4_MANIFEST_PATH = (
     "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_s2_proxy_wrapper_design_d4_sweep_20260709.json"
 )
 DEFAULT_D4_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_d4"
+DEFAULT_D4_PROMOTION_ARTIFACT_DIR = (
+    "docs/labutopia_lab_poc/evidence_manifests/"
+    "fluid_spike_isaacsim41_ebench_d4_wrapper_promotion_20260709_001"
+)
+DEFAULT_D4_PROMOTION_MANIFEST_PATH = (
+    "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_20260709.json"
+)
+DEFAULT_D4_PROMOTION_SCENE_DIR = "assets/chemistry_lab/lab_001_fluid_spike/colliders_d4p"
+DEFAULT_D4_PROMOTION_SOURCE_MANIFEST = (
+    "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_smoke_20260709_004.json"
+)
 S2F5_PROMOTION_CANDIDATE_ID = "C2A_009_S2F2_VEL020"
 S2F5_PARTICLE_COUNTS = (256, 1024)
 S2F5_PARTICLE_SEEDS = (0, 1, 2)
+D4_PROMOTION_PARTICLE_COUNTS = (512, 1024, 4096, 50000)
+D4_PROMOTION_PARTICLE_SEEDS = (0, 1, 2)
+D4_PROMOTION_CANDIDATE_ID = "D4A_018"
 S2F3_SDF_RESOLUTIONS = (64, 96, 128)
 S2F3_SDF_SUBGRID_RESOLUTIONS = (4, 8)
 S2F3_SDF_MARGINS = (0.002, 0.005)
@@ -188,6 +202,8 @@ class C2ProxyCandidate:
     interior_inset: float | None = None
     wrapper_parent_path: str | None = None
     wrapper_frame: str | None = None
+    particle_spacing: float | None = None
+    grid_dims: tuple[int, int, int] | None = None
 
     def to_config(self, *, base: ColliderConfig | None = None) -> ColliderConfig:
         config = base or ColliderConfig()
@@ -210,6 +226,8 @@ class C2ProxyCandidate:
             particle_max_velocity=self.particle_max_velocity,
             particle_max_depenetration_velocity=self.particle_max_depenetration_velocity,
             interior_inset=self.interior_inset if self.interior_inset is not None else config.interior_inset,
+            particle_spacing=self.particle_spacing if self.particle_spacing is not None else config.particle_spacing,
+            grid_dims=self.grid_dims if self.grid_dims is not None else config.grid_dims,
             sdf_resolution=self.sdf_resolution if self.sdf_resolution is not None else config.sdf_resolution,
             sdf_subgrid_resolution=(
                 self.sdf_subgrid_resolution
@@ -225,7 +243,7 @@ class C2ProxyCandidate:
         )
 
     def to_variant_spec(self) -> VariantSpec:
-        if self.phase == "D4_WRAPPER_SWEEP" or self.candidate_id.startswith("D4A_"):
+        if self.phase in {"D4_WRAPPER_SWEEP", "D4_WRAPPER_PROMOTION"} or self.candidate_id.startswith("D4A_"):
             return VariantSpec(
                 variant_id=self.candidate_id,
                 name="fluid_safe_wrapper",
@@ -412,6 +430,11 @@ def followup_phase_specs(
             "status": "PENDING",
             "description": "Fluid-safe wrapper geometry sweep with pinned promotion init.",
         },
+        "D4_WRAPPER_PROMOTION": {
+            "candidate_prefix": "D4P",
+            "status": "PENDING",
+            "description": "D4 wrapper promotion matrix (seeds×counts) for Physics-A G1.",
+        },
     }
     if phase == "D4_WRAPPER_SWEEP":
         specs["S2F1_C2_PROXY_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
@@ -421,10 +444,24 @@ def followup_phase_specs(
         specs["S2F5_PROMOTION_REVIEW"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
         if status == "GO_NEXT" and best_for_s3:
             specs["D4_WRAPPER_SWEEP"]["status"] = "COMPLETE_GO_NEXT"
+            specs["D4_WRAPPER_PROMOTION"]["status"] = "NEXT"
         elif status in D4_MATRIX_STOP_CLASSIFICATIONS:
             specs["D4_WRAPPER_SWEEP"]["status"] = f"COMPLETE_{status}"
         else:
             specs["D4_WRAPPER_SWEEP"]["status"] = "ACTIVE"
+    if phase == "D4_WRAPPER_PROMOTION":
+        specs["S2F1_C2_PROXY_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F2_VELOCITY_CONTACT_OFFSET"]["status"] = "COMPLETE_GO_NEXT"
+        specs["S2F3_C3_SDF_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F4_C4_NATIVE_MESH_ISOLATION"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["S2F5_PROMOTION_REVIEW"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        specs["D4_WRAPPER_SWEEP"]["status"] = "COMPLETE_GO_NEXT"
+        if status == "GO_NEXT" and best_for_s3:
+            specs["D4_WRAPPER_PROMOTION"]["status"] = "COMPLETE_GO_NEXT"
+        elif status == "STOP_WITH_EVIDENCE":
+            specs["D4_WRAPPER_PROMOTION"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
+        else:
+            specs["D4_WRAPPER_PROMOTION"]["status"] = "ACTIVE"
     if phase == "S2F2_VELOCITY_CONTACT_OFFSET" and status == "GO_NEXT" and best_for_s2f5:
         specs["S2F1_C2_PROXY_SWEEP"]["status"] = "COMPLETE_STOP_WITH_EVIDENCE"
         specs["S2F2_VELOCITY_CONTACT_OFFSET"]["status"] = "COMPLETE_GO_NEXT"
@@ -547,6 +584,12 @@ def _candidate_from_plan_row(row: dict[str, Any]) -> C2ProxyCandidate:
         non_physical_parameter_dependence_risk=bool(row.get("non_physical_parameter_dependence_risk", False)),
         particle_count=int(row["particle_count"]) if row.get("particle_count") is not None else None,
         particle_seed=int(row["particle_seed"]) if row.get("particle_seed") is not None else None,
+        particle_spacing=float(row["particle_spacing"]) if row.get("particle_spacing") is not None else None,
+        grid_dims=(
+            tuple(int(v) for v in row["grid_dims"])  # type: ignore[misc]
+            if row.get("grid_dims") is not None
+            else None
+        ),
         sdf_resolution=int(row["sdf_resolution"]) if row.get("sdf_resolution") is not None else None,
         sdf_subgrid_resolution=(
             int(row["sdf_subgrid_resolution"]) if row.get("sdf_subgrid_resolution") is not None else None
@@ -1000,6 +1043,161 @@ def build_d4_wrapper_sweep(*, limit: int | None = None) -> list[C2ProxyCandidate
     return candidates
 
 
+def d4_promotion_spawn_layout(particle_count: int) -> tuple[float, tuple[int, int, int]]:
+    """Return (particle_spacing, grid_dims) that can host particle_count in the source cup."""
+    count = int(particle_count)
+    if count <= 1024:
+        return 0.0045, (8, 8, 4)
+    if count <= 4096:
+        return 0.0045, (8, 8, 12)
+    if count <= 50000:
+        return 0.002, (8, 8, 32)
+    raise ValueError(f"unsupported_d4_promotion_particle_count:{particle_count}")
+
+
+def build_d4_wrapper_promotion_sweep(
+    *,
+    parent: C2ProxyCandidate | None = None,
+    d4_manifest_path: Path | str | None = None,
+    promotion_candidate_id: str = D4_PROMOTION_CANDIDATE_ID,
+    particle_counts: Sequence[int] = D4_PROMOTION_PARTICLE_COUNTS,
+    particle_seeds: Sequence[int] = D4_PROMOTION_PARTICLE_SEEDS,
+) -> list[C2ProxyCandidate]:
+    """12-trial Physics-A promotion matrix for a D4 wrapper geometry (spec §4.4)."""
+    if parent is None:
+        if d4_manifest_path is None:
+            d4_manifest_path = DEFAULT_D4_PROMOTION_SOURCE_MANIFEST
+        manifest = _load_json(Path(d4_manifest_path))
+        plan_by_id = {str(row["candidate_id"]): row for row in manifest.get("candidate_plan", [])}
+        if promotion_candidate_id not in plan_by_id:
+            # Fall back to in-code D4 sweep geometry when smoke manifest lacks the row.
+            parent = next(
+                (c for c in build_d4_wrapper_sweep() if c.candidate_id == promotion_candidate_id),
+                None,
+            )
+            if parent is None:
+                raise ValueError(f"d4_promotion_parent_missing:{promotion_candidate_id}")
+        else:
+            parent = _candidate_from_plan_row(plan_by_id[promotion_candidate_id])
+
+    candidates: list[C2ProxyCandidate] = []
+    for particle_count in particle_counts:
+        spacing, grid_dims = d4_promotion_spawn_layout(int(particle_count))
+        for seed in particle_seeds:
+            candidates.append(
+                C2ProxyCandidate(
+                    candidate_id=f"{promotion_candidate_id}_D4P_P{int(particle_count):04d}_SEED{int(seed):03d}",
+                    parent_candidate_id=promotion_candidate_id,
+                    phase="D4_WRAPPER_PROMOTION",
+                    variable_group="d4_wrapper_promotion",
+                    panel_count=parent.panel_count,
+                    wall_thickness=parent.wall_thickness,
+                    bottom_overlap=parent.bottom_overlap,
+                    particle_contact_offset=parent.particle_contact_offset,
+                    spawn_particle_contact_offset=parent.spawn_particle_contact_offset,
+                    particle_system_contact_offset=parent.particle_system_contact_offset,
+                    particle_rest_offset=parent.particle_rest_offset,
+                    fluid_rest_offset=parent.fluid_rest_offset,
+                    solid_rest_offset=parent.solid_rest_offset,
+                    collider_contact_offset=parent.collider_contact_offset,
+                    collider_rest_offset=parent.collider_rest_offset,
+                    initial_radial_velocity=PROMOTION_INITIAL_RADIAL_VELOCITY,
+                    particle_enable_ccd=parent.particle_enable_ccd,
+                    particle_max_velocity=PROMOTION_PARTICLE_MAX_VELOCITY,
+                    particle_max_depenetration_velocity=parent.particle_max_depenetration_velocity,
+                    non_physical_parameter_dependence_risk=False,
+                    particle_count=int(particle_count),
+                    particle_seed=int(seed),
+                    particle_spacing=spacing,
+                    grid_dims=grid_dims,
+                    panel_arc_overlap_factor=parent.panel_arc_overlap_factor,
+                    interior_inset=parent.interior_inset,
+                    wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
+                    wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
+                    native_mesh_collision_enabled=False,
+                    proxy_collision_enabled=True,
+                )
+            )
+    return candidates
+
+
+def aggregate_d4_wrapper_promotion(
+    candidate_results: Sequence[dict[str, Any]],
+    *,
+    required_particle_counts: Sequence[int] = D4_PROMOTION_PARTICLE_COUNTS,
+    required_particle_seeds: Sequence[int] = D4_PROMOTION_PARTICLE_SEEDS,
+    promotion_candidate_id: str = D4_PROMOTION_CANDIDATE_ID,
+) -> dict[str, Any]:
+    """G1 requires all 12 seed×count trials PASS_SOURCE_HOLD (spec §4.4)."""
+    required_pairs = {(int(count), int(seed)) for count in required_particle_counts for seed in required_particle_seeds}
+    observed_pairs = {
+        (int(result.get("particle_count", -1)), int(result.get("particle_seed", -1)))
+        for result in candidate_results
+        if result.get("parent_candidate_id") == promotion_candidate_id
+    }
+    missing_pairs = sorted(required_pairs - observed_pairs)
+    extra_pairs = sorted(observed_pairs - required_pairs)
+
+    failed_trials: list[str] = []
+    passed_trials: list[str] = []
+    for result in candidate_results:
+        candidate_id = str(result.get("candidate_id"))
+        pair = (int(result.get("particle_count", -1)), int(result.get("particle_seed", -1)))
+        trial_passed = (
+            result.get("parent_candidate_id") == promotion_candidate_id
+            and pair in required_pairs
+            and result.get("classification") == "PASS_SOURCE_HOLD"
+            and bool(result.get("readback_available"))
+            and bool(result.get("evidence_files_complete"))
+            and not bool(result.get("non_physical_parameter_dependence"))
+        )
+        if trial_passed:
+            passed_trials.append(candidate_id)
+        else:
+            failed_trials.append(candidate_id)
+
+    if missing_pairs or extra_pairs:
+        status = "STOP_WITH_EVIDENCE"
+        reason = "d4_promotion_trial_grid_mismatch"
+        best_for_s3: list[str] = []
+        g1 = False
+    elif len(passed_trials) == len(required_pairs) and not failed_trials:
+        status = "GO_NEXT"
+        reason = "all_d4_promotion_trials_passed"
+        best_for_s3 = [promotion_candidate_id]
+        g1 = True
+    else:
+        status = "STOP_WITH_EVIDENCE"
+        reason = "one_or_more_d4_promotion_trials_failed"
+        best_for_s3 = []
+        g1 = False
+
+    return {
+        "status": status,
+        "reason": reason,
+        "best_for_s3": best_for_s3,
+        "promotion_candidate_id": promotion_candidate_id,
+        "required_particle_counts": [int(count) for count in required_particle_counts],
+        "required_particle_seeds": [int(seed) for seed in required_particle_seeds],
+        "required_trial_count": len(required_pairs),
+        "observed_trial_count": len(candidate_results),
+        "passed_trial_count": len(passed_trials),
+        "passed_trials": passed_trials,
+        "failed_trials": failed_trials,
+        "missing_trials": [
+            {"particle_count": particle_count, "particle_seed": seed} for particle_count, seed in missing_pairs
+        ],
+        "extra_trials": [
+            {"particle_count": particle_count, "particle_seed": seed} for particle_count, seed in extra_pairs
+        ],
+        "g1_physics_a": g1,
+        "init_pins": {
+            "initial_radial_velocity": PROMOTION_INITIAL_RADIAL_VELOCITY,
+            "particle_max_velocity": PROMOTION_PARTICLE_MAX_VELOCITY,
+        },
+    }
+
+
 def evaluate_d4_init_pin_dependence(
     *,
     initial_radial_velocity: float,
@@ -1198,6 +1396,25 @@ def _s2f5_promotion_candidate_id(
     if len(parent_ids) == 1:
         return next(iter(parent_ids))
     return S2F5_PROMOTION_CANDIDATE_ID
+
+
+def _d4_promotion_candidate_id(
+    *,
+    candidate_results: Sequence[dict[str, Any]],
+    candidates: Sequence[C2ProxyCandidate],
+) -> str:
+    parent_ids = {
+        str(parent_id)
+        for parent_id in (
+            [result.get("parent_candidate_id") for result in candidate_results]
+            if candidate_results
+            else [candidate.parent_candidate_id for candidate in candidates]
+        )
+        if parent_id
+    }
+    if len(parent_ids) == 1:
+        return next(iter(parent_ids))
+    return D4_PROMOTION_CANDIDATE_ID
 
 
 def _pass_criteria(
@@ -1765,10 +1982,25 @@ def write_followup_manifest(
     ranking = rank_followup_candidates(candidate_results)
     near_pass_for_s2f2 = near_pass_candidates_for_s2f2(candidate_results)
     s2f5_review = None
+    d4_wrapper_sweep = None
+    d4_wrapper_promotion = None
     if phase == "S2F5_PROMOTION_REVIEW" and candidate_results:
         s2f5_review = aggregate_s2f5_promotion_review(
             candidate_results,
             promotion_candidate_id=_s2f5_promotion_candidate_id(
+                candidate_results=candidate_results,
+                candidates=candidates,
+            ),
+        )
+    if phase == "D4_WRAPPER_SWEEP" and candidate_results:
+        d4_wrapper_sweep = aggregate_d4_wrapper_sweep(
+            candidate_results,
+            expected_candidate_ids=[candidate.candidate_id for candidate in candidates],
+        )
+    if phase == "D4_WRAPPER_PROMOTION" and candidate_results:
+        d4_wrapper_promotion = aggregate_d4_wrapper_promotion(
+            candidate_results,
+            promotion_candidate_id=_d4_promotion_candidate_id(
                 candidate_results=candidate_results,
                 candidates=candidates,
             ),
@@ -1803,6 +2035,21 @@ def write_followup_manifest(
                 "reason": "blocking_runtime_warning_detected",
                 "best_for_s3": [],
             }
+        if d4_wrapper_sweep is not None:
+            d4_wrapper_sweep = {
+                **d4_wrapper_sweep,
+                "status": "STOP_WITH_EVIDENCE",
+                "reason": "blocking_runtime_warning_detected",
+                "best_for_promotion": [],
+            }
+        if d4_wrapper_promotion is not None:
+            d4_wrapper_promotion = {
+                **d4_wrapper_promotion,
+                "status": "STOP_WITH_EVIDENCE",
+                "reason": "blocking_runtime_warning_detected",
+                "best_for_s3": [],
+                "g1_physics_a": False,
+            }
         if s2f4_analysis is not None:
             s2f4_analysis = {
                 **s2f4_analysis,
@@ -1815,12 +2062,24 @@ def write_followup_manifest(
         status = "PLAN_READY"
     elif phase == "S2F5_PROMOTION_REVIEW" and s2f5_review is not None:
         status = s2f5_review["status"]
+    elif phase == "D4_WRAPPER_PROMOTION" and d4_wrapper_promotion is not None:
+        status = d4_wrapper_promotion["status"]
+    elif phase == "D4_WRAPPER_SWEEP" and d4_wrapper_sweep is not None:
+        status = d4_wrapper_sweep["status"] if d4_wrapper_sweep["status"] == "GO_NEXT" else (
+            d4_wrapper_sweep["status"]
+            if d4_wrapper_sweep["status"] in D4_MATRIX_STOP_CLASSIFICATIONS
+            else ranking["s2f1_status"]
+        )
     elif phase == "S2F4_C4_NATIVE_MESH_ISOLATION" and s2f4_analysis is not None:
         status = "GO_NEXT" if s2f4_analysis["best_for_s2f5"] else "STOP_WITH_EVIDENCE"
     else:
         status = ranking["s2f1_status"]
     if phase == "S2F5_PROMOTION_REVIEW" and s2f5_review is not None:
         passed_candidates = s2f5_review["best_for_s3"]
+    elif phase == "D4_WRAPPER_PROMOTION" and d4_wrapper_promotion is not None:
+        passed_candidates = d4_wrapper_promotion["best_for_s3"]
+    elif phase == "D4_WRAPPER_SWEEP" and d4_wrapper_sweep is not None:
+        passed_candidates = d4_wrapper_sweep["best_for_promotion"]
     elif phase == "S2F4_C4_NATIVE_MESH_ISOLATION" and s2f4_analysis is not None:
         passed_candidates = s2f4_analysis["best_for_s2f5"]
     else:
@@ -1836,6 +2095,11 @@ def write_followup_manifest(
         if phase
         in {"S2F2_VELOCITY_CONTACT_OFFSET", "S2F3_C3_SDF_SWEEP", "S2F4_C4_NATIVE_MESH_ISOLATION"}
         else passed_candidates
+    )
+    best_for_promotion = (
+        d4_wrapper_sweep["best_for_promotion"]
+        if phase == "D4_WRAPPER_SWEEP" and d4_wrapper_sweep is not None
+        else ([] if phase != "D4_WRAPPER_PROMOTION" else passed_candidates)
     )
     s2f5_promotion_review_next = bool(
         phase
@@ -1863,6 +2127,30 @@ def write_followup_manifest(
         next_stage_id = "S2F5_PROMOTION_REVIEW"
         next_stage_variants = best_for_s2f5
         diagnostic_routes: list[str] = []
+    elif phase == "D4_WRAPPER_SWEEP" and status == "GO_NEXT" and best_for_promotion:
+        next_stage_id = "D4_WRAPPER_PROMOTION"
+        next_stage_variants = best_for_promotion
+        diagnostic_routes = []
+    elif phase == "D4_WRAPPER_SWEEP" and status == "PLAN_READY":
+        next_stage_id = "D4_WRAPPER_SWEEP"
+        next_stage_variants = [candidate.candidate_id for candidate in candidates]
+        diagnostic_routes = []
+    elif phase == "D4_WRAPPER_SWEEP":
+        next_stage_id = "D4_WRAPPER_SWEEP"
+        next_stage_variants = near_pass_for_s2f2 or [candidate.candidate_id for candidate in candidates[:5]]
+        diagnostic_routes = ["tighten_wrapper_geometry"]
+    elif phase == "D4_WRAPPER_PROMOTION" and best_for_s3:
+        next_stage_id = "VISUAL_A_OFFICIAL"
+        next_stage_variants = best_for_s3
+        diagnostic_routes = []
+    elif phase == "D4_WRAPPER_PROMOTION" and status == "PLAN_READY":
+        next_stage_id = "D4_WRAPPER_PROMOTION"
+        next_stage_variants = [candidate.candidate_id for candidate in candidates]
+        diagnostic_routes = []
+    elif phase == "D4_WRAPPER_PROMOTION":
+        next_stage_id = "D4_WRAPPER_PROMOTION"
+        next_stage_variants = []
+        diagnostic_routes = ["rerun_failed_d4_promotion_trials"]
     elif phase == "S2F5_PROMOTION_REVIEW" and best_for_s3:
         next_stage_id = "S3_KINEMATIC_POUR"
         next_stage_variants = best_for_s3
@@ -1915,6 +2203,10 @@ def write_followup_manifest(
         reason = "candidate_plan_written"
     elif not warning_gate["passed"]:
         reason = "blocking_runtime_warning_detected"
+    elif d4_wrapper_promotion is not None:
+        reason = d4_wrapper_promotion["reason"]
+    elif d4_wrapper_sweep is not None:
+        reason = d4_wrapper_sweep["reason"]
     elif s2f5_review is not None:
         reason = s2f5_review["reason"]
     elif phase == "S2F4_C4_NATIVE_MESH_ISOLATION" and s2f4_analysis is not None:
@@ -2008,7 +2300,15 @@ def write_followup_manifest(
                     else (
                         "true_physx_pbd_fluid_spike_s2f5_promotion_review"
                         if phase == "S2F5_PROMOTION_REVIEW"
-                        else "true_physx_pbd_fluid_spike_s2f1_c2_proxy_sweep"
+                        else (
+                            "true_physx_pbd_fluid_spike_d4_wrapper_promotion"
+                            if phase == "D4_WRAPPER_PROMOTION"
+                            else (
+                                "true_physx_pbd_fluid_spike_d4_wrapper_sweep"
+                                if phase == "D4_WRAPPER_SWEEP"
+                                else "true_physx_pbd_fluid_spike_s2f1_c2_proxy_sweep"
+                            )
+                        )
                     )
                 )
             )
@@ -2055,6 +2355,14 @@ def write_followup_manifest(
         "s2f5_promotion_review_next": s2f5_promotion_review_next,
         "s2f5_promotion_review_complete": s2f5_promotion_review_complete,
         "s2f5_promotion_review": s2f5_review,
+        "d4_wrapper_sweep": d4_wrapper_sweep,
+        "d4_wrapper_promotion": d4_wrapper_promotion,
+        "best_for_promotion": best_for_promotion,
+        "g1_physics_a": bool(
+            phase == "D4_WRAPPER_PROMOTION"
+            and d4_wrapper_promotion is not None
+            and d4_wrapper_promotion.get("g1_physics_a")
+        ),
         "s2f4_native_mesh_isolation": s2f4_analysis,
         "native_beaker_fluid_safe_collider_status": (
             s2f4_analysis["native_beaker_fluid_safe_collider_status"] if s2f4_analysis else None
@@ -2062,6 +2370,12 @@ def write_followup_manifest(
         "native_issue_partition": s2f4_analysis["native_issue_partition"] if s2f4_analysis else None,
         "s3_kinematic_pour_released": bool(
             phase == "S2F5_PROMOTION_REVIEW" and status == "GO_NEXT" and best_for_s3
+        ),
+        "physics_a_g1_released": bool(
+            phase == "D4_WRAPPER_PROMOTION"
+            and status == "GO_NEXT"
+            and d4_wrapper_promotion is not None
+            and d4_wrapper_promotion.get("g1_physics_a")
         ),
         "runtime_warning_scan": runtime_warning_scan,
         "runtime_warning_gate": warning_gate,
@@ -2186,6 +2500,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--scene-dir", default=DEFAULT_SCENE_DIR)
     parser.add_argument("--native-usd", default=DEFAULT_NATIVE_USD)
     parser.add_argument("--candidate-limit", type=int, default=None)
+    parser.add_argument("--promotion-candidate-id", default=None)
     parser.add_argument("--particle-count", type=int, default=ColliderConfig.particle_count)
     parser.add_argument("--steps", type=int, default=ColliderConfig.steps)
     parser.add_argument("--width", type=int, default=ColliderConfig.render_width)
@@ -2205,6 +2520,7 @@ def main(argv: list[str]) -> int:
         "S2F4_C4_NATIVE_MESH_ISOLATION",
         "S2F5_PROMOTION_REVIEW",
         "D4_WRAPPER_SWEEP",
+        "D4_WRAPPER_PROMOTION",
     }:
         raise SystemExit(f"unsupported phase for this runner: {args.phase}")
 
@@ -2263,6 +2579,21 @@ def main(argv: list[str]) -> int:
         if args.scene_dir == DEFAULT_SCENE_DIR:
             args.scene_dir = DEFAULT_D4_SCENE_DIR
         candidates = build_d4_wrapper_sweep(limit=args.candidate_limit)
+    elif args.phase == "D4_WRAPPER_PROMOTION":
+        if args.candidate_limit is not None:
+            raise SystemExit("D4_WRAPPER_PROMOTION does not support --candidate-limit")
+        if args.artifact_dir == DEFAULT_ARTIFACT_DIR:
+            args.artifact_dir = DEFAULT_D4_PROMOTION_ARTIFACT_DIR
+        if args.manifest_path == DEFAULT_MANIFEST_PATH:
+            args.manifest_path = DEFAULT_D4_PROMOTION_MANIFEST_PATH
+        if args.scene_dir == DEFAULT_SCENE_DIR:
+            args.scene_dir = DEFAULT_D4_PROMOTION_SCENE_DIR
+        if args.s2f1_manifest == DEFAULT_MANIFEST_PATH:
+            args.s2f1_manifest = DEFAULT_D4_PROMOTION_SOURCE_MANIFEST
+        candidates = build_d4_wrapper_promotion_sweep(
+            d4_manifest_path=Path(args.s2f1_manifest),
+            promotion_candidate_id=args.promotion_candidate_id or D4_PROMOTION_CANDIDATE_ID,
+        )
     else:
         candidates = build_c2_proxy_sweep(limit=args.candidate_limit or 12)
     base_config = ColliderConfig(
@@ -2284,6 +2615,7 @@ def main(argv: list[str]) -> int:
             "S2F3_C3_SDF_SWEEP",
             "S2F4_C4_NATIVE_MESH_ISOLATION",
             "S2F5_PROMOTION_REVIEW",
+            "D4_WRAPPER_PROMOTION",
         }
         else None
     )

@@ -18,12 +18,14 @@ def test_followup_matrix_names_do_not_collide_with_s2_baseline():
         "S2F4_C4_NATIVE_MESH_ISOLATION",
         "S2F5_PROMOTION_REVIEW",
         "D4_WRAPPER_SWEEP",
+        "D4_WRAPPER_PROMOTION",
     ]
     assert phases["S2F0_BASELINE_FREEZE"]["candidate_prefix"] == "S2"
     assert phases["S2F1_C2_PROXY_SWEEP"]["candidate_prefix"] == "C2A"
     assert phases["S2F3_C3_SDF_SWEEP"]["candidate_prefix"] == "C3A"
     assert phases["S2F4_C4_NATIVE_MESH_ISOLATION"]["candidate_prefix"] == "C4A"
     assert phases["D4_WRAPPER_SWEEP"]["candidate_prefix"] == "D4A"
+    assert phases["D4_WRAPPER_PROMOTION"]["candidate_prefix"] == "D4P"
 
 
 def test_build_c2_proxy_sweep_is_bounded_and_covers_planned_ranges():
@@ -2199,6 +2201,101 @@ def test_classify_d4_wrapper_trial_composes_hold_and_non_physical_gate():
         blocking_runtime_warning_detected=False,
     )
     assert leak["classification"] == "FAIL_CONTAINER_LEAK"
+
+
+def test_build_d4_wrapper_promotion_matrix_is_12_trials_with_pinned_init():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        D4_PROMOTION_PARTICLE_COUNTS,
+        D4_PROMOTION_PARTICLE_SEEDS,
+        build_d4_wrapper_promotion_sweep,
+        build_d4_wrapper_sweep,
+    )
+    from tools.labutopia_fluid.run_beaker_collider_smoke import (
+        PROMOTION_INITIAL_RADIAL_VELOCITY,
+        PROMOTION_PARTICLE_MAX_VELOCITY,
+    )
+
+    parent = next(c for c in build_d4_wrapper_sweep() if c.candidate_id == "D4A_018")
+    candidates = build_d4_wrapper_promotion_sweep(
+        parent=parent,
+        particle_counts=D4_PROMOTION_PARTICLE_COUNTS,
+        particle_seeds=D4_PROMOTION_PARTICLE_SEEDS,
+    )
+
+    assert D4_PROMOTION_PARTICLE_COUNTS == (512, 1024, 4096, 50000)
+    assert D4_PROMOTION_PARTICLE_SEEDS == (0, 1, 2)
+    assert len(candidates) == 12
+    assert {c.phase for c in candidates} == {"D4_WRAPPER_PROMOTION"}
+    assert {c.parent_candidate_id for c in candidates} == {"D4A_018"}
+    assert {(c.particle_count, c.particle_seed) for c in candidates} == {
+        (count, seed) for count in D4_PROMOTION_PARTICLE_COUNTS for seed in D4_PROMOTION_PARTICLE_SEEDS
+    }
+    assert all(c.initial_radial_velocity == PROMOTION_INITIAL_RADIAL_VELOCITY for c in candidates)
+    assert all(c.particle_max_velocity == PROMOTION_PARTICLE_MAX_VELOCITY for c in candidates)
+    assert all(c.wall_thickness == parent.wall_thickness for c in candidates)
+    assert all(c.panel_count == parent.panel_count for c in candidates)
+    assert all(c.interior_inset == parent.interior_inset for c in candidates)
+    assert candidates[0].candidate_id == "D4A_018_D4P_P0512_SEED000"
+    assert candidates[0].to_variant_spec().setup == "fluid_safe_wrapper"
+    assert candidates[0].to_config().particle_count == 512
+    assert candidates[0].to_config().interior_inset == parent.interior_inset
+    cfg_4k = next(c for c in candidates if c.particle_count == 4096).to_config()
+    cfg_50k = next(c for c in candidates if c.particle_count == 50000).to_config()
+    assert cfg_4k.grid_dims[2] >= 12
+    assert cfg_50k.particle_spacing <= 0.002
+    from tools.labutopia_fluid.run_beaker_collider_smoke import build_source_particle_positions
+
+    assert len(build_source_particle_positions(cfg_4k)) == 4096
+    assert len(build_source_particle_positions(cfg_50k)) == 50000
+
+
+def test_aggregate_d4_wrapper_promotion_requires_all_12_pass_for_g1():
+    from tools.labutopia_fluid.run_beaker_collider_followup_sweep import (
+        D4_PROMOTION_PARTICLE_COUNTS,
+        D4_PROMOTION_PARTICLE_SEEDS,
+        aggregate_d4_wrapper_promotion,
+        build_d4_wrapper_promotion_sweep,
+        build_d4_wrapper_sweep,
+    )
+
+    parent = next(c for c in build_d4_wrapper_sweep() if c.candidate_id == "D4A_018")
+    plan = build_d4_wrapper_promotion_sweep(parent=parent)
+    all_pass = [
+        {
+            "candidate_id": c.candidate_id,
+            "parent_candidate_id": c.parent_candidate_id,
+            "particle_count": c.particle_count,
+            "particle_seed": c.particle_seed,
+            "classification": "PASS_SOURCE_HOLD",
+            "readback_available": True,
+            "evidence_files_complete": True,
+            "non_physical_parameter_dependence": False,
+        }
+        for c in plan
+    ]
+    agg = aggregate_d4_wrapper_promotion(
+        all_pass,
+        promotion_candidate_id="D4A_018",
+        required_particle_counts=D4_PROMOTION_PARTICLE_COUNTS,
+        required_particle_seeds=D4_PROMOTION_PARTICLE_SEEDS,
+    )
+    assert agg["status"] == "GO_NEXT"
+    assert agg["reason"] == "all_d4_promotion_trials_passed"
+    assert agg["best_for_s3"] == ["D4A_018"]
+    assert agg["passed_trial_count"] == 12
+    assert agg["g1_physics_a"] is True
+
+    partial = list(all_pass)
+    partial[-1] = {**partial[-1], "classification": "FAIL_CONTAINER_LEAK"}
+    agg_fail = aggregate_d4_wrapper_promotion(
+        partial,
+        promotion_candidate_id="D4A_018",
+        required_particle_counts=D4_PROMOTION_PARTICLE_COUNTS,
+        required_particle_seeds=D4_PROMOTION_PARTICLE_SEEDS,
+    )
+    assert agg_fail["status"] == "STOP_WITH_EVIDENCE"
+    assert agg_fail["best_for_s3"] == []
+    assert agg_fail["g1_physics_a"] is False
 
 
 def test_aggregate_d4_wrapper_sweep_incomplete_and_crutch_stop_taxonomy():
