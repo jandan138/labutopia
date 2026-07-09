@@ -244,7 +244,18 @@ Prefer **subagent-driven-development**: P0 + Tasks 5–8 can parallelize with Ta
 Code/unit tasks complete: 0,1,2,3,5,6,7,8,9 (+ motion_contract fix).
 **121 passed** on touched fluid unit tests.
 
+### Isaac D4 smoke (Task 4 in progress)
+
+| Run | Candidates | Best retention | Best class | Notes |
+|-----|------------|----------------|------------|-------|
+| `_001` | 1 | 0.943 | FAIL_CONTAINER_LEAK | D4A_001 thin wall |
+| `_002` | 6 | 0.975 | FAIL_CONTAINER_LEAK | D4A_003 |
+| `_003` | 15 | **0.977** | FAIL_CONTAINER_LEAK | D4A_013 / D4A_007; **below_table=0**, spill=12 |
+| `_004` | 27 | 0.986 | FAIL_CONTAINER_LEAK (pre-slack) | D4A_018 best; all init_spill=8 |
+
+**Root cause (2026-07-09):** false spill from classifying at geometric inner face. PhysX parks particles at `r ≈ source_radius + ≤1.8e-4`. Fix: `SOURCE_REGION_RADIAL_SLACK=5e-4` + wire `interior_inset` into spawn/`to_config`. Offline reclass of `_004` → **D4A_018 / D4A_007 PASS** (spill=0, below=0, ret=1.0); real panel-gap leaks (e.g. D4A_016) still fail.
+
 Still GPU-gated:
-- Task 4: D4 promotion matrix 12 trials (512→50k × 3 seeds) on IsaacSim41
+- Task 4: Isaac confirm PASS on D4A_018 → promotion matrix 12 trials
 - Task 10: Official Visual A evidence on Physics-A-passing trajectory
 - Task 11: Slow pour B after G1

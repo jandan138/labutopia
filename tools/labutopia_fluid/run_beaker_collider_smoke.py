@@ -37,6 +37,9 @@ from tools.labutopia_fluid.run_standalone_particle_smoke import (
 
 BEAKER_COLLIDER_VARIANT_IDS = ("C0", "C1", "C2", "C3", "C4", "C5")
 CLASSIFICATION_CONTRACT_VERSION = "s2_no_outside_source_v2"
+# Absorb PhysX wall-contact parking past the geometric inner face without
+# hiding real panel-gap leaks (D4 evidence: false spill <= ~1.8e-4; real leaks ~1e-2).
+SOURCE_REGION_RADIAL_SLACK = 5e-4
 DIAGNOSTIC_PROJECTION_VERSION = "v2_dynamic_z_shows_below_table_leaks"
 # Pinned promotion init (spec §4.2 / §4.4). Passes that require lower values are
 # FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE / STOP_NON_PHYSICAL_PARAMETER_DEPENDENCE.
@@ -94,6 +97,7 @@ class ColliderConfig:
     wall_thickness: float = 0.01
     bottom_thickness: float = 0.008
     bottom_overlap: float = 0.0
+    interior_inset: float | None = None
     collider_contact_offset: float = 0.003
     collider_rest_offset: float = 0.0
     sdf_resolution: int | None = None
@@ -224,20 +228,31 @@ def source_particle_lower(config: ColliderConfig) -> tuple[float, float, float]:
     )
 
 
+def source_region_radius(config: ColliderConfig) -> float:
+    """Classification radius: geometric inner face plus wall-contact slack."""
+    return float(config.source_radius) + float(SOURCE_REGION_RADIAL_SLACK)
+
+
+def target_region_radius(config: ColliderConfig) -> float:
+    return float(config.target_radius) + float(SOURCE_REGION_RADIAL_SLACK)
+
+
 def region_definitions(config: ColliderConfig) -> dict[str, Any]:
     return {
         "source_region": (
             "cylindrical region around source container interior; "
-            f"center_xy={config.source_center[:2]} radius={config.source_radius} "
+            f"center_xy={config.source_center[:2]} radius={source_region_radius(config)} "
+            f"(inner_face={config.source_radius}+slack={SOURCE_REGION_RADIAL_SLACK}) "
             f"z=[{config.table_z}, {config.table_z + config.source_height}]"
         ),
         "target_region": (
             "cylindrical region around target container interior; "
-            f"center_xy={config.target_center[:2]} radius={config.target_radius} "
+            f"center_xy={config.target_center[:2]} radius={target_region_radius(config)} "
             f"z=[{config.table_z}, {config.table_z + config.target_height}]"
         ),
         "spill_region": "finite particles outside source and target regions with z >= table_z",
         "below_table_region": f"finite particles with z < {config.table_z}",
+        "source_region_radial_slack": SOURCE_REGION_RADIAL_SLACK,
     }
 
 
@@ -265,7 +280,7 @@ def compute_region_counts(positions: Sequence[Sequence[float]], config: Collider
         elif _inside_cylinder(
             pos,
             center=config.source_center,
-            radius=config.source_radius,
+            radius=source_region_radius(config),
             z_min=config.table_z,
             z_max=config.table_z + config.source_height,
         ):
@@ -273,7 +288,7 @@ def compute_region_counts(positions: Sequence[Sequence[float]], config: Collider
         elif _inside_cylinder(
             pos,
             center=config.target_center,
-            radius=config.target_radius,
+            radius=target_region_radius(config),
             z_min=config.table_z,
             z_max=config.table_z + config.target_height,
         ):
@@ -417,7 +432,10 @@ def build_source_particle_positions(config: ColliderConfig) -> list[tuple[float,
         if config.spawn_particle_contact_offset is not None
         else config.particle_contact_offset
     )
-    usable_radius = config.source_radius - spawn_contact_offset * 1.2
+    clearance = spawn_contact_offset * 1.2
+    if config.interior_inset is not None:
+        clearance = max(clearance, float(config.interior_inset))
+    usable_radius = config.source_radius - clearance
     lower_z = source_particle_lower(config)[2]
     samples_per_axis = int(math.ceil((usable_radius * 2.0) / config.particle_spacing)) + 1
     start = -usable_radius

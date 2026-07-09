@@ -1,0 +1,32 @@
+{
+  "blocking_runtime_warning_detected": false,
+  "generated_at_utc": "2026-07-09T06:33:20.014117+00:00",
+  "manifest_type": "true_physx_pbd_fluid_spike_s2f1_runtime_warning_scan",
+  "notes": [
+    "Artifact-level stdout/stderr warning scan is authoritative for S2F1 release review.",
+    "SDF cooking warnings/errors are blocking because S2F3 can otherwise report a false collider result.",
+    "Headless GLFW/display warnings are expected in no-window IsaacSim runs."
+  ],
+  "pattern_counts": {
+    "cpu_fallback": 0,
+    "gpu_unsupported": 0,
+    "headless_window_warning": 0,
+    "material_binding_scope_warning": 0,
+    "physx_error": 0,
+    "sdf_warning": 0
+  },
+  "pattern_examples": {
+    "cpu_fallback": [],
+    "gpu_unsupported": [],
+    "headless_window_warning": [],
+    "material_binding_scope_warning": [],
+    "physx_error": [],
+    "sdf_warning": []
+  },
+  "schema_version": 1,
+  "source_files": {
+    "server_stderr": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_smoke_20260709_004/server.stderr.txt",
+    "server_stdout": "docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_smoke_20260709_004/server.stdout.txt"
+  },
+  "warning_line_count": 0
+}

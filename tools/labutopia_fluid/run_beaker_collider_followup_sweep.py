@@ -209,6 +209,7 @@ class C2ProxyCandidate:
             particle_enable_ccd=self.particle_enable_ccd,
             particle_max_velocity=self.particle_max_velocity,
             particle_max_depenetration_velocity=self.particle_max_depenetration_velocity,
+            interior_inset=self.interior_inset if self.interior_inset is not None else config.interior_inset,
             sdf_resolution=self.sdf_resolution if self.sdf_resolution is not None else config.sdf_resolution,
             sdf_subgrid_resolution=(
                 self.sdf_subgrid_resolution

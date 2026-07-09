@@ -2077,6 +2077,7 @@ def test_d4_wrapper_sweep_covers_spec_geometry_ranges_with_pinned_init():
     assert config.particle_max_velocity == 5.0
     assert config.wall_thickness == 0.018
     assert config.bottom_overlap == 0.003
+    assert config.interior_inset == start.interior_inset
     assert isinstance(spec, VariantSpec)
     assert spec.setup == "fluid_safe_wrapper"
     assert spec.panel_count == 48

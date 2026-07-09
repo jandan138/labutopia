@@ -280,6 +280,41 @@ def test_region_counts_split_source_target_spill_and_below_table():
     assert counts["below_table_count"] == 1
 
 
+def test_region_counts_treat_wall_contact_slack_as_source_not_spill():
+    """PhysX contact resolution can park particles slightly past the inner face.
+
+    D4 evidence: best candidates' 'spill' was entirely within ~1e-4 of source_radius.
+    Slack must absorb that without hiding real panel-gap leaks (~1e-2).
+    """
+    from tools.labutopia_fluid.run_beaker_collider_smoke import SOURCE_REGION_RADIAL_SLACK
+
+    config = ColliderConfig(source_radius=0.055)
+    wall_face = [
+        (0.05505, 0.0, 0.08),
+        (0.05518, 0.0, 0.08),
+    ]
+    real_leak = [(0.065, 0.0, 0.08)]
+
+    wall_counts = compute_region_counts(wall_face, config)
+    leak_counts = compute_region_counts(real_leak, config)
+
+    assert SOURCE_REGION_RADIAL_SLACK >= 5e-4
+    assert wall_counts["source_count"] == 2
+    assert wall_counts["spill_count"] == 0
+    assert leak_counts["source_count"] == 0
+    assert leak_counts["spill_count"] == 1
+
+
+def test_source_particle_positions_honor_interior_inset_clearance():
+    config = ColliderConfig(particle_count=64, interior_inset=0.01, particle_contact_offset=0.0045)
+
+    positions = build_source_particle_positions(config)
+    max_radius = max((x**2 + y**2) ** 0.5 for x, y, _ in positions)
+
+    assert max_radius <= config.source_radius - config.interior_inset + 1e-9
+    assert compute_region_counts(positions, config)["spill_count"] == 0
+
+
 def test_source_particle_positions_cover_near_wall_while_starting_inside_source_region():
     config = ColliderConfig()
 
