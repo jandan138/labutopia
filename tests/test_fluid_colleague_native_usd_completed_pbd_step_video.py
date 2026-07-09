@@ -179,9 +179,9 @@ def test_reconcile_presentation_water_material_downgrades_false_pass():
     assert reconciled["fallback_reason"] == "mdl_create_module_failed_after_bind"
 
 
-def test_resolve_presentation_water_mdl_prefers_kit_core_over_local_mirror(tmp_path):
+def test_resolve_presentation_water_mdl_prefers_version_matched_tree_over_local_mirror(tmp_path):
     from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import (
-        ISAACSIM41_CORE_MDL_ROOT,
+        PRESENTATION_WATER_MDL_ROOT,
         PRESENTATION_WATER_MDL_ASSET,
         resolve_presentation_water_mdl_source_asset,
     )
@@ -189,11 +189,11 @@ def test_resolve_presentation_water_mdl_prefers_kit_core_over_local_mirror(tmp_p
     mirror = tmp_path / "Base"
     mirror.mkdir()
     (mirror / PRESENTATION_WATER_MDL_ASSET).write_text("//mirror\n")
-    kit = ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET
-    if not kit.exists():
-        return  # skip when kit tree absent in unit env
+    preferred = PRESENTATION_WATER_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET
+    if not preferred.exists():
+        return  # skip when neither conda nor kit tree is present
     resolved = resolve_presentation_water_mdl_source_asset(closure_base_dir=mirror)
-    assert resolved == kit
+    assert resolved == preferred
 
 
 def test_build_isaacsim41_core_mdl_closure_plan_includes_transitive_base_dependencies():

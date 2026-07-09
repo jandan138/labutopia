@@ -81,6 +81,25 @@ RUNTIME_PARTICLE_SYSTEM_PATH = f"{RUNTIME_PBD_SCOPE_PATH}/ParticleSystem"
 RUNTIME_PARTICLE_SET_PATH = f"{RUNTIME_PBD_SCOPE_PATH}/ParticleSet"
 NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID = "COLLEAGUE_NATIVE_USD_FULL_50K_COMPLETED_PBD"
 ISAACSIM41_CORE_MDL_ROOT = Path("/isaac-sim/kit/mdl/core")
+# Conda site-packages ships a matching OmniSurface + OmniSurfaceBase pair. The kit
+# Base/OmniSurface.mdl passes round_edges_* into OmniSurfaceBase, but Hydra resolves
+# ::OmniSurface::OmniSurfaceBase from the conda tree (no round_edges) → createMdlModule
+# fails. Prefer the conda-consistent tree for ClearWater when present.
+_CONDA_OMNI_MDL_CORE = (
+    Path(sys.executable).resolve().parent.parent
+    / "lib"
+    / "python3.10"
+    / "site-packages"
+    / "omni"
+    / "mdl"
+    / "core"
+)
+PRESENTATION_WATER_MDL_ROOT = (
+    _CONDA_OMNI_MDL_CORE
+    if (_CONDA_OMNI_MDL_CORE / "Base" / "OmniSurfacePresets.mdl").exists()
+    and (_CONDA_OMNI_MDL_CORE / "mdl" / "OmniSurface" / "OmniSurfaceBase.mdl").exists()
+    else ISAACSIM41_CORE_MDL_ROOT
+)
 MATERIAL_CLOSURE_DIRNAME = "material_closure_isaacsim41_core"
 CORE_MDL_DIRECT_ASSETS = ("OmniGlass.mdl", "OmniSurfacePresets.mdl", "OmniPBR.mdl")
 CORE_MDL_TRANSITIVE_DEPENDENCIES = (
@@ -325,15 +344,16 @@ def resolve_presentation_water_mdl_source_asset(
     *,
     closure_base_dir: str | Path | None = None,
 ) -> Path | None:
-    """Resolve OmniSurfacePresets.mdl from explicit path, Isaac core root, or local mirror.
+    """Resolve OmniSurface_ClearWater presets from a version-matched MDL tree.
 
-    Prefer the kit core path over the artifact local mirror: Hydra resolves
-    OmniSurfaceBase correctly from ``/isaac-sim/kit/mdl/core``, while the
-    mirrored file:// tree often fails createMdlModule (round_edges params).
+    Prefer the conda omni.mdl.core tree (matching OmniSurfaceBase) over kit Base
+    absolute paths, which fail createMdlModule when Hydra resolves Base from conda.
+    Local artifact mirrors remain last resort.
     """
     candidates: list[Path] = []
     if mdl_source_asset is not None:
         candidates.append(Path(mdl_source_asset))
+    candidates.append(PRESENTATION_WATER_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET)
     candidates.append(ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET)
     if closure_base_dir is not None:
         candidates.append(Path(closure_base_dir) / PRESENTATION_WATER_MDL_ASSET)
@@ -1788,10 +1808,11 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             stage,
             attempt_mdl=True,
             closure_base_dir=None,
-            # Kit CreateAndBind leaves relative @OmniSurfacePresets.mdl@ which still
-            # fails createMdlModule in this headless path. Author absolute kit path.
+            # Bind absolute path from version-matched PRESENTATION_WATER_MDL_ROOT
+            # (conda omni.mdl.core). Kit absolute Base + conda OmniSurfaceBase mismatch
+            # causes round_edges createMdlModule failures.
             prefer_kit_bind=False,
-            mdl_source_asset=ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET,
+            mdl_source_asset=PRESENTATION_WATER_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET,
         )
         presentation_lighting_info = _author_liquid_presentation_lighting(stage)
         presentation_camera_info = _define_liquid_presentation_camera(stage, config)
