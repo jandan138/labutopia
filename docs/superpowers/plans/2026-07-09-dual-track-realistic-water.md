@@ -41,19 +41,23 @@
 
 ## Task 0: P0 Claim Scrub
 
+**Status:** done (`64aa9bc`)
+
 **Files:**
 - Modify: `reports/2026-07-07-labutopia-fluid-weekly/index.html`
 - Modify: `docs/labutopia_lab_poc/true_physx_pbd_fluid_spike.md`
 - Modify: `docs/labutopia_lab_poc/evidence_manifests/README.md`
 
-- [ ] **Step 1:** Grep for `真实水|像水|统一真实水|photoreal` in those files; list hits.
-- [ ] **Step 2:** Replace titles/body with `统一诊断水面（MDL 目标未过）` / machine claims; keep WARN language.
-- [ ] **Step 3:** Grep again — zero forbidden colloquial claims in titles; blocked-claim lists still present.
-- [ ] **Step 4:** Commit `docs: scrub realistic-water PM claims pending MDL+wrapper GO`
+- [x] **Step 1:** Grep for `真实水|像水|统一真实水|photoreal` in those files; list hits.
+- [x] **Step 2:** Replace titles/body with `统一诊断水面（MDL 目标未过）` / machine claims; keep WARN language.
+- [x] **Step 3:** Grep again — zero forbidden colloquial claims in titles; blocked-claim lists still present.
+- [x] **Step 4:** Commit `docs: scrub realistic-water PM claims pending MDL+wrapper GO`
 
 ---
 
 ## Task 1: Fluid-safe wrapper authoring (local frame)
+
+**Status:** done (`27f9918`, motion_contract `9de467c`)
 
 **Files:**
 - Modify: `tools/labutopia_fluid/run_beaker_collider_smoke.py`
@@ -75,6 +79,8 @@
 
 ## Task 2: D4 sweep phase + STOP taxonomy
 
+**Status:** done (`69848fe`)
+
 **Files:**
 - Modify: `tools/labutopia_fluid/run_beaker_collider_followup_sweep.py`
 - Test: `tests/test_fluid_beaker_collider_followup_sweep.py`
@@ -88,6 +94,8 @@
 ---
 
 ## Task 3: Full-scene wrapper integration smoke
+
+**Status:** done (`4a96720`)
 
 **Files:**
 - Modify: `tools/labutopia_fluid/run_colleague_liquid_usd_leak_smoke.py`
@@ -118,6 +126,8 @@
 
 ## Task 5: MDL ClearWater attempt + status honesty
 
+**Status:** done (`c6b13ef`)
+
 **Files:**
 - Modify: `tools/labutopia_fluid/run_colleague_native_usd_completed_pbd_step_video.py` (`_author_liquid_presentation_water_material`)
 - Test: `tests/test_fluid_colleague_native_usd_completed_pbd_step_video.py`
@@ -136,6 +146,8 @@
 
 ## Task 6: Anisotropy + smoothing postprocess
 
+**Status:** done (`8a2c943`)
+
 **Files:**
 - Modify: `run_colleague_native_usd_completed_pbd_step_video.py`
 - Test: same test file
@@ -147,6 +159,8 @@
 ---
 
 ## Task 7: DomeLight + refraction bounces
+
+**Status:** done (`00c010b`)
 
 **Files:**
 - Modify: `_author_liquid_presentation_lighting`, SimulationApp/kit settings in runner
@@ -160,6 +174,8 @@
 
 ## Task 8: product_water_fx stubs + VLA overlay hashes
 
+**Status:** done (`e06b994`)
+
 **Files:**
 - Modify: `build_presentation_visual_contract` and related
 - Test: contract tests
@@ -172,6 +188,8 @@
 ---
 
 ## Task 9: Visual A provenance + rubric manifest fields
+
+**Status:** done (`2af956a`)
 
 **Files:**
 - Modify: runner summary / manifest writers
@@ -219,3 +237,14 @@
 ## Execution note
 
 Prefer **subagent-driven-development**: P0 + Tasks 5–8 can parallelize with Tasks 1–3; Task 4 and official Task 10 Visual A are gated on GPU Isaac runs.
+
+
+## Progress (2026-07-09)
+
+Code/unit tasks complete: 0,1,2,3,5,6,7,8,9 (+ motion_contract fix).
+**121 passed** on touched fluid unit tests.
+
+Still GPU-gated:
+- Task 4: D4 promotion matrix 12 trials (512→50k × 3 seeds) on IsaacSim41
+- Task 10: Official Visual A evidence on Physics-A-passing trajectory
+- Task 11: Slow pour B after G1
