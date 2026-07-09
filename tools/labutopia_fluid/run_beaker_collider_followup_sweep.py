@@ -204,6 +204,7 @@ class C2ProxyCandidate:
     wrapper_frame: str | None = None
     particle_spacing: float | None = None
     grid_dims: tuple[int, int, int] | None = None
+    particle_width: float | None = None
 
     def to_config(self, *, base: ColliderConfig | None = None) -> ColliderConfig:
         config = base or ColliderConfig()
@@ -228,6 +229,7 @@ class C2ProxyCandidate:
             interior_inset=self.interior_inset if self.interior_inset is not None else config.interior_inset,
             particle_spacing=self.particle_spacing if self.particle_spacing is not None else config.particle_spacing,
             grid_dims=self.grid_dims if self.grid_dims is not None else config.grid_dims,
+            particle_width=self.particle_width if self.particle_width is not None else config.particle_width,
             sdf_resolution=self.sdf_resolution if self.sdf_resolution is not None else config.sdf_resolution,
             sdf_subgrid_resolution=(
                 self.sdf_subgrid_resolution
@@ -590,6 +592,7 @@ def _candidate_from_plan_row(row: dict[str, Any]) -> C2ProxyCandidate:
             if row.get("grid_dims") is not None
             else None
         ),
+        particle_width=float(row["particle_width"]) if row.get("particle_width") is not None else None,
         sdf_resolution=int(row["sdf_resolution"]) if row.get("sdf_resolution") is not None else None,
         sdf_subgrid_resolution=(
             int(row["sdf_subgrid_resolution"]) if row.get("sdf_subgrid_resolution") is not None else None
@@ -1043,16 +1046,38 @@ def build_d4_wrapper_sweep(*, limit: int | None = None) -> list[C2ProxyCandidate
     return candidates
 
 
-def d4_promotion_spawn_layout(particle_count: int) -> tuple[float, tuple[int, int, int]]:
-    """Return (particle_spacing, grid_dims) that can host particle_count in the source cup."""
+def d4_promotion_spawn_layout(particle_count: int) -> dict[str, Any]:
+    """Return spawn/contact layout that can host particle_count without width>spacing.
+
+    High-N rungs must keep particle_width ≤ spacing and scale contact offsets with
+    spacing; otherwise PhysX explodes through the floor (50k evidence: width 0.0035
+    with spacing 0.002 → ~46k below_table).
+    """
     count = int(particle_count)
-    if count <= 1024:
-        return 0.0045, (8, 8, 4)
-    if count <= 4096:
-        return 0.0045, (8, 8, 12)
-    if count <= 50000:
-        return 0.002, (8, 8, 32)
-    raise ValueError(f"unsupported_d4_promotion_particle_count:{particle_count}")
+    if count <= 512:
+        spacing = 0.0045
+        grid_z = 4
+    elif count <= 1024:
+        spacing = 0.0045
+        grid_z = 8
+    elif count <= 4096:
+        spacing = 0.003
+        grid_z = 16
+    elif count <= 50000:
+        spacing = 0.002
+        grid_z = 32
+    else:
+        raise ValueError(f"unsupported_d4_promotion_particle_count:{particle_count}")
+    width = min(0.0035, spacing * 0.8)
+    particle_contact_offset = min(D4_WRAPPER_PARTICLE_CONTACT_OFFSET, spacing)
+    return {
+        "particle_spacing": spacing,
+        "grid_dims": (8, 8, grid_z),
+        "particle_width": width,
+        "particle_contact_offset": particle_contact_offset,
+        "interior_inset": max(particle_contact_offset, spacing),
+        "collider_contact_offset": min(D4_WRAPPER_COLLIDER_CONTACT_OFFSET, spacing),
+    }
 
 
 def build_d4_wrapper_promotion_sweep(
@@ -1082,7 +1107,7 @@ def build_d4_wrapper_promotion_sweep(
 
     candidates: list[C2ProxyCandidate] = []
     for particle_count in particle_counts:
-        spacing, grid_dims = d4_promotion_spawn_layout(int(particle_count))
+        layout = d4_promotion_spawn_layout(int(particle_count))
         for seed in particle_seeds:
             candidates.append(
                 C2ProxyCandidate(
@@ -1092,14 +1117,14 @@ def build_d4_wrapper_promotion_sweep(
                     variable_group="d4_wrapper_promotion",
                     panel_count=parent.panel_count,
                     wall_thickness=parent.wall_thickness,
-                    bottom_overlap=parent.bottom_overlap,
-                    particle_contact_offset=parent.particle_contact_offset,
+                    bottom_overlap=max(parent.bottom_overlap, 0.012),
+                    particle_contact_offset=float(layout["particle_contact_offset"]),
                     spawn_particle_contact_offset=parent.spawn_particle_contact_offset,
                     particle_system_contact_offset=parent.particle_system_contact_offset,
                     particle_rest_offset=parent.particle_rest_offset,
                     fluid_rest_offset=parent.fluid_rest_offset,
                     solid_rest_offset=parent.solid_rest_offset,
-                    collider_contact_offset=parent.collider_contact_offset,
+                    collider_contact_offset=float(layout["collider_contact_offset"]),
                     collider_rest_offset=parent.collider_rest_offset,
                     initial_radial_velocity=PROMOTION_INITIAL_RADIAL_VELOCITY,
                     particle_enable_ccd=parent.particle_enable_ccd,
@@ -1108,10 +1133,11 @@ def build_d4_wrapper_promotion_sweep(
                     non_physical_parameter_dependence_risk=False,
                     particle_count=int(particle_count),
                     particle_seed=int(seed),
-                    particle_spacing=spacing,
-                    grid_dims=grid_dims,
-                    panel_arc_overlap_factor=parent.panel_arc_overlap_factor,
-                    interior_inset=parent.interior_inset,
+                    particle_spacing=float(layout["particle_spacing"]),
+                    grid_dims=tuple(layout["grid_dims"]),  # type: ignore[arg-type]
+                    particle_width=float(layout["particle_width"]),
+                    panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.25),
+                    interior_inset=float(layout["interior_inset"]),
                     wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
                     native_mesh_collision_enabled=False,

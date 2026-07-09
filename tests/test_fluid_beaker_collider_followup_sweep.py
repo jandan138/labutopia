@@ -2234,19 +2234,25 @@ def test_build_d4_wrapper_promotion_matrix_is_12_trials_with_pinned_init():
     assert all(c.particle_max_velocity == PROMOTION_PARTICLE_MAX_VELOCITY for c in candidates)
     assert all(c.wall_thickness == parent.wall_thickness for c in candidates)
     assert all(c.panel_count == parent.panel_count for c in candidates)
-    assert all(c.interior_inset == parent.interior_inset for c in candidates)
+    assert all(c.interior_inset is not None and c.interior_inset >= c.particle_contact_offset for c in candidates)
+    assert all(c.bottom_overlap >= 0.012 for c in candidates)
+    assert all((c.panel_arc_overlap_factor or 0) >= 1.25 for c in candidates)
     assert candidates[0].candidate_id == "D4A_018_D4P_P0512_SEED000"
     assert candidates[0].to_variant_spec().setup == "fluid_safe_wrapper"
     assert candidates[0].to_config().particle_count == 512
-    assert candidates[0].to_config().interior_inset == parent.interior_inset
+    assert candidates[0].to_config().interior_inset == candidates[0].interior_inset
     cfg_4k = next(c for c in candidates if c.particle_count == 4096).to_config()
     cfg_50k = next(c for c in candidates if c.particle_count == 50000).to_config()
     assert cfg_4k.grid_dims[2] >= 12
     assert cfg_50k.particle_spacing <= 0.002
+    assert cfg_50k.particle_width <= cfg_50k.particle_spacing
+    assert cfg_50k.particle_contact_offset <= cfg_50k.particle_spacing * 1.1
     from tools.labutopia_fluid.run_beaker_collider_smoke import build_source_particle_positions
 
     assert len(build_source_particle_positions(cfg_4k)) == 4096
     assert len(build_source_particle_positions(cfg_50k)) == 50000
+    cfg_1k = next(c for c in candidates if c.particle_count == 1024).to_config()
+    assert cfg_1k.grid_dims[2] >= 8
 
 
 def test_aggregate_d4_wrapper_promotion_requires_all_12_pass_for_g1():
