@@ -99,6 +99,11 @@ PRESENTATION_ANISOTROPY_SCALE = 5.0
 PRESENTATION_ANISOTROPY_MIN = 1.0
 PRESENTATION_ANISOTROPY_MAX = 2.0
 PRESENTATION_SMOOTHING_STRENGTH = 0.5
+PRODUCT_WATER_FX_HASH = "product_water_fx_disabled_v1"
+VLA_MDL_MATERIAL_HASH = "omnisurface_clearwater_mdl_v1"
+VLA_FALLBACK_MATERIAL_HASH = "usd_preview_near_clear_v1"
+VLA_ISOSURFACE_HASH = "isaacsim41_fluid_isosurface_cup_demo_style_v1"
+VLA_PRESENTATION_CAMERA_HASH = "liquid_presentation_main_camera_v1"
 MDL_COMPILE_STATUS_PASS = "PASS"
 MDL_COMPILE_STATUS_FAIL = "MDL_COMPILE_FAIL"
 MDL_COMPILE_STATUS_FALLBACK_USED = "FALLBACK_USED"
@@ -586,6 +591,135 @@ def apply_presentation_render_settings(settings: Any) -> dict[str, Any]:
     return build_presentation_render_settings_contract(max_refraction_bounces=recorded)
 
 
+
+def build_product_water_fx_contract() -> dict[str, Any]:
+    """Spec §7 Lane C reserve-only stub; always disabled this round."""
+    return {
+        "enabled": False,
+        "schema_version": 1,
+        "affects_particle_dynamics": False,
+        "affects_leak_classification": False,
+        "affects_vla_overlay": False,
+        "apply_to_particle_system_prim": RUNTIME_PARTICLE_SYSTEM_PATH,
+        "apply_to_particle_set_prim": RUNTIME_PARTICLE_SET_PATH,
+        "diffuse_particles": {
+            "enabled": False,
+            "api": "PhysxDiffuseParticlesAPI",
+            "roles": ["splash", "foam", "spray", "bubbles"],
+            "params": {},
+        },
+        "flow_composite": {
+            "enabled": False,
+            "extension": "omni.flowusd",
+            "optional_gate": "cli:--product-water-fx-flow",
+        },
+        "wetting": {
+            "enabled": False,
+            "mode": "reserved",
+            "native_api_available": None,
+            "probe_at_runtime": True,
+        },
+        "reserved_keys_ok": True,
+        "product_fx_hash": PRODUCT_WATER_FX_HASH,
+    }
+
+
+def author_product_water_fx(
+    stage: Any,
+    *,
+    enabled: bool = False,
+) -> dict[str, Any]:
+    """No-op product FX authoring hook; Lane C remains reserved/disabled."""
+    del stage, enabled
+    return {
+        "authored": False,
+        "enabled": False,
+        "noop": True,
+        "product_fx_hash": PRODUCT_WATER_FX_HASH,
+        "reason": "product_water_fx_reserved_disabled_stub",
+    }
+
+
+def build_vla_water_overlay(
+    *,
+    material_backend: str,
+    mdl_compile_status: str,
+    lighting_hash: str,
+    postprocess_hash: str = PRESENTATION_POSTPROCESS_HASH,
+    isosurface_hash: str = VLA_ISOSURFACE_HASH,
+    rtx_hash: str = LIQUID_PRESENTATION_RTX_HASH,
+) -> dict[str, Any]:
+    """Spec §6 water_overlay hashes; ClearWater material_hash only when MDL PASS."""
+    mdl_pass = (
+        material_backend == "MDL_WATER" and mdl_compile_status == MDL_COMPILE_STATUS_PASS
+    )
+    return {
+        "isosurface_hash": isosurface_hash,
+        "postprocess_hash": postprocess_hash,
+        "material_hash": VLA_MDL_MATERIAL_HASH if mdl_pass else None,
+        "fallback_material_hash": VLA_FALLBACK_MATERIAL_HASH,
+        "lighting_hash": lighting_hash,
+        "rtx_hash": rtx_hash,
+        "product_fx_hash": PRODUCT_WATER_FX_HASH,
+        "active_material_hash_must_match_backend": True,
+    }
+
+
+def build_vla_water_visual_contract(
+    *,
+    camera_info: dict[str, Any],
+    lighting_info: dict[str, Any],
+    material_info: dict[str, Any] | None,
+    postprocess_contract: dict[str, Any],
+    render_settings: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Spec §6 VLA water visual contract embedded in presentation summaries."""
+    material = dict(material_info or {})
+    lighting_hash = str(
+        lighting_info.get("lighting_contract_hash")
+        or lighting_info.get("lighting_hash")
+        or LIQUID_PRESENTATION_LIGHTING_HASH
+    )
+    rtx_hash = str(
+        (render_settings or {}).get("rtx_hash") or LIQUID_PRESENTATION_RTX_HASH
+    )
+    overlay = build_vla_water_overlay(
+        material_backend=str(material.get("material_backend") or "USD_PREVIEW_FALLBACK"),
+        mdl_compile_status=str(
+            material.get("mdl_compile_status") or MDL_COMPILE_STATUS_NOT_ATTEMPTED
+        ),
+        lighting_hash=lighting_hash,
+        postprocess_hash=str(
+            postprocess_contract.get("postprocess_hash") or PRESENTATION_POSTPROCESS_HASH
+        ),
+        rtx_hash=rtx_hash,
+    )
+    camera_hash = str(
+        camera_info.get("camera_contract_hash")
+        or camera_info.get("hash")
+        or VLA_PRESENTATION_CAMERA_HASH
+    )
+    return {
+        "schema_version": 1,
+        "physics_authority": "particle_readback",
+        "scoring_cameras": [
+            {"prim": "/World/Camera1", "obs_key": "camera_1_rgb"},
+            {"prim": "/World/Camera2", "obs_key": "camera_2_rgb"},
+        ],
+        "presentation_camera": {
+            "hash": camera_hash,
+            "prim": camera_info.get("camera_path") or LIQUID_PRESENTATION_CAMERA_PATH,
+            "review_only": True,
+        },
+        "water_overlay": overlay,
+        "blocked_claims": [
+            "presentation_video_equals_physics_success",
+            "isosurface_reconstruction_equals_zero_leak",
+            "material_hash_implies_mdl_when_fallback_active",
+        ],
+    }
+
+
 def build_presentation_visual_contract(
     *,
     variant_id: str | None,
@@ -596,6 +730,8 @@ def build_presentation_visual_contract(
     particle_count: int,
     postprocess_contract: dict[str, Any] | None = None,
     render_settings: dict[str, Any] | None = None,
+    material_info: dict[str, Any] | None = None,
+    product_water_fx: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     claim_boundary_text = (
         "This video is a presentation render of the same simulated particle trajectory used for "
@@ -615,6 +751,22 @@ def build_presentation_visual_contract(
         if render_settings is not None
         else build_presentation_render_settings_contract()
     )
+    resolved_product_fx = (
+        dict(product_water_fx)
+        if product_water_fx is not None
+        else build_product_water_fx_contract()
+    )
+    # Lane C remains disabled even if a caller passes a non-stub payload.
+    resolved_product_fx["enabled"] = False
+    resolved_product_fx["affects_leak_classification"] = False
+    resolved_product_fx["product_fx_hash"] = PRODUCT_WATER_FX_HASH
+    vla_contract = build_vla_water_visual_contract(
+        camera_info=camera_info,
+        lighting_info=lighting_info,
+        material_info=material_info,
+        postprocess_contract=resolved_postprocess,
+        render_settings=resolved_render_settings,
+    )
     return {
         "variant_id": variant_id,
         "camera_path": camera_info.get("camera_path"),
@@ -623,6 +775,8 @@ def build_presentation_visual_contract(
         "isosurface": dict(isosurface_contract),
         "postprocess": resolved_postprocess,
         "presentation_render_settings": resolved_render_settings,
+        "product_water_fx": resolved_product_fx,
+        "vla_water_visual_contract": vla_contract,
         "liquid_material_path": material_path,
         "particle_count": int(particle_count),
         "debug_particle_display_enabled": False,
@@ -1397,6 +1551,10 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     presentation_camera_info: dict[str, Any] = {}
     presentation_visual_contract: dict[str, Any] = {}
     presentation_visual_material_path = None
+    product_water_fx_info = author_product_water_fx(
+        stage,
+        enabled=bool(getattr(args, "product_water_fx", False)),
+    )
     if args.presentation_isosurface_video:
         presentation_material_info = _author_liquid_presentation_water_material(
             stage,
@@ -1427,6 +1585,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             particle_count=len(selected_positions),
             render_settings=presentation_render_settings
             or build_presentation_render_settings_contract(),
+            material_info=presentation_material_info,
+            product_water_fx=build_product_water_fx_contract(),
         )
     evidence_scene_path = artifact_dir / "native_scene_completed_pbd_overlay.usda"
     stage.GetRootLayer().Export(str(evidence_scene_path))

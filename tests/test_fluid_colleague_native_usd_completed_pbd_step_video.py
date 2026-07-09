@@ -17,12 +17,18 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     PRESENTATION_POSTPROCESS_HASH,
     PRESENTATION_WATER_MDL_ASSET,
     PRESENTATION_WATER_MDL_SUB_IDENTIFIER,
+    PRODUCT_WATER_FX_HASH,
+    RUNTIME_PARTICLE_SET_PATH,
+    RUNTIME_PARTICLE_SYSTEM_PATH,
+    VLA_FALLBACK_MATERIAL_HASH,
+    VLA_MDL_MATERIAL_HASH,
     NativeMaterialExpectation,
     _deactivate_original_fluid_prims,
     _define_liquid_presentation_camera,
     _author_liquid_presentation_lighting,
     _author_liquid_presentation_water_material,
     apply_presentation_render_settings,
+    author_product_water_fx,
     build_liquid_presentation_isosurface_contract,
     build_native_scene_claim_boundary,
     build_native_scene_video_summary,
@@ -31,7 +37,9 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     build_presentation_visual_contract,
     build_presentation_water_mdl_material_info,
     build_presentation_water_preview_fallback_info,
+    build_product_water_fx_contract,
     build_isaacsim41_core_mdl_closure_plan,
+    build_vla_water_overlay,
     inspect_native_material_bindings,
     scan_mdl_compile_errors,
     scan_presentation_water_mdl_compile_errors,
@@ -483,3 +491,128 @@ def test_native_scene_claim_boundary_blocks_presentation_overclaims():
     assert "presentation_video_equals_physics_success" in boundary["blocked"]
     assert "isosurface_reconstruction_equals_zero_leak" in boundary["blocked"]
     assert "presentation_water_material_equals_labutopia51_visual_parity" in boundary["blocked"]
+
+def test_build_product_water_fx_contract_is_always_disabled_stub():
+    contract = build_product_water_fx_contract()
+
+    assert contract["enabled"] is False
+    assert contract["schema_version"] == 1
+    assert contract["affects_particle_dynamics"] is False
+    assert contract["affects_leak_classification"] is False
+    assert contract["affects_vla_overlay"] is False
+    assert contract["apply_to_particle_system_prim"] == RUNTIME_PARTICLE_SYSTEM_PATH
+    assert contract["apply_to_particle_set_prim"] == RUNTIME_PARTICLE_SET_PATH
+    assert contract["diffuse_particles"]["enabled"] is False
+    assert contract["diffuse_particles"]["api"] == "PhysxDiffuseParticlesAPI"
+    assert contract["diffuse_particles"]["roles"] == ["splash", "foam", "spray", "bubbles"]
+    assert contract["diffuse_particles"]["params"] == {}
+    assert contract["flow_composite"]["enabled"] is False
+    assert contract["flow_composite"]["extension"] == "omni.flowusd"
+    assert contract["flow_composite"]["optional_gate"] == "cli:--product-water-fx-flow"
+    assert contract["wetting"]["enabled"] is False
+    assert contract["wetting"]["mode"] == "reserved"
+    assert contract["wetting"]["native_api_available"] is None
+    assert contract["wetting"]["probe_at_runtime"] is True
+    assert contract["reserved_keys_ok"] is True
+    assert contract["product_fx_hash"] == PRODUCT_WATER_FX_HASH
+    assert contract["product_fx_hash"] == "product_water_fx_disabled_v1"
+
+
+def test_author_product_water_fx_is_noop():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    before = [str(p.GetPath()) for p in stage.Traverse()]
+
+    result = author_product_water_fx(stage, enabled=True)
+
+    after = [str(p.GetPath()) for p in stage.Traverse()]
+    assert result["authored"] is False
+    assert result["enabled"] is False
+    assert result["noop"] is True
+    assert after == before
+
+
+def test_build_vla_water_overlay_material_hash_valid_only_on_mdl_pass():
+    pass_overlay = build_vla_water_overlay(
+        material_backend="MDL_WATER",
+        mdl_compile_status="PASS",
+        lighting_hash="liquid_presentation_dome_key_v2",
+        postprocess_hash=PRESENTATION_POSTPROCESS_HASH,
+    )
+    assert pass_overlay["material_hash"] == VLA_MDL_MATERIAL_HASH
+    assert pass_overlay["material_hash"] == "omnisurface_clearwater_mdl_v1"
+    assert pass_overlay["fallback_material_hash"] == VLA_FALLBACK_MATERIAL_HASH
+    assert pass_overlay["fallback_material_hash"] == "usd_preview_near_clear_v1"
+    assert pass_overlay["product_fx_hash"] == PRODUCT_WATER_FX_HASH
+    assert pass_overlay["active_material_hash_must_match_backend"] is True
+    assert pass_overlay["isosurface_hash"] == "isaacsim41_fluid_isosurface_cup_demo_style_v1"
+    assert pass_overlay["postprocess_hash"] == PRESENTATION_POSTPROCESS_HASH
+    assert pass_overlay["lighting_hash"] == "liquid_presentation_dome_key_v2"
+    assert pass_overlay["rtx_hash"] == "liquid_presentation_rtx_v1"
+
+    fallback_overlay = build_vla_water_overlay(
+        material_backend="USD_PREVIEW_FALLBACK",
+        mdl_compile_status="FALLBACK_USED",
+        lighting_hash="liquid_presentation_key_light_v1",
+        postprocess_hash=PRESENTATION_POSTPROCESS_HASH,
+    )
+    assert fallback_overlay["material_hash"] is None
+    assert fallback_overlay["fallback_material_hash"] == VLA_FALLBACK_MATERIAL_HASH
+    assert fallback_overlay["product_fx_hash"] == PRODUCT_WATER_FX_HASH
+    assert fallback_overlay["active_material_hash_must_match_backend"] is True
+
+
+def test_build_presentation_visual_contract_includes_product_fx_and_vla_overlay():
+    postprocess_contract = build_presentation_postprocess_contract()
+    material_info = build_presentation_water_preview_fallback_info(mdl_bind_attempted=False)
+    contract = build_presentation_visual_contract(
+        variant_id="NATIVE_SDF_128",
+        camera_info={
+            "camera_path": LIQUID_PRESENTATION_CAMERA_PATH,
+            "camera_contract_hash": "liquid_presentation_main_camera_v1",
+            "eye": [0.5, -0.2, 1.0],
+            "target": [0.3, 0.09, 0.86],
+            "up": [0.0, 0.0, 1.0],
+        },
+        lighting_info={"lighting_contract_hash": "liquid_presentation_key_light_v1"},
+        isosurface_contract={"enabled": True},
+        postprocess_contract=postprocess_contract,
+        material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
+        particle_count=50000,
+        material_info=material_info,
+    )
+
+    assert contract["product_water_fx"]["enabled"] is False
+    assert contract["product_water_fx"]["affects_leak_classification"] is False
+    assert contract["product_water_fx"]["diffuse_particles"]["roles"] == [
+        "splash",
+        "foam",
+        "spray",
+        "bubbles",
+    ]
+    assert contract["product_water_fx"]["wetting"]["mode"] == "reserved"
+    overlay = contract["vla_water_visual_contract"]["water_overlay"]
+    assert overlay["material_hash"] is None
+    assert overlay["fallback_material_hash"] == "usd_preview_near_clear_v1"
+    assert overlay["product_fx_hash"] == "product_water_fx_disabled_v1"
+    assert overlay["active_material_hash_must_match_backend"] is True
+    assert contract["vla_water_visual_contract"]["schema_version"] == 1
+    assert contract["vla_water_visual_contract"]["physics_authority"] == "particle_readback"
+
+
+def test_native_step_video_parser_product_water_fx_defaults_off():
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import build_arg_parser
+
+    default_args = build_arg_parser().parse_args([])
+    assert default_args.product_water_fx is False
+
+    enabled_args = build_arg_parser().parse_args(["--product-water-fx"])
+    assert enabled_args.product_water_fx is True
+
+    orthogonal = build_arg_parser().parse_args(
+        ["--presentation-isosurface-video", "--product-water-fx"]
+    )
+    assert orthogonal.presentation_isosurface_video is True
+    assert orthogonal.product_water_fx is True
