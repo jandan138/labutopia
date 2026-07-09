@@ -2241,10 +2241,14 @@ def test_build_d4_wrapper_promotion_matrix_is_12_trials_with_pinned_init():
     spec0 = candidates[0].to_variant_spec()
     assert spec0.setup == "fluid_safe_wrapper"
     assert spec0.wrapper_collider_mode == "continuous_open_mesh"
-    assert spec0.collision_approximation == "none"
+    assert spec0.collision_approximation == "sdf"
     assert spec0.collider_count == 1
     assert candidates[0].to_config().particle_count == 512
     assert candidates[0].to_config().interior_inset == candidates[0].interior_inset
+    # SDF cooking attrs must reach ColliderConfig for the open-mesh author.
+    cfg0 = candidates[0].to_config()
+    assert cfg0.sdf_resolution == 64
+    assert cfg0.sdf_subgrid_resolution == 4
     cfg_4k = next(c for c in candidates if c.particle_count == 4096).to_config()
     cfg_50k = next(c for c in candidates if c.particle_count == 50000).to_config()
     assert cfg_4k.grid_dims[2] >= 12

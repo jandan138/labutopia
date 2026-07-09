@@ -807,14 +807,27 @@ def _add_fluid_safe_open_mesh_wrapper(
     mesh.CreateFaceVertexIndicesAttr().Set(indices)
     mesh.CreateDoubleSidedAttr().Set(True)
     mesh.CreateDisplayColorAttr().Set([(0.52, 0.7, 0.92)])
-    # liquid_usd: physics:approximation = none (triangle mesh, no convex seams).
+    # GPU PBD particles do not collide with triangle-mesh (approximation=none)
+    # concave cups — contmesh evidence: 1024/1024 below_table by step 30.
+    # liquid_usd planar walls work with none; our open cup needs SDF like C3.
     _apply_static_collision(
         mesh.GetPrim(),
-        approximation="none",
+        approximation="sdf",
         contact_offset=config.collider_contact_offset,
         rest_offset=config.collider_rest_offset,
+        sdf_resolution=config.sdf_resolution or 64,
+        sdf_subgrid_resolution=config.sdf_subgrid_resolution or 4,
+        sdf_margin=config.sdf_margin if config.sdf_margin is not None else 0.002,
+        sdf_narrow_band_thickness=(
+            config.sdf_narrow_band_thickness
+            if config.sdf_narrow_band_thickness is not None
+            else 0.01
+        ),
     )
     _set_or_create_labutopia_attr(mesh.GetPrim(), "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+    _set_or_create_labutopia_attr(
+        mesh.GetPrim(), "labutopia:wrapperColliderApprox", Sdf.ValueTypeNames.String, "sdf"
+    )
     UsdGeom.Imageable(mesh.GetPrim()).MakeInvisible()
     collider_paths = [str(mesh.GetPath())]
 
@@ -830,6 +843,7 @@ def _add_fluid_safe_open_mesh_wrapper(
         "bottom_overlap": float(config.bottom_overlap),
         "panel_arc_overlap_factor": None,
         "wrapper_collider_mode": "continuous_open_mesh",
+        "collision_approximation": "sdf",
         "local_center": (local_cx, local_cy, local_table_z),
         "radius": radius,
         "wall_height": wall_height,

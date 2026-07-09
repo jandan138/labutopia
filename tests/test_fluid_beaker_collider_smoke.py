@@ -172,8 +172,9 @@ def test_add_fluid_safe_open_mesh_wrapper_authors_continuous_triangle_mesh():
     assert wrapper.GetAttribute("labutopia:wrapperFrame").Get() == "local_to_beaker2"
     assert mesh_prim.GetAttribute("physics:collisionEnabled").Get() is False
     mesh_collision = UsdPhysics.MeshCollisionAPI(cup)
-    assert mesh_collision.GetApproximationAttr().Get() == "none"
+    assert mesh_collision.GetApproximationAttr().Get() == "sdf"
     assert result["wrapper_collider_mode"] == "continuous_open_mesh"
+    assert result["collision_approximation"] == "sdf"
     assert result["panel_count"] == 0
     assert result["collider_paths"] == ["/World/beaker2/FluidSafeOpenMesh/OpenCup"]
     assert not stage.GetPrimAtPath("/World/beaker2/FluidSafeOpenMesh/Wall_00").IsValid()

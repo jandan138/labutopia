@@ -253,12 +253,12 @@ class C2ProxyCandidate:
                     variant_id=self.candidate_id,
                     name="fluid_safe_open_mesh_wrapper",
                     description=(
-                        "D4 invisible beaker2-local continuous open-cup triangle mesh "
-                        "(liquid_usd approximation=none); native mesh collision disabled."
+                        "D4 invisible beaker2-local continuous open-cup SDF mesh "
+                        "(GPU-safe concave; liquid_usd continuity without approx=none)."
                     ),
                     setup="fluid_safe_wrapper",
                     collider_count=1,
-                    collision_approximation="none",
+                    collision_approximation="sdf",
                     source_kind="fluid_safe_open_mesh_wrapper",
                     panel_count=0,
                     panel_arc_overlap_factor=None,
@@ -266,6 +266,14 @@ class C2ProxyCandidate:
                     wrapper_parent_path=self.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=self.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
                     wrapper_collider_mode="continuous_open_mesh",
+                    sdf_resolution=self.sdf_resolution or 64,
+                    sdf_subgrid_resolution=self.sdf_subgrid_resolution or 4,
+                    sdf_margin=self.sdf_margin if self.sdf_margin is not None else 0.002,
+                    sdf_narrow_band_thickness=(
+                        self.sdf_narrow_band_thickness
+                        if self.sdf_narrow_band_thickness is not None
+                        else 0.01
+                    ),
                     native_mesh_collision_enabled=(
                         False
                         if self.native_mesh_collision_enabled is None
@@ -1179,9 +1187,13 @@ def build_d4_wrapper_promotion_sweep(
                     particle_width=float(layout["particle_width"]),
                     panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.35),
                     interior_inset=float(layout["interior_inset"]),
-                    # liquid_usd lesson: continuous mesh walls (approx=none) have no
-                    # tangential seams. Seal4 still leaked 2 particles through panels.
+                    # Continuous open-cup SDF (GPU-safe). approx=none fell through
+                    # entirely; segmented panels plateaued at 2/3 with seam leaks.
                     wrapper_collider_mode="continuous_open_mesh",
+                    sdf_resolution=64,
+                    sdf_subgrid_resolution=4,
+                    sdf_margin=0.002,
+                    sdf_narrow_band_thickness=0.01,
                     wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
                     native_mesh_collision_enabled=False,
