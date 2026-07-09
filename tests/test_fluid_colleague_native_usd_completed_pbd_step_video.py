@@ -5,10 +5,13 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     DEFAULT_USD,
     EVIDENCE_PARTICLE_SET_PATH,
     EVIDENCE_PARTICLE_SYSTEM_PATH,
+    ISAACSIM41_CORE_MDL_ROOT,
     LIQUID_PRESENTATION_CAMERA_PATH,
     LIQUID_PRESENTATION_LIGHT_PATH,
     LIQUID_PRESENTATION_MATERIAL_PATH,
     NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
+    PRESENTATION_WATER_MDL_ASSET,
+    PRESENTATION_WATER_MDL_SUB_IDENTIFIER,
     NativeMaterialExpectation,
     _deactivate_original_fluid_prims,
     _define_liquid_presentation_camera,
@@ -18,9 +21,12 @@ from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video imp
     build_native_scene_claim_boundary,
     build_native_scene_video_summary,
     build_presentation_visual_contract,
+    build_presentation_water_mdl_material_info,
+    build_presentation_water_preview_fallback_info,
     build_isaacsim41_core_mdl_closure_plan,
     inspect_native_material_bindings,
     scan_mdl_compile_errors,
+    scan_presentation_water_mdl_compile_errors,
 )
 
 
@@ -96,6 +102,28 @@ def test_scan_mdl_compile_errors_distinguishes_resolve_from_runtime_compile_fail
     assert summary["has_omniglass_compile_error"] is True
     assert summary["has_omnisurface_compile_error"] is True
     assert summary["error_count"] == 3
+
+
+def test_scan_presentation_water_mdl_compile_errors_filters_to_presentation_shader():
+    log_text = "\n".join(
+        [
+            "[Error] [omni.hydra] Failed to create MDL shade node for prim '/World/Looks/OmniGlass_01/Shader'. createMdlModule failed.",
+            "[Error] [omni.hydra] Failed to create MDL shade node for prim '/World/Looks/LiquidPresentationWater/Shader'. createMdlModule failed.",
+            "[Error] [rtx.neuraylib.plugin] [MDLC:COMPILER] comp error: file:/pkg/OmniSurfacePresets.mdl(5386,1): C120 could not find module for OmniSurface_ClearWater",
+        ]
+    )
+
+    presentation = scan_presentation_water_mdl_compile_errors(log_text)
+    all_errors = scan_mdl_compile_errors(log_text)
+
+    assert all_errors["error_count"] == 3
+    assert presentation["mdl_compile_status"] == "MDL_COMPILE_FAIL"
+    assert presentation["error_count"] == 2
+    assert presentation["has_presentation_water_compile_error"] is True
+    assert all(
+        LIQUID_PRESENTATION_MATERIAL_PATH in line or "omnisurface_clearwater" in line.lower()
+        for line in presentation["errors"]
+    )
 
 
 def test_build_isaacsim41_core_mdl_closure_plan_includes_transitive_base_dependencies():
@@ -189,13 +217,98 @@ def test_build_presentation_visual_contract_separates_visual_video_from_gate():
     assert "do not change the particle simulation" in contract["claim_boundary_text"]
 
 
+def test_build_presentation_water_mdl_material_info_targets_clearwater():
+    info = build_presentation_water_mdl_material_info(
+        source_asset="/isaac-sim/kit/mdl/core/Base/OmniSurfacePresets.mdl"
+    )
+
+    assert info["mdl_bind_attempted"] is True
+    assert info["material_backend"] == "MDL_WATER"
+    assert info["mdl_compile_status"] == "PASS"
+    assert info["preferred_backend"] == "MDL_WATER"
+    assert info["source_asset_basename"] == PRESENTATION_WATER_MDL_ASSET
+    assert info["sub_identifier"] == PRESENTATION_WATER_MDL_SUB_IDENTIFIER
+    assert info["sub_identifier"] == "OmniSurface_ClearWater"
+    assert info["visual_material_parity_claim_allowed"] is False
+
+
+def test_build_presentation_water_preview_fallback_without_attempt_is_mdl_not_attempted():
+    info = build_presentation_water_preview_fallback_info(mdl_bind_attempted=False)
+
+    assert info["mdl_bind_attempted"] is False
+    assert info["material_backend"] == "USD_PREVIEW_FALLBACK"
+    assert info["mdl_compile_status"] == "MDL_NOT_ATTEMPTED"
+    assert info["preferred_backend"] == "MDL_WATER"
+    assert info["sub_identifier"] == PRESENTATION_WATER_MDL_SUB_IDENTIFIER
+    assert info["emissive_color"] == [0.0, 0.0, 0.0]
+    assert "pending_mdl_water_pass" not in str(info.get("fallback_reason", ""))
+    assert info["visual_material_parity_claim_allowed"] is False
+
+
+def test_build_presentation_water_preview_fallback_after_failed_attempt_is_fallback_used():
+    info = build_presentation_water_preview_fallback_info(
+        mdl_bind_attempted=True,
+        fallback_reason="mdl_asset_missing",
+    )
+
+    assert info["mdl_bind_attempted"] is True
+    assert info["material_backend"] == "USD_PREVIEW_FALLBACK"
+    assert info["mdl_compile_status"] == "FALLBACK_USED"
+    assert info["fallback_reason"] == "mdl_asset_missing"
+    assert info["emissive_color"] == [0.0, 0.0, 0.0]
+
+
+def test_presentation_material_preview_only_path_reports_mdl_not_attempted():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+
+    material_info = _author_liquid_presentation_water_material(stage, attempt_mdl=False)
+
+    assert material_info["mdl_bind_attempted"] is False
+    assert material_info["mdl_compile_status"] == "MDL_NOT_ATTEMPTED"
+    assert material_info["material_backend"] == "USD_PREVIEW_FALLBACK"
+    assert material_info["sub_identifier"] == "OmniSurface_ClearWater"
+    assert material_info["emissive_color"] == [0.0, 0.0, 0.0]
+    assert material_info["visual_material_parity_claim_allowed"] is False
+    assert stage.GetPrimAtPath(LIQUID_PRESENTATION_MATERIAL_PATH)
+    assert stage.GetPrimAtPath(f"{LIQUID_PRESENTATION_MATERIAL_PATH}/PreviewSurface")
+
+
+def test_presentation_material_mdl_success_authors_clearwater_shader():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    mdl_path = ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET
+    assert mdl_path.exists()
+
+    material_info = _author_liquid_presentation_water_material(
+        stage,
+        attempt_mdl=True,
+        mdl_source_asset=mdl_path,
+    )
+
+    assert material_info["mdl_bind_attempted"] is True
+    assert material_info["material_backend"] == "MDL_WATER"
+    assert material_info["mdl_compile_status"] == "PASS"
+    assert material_info["sub_identifier"] == "OmniSurface_ClearWater"
+    assert material_info["source_asset_basename"] == "OmniSurfacePresets.mdl"
+    assert material_info["visual_material_parity_claim_allowed"] is False
+    shader = stage.GetPrimAtPath(f"{LIQUID_PRESENTATION_MATERIAL_PATH}/Shader")
+    assert shader
+    assert shader.GetAttribute("info:mdl:sourceAsset:subIdentifier").Get() == "OmniSurface_ClearWater"
+    assert not stage.GetPrimAtPath(f"{LIQUID_PRESENTATION_MATERIAL_PATH}/PreviewSurface")
+
+
 def test_presentation_material_and_lighting_are_authored_with_fixed_paths():
     from pxr import Usd, UsdGeom
 
     stage = Usd.Stage.CreateInMemory()
     UsdGeom.Xform.Define(stage, "/World")
 
-    material_info = _author_liquid_presentation_water_material(stage)
+    material_info = _author_liquid_presentation_water_material(stage, attempt_mdl=False)
     lighting_info = _author_liquid_presentation_lighting(stage)
 
     assert stage.GetPrimAtPath(LIQUID_PRESENTATION_MATERIAL_PATH)
@@ -212,6 +325,7 @@ def test_presentation_material_and_lighting_are_authored_with_fixed_paths():
     assert material_info["all_liquid_particles_visible"] is True
     assert material_info["visualization_only"] is True
     assert material_info["visual_material_parity_claim_allowed"] is False
+    assert material_info["mdl_compile_status"] == "MDL_NOT_ATTEMPTED"
     assert lighting_info["light_path"] == LIQUID_PRESENTATION_LIGHT_PATH
     assert lighting_info["role"] == "leadership_presentation_key_light"
 

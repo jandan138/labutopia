@@ -82,6 +82,17 @@ CORE_MDL_TRANSITIVE_DEPENDENCIES = (
     "OmniSurface.mdl",
     "OmniSurfaceLite.mdl",
 )
+PRESENTATION_WATER_MDL_ASSET = "OmniSurfacePresets.mdl"
+PRESENTATION_WATER_MDL_SUB_IDENTIFIER = "OmniSurface_ClearWater"
+PRESENTATION_WATER_PREVIEW_DIFFUSE_COLOR = [0.74, 0.94, 1.0]
+PRESENTATION_WATER_PREVIEW_EMISSIVE_COLOR = [0.0, 0.0, 0.0]
+PRESENTATION_WATER_PREVIEW_OPACITY = 0.34
+PRESENTATION_WATER_PREVIEW_ROUGHNESS = 0.02
+PRESENTATION_WATER_PREVIEW_IOR = 1.333
+MDL_COMPILE_STATUS_PASS = "PASS"
+MDL_COMPILE_STATUS_FAIL = "MDL_COMPILE_FAIL"
+MDL_COMPILE_STATUS_FALLBACK_USED = "FALLBACK_USED"
+MDL_COMPILE_STATUS_NOT_ATTEMPTED = "MDL_NOT_ATTEMPTED"
 
 
 @dataclass(frozen=True)
@@ -109,7 +120,7 @@ def scan_mdl_compile_errors(log_text: str, *, max_errors: int = 40) -> dict[str,
             error_lines.append(line)
     joined = "\n".join(error_lines).lower()
     return {
-        "mdl_compile_status": "MDL_COMPILE_FAIL" if error_lines else "PASS",
+        "mdl_compile_status": MDL_COMPILE_STATUS_FAIL if error_lines else MDL_COMPILE_STATUS_PASS,
         "error_count": len(error_lines),
         "has_omniglass_compile_error": "omniglass" in joined,
         "has_omnisurface_compile_error": "omnisurface" in joined,
@@ -117,6 +128,128 @@ def scan_mdl_compile_errors(log_text: str, *, max_errors: int = 40) -> dict[str,
         "errors": error_lines[:max_errors],
         "errors_truncated": len(error_lines) > max_errors,
     }
+
+
+def scan_presentation_water_mdl_compile_errors(
+    log_text: str,
+    *,
+    material_path: str = LIQUID_PRESENTATION_MATERIAL_PATH,
+    max_errors: int = 40,
+) -> dict[str, Any]:
+    """Scan MDL compile errors scoped to the presentation-water shader path / ClearWater."""
+    all_errors = scan_mdl_compile_errors(log_text, max_errors=10_000)
+    material_token = material_path.lower()
+    material_name = Path(material_path).name.lower()
+    presentation_lines = []
+    for line in all_errors["errors"]:
+        lower = line.lower()
+        if (
+            material_token in lower
+            or material_name in lower
+            or "omnisurface_clearwater" in lower
+            or (
+                "omnisurfacepresets.mdl" in lower
+                and ("clearwater" in lower or material_name in lower)
+            )
+        ):
+            presentation_lines.append(line)
+    joined = "\n".join(presentation_lines).lower()
+    return {
+        "mdl_compile_status": (
+            MDL_COMPILE_STATUS_FAIL if presentation_lines else MDL_COMPILE_STATUS_PASS
+        ),
+        "error_count": len(presentation_lines),
+        "has_presentation_water_compile_error": bool(presentation_lines),
+        "has_omnisurface_compile_error": "omnisurface" in joined,
+        "presentation_material_path": material_path,
+        "errors": presentation_lines[:max_errors],
+        "errors_truncated": len(presentation_lines) > max_errors,
+        "native_scene_error_count": int(all_errors["error_count"]),
+    }
+
+
+def _presentation_water_common_fields() -> dict[str, Any]:
+    return {
+        "material_path": LIQUID_PRESENTATION_MATERIAL_PATH,
+        "display_name": "presentation_water_unified_realistic",
+        "preferred_backend": "MDL_WATER",
+        "source_asset_basename": PRESENTATION_WATER_MDL_ASSET,
+        "sub_identifier": PRESENTATION_WATER_MDL_SUB_IDENTIFIER,
+        "tint_policy": "near_clear_subtle_blue_green",
+        "unified_liquid_style": True,
+        "state_specific_liquid_materials": False,
+        "all_liquid_particles_visible": True,
+        "visualization_only": True,
+        "visual_material_parity_claim_allowed": False,
+    }
+
+
+def build_presentation_water_mdl_material_info(
+    *,
+    source_asset: str | Path,
+    shader_path: str | None = None,
+    bind_method: str = "usd_mdl_shader",
+) -> dict[str, Any]:
+    """Pure metadata builder for a successful OmniSurface_ClearWater MDL bind."""
+    resolved = Path(source_asset)
+    return {
+        **_presentation_water_common_fields(),
+        "shader_path": shader_path or f"{LIQUID_PRESENTATION_MATERIAL_PATH}/Shader",
+        "material_backend": "MDL_WATER",
+        "mdl_bind_attempted": True,
+        "mdl_compile_status": MDL_COMPILE_STATUS_PASS,
+        "fallback_reason": None,
+        "source_asset": str(resolved),
+        "bind_method": bind_method,
+        "emissive_color": list(PRESENTATION_WATER_PREVIEW_EMISSIVE_COLOR),
+    }
+
+
+def build_presentation_water_preview_fallback_info(
+    *,
+    mdl_bind_attempted: bool,
+    fallback_reason: str | None = None,
+    shader_path: str | None = None,
+) -> dict[str, Any]:
+    """Pure metadata builder for UsdPreviewSurface fallback (honest MDL status)."""
+    if mdl_bind_attempted:
+        status = MDL_COMPILE_STATUS_FALLBACK_USED
+        reason = fallback_reason or "mdl_bind_failed"
+    else:
+        status = MDL_COMPILE_STATUS_NOT_ATTEMPTED
+        reason = fallback_reason or "preview_surface_without_mdl_bind_attempt"
+    return {
+        **_presentation_water_common_fields(),
+        "shader_path": shader_path or f"{LIQUID_PRESENTATION_MATERIAL_PATH}/PreviewSurface",
+        "material_backend": "USD_PREVIEW_FALLBACK",
+        "mdl_bind_attempted": bool(mdl_bind_attempted),
+        "mdl_compile_status": status,
+        "fallback_reason": reason,
+        "diffuse_color": list(PRESENTATION_WATER_PREVIEW_DIFFUSE_COLOR),
+        "emissive_color": list(PRESENTATION_WATER_PREVIEW_EMISSIVE_COLOR),
+        "opacity": PRESENTATION_WATER_PREVIEW_OPACITY,
+        "roughness": PRESENTATION_WATER_PREVIEW_ROUGHNESS,
+        "ior": PRESENTATION_WATER_PREVIEW_IOR,
+        "bind_method": "usd_preview_surface",
+    }
+
+
+def resolve_presentation_water_mdl_source_asset(
+    mdl_source_asset: str | Path | None = None,
+    *,
+    closure_base_dir: str | Path | None = None,
+) -> Path | None:
+    """Resolve OmniSurfacePresets.mdl from explicit path, local mirror, or Isaac core root."""
+    candidates: list[Path] = []
+    if mdl_source_asset is not None:
+        candidates.append(Path(mdl_source_asset))
+    if closure_base_dir is not None:
+        candidates.append(Path(closure_base_dir) / PRESENTATION_WATER_MDL_ASSET)
+    candidates.append(ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def build_isaacsim41_core_mdl_closure_plan(source_asset_basenames: Sequence[str]) -> dict[str, Any]:
@@ -425,48 +558,200 @@ def build_presentation_visual_contract(
     }
 
 
-def _author_liquid_presentation_water_material(stage: Any) -> dict[str, Any]:
-    from pxr import Gf, Sdf, UsdGeom, UsdShade
+def _ensure_looks_scope(stage: Any) -> None:
+    from pxr import Sdf, UsdGeom
 
-    diffuse_color = [0.74, 0.94, 1.0]
-    emissive_color = [0.0, 0.0, 0.0]
-    opacity = 0.34
-    roughness = 0.02
-    ior = 1.333
     looks_path = Sdf.Path("/World/Looks")
     if not stage.GetPrimAtPath(looks_path):
         UsdGeom.Scope.Define(stage, looks_path)
+
+
+def _author_presentation_water_preview_surface(stage: Any) -> str:
+    from pxr import Gf, Sdf, UsdShade
+
+    _ensure_looks_scope(stage)
     material_path = Sdf.Path(LIQUID_PRESENTATION_MATERIAL_PATH)
     material = UsdShade.Material.Define(stage, material_path)
-    shader = UsdShade.Shader.Define(stage, material_path.AppendChild("PreviewSurface"))
+    preview_path = material_path.AppendChild("PreviewSurface")
+    mdl_shader = stage.GetPrimAtPath(material_path.AppendChild("Shader"))
+    if mdl_shader:
+        stage.RemovePrim(mdl_shader.GetPath())
+    shader = UsdShade.Shader.Define(stage, preview_path)
     shader.CreateIdAttr("UsdPreviewSurface")
-    shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(*diffuse_color))
-    shader.CreateInput("emissiveColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(*emissive_color))
-    shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(opacity)
-    shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(roughness)
+    shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(
+        Gf.Vec3f(*PRESENTATION_WATER_PREVIEW_DIFFUSE_COLOR)
+    )
+    shader.CreateInput("emissiveColor", Sdf.ValueTypeNames.Color3f).Set(
+        Gf.Vec3f(*PRESENTATION_WATER_PREVIEW_EMISSIVE_COLOR)
+    )
+    shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(PRESENTATION_WATER_PREVIEW_OPACITY)
+    shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(PRESENTATION_WATER_PREVIEW_ROUGHNESS)
     shader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
-    shader.CreateInput("ior", Sdf.ValueTypeNames.Float).Set(ior)
+    shader.CreateInput("ior", Sdf.ValueTypeNames.Float).Set(PRESENTATION_WATER_PREVIEW_IOR)
     material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
+    return str(preview_path)
+
+
+def _author_presentation_water_mdl_shader(stage: Any, source_asset: Path) -> str:
+    from pxr import Sdf, UsdShade
+
+    _ensure_looks_scope(stage)
+    material_path = Sdf.Path(LIQUID_PRESENTATION_MATERIAL_PATH)
+    material = UsdShade.Material.Define(stage, material_path)
+    preview = stage.GetPrimAtPath(material_path.AppendChild("PreviewSurface"))
+    if preview:
+        stage.RemovePrim(preview.GetPath())
+    shader_path = material_path.AppendChild("Shader")
+    shader = UsdShade.Shader.Define(stage, shader_path)
+    shader.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceAsset)
+    shader.SetSourceAsset(Sdf.AssetPath(str(source_asset)), "mdl")
+    shader.SetSourceAssetSubIdentifier(PRESENTATION_WATER_MDL_SUB_IDENTIFIER, "mdl")
+    shader.CreateOutput("out", Sdf.ValueTypeNames.Token)
+    material.CreateSurfaceOutput("mdl").ConnectToSource(shader.ConnectableAPI(), "out")
+    material.CreateDisplacementOutput("mdl").ConnectToSource(shader.ConnectableAPI(), "out")
+    material.CreateVolumeOutput("mdl").ConnectToSource(shader.ConnectableAPI(), "out")
+    return str(shader_path)
+
+
+def _try_create_and_bind_mdl_material_from_library(
+    *,
+    material_path: str = LIQUID_PRESENTATION_MATERIAL_PATH,
+    mdl_name: str = PRESENTATION_WATER_MDL_ASSET,
+    mtl_name: str = PRESENTATION_WATER_MDL_SUB_IDENTIFIER,
+) -> dict[str, Any]:
+    """Best-effort Isaac kit bind; returns success=false when kit/command is unavailable."""
+    try:
+        import omni.kit.commands
+        import omni.usd
+        from pxr import Sdf
+    except Exception as exc:  # pragma: no cover - depends on Isaac runtime
+        return {
+            "success": False,
+            "bind_method": "CreateAndBindMdlMaterialFromLibrary",
+            "error": f"kit_unavailable:{exc}",
+        }
+
+    created: list[str] = []
+    try:
+        omni.kit.commands.execute(
+            "CreateAndBindMdlMaterialFromLibrary",
+            mdl_name=mdl_name,
+            mtl_name=mtl_name,
+            mtl_created_list=created,
+            select_new_prim=False,
+        )
+    except Exception as exc:  # pragma: no cover - depends on Isaac runtime
+        return {
+            "success": False,
+            "bind_method": "CreateAndBindMdlMaterialFromLibrary",
+            "error": f"command_failed:{exc}",
+            "mtl_created_list": list(created),
+        }
+    if not created:
+        return {
+            "success": False,
+            "bind_method": "CreateAndBindMdlMaterialFromLibrary",
+            "error": "mtl_created_list_empty",
+            "mtl_created_list": [],
+        }
+    created_path = created[0]
+    stage = omni.usd.get_context().get_stage()
+    if stage is None:
+        return {
+            "success": False,
+            "bind_method": "CreateAndBindMdlMaterialFromLibrary",
+            "error": "stage_unavailable",
+            "mtl_created_list": list(created),
+        }
+    moved = False
+    if created_path != material_path:
+        try:
+            if stage.GetPrimAtPath(material_path):
+                stage.RemovePrim(Sdf.Path(material_path))
+            omni.kit.commands.execute(
+                "MovePrim",
+                path_from=created_path,
+                path_to=material_path,
+            )
+            moved = bool(stage.GetPrimAtPath(material_path))
+        except Exception as exc:
+            return {
+                "success": False,
+                "bind_method": "CreateAndBindMdlMaterialFromLibrary",
+                "error": f"move_prim_failed:{exc}",
+                "mtl_created_list": list(created),
+                "created_path": created_path,
+            }
     return {
-        "material_path": LIQUID_PRESENTATION_MATERIAL_PATH,
-        "shader_path": f"{LIQUID_PRESENTATION_MATERIAL_PATH}/PreviewSurface",
-        "display_name": "presentation_water_unified_realistic",
-        "material_backend": "USD_PREVIEW_FALLBACK",
-        "preferred_backend": "MDL_WATER",
-        "mdl_compile_status": "FALLBACK_USED",
-        "fallback_reason": "headless_safe_non_emissive_preview_surface_pending_mdl_water_pass",
-        "diffuse_color": diffuse_color,
-        "emissive_color": emissive_color,
-        "opacity": opacity,
-        "roughness": roughness,
-        "ior": ior,
-        "tint_policy": "near_clear_subtle_blue_green",
-        "unified_liquid_style": True,
-        "state_specific_liquid_materials": False,
-        "all_liquid_particles_visible": True,
-        "visualization_only": True,
-        "visual_material_parity_claim_allowed": False,
+        "success": True,
+        "bind_method": "CreateAndBindMdlMaterialFromLibrary",
+        "mtl_created_list": list(created),
+        "material_path": material_path if moved or created_path == material_path else created_path,
+        "created_path": created_path,
+        "moved_to_canonical_path": moved or created_path == material_path,
     }
+
+
+def _author_liquid_presentation_water_material(
+    stage: Any,
+    *,
+    attempt_mdl: bool = True,
+    mdl_source_asset: str | Path | None = None,
+    closure_base_dir: str | Path | None = None,
+    prefer_kit_bind: bool = False,
+) -> dict[str, Any]:
+    """Author presentation liquid material; attempt OmniSurface_ClearWater when possible."""
+    if not attempt_mdl:
+        shader_path = _author_presentation_water_preview_surface(stage)
+        return build_presentation_water_preview_fallback_info(
+            mdl_bind_attempted=False,
+            shader_path=shader_path,
+        )
+
+    kit_bind: dict[str, Any] | None = None
+    if prefer_kit_bind:
+        kit_bind = _try_create_and_bind_mdl_material_from_library()
+        if kit_bind.get("success"):
+            resolved = resolve_presentation_water_mdl_source_asset(
+                mdl_source_asset,
+                closure_base_dir=closure_base_dir,
+            )
+            return build_presentation_water_mdl_material_info(
+                source_asset=resolved
+                or (ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET),
+                bind_method="CreateAndBindMdlMaterialFromLibrary",
+            )
+
+    resolved = resolve_presentation_water_mdl_source_asset(
+        mdl_source_asset,
+        closure_base_dir=closure_base_dir,
+    )
+    if resolved is None:
+        shader_path = _author_presentation_water_preview_surface(stage)
+        reason = "mdl_asset_missing"
+        if kit_bind and not kit_bind.get("success"):
+            reason = f"mdl_asset_missing_after_kit_bind_fail:{kit_bind.get('error')}"
+        return build_presentation_water_preview_fallback_info(
+            mdl_bind_attempted=True,
+            fallback_reason=reason,
+            shader_path=shader_path,
+        )
+
+    try:
+        shader_path = _author_presentation_water_mdl_shader(stage, resolved)
+    except Exception as exc:
+        shader_path = _author_presentation_water_preview_surface(stage)
+        return build_presentation_water_preview_fallback_info(
+            mdl_bind_attempted=True,
+            fallback_reason=f"mdl_shader_author_failed:{exc}",
+            shader_path=shader_path,
+        )
+
+    return build_presentation_water_mdl_material_info(
+        source_asset=resolved,
+        shader_path=shader_path,
+        bind_method="usd_mdl_shader",
+    )
 
 
 def _author_liquid_presentation_lighting(stage: Any) -> dict[str, Any]:
@@ -978,7 +1263,12 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     presentation_visual_contract: dict[str, Any] = {}
     presentation_visual_material_path = None
     if args.presentation_isosurface_video:
-        presentation_material_info = _author_liquid_presentation_water_material(stage)
+        presentation_material_info = _author_liquid_presentation_water_material(
+            stage,
+            attempt_mdl=True,
+            closure_base_dir=material_closure_summary.get("closure_base_dir"),
+            prefer_kit_bind=False,
+        )
         presentation_lighting_info = _author_liquid_presentation_lighting(stage)
         presentation_camera_info = _define_liquid_presentation_camera(stage, config)
         presentation_visual_material_path = LIQUID_PRESENTATION_MATERIAL_PATH
