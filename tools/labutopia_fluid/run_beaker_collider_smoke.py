@@ -38,6 +38,13 @@ from tools.labutopia_fluid.run_standalone_particle_smoke import (
 BEAKER_COLLIDER_VARIANT_IDS = ("C0", "C1", "C2", "C3", "C4", "C5")
 CLASSIFICATION_CONTRACT_VERSION = "s2_no_outside_source_v2"
 DIAGNOSTIC_PROJECTION_VERSION = "v2_dynamic_z_shows_below_table_leaks"
+# Pinned promotion init (spec §4.2 / §4.4). Passes that require lower values are
+# FAIL_NON_PHYSICAL_PARAMETER_DEPENDENCE / STOP_NON_PHYSICAL_PARAMETER_DEPENDENCE.
+PROMOTION_INITIAL_RADIAL_VELOCITY = 0.08
+PROMOTION_PARTICLE_MAX_VELOCITY = 5.0
+FLUID_SAFE_WRAPPER_DEFAULT_PANEL_COUNT = 48
+FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR = 1.08
+FLUID_SAFE_WRAPPER_FRAME = "local_to_beaker2"
 HOLD_CLASSIFICATIONS = {
     "PASS_SOURCE_HOLD",
     "FAIL_CONTAINER_SEALED",
@@ -74,7 +81,7 @@ class ColliderConfig:
     solid_rest_offset: float | None = None
     fluid_rest_offset: float | None = None
     particle_enable_ccd: bool | None = None
-    particle_max_velocity: float = 5.0
+    particle_max_velocity: float = PROMOTION_PARTICLE_MAX_VELOCITY
     particle_max_depenetration_velocity: float | None = None
     source_center: tuple[float, float, float] = (0.0, 0.0, 0.0)
     target_center: tuple[float, float, float] = (0.22, 0.0, 0.0)
@@ -100,7 +107,7 @@ class ColliderConfig:
     render_width: int = 512
     render_height: int = 512
     perf_budget_seconds_per_variant: float = 240.0
-    initial_radial_velocity: float = 0.08
+    initial_radial_velocity: float = PROMOTION_INITIAL_RADIAL_VELOCITY
 
 
 @dataclass(frozen=True)
@@ -929,6 +936,201 @@ def _add_proxy_collision_wrapper(stage: Any, config: ColliderConfig, spec: Varia
         )
         collider_paths.append(str(panel.GetPath()))
     return collider_paths
+
+
+def _local_cup_params_from_mesh_aabb(
+    stage: Any,
+    *,
+    parent_path: str,
+    visual_mesh_path: str,
+    config: ColliderConfig,
+) -> dict[str, float]:
+    """Bake mesh world AABB into parent-local cup radius/height/center."""
+    from pxr import Gf, Usd, UsdGeom
+
+    parent_prim = stage.GetPrimAtPath(parent_path)
+    mesh_prim = stage.GetPrimAtPath(visual_mesh_path)
+    if not parent_prim or not mesh_prim:
+        return {
+            "local_center_x": float(config.source_center[0]),
+            "local_center_y": float(config.source_center[1]),
+            "local_table_z": float(config.table_z),
+            "radius": float(config.source_radius),
+            "wall_height": float(config.wall_height),
+        }
+
+    cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), ["default", "render", "proxy"], useExtentsHint=True)
+    world_box = cache.ComputeWorldBound(mesh_prim).ComputeAlignedBox()
+    parent_xf = UsdGeom.Xformable(parent_prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+    world_to_local = parent_xf.GetInverse()
+    # Re-axis-align after transform (rotation may swap corners).
+    corners = [
+        world_to_local.Transform(
+            Gf.Vec3d(
+                world_box.GetMin()[0] if ix == 0 else world_box.GetMax()[0],
+                world_box.GetMin()[1] if iy == 0 else world_box.GetMax()[1],
+                world_box.GetMin()[2] if iz == 0 else world_box.GetMax()[2],
+            )
+        )
+        for ix in (0, 1)
+        for iy in (0, 1)
+        for iz in (0, 1)
+    ]
+    xs = [float(c[0]) for c in corners]
+    ys = [float(c[1]) for c in corners]
+    zs = [float(c[2]) for c in corners]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    min_z, max_z = min(zs), max(zs)
+    radius = max(max_x - min_x, max_y - min_y) * 0.5
+    return {
+        "local_center_x": 0.5 * (min_x + max_x),
+        "local_center_y": 0.5 * (min_y + max_y),
+        "local_table_z": min_z,
+        "radius": max(radius, 1e-4),
+        "wall_height": max(max_z - min_z, float(config.wall_height) * 0.5),
+    }
+
+
+def _add_fluid_safe_wrapper(
+    stage: Any,
+    config: ColliderConfig,
+    *,
+    parent_path: str = "/World/beaker2",
+    visual_mesh_path: str | None = None,
+    panel_count: int | None = None,
+    wall_thickness: float | None = None,
+    bottom_overlap: float | None = None,
+    panel_arc_overlap_factor: float = FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR,
+    wrapper_name: str = "FluidSafeWrapper",
+) -> dict[str, Any]:
+    """Author an invisible box-panel collider under parent in parent-local frame.
+
+    Panels are children of ``{parent_path}/{wrapper_name}`` with local transforms
+    baked once from config (or mesh world AABB → parent local). Do not parent
+    world-space poses under a transformed beaker (double transform).
+    """
+    from pxr import Sdf, UsdGeom, UsdPhysics
+
+    panels = int(panel_count if panel_count is not None else FLUID_SAFE_WRAPPER_DEFAULT_PANEL_COUNT)
+    thickness = float(wall_thickness if wall_thickness is not None else config.wall_thickness)
+    overlap = float(bottom_overlap if bottom_overlap is not None else config.bottom_overlap)
+
+    if visual_mesh_path:
+        mesh_prim = stage.GetPrimAtPath(visual_mesh_path)
+        if mesh_prim:
+            collision_api = UsdPhysics.CollisionAPI.Apply(mesh_prim)
+            collision_api.CreateCollisionEnabledAttr().Set(False)
+            _set_or_create_labutopia_attr(
+                mesh_prim,
+                "labutopia:nativeMeshCollisionEnabled",
+                Sdf.ValueTypeNames.Bool,
+                False,
+            )
+
+    if visual_mesh_path and stage.GetPrimAtPath(visual_mesh_path):
+        local = _local_cup_params_from_mesh_aabb(
+            stage,
+            parent_path=parent_path,
+            visual_mesh_path=visual_mesh_path,
+            config=config,
+        )
+        radius = float(local["radius"])
+        local_cx = float(local["local_center_x"])
+        local_cy = float(local["local_center_y"])
+        local_table_z = float(local["local_table_z"])
+        wall_height = float(local["wall_height"])
+    else:
+        # Treat ColliderConfig source_* as already parent-local (no world bake).
+        radius = float(config.source_radius)
+        local_cx = float(config.source_center[0])
+        local_cy = float(config.source_center[1])
+        local_table_z = float(config.table_z)
+        wall_height = float(config.wall_height)
+
+    wrapper_path = f"{parent_path.rstrip('/')}/{wrapper_name}"
+    wrapper = UsdGeom.Xform.Define(stage, wrapper_path)
+    wrapper_prim = wrapper.GetPrim()
+    imageable = UsdGeom.Imageable(wrapper_prim)
+    imageable.MakeInvisible()
+    imageable.CreatePurposeAttr().Set(UsdGeom.Tokens.proxy)
+    _set_or_create_labutopia_attr(wrapper_prim, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+    _set_or_create_labutopia_attr(
+        wrapper_prim,
+        "labutopia:wrapperFrame",
+        Sdf.ValueTypeNames.String,
+        FLUID_SAFE_WRAPPER_FRAME,
+    )
+    _set_or_create_labutopia_attr(
+        wrapper_prim,
+        "labutopia:wrapperParentPath",
+        Sdf.ValueTypeNames.String,
+        parent_path,
+    )
+
+    collider_paths: list[str] = []
+    bottom_size = (
+        radius * 2.2 + overlap * 2.0,
+        radius * 2.2 + overlap * 2.0,
+        config.bottom_thickness + overlap,
+    )
+    bottom = _add_box_collider_prim(
+        stage,
+        f"{wrapper_path}/Bottom",
+        size=bottom_size,
+        position=(local_cx, local_cy, local_table_z + config.bottom_thickness / 2.0),
+        color=(0.56, 0.64, 0.76),
+        contact_offset=config.collider_contact_offset,
+        rest_offset=config.collider_rest_offset,
+    )
+    _set_or_create_labutopia_attr(bottom, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+    collider_paths.append(str(bottom.GetPath()))
+
+    panel_width = 2.0 * math.pi * radius / panels * float(panel_arc_overlap_factor)
+    wall_center_z = local_table_z + config.bottom_thickness - overlap + wall_height / 2.0
+    for index in range(panels):
+        theta = 2.0 * math.pi * index / panels
+        center_radius = radius + thickness / 2.0
+        panel = _add_box_collider_prim(
+            stage,
+            f"{wrapper_path}/Wall_{index:02d}",
+            size=(panel_width, thickness, wall_height),
+            position=(
+                local_cx + center_radius * math.cos(theta),
+                local_cy + center_radius * math.sin(theta),
+                wall_center_z,
+            ),
+            angle_z=theta + math.pi / 2.0,
+            color=(0.62, 0.72, 0.88),
+            contact_offset=config.collider_contact_offset,
+            rest_offset=config.collider_rest_offset,
+        )
+        _set_or_create_labutopia_attr(panel, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+        collider_paths.append(str(panel.GetPath()))
+
+    UsdGeom.Imageable(wrapper_prim).MakeInvisible()
+    for path in collider_paths:
+        panel_prim = stage.GetPrimAtPath(path)
+        if panel_prim:
+            UsdGeom.Imageable(panel_prim).MakeInvisible()
+
+    return {
+        "wrapper_path": wrapper_path,
+        "wrapper_parent_path": parent_path,
+        "wrapper_frame": FLUID_SAFE_WRAPPER_FRAME,
+        "native_mesh_collision_enabled": False,
+        "visual_mesh_path": visual_mesh_path,
+        "panel_count": panels,
+        "wall_thickness": thickness,
+        "bottom_overlap": overlap,
+        "panel_arc_overlap_factor": float(panel_arc_overlap_factor),
+        "local_center": (local_cx, local_cy, local_table_z),
+        "radius": radius,
+        "wall_height": wall_height,
+        "collider_paths": collider_paths,
+        "initial_radial_velocity": config.initial_radial_velocity,
+        "particle_max_velocity": config.particle_max_velocity,
+    }
 
 
 def _add_native_beaker_isolation(stage: Any, config: ColliderConfig, native_usd: Path, spec: VariantSpec) -> list[str]:

@@ -8,8 +8,11 @@ from tools.labutopia_fluid.run_beaker_collider_smoke import (
     CLASSIFICATION_CONTRACT_VERSION,
     ColliderConfig,
     DIAGNOSTIC_PROJECTION_VERSION,
+    PROMOTION_INITIAL_RADIAL_VELOCITY,
+    PROMOTION_PARTICLE_MAX_VELOCITY,
     VariantSpec,
     _add_colliders,
+    _add_fluid_safe_wrapper,
     _build_manifest,
     _write_diagnostic_png,
     build_source_particle_initial_velocities,
@@ -22,6 +25,104 @@ from tools.labutopia_fluid.run_beaker_collider_smoke import (
 
 def test_s2_matrix_declares_all_required_collider_variants():
     assert BEAKER_COLLIDER_VARIANT_IDS == ("C0", "C1", "C2", "C3", "C4", "C5")
+
+
+def test_promotion_init_defaults_are_pinned_on_collider_config():
+    config = ColliderConfig()
+
+    assert PROMOTION_INITIAL_RADIAL_VELOCITY == 0.08
+    assert PROMOTION_PARTICLE_MAX_VELOCITY == 5.0
+    assert config.initial_radial_velocity == PROMOTION_INITIAL_RADIAL_VELOCITY
+    assert config.particle_max_velocity == PROMOTION_PARTICLE_MAX_VELOCITY
+
+
+def _author_beaker2_fixture(stage, *, translate=(0.0, 0.0, 0.0), with_mesh=True):
+    from pxr import Gf, UsdGeom, UsdPhysics
+
+    UsdGeom.Xform.Define(stage, "/World")
+    parent = UsdGeom.Xform.Define(stage, "/World/beaker2")
+    parent.AddTranslateOp().Set(Gf.Vec3d(*translate))
+    mesh_prim = None
+    if with_mesh:
+        mesh = UsdGeom.Cube.Define(stage, "/World/beaker2/mesh")
+        mesh.CreateSizeAttr(0.1)
+        mesh_prim = mesh.GetPrim()
+        collision_api = UsdPhysics.CollisionAPI.Apply(mesh_prim)
+        collision_api.CreateCollisionEnabledAttr().Set(True)
+    return parent.GetPrim(), mesh_prim
+
+
+def test_add_fluid_safe_wrapper_authors_invisible_local_box_panels():
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    _author_beaker2_fixture(stage, translate=(0.0, 0.0, 0.0), with_mesh=True)
+    config = ColliderConfig(wall_thickness=0.018, bottom_overlap=0.003)
+
+    result = _add_fluid_safe_wrapper(
+        stage,
+        config,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        panel_count=48,
+    )
+
+    wrapper = stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper")
+    bottom = stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper/Bottom")
+    wall0 = stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper/Wall_00")
+    mesh_prim = stage.GetPrimAtPath("/World/beaker2/mesh")
+
+    assert wrapper.IsValid()
+    assert UsdGeom.Imageable(wrapper).ComputeVisibility() == UsdGeom.Tokens.invisible
+    assert wrapper.GetAttribute("labutopia:fluidSafeWrapper").Get() is True
+    assert wrapper.GetAttribute("labutopia:wrapperFrame").Get() == "local_to_beaker2"
+    assert mesh_prim.GetAttribute("physics:collisionEnabled").Get() is False
+    assert bottom.IsValid()
+    assert wall0.IsValid()
+    assert stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper/Wall_47").IsValid()
+    assert not stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper/Wall_48").IsValid()
+    assert result["wrapper_path"] == "/World/beaker2/FluidSafeWrapper"
+    assert result["wrapper_frame"] == "local_to_beaker2"
+    assert result["wrapper_parent_path"] == "/World/beaker2"
+    assert result["native_mesh_collision_enabled"] is False
+    assert "/World/beaker2/FluidSafeWrapper/Bottom" in result["collider_paths"]
+    assert any(path.endswith("/Wall_00") for path in result["collider_paths"])
+    assert bottom.GetAttribute("labutopia:fluidSafeWrapper").Get() is True
+    assert wall0.GetAttribute("labutopia:fluidSafeWrapper").Get() is True
+
+
+def test_add_fluid_safe_wrapper_uses_parent_local_frame_not_world_pose():
+    from pxr import Gf, Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    parent_translate = (10.0, -3.0, 1.5)
+    _author_beaker2_fixture(stage, translate=parent_translate, with_mesh=False)
+    config = ColliderConfig(source_center=(0.0, 0.0, 0.0), wall_thickness=0.018, bottom_overlap=0.003)
+
+    result = _add_fluid_safe_wrapper(
+        stage,
+        config,
+        parent_path="/World/beaker2",
+        panel_count=8,
+    )
+
+    bottom = UsdGeom.Xformable(stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper/Bottom"))
+    wall0 = UsdGeom.Xformable(stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper/Wall_00"))
+    bottom_translate = bottom.GetOrderedXformOps()[0].Get()
+    wall_translate = wall0.GetOrderedXformOps()[0].Get()
+
+    # Local-frame authoring: panel translates stay near the cup local origin, not
+    # the parent's world translation (which would double-apply under beaker2).
+    assert abs(float(bottom_translate[0])) < 1.0
+    assert abs(float(bottom_translate[1])) < 1.0
+    assert abs(float(wall_translate[0])) < 1.0
+    assert abs(float(wall_translate[1])) < 1.0
+    assert abs(float(bottom_translate[0]) - parent_translate[0]) > 5.0
+    assert result["wrapper_frame"] == "local_to_beaker2"
+
+    purpose_attr = stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper").GetAttribute("purpose")
+    if purpose_attr and purpose_attr.HasAuthoredValueOpinion():
+        assert purpose_attr.Get() == UsdGeom.Tokens.proxy
 
 
 def test_c3a_followup_variants_route_to_sdf_open_beaker(monkeypatch):
