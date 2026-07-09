@@ -205,6 +205,7 @@ class C2ProxyCandidate:
     wrapper_frame: str | None = None
     wrapper_collider_mode: str | None = None
     panel_phase_offset_rad: float | None = None
+    panel_ring_count: int | None = None
     particle_spacing: float | None = None
     grid_dims: tuple[int, int, int] | None = None
     particle_width: float | None = None
@@ -291,12 +292,13 @@ class C2ProxyCandidate:
                     "native mesh collision disabled."
                 ),
                 setup="fluid_safe_wrapper",
-                collider_count=self.panel_count + 1,
+                collider_count=(self.panel_count * max(int(self.panel_ring_count or 1), 1)) + 1,
                 collision_approximation="convex_panel_boxes",
                 source_kind="fluid_safe_wrapper",
                 panel_count=self.panel_count,
                 panel_arc_overlap_factor=self.panel_arc_overlap_factor,
                 panel_phase_offset_rad=self.panel_phase_offset_rad,
+                panel_ring_count=self.panel_ring_count or 1,
                 interior_inset=self.interior_inset,
                 wrapper_parent_path=self.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                 wrapper_frame=self.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
@@ -1191,10 +1193,11 @@ def build_d4_wrapper_promotion_sweep(
                     panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.35),
                     interior_inset=float(layout["interior_inset"]),
                     # Continuous open-mesh (none/SDF) falls through on GPU PBD.
-                    # Seal4 seed0 escapes sat ~half-panel from a seam — rotate ring
-                    # by half pitch so those azimuths hit panel faces instead.
+                    # Seal5 still leaked exactly on a seam after half-pitch rotate —
+                    # dual ring covers every seam with a face from the other ring.
                     wrapper_collider_mode="segmented_panels",
                     panel_phase_offset_rad=math.pi / max(int(parent.panel_count), 72),
+                    panel_ring_count=2,
                     wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
                     native_mesh_collision_enabled=False,

@@ -182,6 +182,7 @@ class VariantSpec:
     wrapper_frame: str | None = None
     wrapper_collider_mode: str | None = None
     panel_phase_offset_rad: float | None = None
+    panel_ring_count: int | None = None
 
 
 def variant_specs() -> dict[str, VariantSpec]:
@@ -1216,6 +1217,7 @@ def _add_fluid_safe_wrapper(
     bottom_overlap: float | None = None,
     panel_arc_overlap_factor: float = FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR,
     panel_phase_offset_rad: float = 0.0,
+    panel_ring_count: int = 1,
     wrapper_name: str = "FluidSafeWrapper",
 ) -> dict[str, Any]:
     """Author an invisible box-panel collider under parent in parent-local frame.
@@ -1226,6 +1228,10 @@ def _add_fluid_safe_wrapper(
 
     ``panel_phase_offset_rad`` rotates the whole panel ring so seams are not
     aligned with a fixed spawn azimuth (seed0 escapes sat on a seam).
+
+    ``panel_ring_count=2`` authors a second ring phase-offset by half pitch so
+    every seam is covered by a face from the other ring (seal5 still leaked
+    exactly on a seam after a single half-pitch rotate).
     """
     from pxr import Sdf, UsdGeom, UsdPhysics
 
@@ -1233,6 +1239,7 @@ def _add_fluid_safe_wrapper(
     thickness = float(wall_thickness if wall_thickness is not None else config.wall_thickness)
     overlap = float(bottom_overlap if bottom_overlap is not None else config.bottom_overlap)
     phase = float(panel_phase_offset_rad)
+    rings = max(int(panel_ring_count), 1)
 
     if visual_mesh_path:
         mesh_prim = stage.GetPrimAtPath(visual_mesh_path)
@@ -1316,25 +1323,29 @@ def _add_fluid_safe_wrapper(
         panel_arc_overlap_factor=panel_arc_overlap_factor,
     )
     wall_center_z = local_table_z + config.bottom_thickness - overlap + wall_height / 2.0
-    for index in range(panels):
-        theta = 2.0 * math.pi * index / panels + phase
-        center_radius = radius + thickness / 2.0
-        panel = _add_box_collider_prim(
-            stage,
-            f"{wrapper_path}/Wall_{index:02d}",
-            size=(panel_width, thickness, wall_height),
-            position=(
-                local_cx + center_radius * math.cos(theta),
-                local_cy + center_radius * math.sin(theta),
-                wall_center_z,
-            ),
-            angle_z=theta + math.pi / 2.0,
-            color=(0.62, 0.72, 0.88),
-            contact_offset=config.collider_contact_offset,
-            rest_offset=config.collider_rest_offset,
-        )
-        _set_or_create_labutopia_attr(panel, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
-        collider_paths.append(str(panel.GetPath()))
+    half_pitch = math.pi / panels
+    for ring in range(rings):
+        ring_phase = phase + (half_pitch if ring else 0.0)
+        # Outer ring sits slightly farther so the two rings don't z-fight.
+        ring_radius = radius + thickness / 2.0 + ring * (thickness * 0.35)
+        for index in range(panels):
+            theta = 2.0 * math.pi * index / panels + ring_phase
+            panel = _add_box_collider_prim(
+                stage,
+                f"{wrapper_path}/Wall_r{ring}_{index:02d}" if rings > 1 else f"{wrapper_path}/Wall_{index:02d}",
+                size=(panel_width, thickness, wall_height),
+                position=(
+                    local_cx + ring_radius * math.cos(theta),
+                    local_cy + ring_radius * math.sin(theta),
+                    wall_center_z,
+                ),
+                angle_z=theta + math.pi / 2.0,
+                color=(0.62, 0.72, 0.88),
+                contact_offset=config.collider_contact_offset,
+                rest_offset=config.collider_rest_offset,
+            )
+            _set_or_create_labutopia_attr(panel, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+            collider_paths.append(str(panel.GetPath()))
 
     UsdGeom.Imageable(wrapper_prim).MakeInvisible()
     for path in collider_paths:
@@ -1350,6 +1361,7 @@ def _add_fluid_safe_wrapper(
         "native_mesh_collision_enabled": False,
         "visual_mesh_path": visual_mesh_path,
         "panel_count": panels,
+        "panel_ring_count": rings,
         "wall_thickness": thickness,
         "bottom_overlap": overlap,
         "panel_arc_overlap_factor": float(panel_arc_overlap_factor),
@@ -1557,6 +1569,7 @@ def _add_colliders(stage: Any, config: ColliderConfig, spec: VariantSpec, native
                 else FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR
             ),
             panel_phase_offset_rad=float(spec.panel_phase_offset_rad or 0.0),
+            panel_ring_count=int(spec.panel_ring_count or 1),
         )
         return list(wrapper["collider_paths"])
     if spec.variant_id == "C3" or spec.variant_id.startswith("C3A_"):
