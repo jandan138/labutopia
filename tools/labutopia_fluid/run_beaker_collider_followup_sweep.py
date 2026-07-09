@@ -1069,28 +1069,22 @@ def d4_promotion_spawn_layout(particle_count: int) -> dict[str, Any]:
         grid_z = 32
     else:
         raise ValueError(f"unsupported_d4_promotion_particle_count:{particle_count}")
-    # Keep particle_width ≤ spacing; prefer the seal1 band (width 0.0035) that
-    # cleared below_table. Matching liquid_usd width==contact at 0.0045 caused
-    # false wall-parks at r≈0.05603 (just past 1e-3 slack).
+    # Keep particle_width ≤ spacing. Seal1 (width 0.0035, cco=0.004, arc=1.35)
+    # cleared below_table on 1024×3 with only one seed0 seam escape. Do not raise
+    # width to match contact or force cco≥pco — those caused mass wall-parking.
     width = min(0.0035, spacing * 0.8)
     particle_contact_offset = min(D4_WRAPPER_PARTICLE_CONTACT_OFFSET, spacing)
     # Extra radial clearance at ≥1024: settle push parks centers ~5mm outward.
     interior_inset = max(particle_contact_offset, spacing)
     if count >= 1024:
         interior_inset = max(interior_inset, particle_contact_offset * 1.5)
-    # liquid_usd lesson that DID help seal1: collider contact must not be thinner
-    # than particle contact (old D4 used cco=0.004 < pco=0.0045).
-    collider_contact_offset = max(
-        min(D4_WRAPPER_COLLIDER_CONTACT_OFFSET, spacing),
-        particle_contact_offset,
-    )
     return {
         "particle_spacing": spacing,
         "grid_dims": (8, 8, grid_z),
         "particle_width": width,
         "particle_contact_offset": particle_contact_offset,
         "interior_inset": interior_inset,
-        "collider_contact_offset": collider_contact_offset,
+        "collider_contact_offset": min(D4_WRAPPER_COLLIDER_CONTACT_OFFSET, spacing),
     }
 
 
@@ -1129,7 +1123,7 @@ def build_d4_wrapper_promotion_sweep(
                     parent_candidate_id=promotion_candidate_id,
                     phase="D4_WRAPPER_PROMOTION",
                     variable_group="d4_wrapper_promotion",
-                    panel_count=parent.panel_count,
+                    panel_count=max(int(parent.panel_count), 72),
                     # Thicker walls under promotion pressure (D4A_018 smoke used 0.022).
                     wall_thickness=max(float(parent.wall_thickness), 0.026),
                     bottom_overlap=max(parent.bottom_overlap, 0.012),
@@ -1140,12 +1134,9 @@ def build_d4_wrapper_promotion_sweep(
                     fluid_rest_offset=parent.fluid_rest_offset,
                     solid_rest_offset=parent.solid_rest_offset,
                     collider_contact_offset=float(layout["collider_contact_offset"]),
-                    # Slightly negative rest helps catch thin-seam tunneling (C4 pattern).
-                    collider_rest_offset=(
-                        parent.collider_rest_offset
-                        if parent.collider_rest_offset not in (None, 0.0)
-                        else -0.001
-                    ),
+                    # Keep seal1 rest (0.0). Negative rest + higher cco caused mass
+                    # wall-parking regression in seal3.
+                    collider_rest_offset=parent.collider_rest_offset,
                     initial_radial_velocity=PROMOTION_INITIAL_RADIAL_VELOCITY,
                     # Force CCD on promotion: 1024 wall punch-through is ballistic
                     # (first below at r≫outer face by step 30). Parent smoke left CCD null.
@@ -1158,8 +1149,9 @@ def build_d4_wrapper_promotion_sweep(
                     particle_spacing=float(layout["particle_spacing"]),
                     grid_dims=tuple(layout["grid_dims"]),  # type: ignore[arg-type]
                     particle_width=float(layout["particle_width"]),
-                    # Seal1 seed0 seam escape at r=0.084 — raise arc past 1.35.
-                    panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.45),
+                    # Seal1 (arc=1.35) held 2/3 seeds; seed0 seam at r=0.084 closed by
+                    # raising panel count to 72 rather than arc/contact (those regressed).
+                    panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.35),
                     interior_inset=float(layout["interior_inset"]),
                     wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
