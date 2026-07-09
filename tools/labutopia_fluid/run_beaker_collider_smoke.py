@@ -45,6 +45,7 @@ PROMOTION_PARTICLE_MAX_VELOCITY = 5.0
 FLUID_SAFE_WRAPPER_DEFAULT_PANEL_COUNT = 48
 FLUID_SAFE_WRAPPER_DEFAULT_PANEL_ARC_OVERLAP_FACTOR = 1.08
 FLUID_SAFE_WRAPPER_FRAME = "local_to_beaker2"
+FLUID_SAFE_WRAPPER_MOTION_CONTRACT = "static_collision_inherits_beaker2_xform"
 HOLD_CLASSIFICATIONS = {
     "PASS_SOURCE_HOLD",
     "FAIL_CONTAINER_SEALED",
@@ -1122,6 +1123,7 @@ def _add_fluid_safe_wrapper(
         "wrapper_path": wrapper_path,
         "wrapper_parent_path": parent_path,
         "wrapper_frame": FLUID_SAFE_WRAPPER_FRAME,
+        "motion_contract": FLUID_SAFE_WRAPPER_MOTION_CONTRACT,
         "native_mesh_collision_enabled": False,
         "visual_mesh_path": visual_mesh_path,
         "panel_count": panels,

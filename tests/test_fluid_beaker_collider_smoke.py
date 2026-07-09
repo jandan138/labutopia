@@ -83,6 +83,7 @@ def test_add_fluid_safe_wrapper_authors_invisible_local_box_panels():
     assert not stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper/Wall_48").IsValid()
     assert result["wrapper_path"] == "/World/beaker2/FluidSafeWrapper"
     assert result["wrapper_frame"] == "local_to_beaker2"
+    assert result["motion_contract"] == "static_collision_inherits_beaker2_xform"
     assert result["wrapper_parent_path"] == "/World/beaker2"
     assert result["native_mesh_collision_enabled"] is False
     assert "/World/beaker2/FluidSafeWrapper/Bottom" in result["collider_paths"]
@@ -119,6 +120,7 @@ def test_add_fluid_safe_wrapper_uses_parent_local_frame_not_world_pose():
     assert abs(float(wall_translate[1])) < 1.0
     assert abs(float(bottom_translate[0]) - parent_translate[0]) > 5.0
     assert result["wrapper_frame"] == "local_to_beaker2"
+    assert result["motion_contract"] == "static_collision_inherits_beaker2_xform"
 
     purpose_attr = stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapper").GetAttribute("purpose")
     if purpose_attr and purpose_attr.HasAuthoredValueOpinion():
