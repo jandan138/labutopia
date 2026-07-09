@@ -2258,11 +2258,10 @@ def test_build_d4_wrapper_promotion_matrix_is_12_trials_with_pinned_init():
     # 1024 stays on the short stack (grid_z=4); taller stacks worsened wall punch-through.
     assert cfg_1k.grid_dims[2] == 4
     assert cfg_1k.interior_inset >= cfg_1k.particle_contact_offset * 1.5
-    # liquid_usd-aligned band: width == contact, collider contact ≥ particle contact.
-    assert cfg_1k.particle_width == cfg_1k.particle_contact_offset
+    # Seal1-winning band: width 0.0035, collider contact ≥ particle contact.
+    assert cfg_1k.particle_width == pytest.approx(0.0035)
     assert cfg_1k.collider_contact_offset >= cfg_1k.particle_contact_offset
-    assert cfg_1k.fluid_rest_offset == pytest.approx(0.5 * cfg_1k.particle_contact_offset)
-    assert cfg_1k.solid_rest_offset == pytest.approx(0.5 * cfg_1k.particle_contact_offset)
+    assert cfg_1k.collider_rest_offset == pytest.approx(-0.001)
 
 
 def test_aggregate_d4_wrapper_promotion_requires_all_12_pass_for_g1():
