@@ -2234,21 +2234,16 @@ def test_build_d4_wrapper_promotion_matrix_is_12_trials_with_pinned_init():
     assert all(c.initial_radial_velocity == PROMOTION_INITIAL_RADIAL_VELOCITY for c in candidates)
     assert all(c.particle_max_velocity == PROMOTION_PARTICLE_MAX_VELOCITY for c in candidates)
     assert all(c.wall_thickness >= max(float(parent.wall_thickness), 0.026) for c in candidates)
-    assert all(c.wrapper_collider_mode == "segmented_panels" for c in candidates)
-    assert all(c.panel_count >= 72 for c in candidates)
-    assert all(c.panel_ring_count == 2 for c in candidates)
-    assert all(c.panel_phase_offset_rad == pytest.approx(math.pi / 72) for c in candidates)
+    assert all(c.wrapper_collider_mode == "box_cup" for c in candidates)
     assert all(c.interior_inset is not None and c.interior_inset >= c.particle_contact_offset for c in candidates)
     assert all(c.bottom_overlap >= 0.012 for c in candidates)
     assert all(c.particle_enable_ccd is True for c in candidates)
     assert candidates[0].candidate_id == "D4A_018_D4P_P0512_SEED000"
     spec0 = candidates[0].to_variant_spec()
     assert spec0.setup == "fluid_safe_wrapper"
-    assert spec0.wrapper_collider_mode == "segmented_panels"
-    assert spec0.collision_approximation == "convex_panel_boxes"
-    assert spec0.panel_phase_offset_rad == pytest.approx(math.pi / 72)
-    assert spec0.panel_ring_count == 2
-    assert spec0.collider_count == 72 * 2 + 1
+    assert spec0.wrapper_collider_mode == "box_cup"
+    assert spec0.collision_approximation == "box"
+    assert spec0.collider_count == 5
     assert candidates[0].to_config().particle_count == 512
     assert candidates[0].to_config().interior_inset == candidates[0].interior_inset
     cfg_4k = next(c for c in candidates if c.particle_count == 4096).to_config()

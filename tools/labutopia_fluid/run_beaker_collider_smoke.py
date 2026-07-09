@@ -724,6 +724,147 @@ def _build_open_beaker_mesh_points(config: ColliderConfig, *, segments: int = 32
     return points, counts, indices
 
 
+def _add_fluid_safe_box_cup_wrapper(
+    stage: Any,
+    config: ColliderConfig,
+    *,
+    parent_path: str = "/World/beaker2",
+    visual_mesh_path: str | None = None,
+    wall_thickness: float | None = None,
+    bottom_overlap: float | None = None,
+    wrapper_name: str = "FluidSafeBoxCup",
+) -> dict[str, Any]:
+    """Author a liquid_usd-style 4-wall + bottom box cup under parent.
+
+    Reference A18/A20/C29 contain fluids with continuous planar box walls (no
+    cylindrical panel seams). Segmented cylindrical panels plateaued at 2/3 PASS
+    with seed0 tunneling into the wall shell; continuous open-mesh (none/SDF)
+    falls through on GPU PBD. Planar boxes are the GPU-safe continuous path.
+    """
+    from pxr import Sdf, UsdGeom, UsdPhysics
+
+    thickness = float(wall_thickness if wall_thickness is not None else config.wall_thickness)
+    overlap = float(bottom_overlap if bottom_overlap is not None else config.bottom_overlap)
+
+    if visual_mesh_path:
+        mesh_prim = stage.GetPrimAtPath(visual_mesh_path)
+        if mesh_prim:
+            collision_api = UsdPhysics.CollisionAPI.Apply(mesh_prim)
+            collision_api.CreateCollisionEnabledAttr().Set(False)
+            _set_or_create_labutopia_attr(
+                mesh_prim,
+                "labutopia:nativeMeshCollisionEnabled",
+                Sdf.ValueTypeNames.Bool,
+                False,
+            )
+
+    if visual_mesh_path and stage.GetPrimAtPath(visual_mesh_path):
+        local = _local_cup_params_from_mesh_aabb(
+            stage,
+            parent_path=parent_path,
+            visual_mesh_path=visual_mesh_path,
+            config=config,
+        )
+        radius = float(local["radius"])
+        local_cx = float(local["local_center_x"])
+        local_cy = float(local["local_center_y"])
+        local_table_z = float(local["local_table_z"])
+        wall_height = float(local["wall_height"])
+    else:
+        radius = float(config.source_radius)
+        local_cx = float(config.source_center[0])
+        local_cy = float(config.source_center[1])
+        local_table_z = float(config.table_z)
+        wall_height = float(config.wall_height)
+
+    wrapper_path = f"{parent_path.rstrip('/')}/{wrapper_name}"
+    wrapper = UsdGeom.Xform.Define(stage, wrapper_path)
+    wrapper_prim = wrapper.GetPrim()
+    UsdGeom.Imageable(wrapper_prim).MakeInvisible()
+    _set_or_create_labutopia_attr(wrapper_prim, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+    _set_or_create_labutopia_attr(
+        wrapper_prim, "labutopia:wrapperColliderMode", Sdf.ValueTypeNames.String, "box_cup"
+    )
+    _set_or_create_labutopia_attr(
+        wrapper_prim, "labutopia:wrapperFrame", Sdf.ValueTypeNames.String, FLUID_SAFE_WRAPPER_FRAME
+    )
+    _set_or_create_labutopia_attr(
+        wrapper_prim, "labutopia:wrapperParentPath", Sdf.ValueTypeNames.String, parent_path
+    )
+    _set_or_create_labutopia_attr(
+        wrapper_prim, "labutopia:motionContract", Sdf.ValueTypeNames.String, FLUID_SAFE_WRAPPER_MOTION_CONTRACT
+    )
+
+    # Inner half-width matches source_radius so the circular spawn disk fits.
+    inner = radius
+    outer = inner + thickness
+    bottom_half = outer + overlap
+    bottom_size = (
+        bottom_half * 2.0,
+        bottom_half * 2.0,
+        config.bottom_thickness + overlap,
+    )
+    collider_paths: list[str] = []
+    bottom = _add_box_collider_prim(
+        stage,
+        f"{wrapper_path}/Bottom",
+        size=bottom_size,
+        position=(local_cx, local_cy, local_table_z + config.bottom_thickness / 2.0),
+        color=(0.56, 0.64, 0.76),
+        contact_offset=config.collider_contact_offset,
+        rest_offset=config.collider_rest_offset,
+    )
+    _set_or_create_labutopia_attr(bottom, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+    collider_paths.append(str(bottom.GetPath()))
+
+    wall_center_z = local_table_z + config.bottom_thickness - overlap + wall_height / 2.0
+    # Four continuous planar walls centered on the outer face (liquid_usd pattern).
+    wall_length = outer * 2.0
+    wall_specs = (
+        ("Front", (local_cx, local_cy + (inner + thickness / 2.0), wall_center_z), (wall_length, thickness, wall_height), 0.0),
+        ("Back", (local_cx, local_cy - (inner + thickness / 2.0), wall_center_z), (wall_length, thickness, wall_height), 0.0),
+        ("Left", (local_cx - (inner + thickness / 2.0), local_cy, wall_center_z), (thickness, wall_length, wall_height), 0.0),
+        ("Right", (local_cx + (inner + thickness / 2.0), local_cy, wall_center_z), (thickness, wall_length, wall_height), 0.0),
+    )
+    for name, position, size, angle_z in wall_specs:
+        panel = _add_box_collider_prim(
+            stage,
+            f"{wrapper_path}/{name}",
+            size=size,
+            position=position,
+            angle_z=angle_z,
+            color=(0.62, 0.72, 0.88),
+            contact_offset=config.collider_contact_offset,
+            rest_offset=config.collider_rest_offset,
+        )
+        _set_or_create_labutopia_attr(panel, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+        collider_paths.append(str(panel.GetPath()))
+
+    for path in collider_paths:
+        prim = stage.GetPrimAtPath(path)
+        if prim:
+            UsdGeom.Imageable(prim).MakeInvisible()
+
+    return {
+        "wrapper_path": wrapper_path,
+        "wrapper_parent_path": parent_path,
+        "wrapper_frame": FLUID_SAFE_WRAPPER_FRAME,
+        "motion_contract": FLUID_SAFE_WRAPPER_MOTION_CONTRACT,
+        "native_mesh_collision_enabled": False,
+        "visual_mesh_path": visual_mesh_path,
+        "panel_count": 4,
+        "wall_thickness": thickness,
+        "bottom_overlap": overlap,
+        "wrapper_collider_mode": "box_cup",
+        "local_center": (local_cx, local_cy, local_table_z),
+        "radius": radius,
+        "wall_height": wall_height,
+        "collider_paths": collider_paths,
+        "initial_radial_velocity": config.initial_radial_velocity,
+        "particle_max_velocity": config.particle_max_velocity,
+    }
+
+
 def _add_fluid_safe_open_mesh_wrapper(
     stage: Any,
     config: ColliderConfig,
@@ -1546,6 +1687,16 @@ def _add_colliders(stage: Any, config: ColliderConfig, spec: VariantSpec, native
         )
     if spec.setup == "fluid_safe_wrapper" or spec.variant_id.startswith("D4A_"):
         mode = spec.wrapper_collider_mode or "segmented_panels"
+        if mode == "box_cup":
+            wrapper = _add_fluid_safe_box_cup_wrapper(
+                stage,
+                config,
+                parent_path=spec.wrapper_parent_path or "/World/beaker2",
+                visual_mesh_path=spec.native_mesh_source_path,
+                wall_thickness=config.wall_thickness,
+                bottom_overlap=config.bottom_overlap,
+            )
+            return list(wrapper["collider_paths"])
         if mode == "continuous_open_mesh" or spec.setup == "fluid_safe_open_mesh_wrapper":
             wrapper = _add_fluid_safe_open_mesh_wrapper(
                 stage,

@@ -13,6 +13,7 @@ from tools.labutopia_fluid.run_beaker_collider_smoke import (
     PROMOTION_PARTICLE_MAX_VELOCITY,
     VariantSpec,
     _add_colliders,
+    _add_fluid_safe_box_cup_wrapper,
     _add_fluid_safe_open_mesh_wrapper,
     _add_fluid_safe_wrapper,
     _build_manifest,
@@ -178,6 +179,37 @@ def test_add_fluid_safe_open_mesh_wrapper_authors_continuous_triangle_mesh():
     assert result["panel_count"] == 0
     assert result["collider_paths"] == ["/World/beaker2/FluidSafeOpenMesh/OpenCup"]
     assert not stage.GetPrimAtPath("/World/beaker2/FluidSafeOpenMesh/Wall_00").IsValid()
+
+
+def test_add_fluid_safe_box_cup_wrapper_authors_four_planar_walls():
+    """liquid_usd-style planar box cup: 4 walls + bottom, no cylindrical seams."""
+    from pxr import Usd, UsdGeom
+
+    stage = Usd.Stage.CreateInMemory()
+    _author_beaker2_fixture(stage, translate=(0.0, 0.0, 0.0), with_mesh=True)
+    config = ColliderConfig(wall_thickness=0.026, bottom_overlap=0.012, collider_contact_offset=0.004)
+
+    result = _add_fluid_safe_box_cup_wrapper(
+        stage,
+        config,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+    )
+
+    wrapper = stage.GetPrimAtPath("/World/beaker2/FluidSafeBoxCup")
+    front = stage.GetPrimAtPath("/World/beaker2/FluidSafeBoxCup/Front")
+    bottom = stage.GetPrimAtPath("/World/beaker2/FluidSafeBoxCup/Bottom")
+    mesh_prim = stage.GetPrimAtPath("/World/beaker2/mesh")
+
+    assert wrapper.IsValid()
+    assert front.IsValid() and bottom.IsValid()
+    assert UsdGeom.Imageable(wrapper).ComputeVisibility() == UsdGeom.Tokens.invisible
+    assert wrapper.GetAttribute("labutopia:wrapperColliderMode").Get() == "box_cup"
+    assert mesh_prim.GetAttribute("physics:collisionEnabled").Get() is False
+    assert result["wrapper_collider_mode"] == "box_cup"
+    assert result["panel_count"] == 4
+    assert len(result["collider_paths"]) == 5
+    assert not stage.GetPrimAtPath("/World/beaker2/FluidSafeBoxCup/Wall_00").IsValid()
 
 
 def test_add_fluid_safe_wrapper_uses_parent_local_frame_not_world_pose():

@@ -251,6 +251,31 @@ class C2ProxyCandidate:
     def to_variant_spec(self) -> VariantSpec:
         if self.phase in {"D4_WRAPPER_SWEEP", "D4_WRAPPER_PROMOTION"} or self.candidate_id.startswith("D4A_"):
             mode = self.wrapper_collider_mode or "segmented_panels"
+            if mode == "box_cup":
+                return VariantSpec(
+                    variant_id=self.candidate_id,
+                    name="fluid_safe_box_cup_wrapper",
+                    description=(
+                        "D4 invisible beaker2-local liquid_usd-style 4-wall box cup; "
+                        "native mesh collision disabled."
+                    ),
+                    setup="fluid_safe_wrapper",
+                    collider_count=5,
+                    collision_approximation="box",
+                    source_kind="fluid_safe_box_cup_wrapper",
+                    panel_count=4,
+                    panel_arc_overlap_factor=None,
+                    interior_inset=self.interior_inset,
+                    wrapper_parent_path=self.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
+                    wrapper_frame=self.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
+                    wrapper_collider_mode="box_cup",
+                    native_mesh_collision_enabled=(
+                        False
+                        if self.native_mesh_collision_enabled is None
+                        else self.native_mesh_collision_enabled
+                    ),
+                    native_mesh_source_path=self.native_mesh_source_path,
+                )
             if mode == "continuous_open_mesh":
                 return VariantSpec(
                     variant_id=self.candidate_id,
@@ -1164,7 +1189,10 @@ def build_d4_wrapper_promotion_sweep(
                     parent_candidate_id=promotion_candidate_id,
                     phase="D4_WRAPPER_PROMOTION",
                     variable_group="d4_wrapper_promotion",
-                    panel_count=max(int(parent.panel_count), 72),
+                    # liquid_usd A18/A20/C29: planar box walls. Segmented cylindrical
+                    # panels plateaued at 2/3 (seed0 tunnels into wall shell); open-mesh
+                    # none/SDF falls through on GPU PBD. Box cup is the GPU-safe path.
+                    panel_count=4,
                     # Thicker walls under promotion pressure (D4A_018 smoke used 0.022).
                     wall_thickness=max(float(parent.wall_thickness), 0.026),
                     bottom_overlap=max(parent.bottom_overlap, 0.012),
@@ -1190,14 +1218,11 @@ def build_d4_wrapper_promotion_sweep(
                     particle_spacing=float(layout["particle_spacing"]),
                     grid_dims=tuple(layout["grid_dims"]),  # type: ignore[arg-type]
                     particle_width=float(layout["particle_width"]),
-                    panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.35),
+                    panel_arc_overlap_factor=None,
                     interior_inset=float(layout["interior_inset"]),
-                    # Continuous open-mesh (none/SDF) falls through on GPU PBD.
-                    # Seal5 still leaked exactly on a seam after half-pitch rotate —
-                    # dual ring covers every seam with a face from the other ring.
-                    wrapper_collider_mode="segmented_panels",
-                    panel_phase_offset_rad=math.pi / max(int(parent.panel_count), 72),
-                    panel_ring_count=2,
+                    wrapper_collider_mode="box_cup",
+                    panel_phase_offset_rad=None,
+                    panel_ring_count=1,
                     wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
                     native_mesh_collision_enabled=False,
