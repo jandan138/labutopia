@@ -202,6 +202,7 @@ class C2ProxyCandidate:
     interior_inset: float | None = None
     wrapper_parent_path: str | None = None
     wrapper_frame: str | None = None
+    wrapper_collider_mode: str | None = None
     particle_spacing: float | None = None
     grid_dims: tuple[int, int, int] | None = None
     particle_width: float | None = None
@@ -246,6 +247,32 @@ class C2ProxyCandidate:
 
     def to_variant_spec(self) -> VariantSpec:
         if self.phase in {"D4_WRAPPER_SWEEP", "D4_WRAPPER_PROMOTION"} or self.candidate_id.startswith("D4A_"):
+            mode = self.wrapper_collider_mode or "segmented_panels"
+            if mode == "continuous_open_mesh":
+                return VariantSpec(
+                    variant_id=self.candidate_id,
+                    name="fluid_safe_open_mesh_wrapper",
+                    description=(
+                        "D4 invisible beaker2-local continuous open-cup triangle mesh "
+                        "(liquid_usd approximation=none); native mesh collision disabled."
+                    ),
+                    setup="fluid_safe_wrapper",
+                    collider_count=1,
+                    collision_approximation="none",
+                    source_kind="fluid_safe_open_mesh_wrapper",
+                    panel_count=0,
+                    panel_arc_overlap_factor=None,
+                    interior_inset=self.interior_inset,
+                    wrapper_parent_path=self.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
+                    wrapper_frame=self.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
+                    wrapper_collider_mode="continuous_open_mesh",
+                    native_mesh_collision_enabled=(
+                        False
+                        if self.native_mesh_collision_enabled is None
+                        else self.native_mesh_collision_enabled
+                    ),
+                    native_mesh_source_path=self.native_mesh_source_path,
+                )
             return VariantSpec(
                 variant_id=self.candidate_id,
                 name="fluid_safe_wrapper",
@@ -262,6 +289,7 @@ class C2ProxyCandidate:
                 interior_inset=self.interior_inset,
                 wrapper_parent_path=self.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                 wrapper_frame=self.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
+                wrapper_collider_mode="segmented_panels",
                 native_mesh_collision_enabled=(
                     False
                     if self.native_mesh_collision_enabled is None
@@ -1149,10 +1177,11 @@ def build_d4_wrapper_promotion_sweep(
                     particle_spacing=float(layout["particle_spacing"]),
                     grid_dims=tuple(layout["grid_dims"]),  # type: ignore[arg-type]
                     particle_width=float(layout["particle_width"]),
-                    # Seal1 (arc=1.35) held 2/3 seeds; seed0 seam at r=0.084 closed by
-                    # raising panel count to 72 rather than arc/contact (those regressed).
                     panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.35),
                     interior_inset=float(layout["interior_inset"]),
+                    # liquid_usd lesson: continuous mesh walls (approx=none) have no
+                    # tangential seams. Seal4 still leaked 2 particles through panels.
+                    wrapper_collider_mode="continuous_open_mesh",
                     wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
                     native_mesh_collision_enabled=False,

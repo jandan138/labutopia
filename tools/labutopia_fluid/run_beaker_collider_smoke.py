@@ -180,6 +180,7 @@ class VariantSpec:
     interior_inset: float | None = None
     wrapper_parent_path: str | None = None
     wrapper_frame: str | None = None
+    wrapper_collider_mode: str | None = None
 
 
 def variant_specs() -> dict[str, VariantSpec]:
@@ -719,6 +720,123 @@ def _build_open_beaker_mesh_points(config: ColliderConfig, *, segments: int = 32
         counts.append(3)
         indices.extend([bottom_center, inner_bottom + index, inner_bottom + nxt])
     return points, counts, indices
+
+
+def _add_fluid_safe_open_mesh_wrapper(
+    stage: Any,
+    config: ColliderConfig,
+    *,
+    parent_path: str = "/World/beaker2",
+    visual_mesh_path: str | None = None,
+    wall_thickness: float | None = None,
+    segments: int = 64,
+    wrapper_name: str = "FluidSafeOpenMesh",
+) -> dict[str, Any]:
+    """Author a continuous open-cup triangle mesh under parent (liquid_usd pattern).
+
+    Reference A18/A20/C29 contain fluids with continuous mesh walls
+    (``physics:approximation = none``), not segmented box panels. D4 promotion
+    seed0 still tunnels through panel seams at r≈0.079–0.084; this path removes
+    tangential seams entirely while keeping the beaker2-local wrapper contract.
+    """
+    from pxr import Sdf, UsdGeom, UsdPhysics
+
+    thickness = float(wall_thickness if wall_thickness is not None else config.wall_thickness)
+    if visual_mesh_path:
+        mesh_prim = stage.GetPrimAtPath(visual_mesh_path)
+        if mesh_prim:
+            collision_api = UsdPhysics.CollisionAPI.Apply(mesh_prim)
+            collision_api.CreateCollisionEnabledAttr().Set(False)
+            _set_or_create_labutopia_attr(
+                mesh_prim,
+                "labutopia:nativeMeshCollisionEnabled",
+                Sdf.ValueTypeNames.Bool,
+                False,
+            )
+
+    if visual_mesh_path and stage.GetPrimAtPath(visual_mesh_path):
+        local = _local_cup_params_from_mesh_aabb(
+            stage,
+            parent_path=parent_path,
+            visual_mesh_path=visual_mesh_path,
+            config=config,
+        )
+        radius = float(local["radius"])
+        local_cx = float(local["local_center_x"])
+        local_cy = float(local["local_center_y"])
+        local_table_z = float(local["local_table_z"])
+        wall_height = float(local["wall_height"])
+    else:
+        radius = float(config.source_radius)
+        local_cx = float(config.source_center[0])
+        local_cy = float(config.source_center[1])
+        local_table_z = float(config.table_z)
+        wall_height = float(config.wall_height)
+
+    local_config = replace(
+        config,
+        source_center=(local_cx, local_cy, float(config.source_center[2])),
+        table_z=local_table_z,
+        wall_height=wall_height,
+        wall_thickness=thickness,
+        source_radius=radius,
+    )
+    points, counts, indices = _build_open_beaker_mesh_points(local_config, segments=int(segments))
+
+    wrapper_path = f"{parent_path.rstrip('/')}/{wrapper_name}"
+    wrapper = UsdGeom.Xform.Define(stage, wrapper_path)
+    wrapper_prim = wrapper.GetPrim()
+    UsdGeom.Imageable(wrapper_prim).MakeInvisible()
+    _set_or_create_labutopia_attr(wrapper_prim, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+    _set_or_create_labutopia_attr(
+        wrapper_prim, "labutopia:wrapperColliderMode", Sdf.ValueTypeNames.String, "continuous_open_mesh"
+    )
+    _set_or_create_labutopia_attr(
+        wrapper_prim, "labutopia:wrapperFrame", Sdf.ValueTypeNames.String, FLUID_SAFE_WRAPPER_FRAME
+    )
+    _set_or_create_labutopia_attr(
+        wrapper_prim, "labutopia:wrapperParentPath", Sdf.ValueTypeNames.String, parent_path
+    )
+    _set_or_create_labutopia_attr(
+        wrapper_prim, "labutopia:motionContract", Sdf.ValueTypeNames.String, FLUID_SAFE_WRAPPER_MOTION_CONTRACT
+    )
+
+    mesh = UsdGeom.Mesh.Define(stage, f"{wrapper_path}/OpenCup")
+    mesh.CreatePointsAttr().Set(points)
+    mesh.CreateFaceVertexCountsAttr().Set(counts)
+    mesh.CreateFaceVertexIndicesAttr().Set(indices)
+    mesh.CreateDoubleSidedAttr().Set(True)
+    mesh.CreateDisplayColorAttr().Set([(0.52, 0.7, 0.92)])
+    # liquid_usd: physics:approximation = none (triangle mesh, no convex seams).
+    _apply_static_collision(
+        mesh.GetPrim(),
+        approximation="none",
+        contact_offset=config.collider_contact_offset,
+        rest_offset=config.collider_rest_offset,
+    )
+    _set_or_create_labutopia_attr(mesh.GetPrim(), "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+    UsdGeom.Imageable(mesh.GetPrim()).MakeInvisible()
+    collider_paths = [str(mesh.GetPath())]
+
+    return {
+        "wrapper_path": wrapper_path,
+        "wrapper_parent_path": parent_path,
+        "wrapper_frame": FLUID_SAFE_WRAPPER_FRAME,
+        "motion_contract": FLUID_SAFE_WRAPPER_MOTION_CONTRACT,
+        "native_mesh_collision_enabled": False,
+        "visual_mesh_path": visual_mesh_path,
+        "panel_count": 0,
+        "wall_thickness": thickness,
+        "bottom_overlap": float(config.bottom_overlap),
+        "panel_arc_overlap_factor": None,
+        "wrapper_collider_mode": "continuous_open_mesh",
+        "local_center": (local_cx, local_cy, local_table_z),
+        "radius": radius,
+        "wall_height": wall_height,
+        "collider_paths": collider_paths,
+        "initial_radial_velocity": config.initial_radial_velocity,
+        "particle_max_velocity": config.particle_max_velocity,
+    }
 
 
 def _add_sdf_open_beaker(stage: Any, config: ColliderConfig, spec: VariantSpec) -> list[str]:
@@ -1394,6 +1512,16 @@ def _add_colliders(stage: Any, config: ColliderConfig, spec: VariantSpec, native
             wall_thickness=config.wall_thickness,
         )
     if spec.setup == "fluid_safe_wrapper" or spec.variant_id.startswith("D4A_"):
+        mode = spec.wrapper_collider_mode or "segmented_panels"
+        if mode == "continuous_open_mesh" or spec.setup == "fluid_safe_open_mesh_wrapper":
+            wrapper = _add_fluid_safe_open_mesh_wrapper(
+                stage,
+                config,
+                parent_path=spec.wrapper_parent_path or "/World/beaker2",
+                visual_mesh_path=spec.native_mesh_source_path,
+                wall_thickness=config.wall_thickness,
+            )
+            return list(wrapper["collider_paths"])
         wrapper = _add_fluid_safe_wrapper(
             stage,
             config,

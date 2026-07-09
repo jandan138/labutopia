@@ -13,6 +13,7 @@ from tools.labutopia_fluid.run_beaker_collider_smoke import (
     PROMOTION_PARTICLE_MAX_VELOCITY,
     VariantSpec,
     _add_colliders,
+    _add_fluid_safe_open_mesh_wrapper,
     _add_fluid_safe_wrapper,
     _build_manifest,
     _write_diagnostic_png,
@@ -142,6 +143,40 @@ def test_add_fluid_safe_wrapper_authors_invisible_local_box_panels():
     assert any(path.endswith("/Wall_00") for path in result["collider_paths"])
     assert bottom.GetAttribute("labutopia:fluidSafeWrapper").Get() is True
     assert wall0.GetAttribute("labutopia:fluidSafeWrapper").Get() is True
+
+
+def test_add_fluid_safe_open_mesh_wrapper_authors_continuous_triangle_mesh():
+    """liquid_usd-style continuous cup: approximation=none, no panel seams."""
+    from pxr import Usd, UsdGeom, UsdPhysics
+
+    stage = Usd.Stage.CreateInMemory()
+    _author_beaker2_fixture(stage, translate=(0.0, 0.0, 0.0), with_mesh=True)
+    config = ColliderConfig(wall_thickness=0.026, bottom_overlap=0.012, collider_contact_offset=0.004)
+
+    result = _add_fluid_safe_open_mesh_wrapper(
+        stage,
+        config,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        segments=32,
+    )
+
+    wrapper = stage.GetPrimAtPath("/World/beaker2/FluidSafeOpenMesh")
+    cup = stage.GetPrimAtPath("/World/beaker2/FluidSafeOpenMesh/OpenCup")
+    mesh_prim = stage.GetPrimAtPath("/World/beaker2/mesh")
+
+    assert wrapper.IsValid()
+    assert cup.IsValid()
+    assert UsdGeom.Imageable(wrapper).ComputeVisibility() == UsdGeom.Tokens.invisible
+    assert wrapper.GetAttribute("labutopia:wrapperColliderMode").Get() == "continuous_open_mesh"
+    assert wrapper.GetAttribute("labutopia:wrapperFrame").Get() == "local_to_beaker2"
+    assert mesh_prim.GetAttribute("physics:collisionEnabled").Get() is False
+    mesh_collision = UsdPhysics.MeshCollisionAPI(cup)
+    assert mesh_collision.GetApproximationAttr().Get() == "none"
+    assert result["wrapper_collider_mode"] == "continuous_open_mesh"
+    assert result["panel_count"] == 0
+    assert result["collider_paths"] == ["/World/beaker2/FluidSafeOpenMesh/OpenCup"]
+    assert not stage.GetPrimAtPath("/World/beaker2/FluidSafeOpenMesh/Wall_00").IsValid()
 
 
 def test_add_fluid_safe_wrapper_uses_parent_local_frame_not_world_pose():
