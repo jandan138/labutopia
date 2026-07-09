@@ -2236,8 +2236,10 @@ def test_build_d4_wrapper_promotion_matrix_is_12_trials_with_pinned_init():
     assert all(c.panel_count == parent.panel_count for c in candidates)
     assert all(c.interior_inset is not None and c.interior_inset >= c.particle_contact_offset for c in candidates)
     assert all(c.bottom_overlap >= 0.012 for c in candidates)
-    assert all((c.panel_arc_overlap_factor or 0) >= 1.35 for c in candidates)
+    assert all((c.panel_arc_overlap_factor or 0) >= 1.45 for c in candidates)
     assert all(c.particle_enable_ccd is True for c in candidates)
+    assert all(c.collider_contact_offset >= c.particle_contact_offset for c in candidates)
+    assert all(c.particle_width <= c.particle_spacing for c in candidates)
     assert candidates[0].candidate_id == "D4A_018_D4P_P0512_SEED000"
     assert candidates[0].to_variant_spec().setup == "fluid_safe_wrapper"
     assert candidates[0].to_config().particle_count == 512
@@ -2256,6 +2258,11 @@ def test_build_d4_wrapper_promotion_matrix_is_12_trials_with_pinned_init():
     # 1024 stays on the short stack (grid_z=4); taller stacks worsened wall punch-through.
     assert cfg_1k.grid_dims[2] == 4
     assert cfg_1k.interior_inset >= cfg_1k.particle_contact_offset * 1.5
+    # liquid_usd-aligned band: width == contact, collider contact ≥ particle contact.
+    assert cfg_1k.particle_width == cfg_1k.particle_contact_offset
+    assert cfg_1k.collider_contact_offset >= cfg_1k.particle_contact_offset
+    assert cfg_1k.fluid_rest_offset == pytest.approx(0.5 * cfg_1k.particle_contact_offset)
+    assert cfg_1k.solid_rest_offset == pytest.approx(0.5 * cfg_1k.particle_contact_offset)
 
 
 def test_aggregate_d4_wrapper_promotion_requires_all_12_pass_for_g1():

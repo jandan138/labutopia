@@ -1069,19 +1069,29 @@ def d4_promotion_spawn_layout(particle_count: int) -> dict[str, Any]:
         grid_z = 32
     else:
         raise ValueError(f"unsupported_d4_promotion_particle_count:{particle_count}")
-    width = min(0.0035, spacing * 0.8)
+    # liquid_usd reference (A18/A20/C29): width == particleContactOffset,
+    # restOffset == 0.5 * contact, collider contact not thinner than particle contact.
     particle_contact_offset = min(D4_WRAPPER_PARTICLE_CONTACT_OFFSET, spacing)
+    width = min(spacing, particle_contact_offset)
     # Extra radial clearance at ≥1024: settle push parks centers ~5mm outward.
     interior_inset = max(particle_contact_offset, spacing)
     if count >= 1024:
         interior_inset = max(interior_inset, particle_contact_offset * 1.5)
+    collider_contact_offset = max(
+        min(D4_WRAPPER_COLLIDER_CONTACT_OFFSET, spacing),
+        particle_contact_offset,
+    )
+    rest_offset = 0.5 * particle_contact_offset
     return {
         "particle_spacing": spacing,
         "grid_dims": (8, 8, grid_z),
         "particle_width": width,
         "particle_contact_offset": particle_contact_offset,
         "interior_inset": interior_inset,
-        "collider_contact_offset": min(D4_WRAPPER_COLLIDER_CONTACT_OFFSET, spacing),
+        "collider_contact_offset": collider_contact_offset,
+        "particle_system_contact_offset": particle_contact_offset,
+        "solid_rest_offset": rest_offset,
+        "fluid_rest_offset": rest_offset,
     }
 
 
@@ -1126,12 +1136,17 @@ def build_d4_wrapper_promotion_sweep(
                     bottom_overlap=max(parent.bottom_overlap, 0.012),
                     particle_contact_offset=float(layout["particle_contact_offset"]),
                     spawn_particle_contact_offset=parent.spawn_particle_contact_offset,
-                    particle_system_contact_offset=parent.particle_system_contact_offset,
+                    particle_system_contact_offset=float(layout["particle_system_contact_offset"]),
                     particle_rest_offset=parent.particle_rest_offset,
-                    fluid_rest_offset=parent.fluid_rest_offset,
-                    solid_rest_offset=parent.solid_rest_offset,
+                    fluid_rest_offset=float(layout["fluid_rest_offset"]),
+                    solid_rest_offset=float(layout["solid_rest_offset"]),
                     collider_contact_offset=float(layout["collider_contact_offset"]),
-                    collider_rest_offset=parent.collider_rest_offset,
+                    # Slightly negative rest helps catch thin-seam tunneling (C4 pattern).
+                    collider_rest_offset=(
+                        parent.collider_rest_offset
+                        if parent.collider_rest_offset not in (None, 0.0)
+                        else -0.001
+                    ),
                     initial_radial_velocity=PROMOTION_INITIAL_RADIAL_VELOCITY,
                     # Force CCD on promotion: 1024 wall punch-through is ballistic
                     # (first below at r≫outer face by step 30). Parent smoke left CCD null.
@@ -1144,8 +1159,8 @@ def build_d4_wrapper_promotion_sweep(
                     particle_spacing=float(layout["particle_spacing"]),
                     grid_dims=tuple(layout["grid_dims"]),  # type: ignore[arg-type]
                     particle_width=float(layout["particle_width"]),
-                    # Centerline-corrected arc: 1.25 was still insufficient under 1024 pressure.
-                    panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.35),
+                    # Seed0 seal leak parked at r=0.084 past outer face — raise arc further.
+                    panel_arc_overlap_factor=max(float(parent.panel_arc_overlap_factor or 1.2), 1.45),
                     interior_inset=float(layout["interior_inset"]),
                     wrapper_parent_path=parent.wrapper_parent_path or D4_WRAPPER_PARENT_PATH,
                     wrapper_frame=parent.wrapper_frame or FLUID_SAFE_WRAPPER_FRAME,
