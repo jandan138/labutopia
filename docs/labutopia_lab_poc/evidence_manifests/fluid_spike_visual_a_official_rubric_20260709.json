@@ -1,0 +1,31 @@
+{
+  "g2_visual_a": true,
+  "honest_claim_boundary": {
+    "allowed": [
+      "Physics A G1 GO on D4A_018 promotion matrix (12/12 PASS_SOURCE_HOLD)",
+      "Visual A official evidence linked to Physics-A provenance with OmniSurface_ClearWater MDL PASS"
+    ],
+    "not_allowed": [
+      "colloquial \u771f\u5b9e\u6c34 without both G1+G2",
+      "RGB/video alone proves zero-leak",
+      "product FX (Lane C) enabled"
+    ]
+  },
+  "manifest_type": "fluid_spike_visual_a_official_rubric",
+  "physics_g1_manifest": "fluid_spike_d4_wrapper_promotion_v4_20260709.json",
+  "rubric_a": {
+    "A1_mdl_clearwater": true,
+    "A_anisotropy": true,
+    "A_dome_light": true,
+    "A_g1_wrapper_pinned": true,
+    "A_physics_hold_on_run": true,
+    "A_physics_provenance": true,
+    "A_refraction_ge_12": true,
+    "A_smoothing": true,
+    "A_video_present": true
+  },
+  "rubric_a_pass": true,
+  "schema_version": 1,
+  "visual_a_manifest": "fluid_spike_visual_a_official_20260709.json",
+  "visual_acceptance_scenario": "A_static_clear_water"
+}

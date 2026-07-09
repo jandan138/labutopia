@@ -257,6 +257,14 @@ Stack that cleared G1:
 
 Honest claim: **Physics A static zero-leak on D4A_018 promotion matrix**. Do **not** claim colloquial “真实水” until Visual A (G2) also passes.
 
-Still GPU-gated:
-- Task 10: Official Visual A on Physics-A traj (in progress)
+### Visual A / G2 — GO (Task 10)
+
+Official run `fluid_spike_visual_a_official_20260709.json` + rubric
+`fluid_spike_visual_a_official_rubric_20260709.json`:
+- `OmniSurface_ClearWater` `MDL_WATER` / `mdl_compile_status=PASS` (conda version-matched MDL tree)
+- anisotropy + smoothing, DomeLight, `max_refraction_bounces=12`
+- Physics provenance → G1 traj `D4A_018_D4P_P50000_SEED000`
+- Live colleague overlay with G1 dual-ring geometry: `PASS_SOURCE_HOLD`
+
+Still open:
 - Task 11: Slow pour B after Visual A
