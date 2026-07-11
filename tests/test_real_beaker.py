@@ -1,4 +1,5 @@
 import math
+import json
 from pathlib import Path
 
 import pytest
@@ -489,3 +490,102 @@ def test_strict_trace_passes_only_when_every_gate_is_satisfied(real_frame):
     assert result["passed"] is True
     assert result["trace_schema_valid"] is True
     assert result["readback_available"] is True
+
+
+@pytest.mark.parametrize(
+    ("field", "invalid_value"),
+    (
+        ("step_index", 0.0),
+        ("step_index", "0"),
+        ("step_index", False),
+        ("particle_count", 1.0),
+        ("particle_count", "1"),
+        ("particle_count", True),
+    ),
+)
+def test_strict_integer_record_metadata_rejects_coercible_types(
+    real_frame, field, invalid_value
+):
+    inside = list(real_frame.canonical_to_world((0.0, 0.0, 0.01)))
+    record = _trace_record(0, [inside])
+    record[field] = invalid_value
+
+    result = _classify_test_trace(real_frame, [record], steps=0)
+
+    assert result["classification"] == "STOP_INCOMPLETE_TRACE"
+    assert result["trace_schema_valid"] is False
+    assert "physical_trace_identity" not in result
+
+
+@pytest.mark.parametrize(
+    ("field", "valid_value"),
+    (
+        ("requested_count", 1),
+        ("steps", 0),
+        ("cadence", 10),
+        ("tail_window_steps", 10),
+        ("particle_seed", 0),
+    ),
+)
+@pytest.mark.parametrize("invalid_kind", ["float", "string", "bool"])
+def test_strict_integer_contract_metadata_rejects_coercible_types(
+    real_frame, field, valid_value, invalid_kind
+):
+    inside = list(real_frame.canonical_to_world((0.0, 0.0, 0.01)))
+    invalid_value = {
+        "float": float(valid_value),
+        "string": str(valid_value),
+        "bool": bool(valid_value),
+    }[invalid_kind]
+
+    result = _classify_test_trace(
+        real_frame,
+        [_trace_record(0, [inside])],
+        **{field: invalid_value},
+    )
+
+    assert result["classification"] == "STOP_INCOMPLETE_TRACE"
+    assert result["trace_schema_valid"] is False
+    assert "physical_trace_identity" not in result
+
+
+@pytest.mark.parametrize(
+    ("field_path", "invalid_value", "remove"),
+    (
+        (("selected_particle_count",), None, True),
+        (("selected_particle_count",), "4096", False),
+        (("steps",), 120.0, False),
+        (("region_config", "trace_interval"), False, False),
+        (("region_config", "tail_window_steps"), "30", False),
+        (("controlled_spawn_plan", "particle_seed"), None, True),
+        (("controlled_spawn_plan", "particle_seed"), 0.0, False),
+        (("source_usd_path",), None, True),
+        (("source_usd_path",), False, False),
+        (("trace_path",), None, True),
+        (("trace_path",), 123, False),
+    ),
+)
+def test_manifest_contract_failures_stop_incomplete_trace(
+    tmp_path, field_path, invalid_value, remove
+):
+    from tools.labutopia_fluid.real_beaker import classify_visible_beaker_trace_from_files
+
+    historical_path = Path(
+        "docs/labutopia_lab_poc/evidence_manifests/"
+        "fluid_spike_full_scene_controlled_spawn_hold_20260710_P4096.json"
+    )
+    manifest = json.loads(historical_path.read_text(encoding="utf-8"))
+    parent = manifest
+    for key in field_path[:-1]:
+        parent = parent[key]
+    if remove:
+        del parent[field_path[-1]]
+    else:
+        parent[field_path[-1]] = invalid_value
+    manifest_path = tmp_path / "invalid_manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = classify_visible_beaker_trace_from_files(manifest_path=manifest_path)
+
+    assert result["classification"] == "STOP_INCOMPLETE_TRACE"
+    assert result["trace_schema_error"]

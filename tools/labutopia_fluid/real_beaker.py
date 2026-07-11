@@ -33,6 +33,12 @@ def _json_sha256(value: Any) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _require_int(name: str, value: Any) -> int:
+    if type(value) is not int:
+        raise ValueError(f"{name}_must_be_non_bool_int")
+    return value
+
+
 def _dot(left: Sequence[float], right: Sequence[float]) -> float:
     return sum(float(left[index]) * float(right[index]) for index in range(3))
 
@@ -325,12 +331,19 @@ def validate_strict_trace_schema(
     """Validate complete readback evidence and return its replay identity."""
     if not records:
         raise ValueError("trace_has_no_records")
+    requested_count = _require_int("requested_count", requested_count)
+    steps = _require_int("steps", steps)
+    cadence = _require_int("cadence", cadence)
+    particle_seed = _require_int("particle_seed", particle_seed)
     if requested_count <= 0 or steps < 0 or cadence <= 0:
         raise ValueError("invalid_trace_contract")
     expected_steps = list(range(0, steps + 1, cadence))
     if expected_steps[-1] != steps:
         expected_steps.append(steps)
-    actual_steps = [int(record["step_index"]) for record in records]
+    actual_steps = [
+        _require_int(f"record_{index}_step_index", record["step_index"])
+        for index, record in enumerate(records)
+    ]
     if actual_steps != expected_steps or len(set(actual_steps)) != len(actual_steps):
         raise ValueError(f"trace_step_indices_mismatch:{actual_steps}!={expected_steps}")
 
@@ -340,7 +353,7 @@ def validate_strict_trace_schema(
         positions = record.get("positions")
         if not isinstance(positions, list):
             raise ValueError(f"trace_positions_missing:{index}")
-        count = int(record.get("particle_count", -1))
+        count = _require_int(f"record_{index}_particle_count", record.get("particle_count"))
         if count != len(positions):
             raise ValueError(f"trace_particle_count_mismatch:{index}")
         if not 0 < count <= requested_count:
@@ -380,10 +393,10 @@ def validate_strict_trace_schema(
         "frame_particle_counts": counts,
         "frame_count": len(records),
         "source_usd_sha256": source_usd_sha256,
-        "particle_count": int(requested_count),
-        "seed": int(particle_seed),
-        "steps": int(steps),
-        "trace_interval": int(cadence),
+        "particle_count": requested_count,
+        "seed": particle_seed,
+        "steps": steps,
+        "trace_interval": cadence,
         "positions_sha256": positions_sha256,
     }
     contract["physical_trace_sha256"] = _json_sha256(contract)
@@ -453,6 +466,7 @@ def classify_visible_beaker_trace(
 ) -> dict[str, Any]:
     """Classify a complete trace without assigning identity to particle order."""
     try:
+        tail_window_steps = _require_int("tail_window_steps", tail_window_steps)
         identity = validate_strict_trace_schema(
             records,
             requested_count=requested_count,
@@ -476,7 +490,7 @@ def classify_visible_beaker_trace(
         classified = classify_visible_beaker_positions(
             record["positions"], frame, legacy_region_config=legacy_region_config
         )
-        classified["step_index"] = int(record["step_index"])
+        classified["step_index"] = record["step_index"]
         frames.append(classified)
         if classified["nonfinite_count"]:
             particle_explosion = True
@@ -493,7 +507,7 @@ def classify_visible_beaker_trace(
                 classified["canonical_axial_max"] > frame.rim_height + cup_height * 10.0
             )
 
-    tail_start = steps - max(int(tail_window_steps), 0)
+    tail_start = steps - max(tail_window_steps, 0)
     tail_frames = [item for item in frames if item["step_index"] >= tail_start]
     tail_violations = sum(item["strict_violating_point_count"] for item in tail_frames)
     tail_population = sum(item["particle_count"] for item in tail_frames)
@@ -546,11 +560,22 @@ def classify_visible_beaker_trace(
 
 
 def classify_visible_beaker_trace_from_files(*, manifest_path: str | Path) -> dict[str, Any]:
-    manifest_file = Path(manifest_path)
     try:
+        manifest_file = Path(manifest_path)
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
         source_path = Path(manifest["source_usd_path"])
         trace_path = Path(manifest["trace_path"])
+        region_config = manifest["region_config"]
+        plan = manifest["controlled_spawn_plan"]
+        requested_count = _require_int(
+            "selected_particle_count", manifest["selected_particle_count"]
+        )
+        steps = _require_int("steps", manifest["steps"])
+        cadence = _require_int("trace_interval", region_config["trace_interval"])
+        tail_window_steps = _require_int(
+            "tail_window_steps", region_config["tail_window_steps"]
+        )
+        particle_seed = _require_int("particle_seed", plan["particle_seed"])
         if not source_path.is_absolute():
             source_path = manifest_file.parent / source_path
         if not trace_path.is_absolute():
@@ -568,38 +593,38 @@ def classify_visible_beaker_trace_from_files(*, manifest_path: str | Path) -> di
             json.loads(line)
             for line in trace_path.read_text(encoding="utf-8").splitlines()
         ]
-    except (KeyError, OSError, json.JSONDecodeError, ValueError) as exc:
-        return {"classification": "STOP_INCOMPLETE_TRACE", "trace_schema_error": str(exc)}
-
-    region_config = manifest.get("region_config", {})
-    diagnostics = manifest.get("isaac_log_summary", {})
-    log_available = diagnostics.get("isaac_log_available") is True
-    log_text = None
-    if log_available:
-        try:
-            log_text = Path(diagnostics["isaac_log_path"]).read_text(
-                encoding="utf-8", errors="replace"
-            )
-        except (KeyError, OSError):
-            log_available = False
-    plan = manifest.get("controlled_spawn_plan", {})
-    result = classify_visible_beaker_trace(
-        records,
-        frame,
-        requested_count=int(manifest["selected_particle_count"]),
-        steps=int(manifest["steps"]),
-        cadence=int(region_config["trace_interval"]),
-        tail_window_steps=int(region_config["tail_window_steps"]),
-        source_usd_sha256=_sha256_file(source_path),
-        particle_seed=int(plan.get("particle_seed", 0)),
-        legacy_region_config=region_config,
-        diagnostic_log_text=log_text,
-        diagnostic_scan_complete=log_available,
-        fatal_error=manifest.get("runtime_exception") or manifest.get("fatal_error"),
-        readback_available=manifest.get("readback_diagnostics", {}).get(
-            "readback_available", False
-        ),
-    )
+        diagnostics = manifest.get("isaac_log_summary", {})
+        log_available = diagnostics.get("isaac_log_available") is True
+        log_text = None
+        if log_available:
+            try:
+                log_text = Path(diagnostics["isaac_log_path"]).read_text(
+                    encoding="utf-8", errors="replace"
+                )
+            except (KeyError, OSError, TypeError):
+                log_available = False
+        result = classify_visible_beaker_trace(
+            records,
+            frame,
+            requested_count=requested_count,
+            steps=steps,
+            cadence=cadence,
+            tail_window_steps=tail_window_steps,
+            source_usd_sha256=_sha256_file(source_path),
+            particle_seed=particle_seed,
+            legacy_region_config=region_config,
+            diagnostic_log_text=log_text,
+            diagnostic_scan_complete=log_available,
+            fatal_error=manifest.get("runtime_exception") or manifest.get("fatal_error"),
+            readback_available=manifest.get("readback_diagnostics", {}).get(
+                "readback_available", False
+            ),
+        )
+    except Exception as exc:
+        return {
+            "classification": "STOP_INCOMPLETE_TRACE",
+            "trace_schema_error": str(exc),
+        }
     result["source_usd_path"] = str(source_path)
     result["trace_path"] = str(trace_path)
     return result
