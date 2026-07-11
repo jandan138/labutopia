@@ -1,5 +1,7 @@
+import hashlib
 import json
 import math
+from pathlib import Path
 import signal
 import subprocess
 import sys
@@ -9,7 +11,9 @@ import pytest
 from pxr import Usd, UsdGeom
 
 from tools.labutopia_fluid import run_colleague_native_usd_completed_pbd_step_video as runner
+from tools.labutopia_fluid import run_real_beaker_omniglass_replay as replay
 from tools.labutopia_fluid import run_real_beaker_static_hold_matrix as matrix
+from tools.labutopia_fluid.real_beaker import CupInteriorFrame, validate_strict_trace_schema
 
 
 def _strict_args(*extra: str):
@@ -902,3 +906,568 @@ def test_matrix_isaac_version_fails_closed_without_real_install(tmp_path, monkey
 
     with pytest.raises(RuntimeError, match="Isaac installation"):
         matrix._isaac_version()
+
+
+def _sha256_path(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _write_accepted_replay_input(tmp_path):
+    source_path = tmp_path / "localized_lab_scene.usda"
+    source_path.write_text("#usda 1.0\n", encoding="utf-8")
+    source_hash = _sha256_path(source_path)
+    records = [
+        {
+            "step_index": 0,
+            "particle_count": 2,
+            "positions": [[0.3, 0.1, 0.84], [0.301, 0.1, 0.841]],
+        },
+        {
+            "step_index": 10,
+            "particle_count": 2,
+            "positions": [[0.3, 0.1, 0.85], [0.302, 0.1, 0.851]],
+        },
+    ]
+    identity = validate_strict_trace_schema(
+        records,
+        requested_count=2,
+        steps=10,
+        cadence=10,
+        source_usd_sha256=source_hash,
+        particle_seed=7,
+    )
+    trace_path = tmp_path / "particle_readback_trace.jsonl"
+    trace_path.write_text(
+        "".join(json.dumps(record, sort_keys=True) + "\n" for record in records),
+        encoding="utf-8",
+    )
+    frame = CupInteriorFrame(
+        origin_world=(0.3, 0.1, 0.82),
+        x_axis_world=(1.0, 0.0, 0.0),
+        y_axis_world=(0.0, 1.0, 0.0),
+        z_axis_world=(0.0, 0.0, 1.0),
+        parent_local_axis="Y",
+        outer_radius=0.0375,
+        interior_radius=0.032,
+        outer_floor=0.0,
+        interior_floor=0.0,
+        rim_height=0.09,
+        calibration_source="authored_particle_bounds",
+        axis_alignment_dot=1.0,
+    )
+    strict = {
+        "classification": "PASS_VISIBLE_BEAKER_STATIC_HOLD",
+        "trace_schema_valid": True,
+        "diagnostic_scan_complete": True,
+        "physical_trace_identity": identity,
+    }
+    log_segment = {
+        "log_path": str(tmp_path / "kit.log"),
+        "byte_offset": 123,
+        "cursor_captured": True,
+        "diagnostic_scan_complete": True,
+        "segment_byte_count": 17,
+        "segment_sha256": "d" * 64,
+    }
+    summary = {
+        "source_usd_path": str(source_path),
+        "source_usd_sha256": source_hash,
+        "trace_path": str(trace_path),
+        "steps": 10,
+        "selected_particle_count": 2,
+        "controlled_spawn_plan": {"particle_seed": 7},
+        "region_config": {
+            "trace_interval": 10,
+            "source_center": [0.3, 0.1, 0.82],
+            "target_center": [0.1, 0.1, 0.82],
+            "table_z": 0.82,
+            "source_radius": 0.032,
+            "target_radius": 0.032,
+            "source_height": 0.09,
+            "target_height": 0.09,
+        },
+        "cup_interior_frame": frame.as_dict(),
+        "strict_visible_classification": strict,
+        "classification": strict,
+        "visible_beaker_containment_verified": True,
+        "physical_trace_identity": identity,
+        "strict_kit_log_segment": log_segment,
+        "isaac_log_summary": {
+            **log_segment,
+            "isaac_log_path": log_segment["log_path"],
+            "isaac_log_available": True,
+            "run_segment_only": True,
+        },
+        "physics_particle_offsets": {"particle_width": 0.00045},
+        "display_particle_width": 0.0043,
+    }
+    summary_path = tmp_path / "accepted_summary.json"
+    summary_path.write_text(json.dumps(summary, sort_keys=True), encoding="utf-8")
+    return summary_path, summary, records
+
+
+def _replay_args(tmp_path, summary_path, *extra):
+    return replay.build_arg_parser().parse_args(
+        [
+            "--accepted-summary",
+            str(summary_path),
+            "--out-root",
+            str(tmp_path / "renders"),
+            *extra,
+        ]
+    )
+
+
+def test_replay_argv_requires_accepted_trace_and_three_candidates(tmp_path):
+    args = _replay_args(tmp_path, tmp_path / "summary.json")
+
+    assert args.accepted_summary.endswith("summary.json")
+    assert args.candidates == "OMNI_REF_FINE,OMNI_REF_RATIO_15,OMNI_REF_RATIO_12"
+
+
+def test_replay_dry_plan_reads_no_summary_and_lists_all_candidate_contracts(
+    tmp_path, monkeypatch, capsys
+):
+    sentinel = tmp_path / "DRY_PLAN_ACCEPTED_SUMMARY_NOT_READ"
+
+    def fail_read(_self, *args, **kwargs):
+        pytest.fail("dry-plan attempted to read a filesystem input")
+
+    monkeypatch.setattr(Path, "read_text", fail_read)
+    monkeypatch.setattr(replay, "_run_runtime", lambda *_args: pytest.fail("runtime booted"))
+
+    exit_code = replay.main(
+        [
+            "--accepted-summary",
+            str(sentinel),
+            "--out-root",
+            str(tmp_path / "renders"),
+            "--dry-plan",
+        ]
+    )
+    plan = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert plan["accepted_summary_read"] is False
+    assert plan["simulation_app_started"] is False
+    assert plan["candidate_ids"] == [
+        "OMNI_REF_FINE",
+        "OMNI_REF_RATIO_15",
+        "OMNI_REF_RATIO_12",
+    ]
+    assert list(plan["candidate_contracts"]) == plan["candidate_ids"]
+    assert plan["candidate_contracts"]["OMNI_REF_FINE"]["width_formula"] == (
+        "clamp(interior_diameter/32,0.0015,0.0020)"
+    )
+
+
+def test_replay_direct_script_dry_plan_bootstraps_repo_imports():
+    script = Path(replay.__file__).resolve()
+    repo_root = script.parents[2]
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--accepted-summary",
+            "DRY_PLAN_ACCEPTED_SUMMARY_NOT_READ",
+            "--dry-plan",
+        ],
+        cwd=repo_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["simulation_app_started"] is False
+
+
+def test_replay_isaac41_dry_plan_needs_no_pxr_or_runtime_boot():
+    isaac_python = Path(
+        "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/"
+        "embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python"
+    )
+    if not isaac_python.is_file():
+        pytest.skip(f"Isaac 4.1 interpreter missing: {isaac_python}")
+    script = Path(replay.__file__).resolve()
+
+    result = subprocess.run(
+        [
+            str(isaac_python),
+            str(script),
+            "--accepted-summary",
+            "DRY_PLAN_ACCEPTED_SUMMARY_NOT_READ",
+            "--dry-plan",
+        ],
+        cwd=script.parents[2],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    assert plan["accepted_summary_read"] is False
+    assert plan["isaac_runtime_imported"] is False
+    assert plan["simulation_app_started"] is False
+    assert plan["out_root"].endswith(
+        "docs/labutopia_lab_poc/evidence_manifests/"
+        "real_beaker_omniglass_reference_20260711_001"
+    )
+
+
+def _fake_native_mdl_contract(root):
+    return types.SimpleNamespace(
+        PRESENTATION_WATER_MDL_ROOT=root,
+        CORE_MDL_DIRECT_ASSETS=("OmniGlass.mdl", "OmniSurfacePresets.mdl"),
+        CORE_MDL_TRANSITIVE_DEPENDENCIES=("OmniGlass_Opacity.mdl",),
+    )
+
+
+def test_replay_rejects_host_isaac_mdl_root_for_target_conda_runtime(tmp_path):
+    runtime_prefix = tmp_path / "isaacsim41-conda"
+    runtime_prefix.mkdir()
+    native = _fake_native_mdl_contract(Path("/isaac-sim/kit/mdl/core"))
+
+    with pytest.raises(ValueError, match="version_matched_conda_mdl_root_required"):
+        replay.build_version_matched_mdl_source_contract(
+            native,
+            runtime_prefix=runtime_prefix,
+            runtime_version="4.1.0.0",
+        )
+
+
+def test_replay_version_matched_mdl_contract_hashes_required_conda_files(tmp_path):
+    runtime_prefix = tmp_path / "isaacsim41-conda"
+    root = runtime_prefix / "lib/python3.10/site-packages/omni/mdl/core"
+    required = {
+        "Base/OmniGlass.mdl": "omniglass-4.1\n",
+        "Base/OmniGlass_Opacity.mdl": "opacity-4.1\n",
+        "Base/OmniSurfacePresets.mdl": "presets-4.1\n",
+        "mdl/OmniSurface/OmniSurfaceBase.mdl": "surface-base-4.1\n",
+    }
+    for relative, content in required.items():
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+    native = _fake_native_mdl_contract(root)
+
+    contract = replay.build_version_matched_mdl_source_contract(
+        native,
+        runtime_prefix=runtime_prefix,
+        runtime_version="4.1.0.0",
+    )
+
+    assert Path(contract["source_root"]).is_relative_to(runtime_prefix)
+    assert contract["runtime_version"] == "4.1.0.0"
+    assert contract["source_root_under_runtime_prefix"] is True
+    assert set(contract["required_file_sha256"]) == set(required)
+    assert all(len(value) == 64 for value in contract["required_file_sha256"].values())
+    assert len(contract["source_tree_sha256"]) == 64
+
+
+def test_replay_missing_summary_fails_before_runtime_boot(tmp_path, monkeypatch):
+    booted = []
+    monkeypatch.setattr(replay, "_run_runtime", lambda *_args: booted.append(True))
+
+    with pytest.raises(FileNotFoundError, match="accepted_summary_missing"):
+        replay.run_replay(_replay_args(tmp_path, tmp_path / "missing.json"))
+
+    assert booted == []
+
+
+def test_replay_nonpass_summary_fails_before_runtime_boot(tmp_path, monkeypatch):
+    summary_path, summary, _records = _write_accepted_replay_input(tmp_path)
+    summary["strict_visible_classification"]["classification"] = (
+        "FAIL_VISIBLE_BEAKER_CONTAINMENT"
+    )
+    summary["classification"] = summary["strict_visible_classification"]
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+    booted = []
+    monkeypatch.setattr(replay, "_run_runtime", lambda *_args: booted.append(True))
+
+    with pytest.raises(ValueError, match="accepted_static_hold_required"):
+        replay.run_replay(_replay_args(tmp_path, summary_path))
+
+    assert booted == []
+
+
+def test_replay_incomplete_run_scoped_diagnostics_fail_before_runtime_boot(
+    tmp_path, monkeypatch
+):
+    summary_path, summary, _records = _write_accepted_replay_input(tmp_path)
+    summary.pop("strict_kit_log_segment")
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+    booted = []
+    monkeypatch.setattr(replay, "_run_runtime", lambda *_args: booted.append(True))
+
+    with pytest.raises(ValueError, match="run_scoped_diagnostics_incomplete"):
+        replay.run_replay(_replay_args(tmp_path, summary_path))
+
+    assert booted == []
+
+
+def test_replay_invalid_strict_trace_schema_fails_before_runtime_boot(tmp_path, monkeypatch):
+    summary_path, summary, records = _write_accepted_replay_input(tmp_path)
+    records[-1]["step_index"] = 9
+    Path(summary["trace_path"]).write_text(
+        "".join(json.dumps(record) + "\n" for record in records), encoding="utf-8"
+    )
+    booted = []
+    monkeypatch.setattr(replay, "_run_runtime", lambda *_args: booted.append(True))
+
+    with pytest.raises(ValueError, match="strict_trace_schema_invalid"):
+        replay.run_replay(_replay_args(tmp_path, summary_path))
+
+    assert booted == []
+
+
+def test_replay_requires_exact_full_recomputed_trace_identity_before_runtime_boot(
+    tmp_path, monkeypatch
+):
+    summary_path, summary, _records = _write_accepted_replay_input(tmp_path)
+    mismatched = {**summary["physical_trace_identity"], "summary_only_field": "forbidden"}
+    summary["physical_trace_identity"] = mismatched
+    summary["strict_visible_classification"]["physical_trace_identity"] = mismatched
+    summary["classification"] = summary["strict_visible_classification"]
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+    booted = []
+    monkeypatch.setattr(replay, "_run_runtime", lambda *_args: booted.append(True))
+
+    with pytest.raises(ValueError, match="physical_trace_identity_mismatch"):
+        replay.run_replay(_replay_args(tmp_path, summary_path))
+
+    assert booted == []
+
+
+def test_replay_candidate_manifests_share_complete_input_identity(tmp_path):
+    summary_path, summary, _records = _write_accepted_replay_input(tmp_path)
+    accepted = replay.load_and_validate_accepted_replay(summary_path)
+
+    manifests = replay.build_candidate_replay_contracts(accepted)
+
+    required_identity_fields = {
+        "source_usd_sha256",
+        "particle_count",
+        "seed",
+        "steps",
+        "trace_interval",
+        "frame_indices",
+        "frame_particle_counts",
+        "frame_count",
+        "positions_sha256",
+        "physical_trace_sha256",
+    }
+    assert list(manifests) == [
+        "OMNI_REF_FINE",
+        "OMNI_REF_RATIO_15",
+        "OMNI_REF_RATIO_12",
+    ]
+    assert all(
+        manifest["physical_trace_identity"] == summary["physical_trace_identity"]
+        for manifest in manifests.values()
+    )
+    assert all(
+        manifest["input_identity"] == summary["physical_trace_identity"]
+        for manifest in manifests.values()
+    )
+    assert all(
+        set(manifest["input_identity"]) == required_identity_fields
+        for manifest in manifests.values()
+    )
+    assert all(
+        manifest["static_presentation_frame_index"] == 10
+        and manifest["hidden_physical_initial_state_frame_index"] == 0
+        for manifest in manifests.values()
+    )
+    assert all(
+        manifest["runtime_contract"]
+        == {
+            "source_usd_path": str(Path(summary["source_usd_path"]).resolve()),
+            "open_exact_accepted_source": True,
+            "physics_steps_executed": 0,
+            "timeline_play_called": False,
+            "cameras": ["context", "source_beaker_closeup"],
+        }
+        for manifest in manifests.values()
+    )
+
+
+def test_candidate_manifest_requires_both_image_sets_and_never_self_claims_visual_pass(
+    tmp_path,
+):
+    summary_path, _summary, _records = _write_accepted_replay_input(tmp_path)
+    accepted = replay.load_and_validate_accepted_replay(summary_path)
+    contract = replay.build_candidate_replay_contracts(accepted)["OMNI_REF_FINE"]
+    candidate_dir = tmp_path / "candidate"
+    candidate_dir.mkdir()
+    static_usd = candidate_dir / "candidate_static.usda"
+    static_usd.write_text("#usda 1.0\n", encoding="utf-8")
+    closeups = [candidate_dir / f"closeup_{index}.png" for index in range(2)]
+    contexts = [candidate_dir / f"context_{index}.png" for index in range(2)]
+    for path in [*closeups, *contexts]:
+        path.write_bytes(b"\x89PNG\r\n\x1a\nrendered")
+
+    finalized = replay.finalize_candidate_manifest(
+        contract,
+        candidate_dir=candidate_dir,
+        static_usd_path=static_usd,
+        closeup_image_paths=closeups,
+        context_image_paths=contexts,
+        video_paths=[],
+    )
+
+    assert finalized["render_artifacts_complete"] is True
+    assert finalized["visual_review_verdict"] == "PENDING_INDEPENDENT_REVIEW"
+    assert finalized["omniglass_reference_particle_look_selected"] is False
+    assert set(finalized["artifact_sha256"]) == {
+        "candidate_static.usda",
+        "closeup_0.png",
+        "closeup_1.png",
+        "context_0.png",
+        "context_1.png",
+    }
+
+    closeups[-1].unlink()
+    with pytest.raises(ValueError, match="candidate_images_incomplete"):
+        replay.finalize_candidate_manifest(
+            contract,
+            candidate_dir=candidate_dir,
+            static_usd_path=static_usd,
+            closeup_image_paths=closeups,
+            context_image_paths=contexts,
+            video_paths=[],
+        )
+
+
+def test_static_candidate_stage_uses_final_proxy_and_hides_physical_initial_state(tmp_path):
+    summary_path, _summary, records = _write_accepted_replay_input(tmp_path)
+    accepted = replay.load_and_validate_accepted_replay(summary_path)
+    contract = replay.build_candidate_replay_contracts(accepted)["OMNI_REF_RATIO_15"]
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    original = UsdGeom.Points.Define(stage, "/World/ParticleSet")
+    original.CreatePointsAttr([(9.0, 9.0, 9.0)])
+
+    authored = replay.author_static_candidate_state(
+        stage,
+        accepted=accepted,
+        candidate_contract=contract,
+        material_path=None,
+    )
+
+    presentation = UsdGeom.Points(
+        stage.GetPrimAtPath("/World/CompletedPBD/PresentationParticleSet")
+    )
+    hidden_initial = UsdGeom.Points(
+        stage.GetPrimAtPath("/World/CompletedPBD/AcceptedPhysicalInitialState")
+    )
+    final_proxy = accepted.proxy_frame("OMNI_REF_RATIO_15", frame_offset=-1)
+    for actual, expected in zip(
+        presentation.GetPointsAttr().Get(), final_proxy["positions_world"]
+    ):
+        assert tuple(actual) == pytest.approx(expected, abs=1e-6)
+    for actual, expected in zip(hidden_initial.GetPointsAttr().Get(), records[0]["positions"]):
+        assert tuple(actual) == pytest.approx(expected, abs=1e-6)
+    assert UsdGeom.Imageable(original).ComputeVisibility() == UsdGeom.Tokens.invisible
+    assert UsdGeom.Imageable(hidden_initial).ComputeVisibility() == UsdGeom.Tokens.invisible
+    assert UsdGeom.Imageable(presentation).ComputeVisibility() != UsdGeom.Tokens.invisible
+    assert authored["static_presentation_frame_index"] == 10
+    assert authored["hidden_physical_initial_state_frame_index"] == 0
+    assert authored["physics_schema_applied_to_presentation"] is False
+
+
+def test_replay_hides_source_fluid_root_and_debug_visuals():
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    fluid_root = UsdGeom.Xform.Define(stage, "/World/fluid")
+    debug_mesh = UsdGeom.Mesh.Define(stage, "/World/CompletedPBD/DebugSurface")
+    physical_points = UsdGeom.Points.Define(stage, "/World/CompletedPBD/ParticleSet")
+
+    hidden = replay.hide_physical_and_debug_points(stage)
+
+    for schema in (fluid_root, debug_mesh, physical_points):
+        assert UsdGeom.Imageable(schema).ComputeVisibility() == UsdGeom.Tokens.invisible
+    assert set(hidden["hidden_paths"]) >= {
+        "/World/fluid",
+        "/World/CompletedPBD/DebugSurface",
+        "/World/CompletedPBD/ParticleSet",
+    }
+
+
+def test_replay_refuses_to_render_while_timeline_is_playing():
+    class Timeline:
+        def __init__(self, playing):
+            self.playing = playing
+            self.play_calls = 0
+
+        def is_playing(self):
+            return self.playing
+
+        def play(self):
+            self.play_calls += 1
+
+    stopped = Timeline(False)
+    replay.require_stopped_timeline(stopped)
+    assert stopped.play_calls == 0
+
+    playing = Timeline(True)
+    with pytest.raises(RuntimeError, match="timeline_must_remain_stopped"):
+        replay.require_stopped_timeline(playing)
+    assert playing.play_calls == 0
+
+
+def test_replay_reloads_exact_disk_layer_before_each_candidate(tmp_path):
+    source_path = (tmp_path / "localized_scene.usda").resolve()
+    source_path.write_text("#usda 1.0\n", encoding="utf-8")
+
+    class RootLayer:
+        realPath = str(source_path)
+
+    class Stage:
+        def __init__(self):
+            self.reload_calls = 0
+
+        def Reload(self):
+            self.reload_calls += 1
+
+        def GetRootLayer(self):
+            return RootLayer()
+
+    stage = Stage()
+
+    class Context:
+        def open_stage(self, path):
+            assert Path(path).resolve() == source_path
+            return True
+
+        def get_stage(self):
+            return stage
+
+    class Timeline:
+        @staticmethod
+        def is_playing():
+            return False
+
+    opened = replay._open_exact_stage(
+        context=Context(),
+        app=types.SimpleNamespace(update=lambda: pytest.fail("unexpected update")),
+        timeline=Timeline(),
+        source_path=source_path,
+        warmup_updates=1,
+    )
+
+    assert opened is stage
+    assert stage.reload_calls == 1
+
+
+def test_replay_atomic_json_write_leaves_no_partial_file(tmp_path):
+    target = tmp_path / "nested" / "manifest.json"
+
+    replay.atomic_write_json(target, {"candidate_id": "OMNI_REF_FINE"})
+
+    assert json.loads(target.read_text(encoding="utf-8")) == {
+        "candidate_id": "OMNI_REF_FINE"
+    }
+    assert list(target.parent.glob(f".{target.name}.*.tmp")) == []
