@@ -863,3 +863,313 @@ def derive_cup_interior_frame(
             "calibration": calibration_measurements,
         },
     )
+
+
+def _set_wrapper_metadata(prim: Any, name: str, type_name: Any, value: Any) -> None:
+    attr = prim.GetAttribute(name)
+    if not attr:
+        attr = prim.CreateAttribute(name, type_name)
+    attr.Set(value)
+
+
+def _set_wrapper_collision_offsets(prim: Any, *, contact_offset: float, rest_offset: float) -> None:
+    """Apply GPU collision offsets, including the schema-free USD fallback."""
+    from pxr import Sdf, UsdPhysics
+
+    collision = UsdPhysics.CollisionAPI.Apply(prim)
+    collision.CreateCollisionEnabledAttr().Set(True)
+    try:
+        from pxr import PhysxSchema
+    except ImportError:
+        PhysxSchema = None
+
+    if PhysxSchema is not None:
+        physx_collision = PhysxSchema.PhysxCollisionAPI.Apply(prim)
+        physx_collision.CreateContactOffsetAttr().Set(float(contact_offset))
+        physx_collision.CreateRestOffsetAttr().Set(float(rest_offset))
+        return
+
+    _set_wrapper_metadata(
+        prim,
+        "physxCollision:contactOffset",
+        Sdf.ValueTypeNames.Float,
+        float(contact_offset),
+    )
+    _set_wrapper_metadata(
+        prim,
+        "physxCollision:restOffset",
+        Sdf.ValueTypeNames.Float,
+        float(rest_offset),
+    )
+
+
+def _set_wrapper_proxy_imageable(prim: Any) -> None:
+    imageable = UsdGeom.Imageable(prim)
+    imageable.CreatePurposeAttr().Set(UsdGeom.Tokens.proxy)
+    imageable.MakeInvisible()
+
+
+def _canonical_to_parent_transform(
+    stage: Usd.Stage,
+    *,
+    frame: CupInteriorFrame,
+    parent_path: str,
+) -> tuple[Gf.Matrix4d, dict[str, tuple[float, float, float]]]:
+    parent_prim = stage.GetPrimAtPath(parent_path)
+    if not parent_prim.IsValid():
+        raise ValueError(f"invalid_parent_path:{parent_path}")
+
+    parent_world = UsdGeom.XformCache(Usd.TimeCode.Default()).GetLocalToWorldTransform(parent_prim)
+    parent_inverse = parent_world.GetInverse()
+    origin_parent = _as_tuple(parent_inverse.Transform(Gf.Vec3d(*frame.origin_world)))
+    x_axis_parent = _as_tuple(parent_inverse.TransformDir(Gf.Vec3d(*frame.x_axis_world)))
+    y_axis_parent = _as_tuple(parent_inverse.TransformDir(Gf.Vec3d(*frame.y_axis_world)))
+    z_axis_parent = _as_tuple(parent_inverse.TransformDir(Gf.Vec3d(*frame.z_axis_world)))
+
+    canonical_to_parent = Gf.Matrix4d(1.0)
+    # Gf uses row vectors: rows are local axes, with the origin in the final row.
+    canonical_to_parent.SetRow(0, Gf.Vec4d(*x_axis_parent, 0.0))
+    canonical_to_parent.SetRow(1, Gf.Vec4d(*y_axis_parent, 0.0))
+    canonical_to_parent.SetRow(2, Gf.Vec4d(*z_axis_parent, 0.0))
+    canonical_to_parent.SetRow(3, Gf.Vec4d(*origin_parent, 1.0))
+    return canonical_to_parent, {
+        "origin_parent": origin_parent,
+        "x_axis_parent": x_axis_parent,
+        "y_axis_parent": y_axis_parent,
+        "z_axis_parent": z_axis_parent,
+    }
+
+
+def _authored_bottom_measurements(
+    stage: Usd.Stage,
+    *,
+    bottom_path: str,
+    expected_axis_world: Sequence[float],
+    expected_support_world: Sequence[float],
+) -> dict[str, Any]:
+    bottom = stage.GetPrimAtPath(bottom_path)
+    if not bottom.IsValid():
+        raise ValueError(f"invalid_bottom_path:{bottom_path}")
+    bottom_world = UsdGeom.XformCache(Usd.TimeCode.Default()).GetLocalToWorldTransform(bottom)
+    center = bottom_world.Transform(Gf.Vec3d(0.0, 0.0, 0.0))
+    top_center = bottom_world.Transform(Gf.Vec3d(0.0, 0.0, 0.5))
+    normal = _normalize(
+        tuple(float(top_center[index] - center[index]) for index in range(3))
+    )
+    expected_axis = _normalize(expected_axis_world)
+    alignment_dot = _dot(normal, expected_axis)
+    support_error = abs(
+        _dot(
+            tuple(float(top_center[index] - expected_support_world[index]) for index in range(3)),
+            normal,
+        )
+    )
+    corners = [
+        bottom_world.Transform(Gf.Vec3d(x, y, z))
+        for x in (-0.5, 0.5)
+        for y in (-0.5, 0.5)
+        for z in (-0.5, 0.5)
+    ]
+    extents = tuple(
+        max(float(corner[index]) for corner in corners)
+        - min(float(corner[index]) for corner in corners)
+        for index in range(3)
+    )
+    return {
+        "bottom_world_normal": normal,
+        "bottom_world_support_point": _as_tuple(top_center),
+        "bottom_axis_alignment_dot": alignment_dot,
+        "support_plane_error_m": support_error,
+        "bottom_world_extent_x": extents[0],
+        "bottom_world_extent_y": extents[1],
+        "bottom_world_extent_z": extents[2],
+    }
+
+
+def author_canonical_fluid_wrapper(
+    stage: Usd.Stage,
+    *,
+    frame: CupInteriorFrame,
+    parent_path: str,
+    visual_mesh_path: str,
+    panel_count: int = 72,
+    panel_ring_count: int = 2,
+    wall_thickness: float = 0.026,
+    bottom_thickness: float = 0.012,
+    bottom_overlap: float = 0.018,
+) -> dict[str, Any]:
+    """Author a frame-aligned, invisible GPU collider wrapper below the real cup."""
+    from pxr import Sdf, UsdPhysics
+    from tools.labutopia_fluid.run_beaker_collider_smoke import (
+        _add_box_collider_prim,
+        fluid_safe_wrapper_bottom_xy_extent,
+        fluid_safe_wrapper_panel_width,
+    )
+
+    panels = _require_int("panel_count", panel_count)
+    rings = _require_int("panel_ring_count", panel_ring_count)
+    if panels <= 0 or rings <= 0:
+        raise ValueError("wrapper_panel_counts_must_be_positive")
+    thickness = float(wall_thickness)
+    bottom_depth = float(bottom_thickness) + float(bottom_overlap)
+    overlap = float(bottom_overlap)
+    if thickness <= 0.0 or bottom_depth <= 0.0 or overlap < 0.0:
+        raise ValueError("wrapper_dimensions_must_be_positive")
+
+    parent_prim = stage.GetPrimAtPath(parent_path)
+    mesh_prim = stage.GetPrimAtPath(visual_mesh_path)
+    if not parent_prim.IsValid():
+        raise ValueError(f"invalid_parent_path:{parent_path}")
+    if not mesh_prim.IsValid():
+        raise ValueError(f"invalid_visual_mesh_path:{visual_mesh_path}")
+
+    collision_api = UsdPhysics.CollisionAPI.Apply(mesh_prim)
+    collision_api.CreateCollisionEnabledAttr().Set(False)
+    _set_wrapper_metadata(
+        mesh_prim, "labutopia:nativeMeshCollisionEnabled", Sdf.ValueTypeNames.Bool, False
+    )
+
+    wrapper_path = f"{parent_path.rstrip('/')}/FluidSafeWrapperCanonical"
+    canonical_to_parent, parent_frame = _canonical_to_parent_transform(
+        stage, frame=frame, parent_path=parent_path
+    )
+    wrapper = UsdGeom.Xform.Define(stage, wrapper_path)
+    wrapper_xformable = UsdGeom.Xformable(wrapper.GetPrim())
+    wrapper_xformable.MakeMatrixXform().Set(canonical_to_parent)
+    wrapper_prim = wrapper.GetPrim()
+    _set_wrapper_proxy_imageable(wrapper_prim)
+    _set_wrapper_metadata(wrapper_prim, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+    _set_wrapper_metadata(
+        wrapper_prim, "labutopia:wrapperFrame", Sdf.ValueTypeNames.String, "canonical_to_parent"
+    )
+    _set_wrapper_metadata(
+        wrapper_prim, "labutopia:wrapperParentPath", Sdf.ValueTypeNames.String, parent_path
+    )
+    _set_wrapper_metadata(
+        wrapper_prim, "labutopia:wrapperColliderMode", Sdf.ValueTypeNames.String, "box_panels"
+    )
+    for name, value in parent_frame.items():
+        _set_wrapper_metadata(
+            wrapper_prim, f"labutopia:canonical{''.join(part.title() for part in name.split('_'))}",
+            Sdf.ValueTypeNames.Double3, Gf.Vec3d(*value)
+        )
+
+    contact_offset = 0.004
+    rest_offset = 0.0
+    bottom_half = fluid_safe_wrapper_bottom_xy_extent(
+        radius=frame.interior_radius,
+        wall_thickness=thickness,
+        bottom_overlap=overlap,
+    )
+    bottom_top = frame.interior_floor
+    bottom = _add_box_collider_prim(
+        stage,
+        f"{wrapper_path}/Bottom",
+        size=(bottom_half * 2.0, bottom_half * 2.0, bottom_depth),
+        position=(0.0, 0.0, bottom_top - bottom_depth / 2.0),
+        contact_offset=contact_offset,
+        rest_offset=rest_offset,
+    )
+    _set_wrapper_collision_offsets(
+        bottom, contact_offset=contact_offset, rest_offset=rest_offset
+    )
+    _set_wrapper_proxy_imageable(bottom)
+    _set_wrapper_metadata(bottom, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True)
+    _set_wrapper_metadata(bottom, "labutopia:wrapperColliderKind", Sdf.ValueTypeNames.String, "bottom")
+    collider_paths = [str(bottom.GetPath())]
+
+    wall_floor = frame.interior_floor - overlap
+    wall_height = frame.rim_height - wall_floor
+    panel_width = fluid_safe_wrapper_panel_width(
+        radius=frame.interior_radius,
+        wall_thickness=thickness,
+        panel_count=panels,
+        panel_arc_overlap_factor=1.08,
+    )
+    half_pitch = math.pi / panels
+    panel_center_radius = frame.interior_radius + thickness / 2.0
+    for ring in range(rings):
+        ring_phase = half_pitch if ring else 0.0
+        for index in range(panels):
+            theta = 2.0 * math.pi * index / panels + ring_phase
+            panel = _add_box_collider_prim(
+                stage,
+                f"{wrapper_path}/Wall_r{ring}_{index:02d}",
+                size=(panel_width, thickness, wall_height),
+                position=(
+                    panel_center_radius * math.cos(theta),
+                    panel_center_radius * math.sin(theta),
+                    wall_floor + wall_height / 2.0,
+                ),
+                angle_z=theta + math.pi / 2.0,
+                contact_offset=contact_offset,
+                rest_offset=rest_offset,
+            )
+            _set_wrapper_collision_offsets(
+                panel, contact_offset=contact_offset, rest_offset=rest_offset
+            )
+            _set_wrapper_proxy_imageable(panel)
+            _set_wrapper_metadata(
+                panel, "labutopia:fluidSafeWrapper", Sdf.ValueTypeNames.Bool, True
+            )
+            _set_wrapper_metadata(
+                panel, "labutopia:wrapperColliderKind", Sdf.ValueTypeNames.String, "wall"
+            )
+            collider_paths.append(str(panel.GetPath()))
+
+    measurements = _authored_bottom_measurements(
+        stage,
+        bottom_path=collider_paths[0],
+        expected_axis_world=frame.z_axis_world,
+        expected_support_world=frame.canonical_to_world((0.0, 0.0, frame.interior_floor)),
+    )
+    if measurements["bottom_axis_alignment_dot"] < 0.999:
+        raise ValueError("authored_wrapper_bottom_axis_misaligned")
+    if measurements["support_plane_error_m"] > 0.001:
+        raise ValueError("authored_wrapper_support_plane_misaligned")
+
+    _set_wrapper_metadata(wrapper_prim, "labutopia:colliderCount", Sdf.ValueTypeNames.Int, len(collider_paths))
+    _set_wrapper_metadata(wrapper_prim, "labutopia:panelCount", Sdf.ValueTypeNames.Int, panels)
+    _set_wrapper_metadata(wrapper_prim, "labutopia:panelRingCount", Sdf.ValueTypeNames.Int, rings)
+    _set_wrapper_metadata(wrapper_prim, "labutopia:panelWidth", Sdf.ValueTypeNames.Float, panel_width)
+    _set_wrapper_metadata(
+        wrapper_prim, "labutopia:panelInnerRadius", Sdf.ValueTypeNames.Float, frame.interior_radius
+    )
+    _set_wrapper_metadata(
+        wrapper_prim, "labutopia:bottomTopCanonicalZ", Sdf.ValueTypeNames.Float, bottom_top
+    )
+    _set_wrapper_metadata(
+        wrapper_prim, "labutopia:wallFloorCanonicalZ", Sdf.ValueTypeNames.Float, wall_floor
+    )
+    _set_wrapper_metadata(
+        wrapper_prim, "labutopia:wallRimCanonicalZ", Sdf.ValueTypeNames.Float, frame.rim_height
+    )
+    _set_wrapper_metadata(
+        wrapper_prim, "labutopia:contactOffset", Sdf.ValueTypeNames.Float, contact_offset
+    )
+    _set_wrapper_metadata(
+        wrapper_prim, "labutopia:restOffset", Sdf.ValueTypeNames.Float, rest_offset
+    )
+
+    return {
+        "wrapper_path": wrapper_path,
+        "wrapper_parent_path": parent_path,
+        "visual_mesh_path": visual_mesh_path,
+        "collider_paths": collider_paths,
+        "collider_count": len(collider_paths),
+        "panel_count": panels,
+        "panel_ring_count": rings,
+        "panel_width": panel_width,
+        "panel_inner_radius": frame.interior_radius,
+        "wall_thickness": thickness,
+        "wall_floor_canonical_z": wall_floor,
+        "wall_rim_canonical_z": frame.rim_height,
+        "bottom_top_canonical_z": bottom_top,
+        "bottom_thickness": float(bottom_thickness),
+        "bottom_overlap": overlap,
+        "native_mesh_collision_enabled": False,
+        "contact_offset": contact_offset,
+        "rest_offset": rest_offset,
+        "canonical_to_parent": parent_frame,
+        **measurements,
+    }

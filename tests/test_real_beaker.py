@@ -631,3 +631,61 @@ def test_strict_trace_rejects_coercible_optional_declared_counts(
 
     assert result["classification"] == "STOP_INCOMPLETE_TRACE"
     assert result["trace_schema_valid"] is False
+
+
+def test_real_wrapper_bottom_is_horizontal_and_tracks_cup_axis():
+    from pxr import Usd, UsdGeom
+    from tools.labutopia_fluid.real_beaker import (
+        author_canonical_fluid_wrapper,
+        derive_cup_interior_frame,
+    )
+
+    scene_path = Path(
+        "outputs/usd_asset_packages/lab_001_localized_20260707/"
+        "lab_001_level1_pour_tabletop_with_liquid.usd"
+    )
+    # Mutate a new stage so the module-scoped real_stage fixture remains pristine.
+    stage = Usd.Stage.Open(str(scene_path))
+    frame = derive_cup_interior_frame(
+        stage,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        calibration_points_path="/World/ParticleSet",
+    )
+
+    summary = author_canonical_fluid_wrapper(
+        stage,
+        frame=frame,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        panel_count=72,
+        panel_ring_count=2,
+        wall_thickness=0.026,
+        bottom_thickness=0.012,
+        bottom_overlap=0.018,
+    )
+
+    wrapper = stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapperCanonical")
+    bottom = stage.GetPrimAtPath("/World/beaker2/FluidSafeWrapperCanonical/Bottom")
+    mesh = stage.GetPrimAtPath("/World/beaker2/mesh")
+    assert summary["collider_count"] == 145
+    assert len(summary["collider_paths"]) == 145
+    assert summary["panel_count"] == 72
+    assert summary["panel_ring_count"] == 2
+    assert summary["panel_inner_radius"] == pytest.approx(frame.interior_radius)
+    assert summary["bottom_top_canonical_z"] == pytest.approx(frame.interior_floor)
+    assert summary["bottom_axis_alignment_dot"] >= 0.999
+    assert abs(summary["support_plane_error_m"]) <= 0.001
+    assert summary["bottom_world_extent_z"] < summary["bottom_world_extent_x"] * 0.25
+    assert summary["bottom_world_extent_z"] < summary["bottom_world_extent_y"] * 0.25
+    assert UsdGeom.Imageable(wrapper).ComputeVisibility() == UsdGeom.Tokens.invisible
+    assert UsdGeom.Imageable(bottom).ComputeVisibility() == UsdGeom.Tokens.invisible
+    assert UsdGeom.Imageable(bottom).GetPurposeAttr().Get() == UsdGeom.Tokens.proxy
+    assert mesh.GetAttribute("physics:collisionEnabled").Get() is False
+    assert mesh.GetAttribute("labutopia:nativeMeshCollisionEnabled").Get() is False
+    for path in summary["collider_paths"]:
+        collider = stage.GetPrimAtPath(path)
+        assert collider.GetAttribute("physics:collisionEnabled").Get() is True
+        assert collider.GetAttribute("physxCollision:contactOffset").Get() == pytest.approx(0.004)
+        assert collider.GetAttribute("physxCollision:restOffset").Get() == pytest.approx(0.0)
+        assert UsdGeom.Imageable(collider).GetPurposeAttr().Get() == UsdGeom.Tokens.proxy
