@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence as SequenceABC
 from dataclasses import dataclass, field
 import hashlib
 import json
 import math
+from numbers import Real
 from pathlib import Path
 import statistics
 from types import MappingProxyType
@@ -346,10 +347,18 @@ def validate_strict_trace_schema(
             raise ValueError(f"trace_particle_count_out_of_range:{index}")
         if index == 0 and count != requested_count:
             raise ValueError("trace_initial_count_mismatch")
+        for point_index, point in enumerate(positions):
+            if (
+                not isinstance(point, SequenceABC)
+                or isinstance(point, (str, bytes))
+                or len(point) != 3
+                or any(not isinstance(value, Real) or isinstance(value, bool) for value in point)
+            ):
+                raise ValueError(f"trace_point_schema_invalid:{index}:{point_index}")
         finite = sum(
             1
             for point in positions
-            if len(point) >= 3 and all(math.isfinite(float(value)) for value in point[:3])
+            if all(math.isfinite(float(value)) for value in point)
         )
         nonfinite = count - finite
         declared_finite = record.get(
@@ -395,6 +404,8 @@ def strict_static_hold_pass(result: Mapping[str, Any]) -> bool:
         and int(result["nonfinite_count"]) == 0
         and float(result["tail_leak_rate"]) == 0.0
         and not bool(result["particle_explosion_detected"])
+        and bool(result["readback_available"])
+        and bool(result["trace_schema_valid"])
         and bool(result["diagnostic_scan_complete"])
         and not bool(result["cpu_collision_fallback_detected"])
         and not bool(result["gpu_collider_unsupported"])
@@ -513,15 +524,7 @@ def classify_visible_beaker_trace(
         "frames": frames,
     }
     passed = strict_static_hold_pass(result)
-    geometric_failure = any(
-        result[key] != 0
-        for key in ("max_below_floor", "max_outside_radius", "max_above_rim", "nonfinite_count")
-    ) or result["final_inside"] != result["final_count"]
-    if passed:
-        classification = "PASS_VISIBLE_BEAKER_STATIC_HOLD"
-    elif geometric_failure:
-        classification = "FAIL_VISIBLE_BEAKER_CONTAINMENT"
-    elif fatal_error is not None:
+    if fatal_error is not None:
         classification = "FAIL_RUNTIME_FATAL_ERROR"
     elif not readback_available:
         classification = "FAIL_READBACK_UNAVAILABLE"
@@ -533,6 +536,8 @@ def classify_visible_beaker_trace(
         classification = "FAIL_GPU_COLLIDER_UNSUPPORTED"
     elif particle_explosion:
         classification = "FAIL_PARTICLE_EXPLOSION"
+    elif passed:
+        classification = "PASS_VISIBLE_BEAKER_STATIC_HOLD"
     else:
         classification = "FAIL_VISIBLE_BEAKER_CONTAINMENT"
     result["passed"] = passed

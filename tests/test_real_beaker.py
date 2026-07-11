@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 import pytest
@@ -25,6 +26,32 @@ def real_frame(real_stage):
         visual_mesh_path="/World/beaker2/mesh",
         calibration_points_path="/World/ParticleSet",
     )
+
+
+def _trace_record(step_index, positions):
+    return {
+        "step_index": step_index,
+        "particle_count": len(positions),
+        "positions": positions,
+    }
+
+
+def _classify_test_trace(real_frame, records, **overrides):
+    from tools.labutopia_fluid.real_beaker import classify_visible_beaker_trace
+
+    options = {
+        "requested_count": len(records[0]["positions"]),
+        "steps": records[-1]["step_index"],
+        "cadence": 10,
+        "tail_window_steps": 10,
+        "source_usd_sha256": "a" * 64,
+        "particle_seed": 0,
+        "diagnostic_log_text": "run diagnostics clean",
+        "diagnostic_scan_complete": True,
+        "readback_available": True,
+    }
+    options.update(overrides)
+    return classify_visible_beaker_trace(records, real_frame, **options)
 
 
 def test_derive_cup_frame_maps_canonical_z_to_rotated_parent_local_y():
@@ -315,3 +342,150 @@ def test_canonical_spawn_is_inside_real_visible_interior(
     assert counts["above_visible_rim_count"] == 0
     assert spawn.canonical_bounds["max"][2] < real_frame.rim_height
     assert set(spawn.velocities_world) == {(0.0, 0.0, 0.0)}
+
+
+@pytest.mark.parametrize(
+    "malformed_point",
+    ([0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, "not-numeric", 0.0]),
+)
+def test_strict_trace_rejects_malformed_point_schema(real_frame, malformed_point):
+    result = _classify_test_trace(real_frame, [_trace_record(0, [malformed_point])])
+
+    assert result["classification"] == "STOP_INCOMPLETE_TRACE"
+    assert result["trace_schema_valid"] is False
+
+
+@pytest.mark.parametrize(
+    "step_indices",
+    ([0, 20], [0, 10, 10, 20]),
+)
+def test_strict_trace_rejects_missing_or_duplicate_cadence(real_frame, step_indices):
+    inside = list(real_frame.canonical_to_world((0.0, 0.0, 0.01)))
+    records = [_trace_record(step, [inside]) for step in step_indices]
+    result = _classify_test_trace(real_frame, records, steps=20)
+
+    assert result["classification"] == "STOP_INCOMPLETE_TRACE"
+    assert result["trace_schema_valid"] is False
+
+
+@pytest.mark.parametrize("nonfinite", [math.nan, math.inf, -math.inf])
+def test_strict_trace_classifies_nonfinite_as_particle_explosion(real_frame, nonfinite):
+    result = _classify_test_trace(
+        real_frame,
+        [_trace_record(0, [[nonfinite, 0.0, 0.0]])],
+    )
+
+    assert result["classification"] == "FAIL_PARTICLE_EXPLOSION"
+    assert result["nonfinite_count"] == 1
+
+
+def test_trace_identity_has_required_fields_and_stable_ordered_hash(real_frame):
+    from tools.labutopia_fluid.real_beaker import validate_strict_trace_schema
+
+    left = list(real_frame.canonical_to_world((-0.001, 0.0, 0.01)))
+    right = list(real_frame.canonical_to_world((0.001, 0.0, 0.01)))
+    records = [_trace_record(0, [left, right])]
+    options = {
+        "requested_count": 2,
+        "steps": 0,
+        "cadence": 10,
+        "source_usd_sha256": "b" * 64,
+        "particle_seed": 7,
+    }
+    first = validate_strict_trace_schema(records, **options)
+    repeated = validate_strict_trace_schema(records, **options)
+    reordered = validate_strict_trace_schema(
+        [_trace_record(0, [right, left])], **options
+    )
+
+    assert set(first) == {
+        "physical_trace_sha256",
+        "source_usd_sha256",
+        "particle_count",
+        "seed",
+        "steps",
+        "trace_interval",
+        "frame_indices",
+        "frame_particle_counts",
+        "frame_count",
+        "positions_sha256",
+    }
+    assert first == repeated
+    assert first["positions_sha256"] != reordered["positions_sha256"]
+    assert first["physical_trace_sha256"] != reordered["physical_trace_sha256"]
+
+
+def test_strict_trace_prioritizes_unavailable_readback_over_leak(real_frame):
+    below = list(real_frame.canonical_to_world((0.0, 0.0, -0.001)))
+    result = _classify_test_trace(
+        real_frame,
+        [_trace_record(0, [below])],
+        readback_available=False,
+    )
+
+    assert result["classification"] == "FAIL_READBACK_UNAVAILABLE"
+
+
+def test_strict_trace_prioritizes_incomplete_diagnostics_over_leak(real_frame):
+    below = list(real_frame.canonical_to_world((0.0, 0.0, -0.001)))
+    result = _classify_test_trace(
+        real_frame,
+        [_trace_record(0, [below])],
+        diagnostic_scan_complete=False,
+    )
+
+    assert result["classification"] == "STOP_INCOMPLETE_DIAGNOSTICS"
+
+
+def test_strict_trace_prioritizes_fatal_error_over_leak(real_frame):
+    below = list(real_frame.canonical_to_world((0.0, 0.0, -0.001)))
+    result = _classify_test_trace(
+        real_frame,
+        [_trace_record(0, [below])],
+        fatal_error="simulation_failed",
+    )
+
+    assert result["classification"] == "FAIL_RUNTIME_FATAL_ERROR"
+
+
+@pytest.mark.parametrize(
+    ("log_text", "classification"),
+    (
+        ("CPU collision fallback", "FAIL_CPU_COLLISION_FALLBACK"),
+        ("unsupported GPU collider", "FAIL_GPU_COLLIDER_UNSUPPORTED"),
+    ),
+)
+def test_strict_trace_prioritizes_diagnostic_failures_over_leak(
+    real_frame, log_text, classification
+):
+    below = list(real_frame.canonical_to_world((0.0, 0.0, -0.001)))
+    result = _classify_test_trace(
+        real_frame,
+        [_trace_record(0, [below])],
+        diagnostic_log_text=log_text,
+    )
+
+    assert result["classification"] == classification
+
+
+@pytest.mark.parametrize("missing_gate", ["readback_available", "trace_schema_valid"])
+def test_strict_static_hold_pass_requires_complete_evidence(real_frame, missing_gate):
+    from tools.labutopia_fluid.real_beaker import strict_static_hold_pass
+
+    inside = list(real_frame.canonical_to_world((0.0, 0.0, 0.01)))
+    result = _classify_test_trace(real_frame, [_trace_record(0, [inside])])
+    assert result["classification"] == "PASS_VISIBLE_BEAKER_STATIC_HOLD"
+
+    result[missing_gate] = False
+    assert strict_static_hold_pass(result) is False
+
+
+def test_strict_trace_passes_only_when_every_gate_is_satisfied(real_frame):
+    inside = list(real_frame.canonical_to_world((0.0, 0.0, 0.01)))
+    records = [_trace_record(step, [inside]) for step in (0, 10, 20)]
+    result = _classify_test_trace(real_frame, records)
+
+    assert result["classification"] == "PASS_VISIBLE_BEAKER_STATIC_HOLD"
+    assert result["passed"] is True
+    assert result["trace_schema_valid"] is True
+    assert result["readback_available"] is True
