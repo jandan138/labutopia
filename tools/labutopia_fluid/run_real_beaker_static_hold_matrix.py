@@ -97,6 +97,109 @@ def _sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def resolve_isaac_usd_runtime() -> dict[str, Any]:
+    """Resolve the USD Python runtime that belongs to the active Isaac install."""
+    try:
+        pxr_spec = importlib.util.find_spec("pxr")
+    except (ImportError, AttributeError, ValueError):
+        pxr_spec = None
+    if pxr_spec is not None and pxr_spec.origin:
+        origin = Path(pxr_spec.origin).expanduser().resolve()
+        if origin.is_file():
+            return {
+                "bootstrap_mode": "already_importable",
+                "pxr_origin": str(origin),
+                "pxr_origin_sha256": _sha256_file(origin),
+                "python_path_entry": None,
+                "library_path_entry": None,
+            }
+
+    try:
+        isaacsim_spec = importlib.util.find_spec("isaacsim")
+    except (ImportError, AttributeError, ValueError):
+        isaacsim_spec = None
+    package_roots: list[Path] = []
+    if isaacsim_spec is not None:
+        if isaacsim_spec.submodule_search_locations:
+            package_roots.extend(Path(path) for path in isaacsim_spec.submodule_search_locations)
+        elif isaacsim_spec.origin:
+            package_roots.append(Path(isaacsim_spec.origin).parent)
+
+    for package_root in package_roots:
+        usd_root = (
+            package_root.expanduser().resolve()
+            / "extscache"
+            / "omni.usd.libs"
+        )
+        usd_python = usd_root / "pxr" / "Usd" / "__init__.py"
+        library_root = usd_root / "bin"
+        libtf = library_root / "libtf.so"
+        libusd = library_root / "libusd.so"
+        if all(path.is_file() for path in (usd_python, libtf, libusd)):
+            return {
+                "bootstrap_mode": "isaacsim_extcache",
+                "pxr_origin": str(usd_python),
+                "usd_python_sha256": _sha256_file(usd_python),
+                "libtf_sha256": _sha256_file(libtf),
+                "libusd_sha256": _sha256_file(libusd),
+                "python_path_entry": str(usd_root),
+                "library_path_entry": str(library_root),
+            }
+
+    raise RuntimeError(
+        "matching Isaac USD runtime is unavailable; pxr is not importable and "
+        "the active isaacsim package has no complete omni.usd.libs extcache"
+    )
+
+
+def _prepend_env_path(value: str, existing: str | None) -> str:
+    entries = [value]
+    if existing:
+        entries.extend(entry for entry in existing.split(os.pathsep) if entry and entry != value)
+    return os.pathsep.join(entries)
+
+
+def build_isaac_child_env(
+    base_env: Mapping[str, str],
+    runtime_contract: Mapping[str, Any],
+) -> dict[str, str]:
+    env = dict(base_env)
+    if runtime_contract.get("bootstrap_mode") == "isaacsim_extcache":
+        python_path = runtime_contract.get("python_path_entry")
+        library_path = runtime_contract.get("library_path_entry")
+        if not isinstance(python_path, str) or not isinstance(library_path, str):
+            raise RuntimeError("Isaac USD extcache contract is incomplete")
+        env["PYTHONPATH"] = _prepend_env_path(python_path, env.get("PYTHONPATH"))
+        env["LD_LIBRARY_PATH"] = _prepend_env_path(
+            library_path, env.get("LD_LIBRARY_PATH")
+        )
+    return env
+
+
+def preflight_isaac_usd_runtime(env: Mapping[str, str]) -> str:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from pxr import Usd; print('.'.join(str(v) for v in Usd.GetVersion()))",
+        ],
+        cwd=REPO_ROOT,
+        env=dict(env),
+        timeout=30.0,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    stdout = result.stdout.decode("utf-8", errors="replace").strip()
+    if result.returncode != 0:
+        stderr = result.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(
+            f"Isaac USD preflight failed with return code {result.returncode}: {stderr}"
+        )
+    if not stdout:
+        raise RuntimeError("Isaac USD preflight failed: no USD version was reported")
+    return stdout
+
+
 def _atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     data = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
@@ -346,6 +449,7 @@ def build_run_identity(args: argparse.Namespace) -> dict[str, Any]:
         "python_executable": sys.executable,
         "python_version": sys.version,
         "isaac_version": _isaac_version(),
+        "isaac_usd_runtime": resolve_isaac_usd_runtime(),
         "shared_cli_config": shared_cli_config,
     }
 
@@ -675,9 +779,10 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
     out_root.mkdir(parents=True, exist_ok=True)
     existing_cells = manifest["cells"]
     wants_4096 = any(int(cell["particle_count"]) == 4096 for cell in requested_cells)
-    env = os.environ.copy()
+    env = build_isaac_child_env(os.environ, run_identity["isaac_usd_runtime"])
     env.setdefault("ACCEPT_EULA", "Y")
     env.setdefault("OMNI_KIT_ACCEPT_EULA", "YES")
+    preflight_isaac_usd_runtime(env)
 
     for cell in requested_cells:
         if int(cell["particle_count"]) == 4096 and not all_required_1024_accepted(existing_cells):
