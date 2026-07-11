@@ -245,7 +245,9 @@ def _classification_name(value: Any) -> str | None:
     return str(value) if value is not None else None
 
 
-def _validate_run_scoped_diagnostics(summary: Mapping[str, Any]) -> None:
+def _validate_run_scoped_diagnostics(
+    summary: Mapping[str, Any], *, summary_path: Path
+) -> None:
     segment = summary.get("strict_kit_log_segment")
     isaac_summary = summary.get("isaac_log_summary")
     if not isinstance(segment, Mapping) or not isinstance(isaac_summary, Mapping):
@@ -286,6 +288,27 @@ def _validate_run_scoped_diagnostics(summary: Mapping[str, Any]) -> None:
                 raise ValueError(f"diagnostic_provenance_mismatch:{field}")
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError(f"run_scoped_diagnostics_incomplete:{exc}") from exc
+
+    log_path = _resolve_input_path(
+        summary_path, segment["log_path"], label="declared_kit_log"
+    )
+    try:
+        with log_path.open("rb") as stream:
+            stream.seek(byte_offset)
+            payload = stream.read(byte_count)
+    except OSError as exc:
+        raise ValueError(
+            f"diagnostic_segment_unreadable:{type(exc).__name__}:{exc}"
+        ) from exc
+    if len(payload) != byte_count:
+        raise ValueError(
+            f"diagnostic_segment_truncated:{len(payload)}!={byte_count}"
+        )
+    actual_hash = hashlib.sha256(payload).hexdigest()
+    if actual_hash != segment_hash:
+        raise ValueError(
+            f"diagnostic_segment_sha256_mismatch:{actual_hash}!={segment_hash}"
+        )
 
 
 def _vector3(name: str, value: Any) -> tuple[float, float, float]:
@@ -432,7 +455,7 @@ def load_and_validate_accepted_replay(
         or summary.get("visible_beaker_containment_verified") is not True
     ):
         raise ValueError("accepted_static_hold_required")
-    _validate_run_scoped_diagnostics(summary)
+    _validate_run_scoped_diagnostics(summary, summary_path=summary_path)
 
     identity_value = summary.get("physical_trace_identity")
     strict_identity = strict.get("physical_trace_identity")
@@ -730,7 +753,6 @@ def hide_physical_and_debug_points(stage: Any) -> dict[str, Any]:
     from pxr import UsdGeom
 
     hidden: list[str] = []
-    disabled_systems: list[str] = []
     physical_roots = {
         "/World/fluid",
         "/World/ParticleSet",
@@ -741,25 +763,19 @@ def hide_physical_and_debug_points(stage: Any) -> dict[str, Any]:
     for prim in list(stage.Traverse()):
         path = str(prim.GetPath())
         lower_path = path.lower()
-        is_points = prim.GetTypeName() == "Points"
         is_debug = any(
             token in lower_path for token in ("debug", "reviewmarker", "visualizer")
         )
         is_physical_root = path in physical_roots
-        if path != PRESENTATION_POINTS_PATH and (
-            is_points or is_debug or is_physical_root
-        ):
+        if path != PRESENTATION_POINTS_PATH and (is_debug or is_physical_root):
             imageable = UsdGeom.Imageable(prim)
             if imageable:
                 imageable.MakeInvisible()
                 hidden.append(path)
-        enabled = prim.GetAttribute("particleSystemEnabled")
-        if enabled:
-            enabled.Set(False)
-            disabled_systems.append(path)
     return {
         "hidden_paths": sorted(hidden),
-        "disabled_particle_system_paths": sorted(disabled_systems),
+        "disabled_particle_system_paths": [],
+        "physics_attributes_authored": False,
         "physical_and_debug_points_hidden": True,
     }
 

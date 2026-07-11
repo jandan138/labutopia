@@ -1,5 +1,7 @@
+import hashlib
+
 import pytest
-from pxr import Usd, UsdGeom, UsdShade
+from pxr import Sdf, Usd, UsdGeom, UsdShade
 
 from tools.labutopia_fluid.real_beaker import CupInteriorFrame
 
@@ -139,3 +141,87 @@ def test_presentation_points_are_render_only_and_bind_requested_material():
     assert list(points.GetWidthsAttr().Get()) == pytest.approx([0.004])
     bound, _relationship = UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial()
     assert bound.GetPath() == material.GetPath()
+
+
+def test_hiding_source_visuals_does_not_author_physics_attributes():
+    from tools.labutopia_fluid import run_real_beaker_omniglass_replay as replay
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    physical_points = UsdGeom.Points.Define(
+        stage, "/World/CompletedPBD/ParticleSet"
+    ).GetPrim()
+    unrelated_points = UsdGeom.Points.Define(stage, "/World/DecorationPoints")
+    enabled = physical_points.CreateAttribute(
+        "particleSystemEnabled", Sdf.ValueTypeNames.Bool
+    )
+    enabled.Set(True)
+    contact_offset = physical_points.CreateAttribute(
+        "physxParticleSystem:particleContactOffset", Sdf.ValueTypeNames.Float
+    )
+    contact_offset.Set(0.001)
+
+    result = replay.hide_physical_and_debug_points(stage)
+
+    assert UsdGeom.Imageable(physical_points).ComputeVisibility() == "invisible"
+    assert unrelated_points.ComputeVisibility() == "inherited"
+    assert enabled.Get() is True
+    assert contact_offset.Get() == pytest.approx(0.001)
+    assert result["physics_attributes_authored"] is False
+
+
+def _diagnostic_summary(log_path, *, byte_offset, payload):
+    segment = {
+        "log_path": str(log_path),
+        "byte_offset": byte_offset,
+        "cursor_captured": True,
+        "diagnostic_scan_complete": True,
+        "segment_byte_count": len(payload),
+        "segment_sha256": hashlib.sha256(payload).hexdigest(),
+    }
+    return {
+        "strict_kit_log_segment": segment,
+        "isaac_log_summary": {
+            **segment,
+            "isaac_log_path": str(log_path),
+            "isaac_log_available": True,
+            "run_segment_only": True,
+        },
+    }
+
+
+def test_diagnostic_validation_reads_exact_declared_relative_log_segment(tmp_path):
+    from tools.labutopia_fluid import run_real_beaker_omniglass_replay as replay
+
+    prefix = b"previous run\n"
+    payload = b"accepted run diagnostics\n"
+    log_path = tmp_path / "kit.log"
+    log_path.write_bytes(prefix + payload + b"later run\n")
+    summary = _diagnostic_summary("kit.log", byte_offset=len(prefix), payload=payload)
+
+    replay._validate_run_scoped_diagnostics(
+        summary, summary_path=tmp_path / "accepted_summary.json"
+    )
+
+
+@pytest.mark.parametrize("failure", ["missing", "truncated", "hash_mismatch"])
+def test_diagnostic_validation_fails_closed_for_unverifiable_segment(
+    tmp_path, failure
+):
+    from tools.labutopia_fluid import run_real_beaker_omniglass_replay as replay
+
+    payload = b"accepted run diagnostics\n"
+    log_path = tmp_path / "kit.log"
+    summary = _diagnostic_summary("kit.log", byte_offset=0, payload=payload)
+    if failure == "truncated":
+        log_path.write_bytes(payload[:-1])
+    elif failure == "hash_mismatch":
+        log_path.write_bytes(b"X" + payload[1:])
+
+    with pytest.raises(
+        (FileNotFoundError, ValueError),
+        match="diagnostic|kit_log|missing",
+    ):
+        replay._validate_run_scoped_diagnostics(
+            summary, summary_path=tmp_path / "accepted_summary.json"
+        )
