@@ -181,6 +181,51 @@ class NativeMaterialExpectation:
     visual_material_parity_claim_allowed: bool = False
 
 
+def physics_steps_per_second(physics_dt: float) -> int:
+    dt = float(physics_dt)
+    if not math.isfinite(dt) or dt <= 0.0:
+        raise ValueError("physics_dt_must_be_positive_and_finite")
+    frequency = int(round(1.0 / dt))
+    if frequency <= 0 or not math.isclose(
+        dt, 1.0 / frequency, rel_tol=0.0, abs_tol=1e-15
+    ):
+        raise ValueError("physics_dt_must_have_integer_frequency")
+    return frequency
+
+
+@dataclass
+class StrictPhysicsStepper:
+    interface: Any
+    physics_dt: float
+    executed_steps: int = 0
+
+    def __post_init__(self) -> None:
+        physics_steps_per_second(self.physics_dt)
+
+    def step(self) -> None:
+        current_time = self.executed_steps * self.physics_dt
+        self.interface.simulate(self.physics_dt, current_time)
+        self.interface.fetch_results()
+        self.executed_steps += 1
+
+    def summary(self, *, requested_steps: int) -> dict[str, Any]:
+        requested = int(requested_steps)
+        return {
+            "requested_steps": requested,
+            "executed_steps": self.executed_steps,
+            "physics_dt": self.physics_dt,
+            "simulated_seconds": self.executed_steps * self.physics_dt,
+            "exact_step_count_verified": self.executed_steps == requested,
+            "render_updates_advance_physics": False,
+        }
+
+
+def paused_render_update(app: Any, timeline: Any) -> None:
+    if timeline.is_playing():
+        raise RuntimeError("strict_render_update_while_timeline_playing")
+    app.update()
+
+
 def scan_mdl_compile_errors(log_text: str, *, max_errors: int = 40) -> dict[str, Any]:
     """Summarize Isaac/MDL runtime compiler errors without treating path resolve as render success."""
     error_lines = []
@@ -1949,7 +1994,12 @@ def _deactivate_original_fluid_prims(stage: Any) -> dict[str, Any]:
     return results
 
 
-def _configure_physics_scene_for_pbd(stage: Any, physics_scene_path: str) -> dict[str, Any]:
+def _configure_physics_scene_for_pbd(
+    stage: Any,
+    physics_scene_path: str,
+    *,
+    physics_dt: float,
+) -> dict[str, Any]:
     from pxr import Gf, PhysxSchema, UsdPhysics
 
     physics_scene = UsdPhysics.Scene.Get(stage, physics_scene_path)
@@ -1962,6 +2012,8 @@ def _configure_physics_scene_for_pbd(stage: Any, physics_scene_path: str) -> dic
     physx_scene_api.CreateBroadphaseTypeAttr().Set("GPU")
     physx_scene_api.CreateSolverTypeAttr().Set("TGS")
     physx_scene_api.CreateGpuMaxParticleContactsAttr().Set(1_048_576)
+    steps_per_second = physics_steps_per_second(physics_dt)
+    physx_scene_api.GetTimeStepsPerSecondAttr().Set(steps_per_second)
     return {
         "physics_scene_path": physics_scene_path,
         "gpu_dynamics_enabled": True,
@@ -1970,6 +2022,8 @@ def _configure_physics_scene_for_pbd(stage: Any, physics_scene_path: str) -> dic
         "gravity_direction": [0.0, 0.0, -1.0],
         "gravity_magnitude": 9.81,
         "gpu_max_particle_contacts": 1_048_576,
+        "time_steps_per_second": steps_per_second,
+        "effective_physics_dt": 1.0 / steps_per_second,
     }
 
 
@@ -2125,10 +2179,11 @@ def _physx_visualizer_mode_none(pb: Any) -> Any:
 def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     import carb
     import omni.kit.app
+    import omni.physx
     import omni.timeline
     import omni.usd
     import omni.physx.bindings._physx as pb
-    from pxr import Gf, Usd, UsdLux
+    from pxr import Gf, Usd, UsdLux, UsdUtils
 
     usd_path = _repo_path(args.usd).resolve()
     artifact_dir = Path(args.out_dir).resolve()
@@ -2415,7 +2470,11 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     settings.set(pb.SETTING_UPDATE_PARTICLES_TO_USD, True)
     settings.set(pb.SETTING_UPDATE_VELOCITIES_TO_USD, True)
 
-    physics_settings = _configure_physics_scene_for_pbd(stage, "/World/PhysicsScene")
+    physics_settings = _configure_physics_scene_for_pbd(
+        stage,
+        "/World/PhysicsScene",
+        physics_dt=args.physics_dt,
+    )
 
     if not stage.GetPrimAtPath("/World/DistantLight"):
         light = UsdLux.DistantLight.Define(stage, "/World/DistantLight")
@@ -2538,9 +2597,26 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     stage.GetRootLayer().Export(str(evidence_scene_path))
 
     timeline = omni.timeline.get_timeline_interface()
-    timeline.play()
+    app = omni.kit.app.get_app()
+    strict_stepper: StrictPhysicsStepper | None = None
+    if strict_mode:
+        timeline.stop()
+        stage_id = UsdUtils.StageCache.Get().GetId(stage).ToLongInt()
+        if stage_id <= 0:
+            raise RuntimeError("strict_physx_stage_cache_id_unavailable")
+        simulation_interface = omni.physx.get_physx_simulation_interface()
+        simulation_interface.attach_stage(stage_id)
+        strict_stepper = StrictPhysicsStepper(
+            interface=simulation_interface,
+            physics_dt=args.physics_dt,
+        )
+    else:
+        timeline.play()
     for _ in range(args.camera_warmup_updates):
-        omni.kit.app.get_app().update()
+        if strict_mode:
+            paused_render_update(app, timeline)
+        else:
+            app.update()
     settings.set_bool(pb.SETTING_SUPPRESS_READBACK, False)
     settings.set_bool("/physics/suppressReadback", False)
     settings.set(pb.SETTING_UPDATE_TO_USD, True)
@@ -2618,7 +2694,10 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             _write_trace_line(trace_path, record)
         if step_index % args.video_stride == 0 or step_index in (0, args.steps):
             _set_review_markers_visible(stage, False)
-            omni.kit.app.get_app().update()
+            if strict_mode:
+                paused_render_update(app, timeline)
+            else:
+                app.update()
             native_slots = []
             if args.capture_native_cameras:
                 native_slots.extend(["camera1_native_material", "camera2_native_material"])
@@ -2655,7 +2734,10 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                     marker_width=args.review_marker_width,
                 )
                 marker_updates[f"step_{step_index:04d}"] = marker_update
-                omni.kit.app.get_app().update()
+                if strict_mode:
+                    paused_render_update(app, timeline)
+                else:
+                    app.update()
                 slot = "beaker2_closeup_review_markers"
                 frame_path = frame_dirs[slot] / f"frame_{step_index:04d}.png"
                 source, diagnostics = _try_write_camera_png_with_diagnostics(
@@ -2671,8 +2753,23 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 raise TimeoutError(
                     f"native_usd_completed_pbd_step_timeout:{time.monotonic() - start:.1f}s"
                 )
-            omni.kit.app.get_app().update()
+            if strict_mode:
+                if strict_stepper is None:
+                    raise RuntimeError("strict_physics_stepper_unavailable")
+                strict_stepper.step()
+            else:
+                app.update()
 
+    strict_physics_execution = (
+        strict_stepper.summary(requested_steps=args.steps)
+        if strict_stepper is not None
+        else None
+    )
+    if strict_mode and (
+        strict_physics_execution is None
+        or not strict_physics_execution["exact_step_count_verified"]
+    ):
+        raise RuntimeError("strict_physics_step_count_mismatch")
     legacy_classification = classify_colleague_trace(records, classify_config)
     legacy_classification["variant_id"] = NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID
     initial_positions = records[0].get("positions", []) if records else []
@@ -2784,6 +2881,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "raw_usd_direct_step_claim_allowed": False,
         "steps": args.steps,
         "physics_dt": args.physics_dt,
+        "strict_physics_execution": strict_physics_execution,
         "particle_scope": particle_scope,
         "controlled_spawn_plan": controlled_spawn_plan,
         "spawn_frame": spawn_frame_summary(spawn_frame) if spawn_frame else None,
