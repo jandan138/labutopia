@@ -124,3 +124,110 @@ def test_real_lab001_frame_uses_local_y_and_original_fluid_calibration():
         (0.0811547, 0.0904004, 0.0753325),
         abs=1e-5,
     )
+
+
+def test_cup_frame_serialization_does_not_expose_mutable_measurements():
+    import pytest
+    from pxr import Gf, Usd, UsdGeom
+    from tools.labutopia_fluid.real_beaker import derive_cup_interior_frame
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    cup = UsdGeom.Xform.Define(stage, "/World/beaker2")
+    cup.AddRotateXYZOp().Set(Gf.Vec3f(90.0, 0.0, 0.0))
+    mesh = UsdGeom.Mesh.Define(stage, "/World/beaker2/mesh")
+    mesh.CreatePointsAttr(
+        [
+            Gf.Vec3f(x, y, z)
+            for x in (-0.04, 0.04)
+            for y in (-0.045, 0.045)
+            for z in (-0.0375, 0.0375)
+        ]
+    )
+    frame = derive_cup_interior_frame(
+        stage,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        calibration_points_path=None,
+    )
+
+    serialized = frame.as_dict()
+    serialized["calibration"]["parent_local_mesh_bounds"]["min"] = (999.0, 999.0, 999.0)
+
+    with pytest.raises(TypeError):
+        frame._measurements["calibration"]["parent_local_mesh_bounds"]["min"] = (999.0, 999.0, 999.0)
+
+    assert frame.as_dict()["calibration"]["parent_local_mesh_bounds"]["min"] != (
+        999.0,
+        999.0,
+        999.0,
+    )
+
+
+def test_cup_frame_fallback_records_exact_wall_clearance():
+    import pytest
+    from pxr import Gf, Usd, UsdGeom
+    from tools.labutopia_fluid.real_beaker import derive_cup_interior_frame
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    cup = UsdGeom.Xform.Define(stage, "/World/beaker2")
+    cup.AddRotateXYZOp().Set(Gf.Vec3f(90.0, 0.0, 0.0))
+    mesh = UsdGeom.Mesh.Define(stage, "/World/beaker2/mesh")
+    mesh.CreatePointsAttr(
+        [
+            Gf.Vec3f(x, y, z)
+            for x in (-0.04, 0.04)
+            for y in (-0.045, 0.045)
+            for z in (-0.0375, 0.0375)
+        ]
+    )
+    frame = derive_cup_interior_frame(
+        stage,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        calibration_points_path=None,
+    )
+    calibration = frame.as_dict()["calibration"]
+
+    assert frame.outer_radius - frame.interior_radius == pytest.approx(0.005)
+    assert frame.calibration_source == "fallback_mesh_inscribed_radius"
+    assert calibration["fallback_wall_clearance"] == pytest.approx(0.005)
+    assert calibration["outer_to_calibrated_wall_clearance"] == pytest.approx(0.005)
+    assert calibration["final_radius"] == pytest.approx(frame.interior_radius)
+
+
+def test_cup_frame_clamps_oversized_calibration_and_records_provenance():
+    import pytest
+    from pxr import Gf, Usd, UsdGeom
+    from tools.labutopia_fluid.real_beaker import derive_cup_interior_frame
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    cup = UsdGeom.Xform.Define(stage, "/World/beaker2")
+    cup.AddRotateXYZOp().Set(Gf.Vec3f(90.0, 0.0, 0.0))
+    mesh = UsdGeom.Mesh.Define(stage, "/World/beaker2/mesh")
+    mesh.CreatePointsAttr(
+        [
+            Gf.Vec3f(x, y, z)
+            for x in (-0.04, 0.04)
+            for y in (-0.045, 0.045)
+            for z in (-0.0375, 0.0375)
+        ]
+    )
+    particles = UsdGeom.Points.Define(stage, "/World/beaker2/calibration")
+    particles.CreatePointsAttr([Gf.Vec3f(-0.2, 0.0, -0.2), Gf.Vec3f(0.2, 0.0, 0.2)])
+    frame = derive_cup_interior_frame(
+        stage,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        calibration_points_path="/World/beaker2/calibration",
+    )
+    calibration = frame.as_dict()["calibration"]
+
+    assert frame.interior_radius < frame.outer_radius
+    assert calibration["raw_radial_envelope"] > frame.outer_radius
+    assert calibration["final_radius"] == pytest.approx(frame.interior_radius)
+    assert calibration["outer_to_calibrated_wall_clearance"] == pytest.approx(
+        frame.outer_radius - frame.interior_radius
+    )

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 import math
+from types import MappingProxyType
 from typing import Any, Iterable, Sequence
 
 from pxr import Gf, Usd, UsdGeom
@@ -49,6 +51,22 @@ def _bounds(points: Iterable[Sequence[float]]) -> dict[str, tuple[float, float, 
     }
 
 
+def _freeze_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({str(key): _freeze_json(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_json(item) for item in value)
+    return value
+
+
+def _thaw_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: _thaw_json(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return tuple(_thaw_json(item) for item in value)
+    return value
+
+
 @dataclass(frozen=True)
 class CupInteriorFrame:
     origin_world: tuple[float, float, float]
@@ -63,7 +81,10 @@ class CupInteriorFrame:
     rim_height: float
     calibration_source: str
     axis_alignment_dot: float
-    _measurements: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+    _measurements: Mapping[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_measurements", _freeze_json(self._measurements))
 
     def world_to_canonical(self, point: Sequence[float]) -> tuple[float, float, float]:
         delta = tuple(float(point[index]) - self.origin_world[index] for index in range(3))
@@ -97,7 +118,7 @@ class CupInteriorFrame:
             "rim_height": self.rim_height,
             "calibration_source": self.calibration_source,
             "axis_alignment_dot": self.axis_alignment_dot,
-            **self._measurements,
+            **_thaw_json(self._measurements),
         }
 
 
