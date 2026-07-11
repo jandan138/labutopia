@@ -685,7 +685,72 @@ def test_real_wrapper_bottom_is_horizontal_and_tracks_cup_axis():
     assert mesh.GetAttribute("labutopia:nativeMeshCollisionEnabled").Get() is False
     for path in summary["collider_paths"]:
         collider = stage.GetPrimAtPath(path)
+        api_schemas = collider.GetMetadata("apiSchemas")
         assert collider.GetAttribute("physics:collisionEnabled").Get() is True
         assert collider.GetAttribute("physxCollision:contactOffset").Get() == pytest.approx(0.004)
         assert collider.GetAttribute("physxCollision:restOffset").Get() == pytest.approx(0.0)
         assert UsdGeom.Imageable(collider).GetPurposeAttr().Get() == UsdGeom.Tokens.proxy
+        assert "PhysicsCollisionAPI" in api_schemas.GetAppliedItems()
+        assert "PhysxCollisionAPI" in api_schemas.GetAppliedItems()
+
+
+def test_real_wrapper_wall_xforms_match_canonical_geometry():
+    from pxr import Usd
+    from tools.labutopia_fluid.real_beaker import (
+        author_canonical_fluid_wrapper,
+        derive_cup_interior_frame,
+    )
+
+    stage = Usd.Stage.Open(
+        "outputs/usd_asset_packages/lab_001_localized_20260707/"
+        "lab_001_level1_pour_tabletop_with_liquid.usd"
+    )
+    frame = derive_cup_interior_frame(
+        stage,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        calibration_points_path="/World/ParticleSet",
+    )
+    author_canonical_fluid_wrapper(
+        stage,
+        frame=frame,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        panel_count=72,
+        panel_ring_count=2,
+        wall_thickness=0.026,
+        bottom_thickness=0.012,
+        bottom_overlap=0.018,
+    )
+
+    panel_width = 2.0 * math.pi * (frame.interior_radius + 0.026 / 2.0) / 72 * 1.08
+    wall_floor = frame.interior_floor - 0.018
+    wall_height = frame.rim_height - wall_floor
+    for ring in range(2):
+        for index in range(72):
+            panel = stage.GetPrimAtPath(
+                f"/World/beaker2/FluidSafeWrapperCanonical/Wall_r{ring}_{index:02d}"
+            )
+            translate = panel.GetAttribute("xformOp:translate").Get()
+            scale = panel.GetAttribute("xformOp:scale").Get()
+            center_radius = math.hypot(float(translate[0]), float(translate[1]))
+            assert center_radius - float(scale[1]) / 2.0 == pytest.approx(
+                frame.interior_radius, abs=1e-6
+            )
+            assert float(translate[2]) - float(scale[2]) / 2.0 == pytest.approx(
+                wall_floor, abs=1e-6
+            )
+            assert float(translate[2]) + float(scale[2]) / 2.0 == pytest.approx(
+                frame.rim_height, abs=1e-6
+            )
+            assert tuple(float(value) for value in scale) == pytest.approx(
+                (panel_width, 0.026, wall_height), abs=1e-6
+            )
+
+    ring0_rotate = stage.GetPrimAtPath(
+        "/World/beaker2/FluidSafeWrapperCanonical/Wall_r0_00"
+    ).GetAttribute("xformOp:rotateZ").Get()
+    ring1_rotate = stage.GetPrimAtPath(
+        "/World/beaker2/FluidSafeWrapperCanonical/Wall_r1_00"
+    ).GetAttribute("xformOp:rotateZ").Get()
+    assert float(ring1_rotate) - float(ring0_rotate) == pytest.approx(180.0 / 72, abs=1e-6)

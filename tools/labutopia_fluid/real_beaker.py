@@ -889,6 +889,12 @@ def _set_wrapper_collision_offsets(prim: Any, *, contact_offset: float, rest_off
         physx_collision.CreateRestOffsetAttr().Set(float(rest_offset))
         return
 
+    api_schemas = prim.GetMetadata("apiSchemas")
+    applied_tokens = list(api_schemas.GetAppliedItems()) if api_schemas else []
+    if "PhysxCollisionAPI" not in applied_tokens:
+        prim.SetMetadata(
+            "apiSchemas", Sdf.TokenListOp.CreateExplicit(applied_tokens + ["PhysxCollisionAPI"])
+        )
     _set_wrapper_metadata(
         prim,
         "physxCollision:contactOffset",
