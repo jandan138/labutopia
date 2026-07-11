@@ -374,14 +374,28 @@ def validate_strict_trace_schema(
             if all(math.isfinite(float(value)) for value in point)
         )
         nonfinite = count - finite
-        declared_finite = record.get(
-            "finite_count", record.get("region_counts", {}).get("finite_count")
-        )
-        declared_nonfinite = record.get("nonfinite_count")
-        if declared_finite is not None and int(declared_finite) != finite:
-            raise ValueError(f"trace_finite_count_mismatch:{index}")
-        if declared_nonfinite is not None and int(declared_nonfinite) != nonfinite:
-            raise ValueError(f"trace_nonfinite_count_mismatch:{index}")
+        region_counts: Mapping[str, Any] = {}
+        if "region_counts" in record:
+            candidate = record["region_counts"]
+            if not isinstance(candidate, Mapping):
+                raise ValueError(f"trace_region_counts_invalid:{index}")
+            region_counts = candidate
+        for location, declared_counts in (
+            ("top_level", record),
+            ("region_counts", region_counts),
+        ):
+            for field_name, expected_count in (
+                ("finite_count", finite),
+                ("nonfinite_count", nonfinite),
+            ):
+                if field_name not in declared_counts:
+                    continue
+                declared_count = _require_int(
+                    f"record_{index}_{location}_{field_name}",
+                    declared_counts[field_name],
+                )
+                if declared_count != expected_count:
+                    raise ValueError(f"trace_{field_name}_mismatch:{index}:{location}")
         if finite + nonfinite != count:
             raise ValueError(f"trace_finite_partition_mismatch:{index}")
         counts.append(count)

@@ -589,3 +589,45 @@ def test_manifest_contract_failures_stop_incomplete_trace(
 
     assert result["classification"] == "STOP_INCOMPLETE_TRACE"
     assert result["trace_schema_error"]
+
+
+@pytest.mark.parametrize("malformed_region_counts", [[], "invalid", 1, True])
+def test_strict_trace_rejects_malformed_region_counts(
+    real_frame, malformed_region_counts
+):
+    inside = list(real_frame.canonical_to_world((0.0, 0.0, 0.01)))
+    record = _trace_record(0, [inside])
+    record["region_counts"] = malformed_region_counts
+
+    result = _classify_test_trace(real_frame, [record])
+
+    assert result["classification"] == "STOP_INCOMPLETE_TRACE"
+    assert result["trace_schema_valid"] is False
+
+
+@pytest.mark.parametrize("location", ["top_level", "region_counts"])
+@pytest.mark.parametrize(
+    ("field", "invalid_value"),
+    (
+        ("finite_count", 1.0),
+        ("finite_count", "1"),
+        ("finite_count", True),
+        ("nonfinite_count", 0.0),
+        ("nonfinite_count", "0"),
+        ("nonfinite_count", False),
+    ),
+)
+def test_strict_trace_rejects_coercible_optional_declared_counts(
+    real_frame, location, field, invalid_value
+):
+    inside = list(real_frame.canonical_to_world((0.0, 0.0, 0.01)))
+    record = _trace_record(0, [inside])
+    if location == "top_level":
+        record[field] = invalid_value
+    else:
+        record["region_counts"] = {field: invalid_value}
+
+    result = _classify_test_trace(real_frame, [record])
+
+    assert result["classification"] == "STOP_INCOMPLETE_TRACE"
+    assert result["trace_schema_valid"] is False
