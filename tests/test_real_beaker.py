@@ -724,6 +724,7 @@ def test_real_wrapper_wall_xforms_match_canonical_geometry():
     )
 
     panel_width = 2.0 * math.pi * (frame.interior_radius + 0.026 / 2.0) / 72 * 1.08
+    panel_center_radius = frame.interior_radius + 0.026 / 2.0
     wall_floor = frame.interior_floor - 0.018
     wall_height = frame.rim_height - wall_floor
     for ring in range(2):
@@ -732,7 +733,18 @@ def test_real_wrapper_wall_xforms_match_canonical_geometry():
                 f"/World/beaker2/FluidSafeWrapperCanonical/Wall_r{ring}_{index:02d}"
             )
             translate = panel.GetAttribute("xformOp:translate").Get()
+            rotate_z = panel.GetAttribute("xformOp:rotateZ").Get()
             scale = panel.GetAttribute("xformOp:scale").Get()
+            theta = 2.0 * math.pi * index / 72 + ring * math.pi / 72
+            assert float(translate[0]) == pytest.approx(
+                panel_center_radius * math.cos(theta), abs=1e-6
+            )
+            assert float(translate[1]) == pytest.approx(
+                panel_center_radius * math.sin(theta), abs=1e-6
+            )
+            assert float(rotate_z) == pytest.approx(
+                math.degrees(theta + math.pi / 2.0), abs=1e-6
+            )
             center_radius = math.hypot(float(translate[0]), float(translate[1]))
             assert center_radius - float(scale[1]) / 2.0 == pytest.approx(
                 frame.interior_radius, abs=1e-6
