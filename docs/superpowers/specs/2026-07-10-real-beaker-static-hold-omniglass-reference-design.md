@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-10
 
-**Status:** User-approved direction; written-spec review pending
+**Status:** Approved; implementation authorized on 2026-07-11
 
 **Scope:** LabUtopia `lab_001` source beaker (`/World/beaker2`) static hold plus reference-style OmniGlass particle presentation
 
