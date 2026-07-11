@@ -1,4 +1,5 @@
 import json
+import math
 import signal
 import subprocess
 import sys
@@ -322,6 +323,17 @@ def test_static_hold_matrix_has_required_six_cells():
     ]
 
 
+def test_static_hold_matrix_declares_one_canonical_global_key_sequence():
+    assert matrix.CANONICAL_CELL_KEYS == (
+        (1024, 0),
+        (1024, 1),
+        (1024, 2),
+        (4096, 0),
+        (4096, 1),
+        (4096, 2),
+    )
+
+
 def test_static_hold_matrix_canonicalizes_count_and_seed_order():
     cells = matrix.static_hold_cells(counts=(4096, 1024), seeds=(2, 0, 1))
 
@@ -381,6 +393,30 @@ def test_matrix_rejects_unpinned_steps_and_physics_dt(tmp_path, extra, match):
         matrix.build_dry_plan(_matrix_args(tmp_path, *extra))
 
 
+def test_matrix_rejects_next_float_after_required_physics_dt(tmp_path):
+    near_equal = math.nextafter(matrix.REQUIRED_PHYSICS_DT, math.inf)
+
+    with pytest.raises(ValueError, match="exactly 1/60"):
+        matrix.build_cell_argv(
+            matrix.static_hold_cells()[0],
+            out_dir=tmp_path,
+            physics_dt=near_equal,
+        )
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        ("--counts", "4096", "--seeds", "0"),
+        ("--counts", "1024", "--seeds", "1", "2"),
+        ("--counts", "1024", "--seeds", "0", "2"),
+    ],
+)
+def test_matrix_fresh_run_requires_canonical_prefix_from_zero(tmp_path, extra):
+    with pytest.raises(ValueError, match="canonical prefix"):
+        matrix.build_dry_plan(_matrix_args(tmp_path, *extra))
+
+
 def test_matrix_closure_requires_exactly_six_accepted_cells():
     accepted = [
         {
@@ -425,6 +461,20 @@ def test_matrix_closure_recomputes_acceptance_from_authoritative_summary():
 
     assert matrix.real_beaker_static_hold_closed(cells) is True
     assert matrix.all_required_1024_accepted(cells) is True
+
+
+def test_matrix_closure_rejects_out_of_order_canonical_cells():
+    cells = [
+        {
+            **cell,
+            "classification": "PASS_VISIBLE_BEAKER_STATIC_HOLD",
+            "visible_beaker_containment_verified": True,
+        }
+        for cell in matrix.static_hold_cells()
+    ]
+    cells[0], cells[1] = cells[1], cells[0]
+
+    assert matrix.real_beaker_static_hold_closed(cells) is False
 
 
 def test_matrix_append_rejects_run_identity_mismatch():
@@ -481,6 +531,80 @@ def test_matrix_append_rejects_4096_without_three_accepted_1024_cells():
         )
 
 
+def test_matrix_append_rejects_existing_cells_that_are_not_exact_prefix():
+    identity = {"source_usd_sha256": "a" * 64}
+    manifest = {
+        "run_identity": identity,
+        "cells": [
+            {
+                "particle_count": 1024,
+                "seed": 1,
+                "classification": "PASS_VISIBLE_BEAKER_STATIC_HOLD",
+                "visible_beaker_containment_verified": True,
+            }
+        ],
+    }
+
+    with pytest.raises(ValueError, match="exact canonical prefix"):
+        matrix.validate_append_manifest(
+            manifest,
+            run_identity=identity,
+            requested_cells=matrix.static_hold_cells(counts=(1024,), seeds=(2,)),
+        )
+
+
+def test_matrix_append_requires_immediate_next_canonical_segment():
+    identity = {"source_usd_sha256": "a" * 64}
+    manifest = {
+        "run_identity": identity,
+        "cells": [
+            {
+                "particle_count": 1024,
+                "seed": 0,
+                "classification": "PASS_VISIBLE_BEAKER_STATIC_HOLD",
+                "visible_beaker_containment_verified": True,
+            }
+        ],
+    }
+
+    with pytest.raises(ValueError, match="immediate next canonical segment"):
+        matrix.validate_append_manifest(
+            manifest,
+            run_identity=identity,
+            requested_cells=matrix.static_hold_cells(counts=(1024,), seeds=(2,)),
+        )
+
+
+def test_matrix_append_dry_plan_validates_immediate_next_segment(tmp_path):
+    args = _matrix_args(
+        tmp_path,
+        "--append",
+        "--counts",
+        "1024",
+        "--seeds",
+        "2",
+    )
+    manifest_path = matrix._resolve_manifest_path(args.manifest)
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "cells": [
+                    {
+                        "particle_count": 1024,
+                        "seed": 0,
+                        "classification": "PASS_VISIBLE_BEAKER_STATIC_HOLD",
+                        "visible_beaker_containment_verified": True,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="immediate next canonical segment"):
+        matrix.build_dry_plan(args)
+
+
 def test_matrix_watchdog_requires_sixty_second_runtime_margin(tmp_path):
     with pytest.raises(ValueError, match="at least 60 seconds"):
         matrix.build_dry_plan(
@@ -492,6 +616,13 @@ def test_matrix_watchdog_requires_sixty_second_runtime_margin(tmp_path):
                 "959.999",
             )
         )
+
+
+@pytest.mark.parametrize("option", ["--runtime-timeout-seconds", "--process-timeout-seconds"])
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf"])
+def test_matrix_rejects_nonfinite_runtime_and_process_timeouts(tmp_path, option, value):
+    with pytest.raises(ValueError, match="finite"):
+        matrix.build_dry_plan(_matrix_args(tmp_path, f"{option}={value}"))
 
 
 @pytest.mark.parametrize("append", [False, True])
@@ -733,3 +864,41 @@ def test_matrix_isaac_version_falls_back_to_version_file(tmp_path, monkeypatch):
     assert "4.1.0.0" in version
     assert str(version_path.resolve()) in version
     assert matrix._sha256_file(version_path) in version
+
+
+def test_matrix_isaac_root_fingerprint_changes_with_install_content(tmp_path, monkeypatch):
+    install_root = tmp_path / "isaac-sim"
+    artifact = install_root / "apps" / "isaacsim.exp.full.kit"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text("[package]\nversion = '4.1.0'\n", encoding="utf-8")
+
+    def missing_metadata(_distribution):
+        raise matrix.importlib.metadata.PackageNotFoundError
+
+    monkeypatch.setattr(matrix.importlib.metadata, "version", missing_metadata)
+    monkeypatch.setattr(matrix, "ISAAC_VERSION_FILES", ())
+    monkeypatch.setattr(matrix, "ISAAC_INSTALL_ROOTS", (install_root,), raising=False)
+    monkeypatch.setattr(matrix.importlib.util, "find_spec", lambda _name: None)
+
+    first = matrix._isaac_version()
+    artifact.write_text("[package]\nversion = '4.1.0-fixed'\n", encoding="utf-8")
+    second = matrix._isaac_version()
+
+    assert first != second
+    assert str(install_root.resolve()) in first
+    assert "installation_fingerprint_sha256=" in first
+
+
+def test_matrix_isaac_version_fails_closed_without_real_install(tmp_path, monkeypatch):
+    def missing_metadata(_distribution):
+        raise matrix.importlib.metadata.PackageNotFoundError
+
+    monkeypatch.setattr(matrix.importlib.metadata, "version", missing_metadata)
+    monkeypatch.setattr(matrix, "ISAAC_VERSION_FILES", ())
+    monkeypatch.setattr(matrix, "ISAAC_INSTALL_ROOTS", (tmp_path / "missing",), raising=False)
+    monkeypatch.setattr(matrix.importlib.util, "find_spec", lambda _name: None)
+    monkeypatch.delenv("ISAAC_SIM_ROOT", raising=False)
+    monkeypatch.delenv("ISAAC_PATH", raising=False)
+
+    with pytest.raises(RuntimeError, match="Isaac installation"):
+        matrix._isaac_version()

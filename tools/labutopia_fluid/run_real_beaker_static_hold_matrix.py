@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib.metadata
+import importlib.util
 import json
 import math
 import os
@@ -39,9 +40,16 @@ DEFAULT_MANIFEST = (
 PASS_CLASSIFICATION = "PASS_VISIBLE_BEAKER_STATIC_HOLD"
 REQUIRED_COUNTS = (1024, 4096)
 REQUIRED_SEEDS = (0, 1, 2)
+CANONICAL_CELL_KEYS = (
+    (1024, 0),
+    (1024, 1),
+    (1024, 2),
+    (4096, 0),
+    (4096, 1),
+    (4096, 2),
+)
 REQUIRED_STEPS = 600
 REQUIRED_PHYSICS_DT = 1.0 / 60.0
-PHYSICS_DT_ABS_TOLERANCE = 1e-15
 SUPERSEDED_FALSE_POSITIVE_MANIFESTS = (
     "docs/labutopia_lab_poc/evidence_manifests/"
     "fluid_spike_full_scene_controlled_spawn_hold_20260710_P1024.json",
@@ -53,6 +61,15 @@ ISAAC_VERSION_FILES = (
     Path(sys.executable).resolve().parent.parent / "VERSION",
     Path("/isaac-sim/VERSION"),
     Path("/isaac-sim/PACKAGE-INFO.yaml"),
+)
+ISAAC_INSTALL_ROOTS = (Path("/isaac-sim"),)
+ISAAC_INSTALL_ARTIFACT_PATTERNS = (
+    "VERSION",
+    "PACKAGE-INFO.yaml",
+    "kit/PACKAGE-INFO.yaml",
+    "apps/*isaac*.kit",
+    "__init__.py",
+    "*.py",
 )
 
 
@@ -160,7 +177,7 @@ def build_cell_argv(
         "--steps",
         str(steps),
         "--physics-dt",
-        repr(physics_dt),
+        repr(REQUIRED_PHYSICS_DT),
         "--trace-interval",
         str(trace_interval),
         "--runtime-timeout-seconds",
@@ -242,14 +259,61 @@ def _isaac_version() -> str:
             ),
             next((line.strip() for line in text.splitlines() if line.strip()), "unknown"),
         )
-        fingerprint = _sha256_bytes(str(path).encode("utf-8") + b"\0" + payload)
+        fingerprint = _sha256_bytes(payload)
         return (
             f"version_file={version};path={path};"
             f"installation_fingerprint_sha256={fingerprint};file_sha256={_sha256_file(path)}"
         )
-    install_path = Path(sys.prefix).resolve()
-    fingerprint = _sha256_bytes(str(install_path).encode("utf-8"))
-    return f"undetected;path={install_path};installation_fingerprint_sha256={fingerprint}"
+    for install_root in _candidate_isaac_install_roots():
+        artifacts = _isaac_install_artifacts(install_root)
+        if not artifacts:
+            continue
+        digest = hashlib.sha256()
+        relative_paths = []
+        for artifact in artifacts:
+            relative = str(artifact.relative_to(install_root))
+            relative_paths.append(relative)
+            digest.update(relative.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(artifact.read_bytes())
+            digest.update(b"\0")
+        return (
+            f"install_root={install_root};installation_fingerprint_sha256={digest.hexdigest()};"
+            f"artifacts={','.join(relative_paths)}"
+        )
+    raise RuntimeError("no recognizable Isaac installation could be identified")
+
+
+def _candidate_isaac_install_roots() -> list[Path]:
+    candidates = list(ISAAC_INSTALL_ROOTS)
+    for env_name in ("ISAAC_SIM_ROOT", "ISAAC_PATH"):
+        value = os.environ.get(env_name)
+        if value:
+            candidates.append(Path(value))
+    try:
+        spec = importlib.util.find_spec("isaacsim")
+    except (ImportError, AttributeError, ValueError):
+        spec = None
+    if spec is not None:
+        if spec.submodule_search_locations:
+            candidates.extend(Path(location) for location in spec.submodule_search_locations)
+        elif spec.origin:
+            candidates.append(Path(spec.origin).parent)
+    resolved: list[Path] = []
+    for candidate in candidates:
+        path = candidate.expanduser().resolve()
+        if path not in resolved:
+            resolved.append(path)
+    return resolved
+
+
+def _isaac_install_artifacts(install_root: Path) -> list[Path]:
+    if not install_root.is_dir():
+        return []
+    artifacts: set[Path] = set()
+    for pattern in ISAAC_INSTALL_ARTIFACT_PATTERNS:
+        artifacts.update(path for path in install_root.glob(pattern) if path.is_file())
+    return sorted(artifacts, key=lambda path: str(path.relative_to(install_root)))
 
 
 def build_run_identity(args: argparse.Namespace) -> dict[str, Any]:
@@ -309,8 +373,7 @@ def real_beaker_static_hold_closed(
 ) -> bool:
     if not _runtime_pins_match(steps=steps, physics_dt=physics_dt):
         return False
-    required = set(_cell_key(cell) for cell in static_hold_cells())
-    if len(cells) != len(required) or {_cell_key(cell) for cell in cells} != required:
+    if tuple(_cell_key(cell) for cell in cells) != CANONICAL_CELL_KEYS:
         return False
     return all(_has_authoritative_pass(cell) for cell in cells)
 
@@ -336,7 +399,13 @@ def validate_append_manifest(
 ) -> None:
     if manifest.get("run_identity") != run_identity:
         raise ValueError("append run identity mismatch")
-    existing_cells = manifest.get("cells")
+    _validate_append_cells(manifest.get("cells"), requested_cells)
+
+
+def _validate_append_cells(
+    existing_cells: Any,
+    requested_cells: Sequence[Mapping[str, Any]],
+) -> None:
     if not isinstance(existing_cells, list):
         raise ValueError("append manifest cells must be a list")
     existing_keys = [_cell_key(cell) for cell in existing_cells]
@@ -348,6 +417,14 @@ def validate_append_manifest(
     duplicates = set(existing_keys).intersection(requested_keys)
     if duplicates:
         raise ValueError(f"append duplicate cell: {sorted(duplicates)}")
+    expected_existing = list(CANONICAL_CELL_KEYS[: len(existing_keys)])
+    if existing_keys != expected_existing:
+        raise ValueError("append manifest cells must be an exact canonical prefix in order")
+    expected_requested = list(
+        CANONICAL_CELL_KEYS[len(existing_keys) : len(existing_keys) + len(requested_keys)]
+    )
+    if requested_keys != expected_requested:
+        raise ValueError("append requested cells must be the immediate next canonical segment")
     requests_4096 = any(count == 4096 for count, _seed in requested_keys)
     requests_1024 = any(count == 1024 for count, _seed in requested_keys)
     if requests_4096 and not requests_1024 and not all_required_1024_accepted(existing_cells):
@@ -503,6 +580,10 @@ def _validate_args(args: argparse.Namespace) -> None:
     _validate_runtime_pins(steps=args.steps, physics_dt=args.physics_dt)
     if args.trace_interval <= 0 or args.trace_interval > 30:
         raise ValueError("trace interval must be between 1 and 30")
+    if not math.isfinite(args.runtime_timeout_seconds):
+        raise ValueError("runtime timeout must be finite")
+    if not math.isfinite(args.process_timeout_seconds):
+        raise ValueError("process timeout must be finite")
     if args.runtime_timeout_seconds < 900:
         raise ValueError("runtime timeout must be at least 900 seconds")
     if args.process_timeout_seconds < args.runtime_timeout_seconds + 60.0:
@@ -513,25 +594,21 @@ def _runtime_pins_match(*, steps: int, physics_dt: float) -> bool:
     return (
         steps == REQUIRED_STEPS
         and math.isfinite(physics_dt)
-        and math.isclose(
-            physics_dt,
-            REQUIRED_PHYSICS_DT,
-            rel_tol=0.0,
-            abs_tol=PHYSICS_DT_ABS_TOLERANCE,
-        )
+        and physics_dt == REQUIRED_PHYSICS_DT
     )
 
 
 def _validate_runtime_pins(*, steps: int, physics_dt: float) -> None:
     if steps != REQUIRED_STEPS:
         raise ValueError(f"steps must be exactly {REQUIRED_STEPS}")
-    if not math.isfinite(physics_dt) or not math.isclose(
-        physics_dt,
-        REQUIRED_PHYSICS_DT,
-        rel_tol=0.0,
-        abs_tol=PHYSICS_DT_ABS_TOLERANCE,
-    ):
-        raise ValueError("physics dt must be exactly 1/60 within absolute tolerance 1e-15")
+    if not math.isfinite(physics_dt) or physics_dt != REQUIRED_PHYSICS_DT:
+        raise ValueError("physics dt must be exactly 1/60")
+
+
+def _validate_fresh_cells(requested_cells: Sequence[Mapping[str, Any]]) -> None:
+    requested_keys = tuple(_cell_key(cell) for cell in requested_cells)
+    if requested_keys != CANONICAL_CELL_KEYS[: len(requested_keys)]:
+        raise ValueError("fresh matrix cells must be a canonical prefix starting at index zero")
 
 
 def _resolve_manifest_path(path_value: str | os.PathLike[str]) -> Path:
@@ -591,6 +668,7 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
             set(manifest.get("requested_seeds", ())).union(args.seeds)
         )
     else:
+        _validate_fresh_cells(requested_cells)
         manifest = _new_manifest(args, run_identity)
 
     out_root = Path(args.out_root).resolve()
@@ -693,8 +771,16 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
 def build_dry_plan(args: argparse.Namespace) -> dict[str, Any]:
     manifest_path = _resolve_manifest_path(args.manifest)
     _validate_args(args)
+    requested_cells = static_hold_cells(counts=args.counts, seeds=args.seeds)
+    if args.append:
+        if not manifest_path.is_file():
+            raise FileNotFoundError(f"append manifest does not exist: {manifest_path}")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        _validate_append_cells(manifest.get("cells"), requested_cells)
+    else:
+        _validate_fresh_cells(requested_cells)
     cells = []
-    for cell in static_hold_cells(counts=args.counts, seeds=args.seeds):
+    for cell in requested_cells:
         out_dir = Path(args.out_root).resolve() / str(cell["cell_id"])
         cells.append(
             {
