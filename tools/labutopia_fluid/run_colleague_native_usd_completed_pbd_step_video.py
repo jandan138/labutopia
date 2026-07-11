@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import hashlib
 import json
 import math
 import os
@@ -12,7 +13,7 @@ import shutil
 import sys
 import time
 import traceback
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
@@ -21,7 +22,45 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.labutopia_fluid.run_beaker_collider_smoke import ColliderConfig
+from tools.labutopia_fluid.full_scene_spawn_frame import (
+    build_classification_collider_config,
+    build_controlled_spawn_collider_config,
+    build_full_scene_spawn_frame,
+    spawn_frame_summary,
+)
+from tools.labutopia_fluid.fluid_recipe import (
+    PRESENTATION_RENDER_MODE_ISOSURFACE,
+    PRESENTATION_RENDER_MODE_NONE,
+    PRESENTATION_RENDER_MODE_PARTICLE_OMNIGLASS,
+    PRESENTATION_RENDER_MODES,
+    RECIPE_DEFAULT_PARTICLE_COUNT,
+    build_controlled_spawn_plan,
+    build_fluid_recipe_claim_boundary,
+    enable_isosurface_for_mode,
+    enable_particle_omniglass_for_mode,
+    g1_wrapper_bottom_overlap,
+    merge_claim_boundaries,
+    presentation_video_enabled,
+    resolve_presentation_render_mode,
+)
+from tools.labutopia_fluid.presentation_look_profiles import (
+    PRESENTATION_LOOK_NONE,
+    PRESENTATION_LOOK_WEEKLY_B,
+    PRESENTATION_LOOK_WEEKLY_C,
+    WEEKLY_OMNIGLASS_BEAKER_MATERIAL_PATH,
+    WEEKLY_OMNIGLASS_WATER_HASH,
+    WEEKLY_OMNIGLASS_WATER_MATERIAL_PATH,
+    is_weekly_omniglass_look,
+    resolve_presentation_look_profile,
+)
+from tools.labutopia_fluid.real_beaker import (
+    author_canonical_fluid_wrapper,
+    build_visible_beaker_spawn,
+    classify_visible_beaker_positions,
+    classify_visible_beaker_trace,
+    derive_cup_interior_frame,
+)
+from tools.labutopia_fluid.run_beaker_collider_smoke import ColliderConfig, build_source_particle_positions
 from tools.labutopia_fluid.run_colleague_liquid_usd_leak_smoke import (
     BBox,
     EVIDENCE_PARTICLE_SET_PATH,
@@ -490,6 +529,139 @@ def _latest_isaac_log_summary() -> dict[str, Any]:
     }
 
 
+def _capture_kit_log_cursor() -> dict[str, Any]:
+    log_path = _latest_isaac_log_path()
+    if log_path is None:
+        return {"log_path": None, "byte_offset": None, "cursor_captured": False}
+    try:
+        byte_offset = log_path.stat().st_size
+    except OSError as exc:
+        return {
+            "log_path": str(log_path),
+            "byte_offset": None,
+            "cursor_captured": False,
+            "cursor_error": str(exc),
+        }
+    return {
+        "log_path": str(log_path),
+        "byte_offset": byte_offset,
+        "cursor_captured": True,
+    }
+
+
+def _read_kit_log_segment(cursor: dict[str, Any] | None) -> dict[str, Any]:
+    cursor = dict(cursor or {})
+    log_path_value = cursor.get("log_path")
+    byte_offset = cursor.get("byte_offset")
+    provenance = {
+        "log_path": log_path_value,
+        "byte_offset": byte_offset,
+        "cursor_captured": bool(cursor.get("cursor_captured")),
+        "diagnostic_scan_complete": False,
+        "segment_byte_count": 0,
+        "log_text": None,
+    }
+    if not provenance["cursor_captured"] or log_path_value is None or byte_offset is None:
+        provenance["read_error"] = cursor.get("cursor_error") or "kit_log_cursor_unavailable"
+        return provenance
+    log_path = Path(log_path_value)
+    try:
+        with log_path.open("rb") as stream:
+            if stream.seek(0, os.SEEK_END) < int(byte_offset):
+                provenance["read_error"] = "kit_log_truncated_after_cursor"
+                return provenance
+            stream.seek(int(byte_offset))
+            payload = stream.read()
+    except OSError as exc:
+        provenance["read_error"] = str(exc)
+        return provenance
+    provenance.update(
+        {
+            "diagnostic_scan_complete": True,
+            "segment_byte_count": len(payload),
+            "segment_sha256": hashlib.sha256(payload).hexdigest(),
+            "log_text": payload.decode("utf-8", errors="replace"),
+        }
+    )
+    return provenance
+
+
+def _kit_log_segment_summary(segment: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in segment.items() if key != "log_text"}
+
+
+def _isaac_log_summary_for_segment(segment: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "isaac_log_path": segment.get("log_path"),
+        "isaac_log_available": bool(segment.get("diagnostic_scan_complete")),
+        "run_segment_only": True,
+        **_kit_log_segment_summary(segment),
+        **scan_mdl_compile_errors(segment.get("log_text") or ""),
+    }
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def validate_real_beaker_static_hold_args(args: argparse.Namespace) -> None:
+    if not bool(getattr(args, "real_beaker_static_hold", False)):
+        return
+    if int(getattr(args, "controlled_spawn_count", 0) or 0) <= 0:
+        raise ValueError("real_beaker_static_hold_requires_controlled_spawn")
+    trace_interval = int(getattr(args, "trace_interval", 0))
+    if trace_interval <= 0 or trace_interval > 30:
+        raise ValueError("real_beaker_static_hold_trace_interval_must_be_between_1_and_30")
+    if int(getattr(args, "particle_limit", 0) or 0) > 0:
+        raise ValueError("real_beaker_static_hold_conflicts_with_particle_limit")
+    if bool(getattr(args, "fluid_safe_wrapper_overlay", False)):
+        raise ValueError("real_beaker_static_hold_conflicts_with_fluid_safe_wrapper_overlay")
+    if getattr(args, "native_collider_approximation_variant", None):
+        raise ValueError("real_beaker_static_hold_conflicts_with_native_collider_approximation")
+    display_width = getattr(args, "display_particle_width", None)
+    if display_width is not None and float(display_width) <= 0.0:
+        raise ValueError("display_particle_width_must_be_positive")
+
+
+def build_real_beaker_summary_contract(
+    *,
+    visible_classification: dict[str, Any],
+    frame: dict[str, Any],
+    physics_offsets: dict[str, float],
+    display_particle_width: float | None,
+) -> dict[str, Any]:
+    identity = visible_classification.get("physical_trace_identity")
+    verified = (
+        visible_classification.get("classification") == "PASS_VISIBLE_BEAKER_STATIC_HOLD"
+        and visible_classification.get("trace_schema_valid") is True
+        and visible_classification.get("diagnostic_scan_complete") is True
+        and isinstance(identity, dict)
+        and isinstance(identity.get("physical_trace_sha256"), str)
+        and len(identity["physical_trace_sha256"]) == 64
+    )
+    return {
+        "cup_interior_frame": frame,
+        "strict_visible_classification": visible_classification,
+        "classification": visible_classification,
+        "physical_trace_identity": identity,
+        "physics_particle_offsets": dict(physics_offsets),
+        "display_particle_width": display_particle_width,
+        "physics_display_parameters_separated": True,
+        "visible_beaker_containment_verified": verified,
+        "strict_hold_claim_boundary": {
+            "authoritative_gate": "strict_visible_classification",
+            "visible_beaker_containment_claim_allowed": verified,
+            "legacy_bbox_classification_is_diagnostic_only": True,
+            "display_particle_width_does_not_affect_physics_offsets": True,
+            "missing_runtime_log_segment_fails_closed": True,
+        },
+    }
+
+
 def _repo_path(path: str | Path) -> Path:
     normalized = Path(path)
     return normalized if normalized.is_absolute() else REPO_ROOT / normalized
@@ -636,26 +808,108 @@ def build_liquid_presentation_isosurface_contract(
     }
 
 
-def build_presentation_postprocess_contract() -> dict[str, Any]:
+def build_presentation_postprocess_contract(
+    *,
+    anisotropy_scale: float | None = None,
+    anisotropy_min: float | None = None,
+    anisotropy_max: float | None = None,
+    smoothing_strength: float | None = None,
+    postprocess_hash: str | None = None,
+) -> dict[str, Any]:
     """Spec §5.1 presentation-only PhysX particle postprocess (anisotropy + smoothing)."""
+    scale = float(PRESENTATION_ANISOTROPY_SCALE if anisotropy_scale is None else anisotropy_scale)
+    amin = float(PRESENTATION_ANISOTROPY_MIN if anisotropy_min is None else anisotropy_min)
+    amax = float(PRESENTATION_ANISOTROPY_MAX if anisotropy_max is None else anisotropy_max)
+    strength = float(
+        PRESENTATION_SMOOTHING_STRENGTH if smoothing_strength is None else smoothing_strength
+    )
+    hash_value = PRESENTATION_POSTPROCESS_HASH if postprocess_hash is None else str(postprocess_hash)
     return {
         "enabled": True,
         "api_path": RUNTIME_PARTICLE_SYSTEM_PATH,
         "anisotropy": {
             "enabled": True,
-            "scale": float(PRESENTATION_ANISOTROPY_SCALE),
-            "min": float(PRESENTATION_ANISOTROPY_MIN),
-            "max": float(PRESENTATION_ANISOTROPY_MAX),
+            "scale": scale,
+            "min": amin,
+            "max": amax,
         },
         "smoothing": {
             "enabled": True,
-            "strength": float(PRESENTATION_SMOOTHING_STRENGTH),
+            "strength": strength,
         },
-        "postprocess_hash": PRESENTATION_POSTPROCESS_HASH,
+        "postprocess_hash": hash_value,
         "parameter_reference": "nvidia_particle_postprocessing_demo_isosurface_style",
         "claim_boundary": "visual_surface_reconstruction_only",
         "affects_leak_classification": False,
     }
+
+
+def validate_presentation_look_cli(
+    *,
+    presentation_look_preset: str | None,
+    visual_acceptance_scenario: str | None,
+) -> None:
+    """Reject weekly OmniGlass looks combined with official Visual A ClearWater scenario."""
+    look = PRESENTATION_LOOK_NONE if not presentation_look_preset else str(presentation_look_preset)
+    if is_weekly_omniglass_look(look) and visual_acceptance_scenario == VISUAL_ACCEPTANCE_SCENARIO_A_STATIC_CLEAR_WATER:
+        raise ValueError(
+            "incompatible mutual exclusion: weekly OmniGlass look preset cannot be combined "
+            "with --visual-acceptance-scenario A_static_clear_water"
+        )
+
+
+def build_omniglass_water_material_info(
+    *,
+    source_asset: str | Path,
+    glass_color: Sequence[float],
+    reflection_color: Sequence[float],
+    shader_path: str | None = None,
+    material_path: str = WEEKLY_OMNIGLASS_WATER_MATERIAL_PATH,
+    bind_method: str = "usd_mdl_shader",
+) -> dict[str, Any]:
+    """Metadata for weekly OmniGlass-tinted water (not official Visual A ClearWater)."""
+    resolved = Path(source_asset)
+    return {
+        "material_path": material_path,
+        "display_name": "presentation_water_weekly_omniglass",
+        "preferred_backend": "MDL_OMNIGLASS_WATER",
+        "source_asset_basename": "OmniGlass.mdl",
+        "sub_identifier": "OmniGlass",
+        "shader_path": shader_path or f"{material_path}/Shader",
+        "material_backend": "MDL_OMNIGLASS_WATER",
+        "mdl_bind_attempted": True,
+        "mdl_compile_status": MDL_COMPILE_STATUS_PASS,
+        "fallback_reason": None,
+        "source_asset": str(resolved),
+        "bind_method": bind_method,
+        "glass_color": [float(x) for x in glass_color],
+        "reflection_color": [float(x) for x in reflection_color],
+        "material_hash": WEEKLY_OMNIGLASS_WATER_HASH,
+        "tint_policy": "ref_a18_omniglass_water_tint",
+        "unified_liquid_style": True,
+        "state_specific_liquid_materials": False,
+        "all_liquid_particles_visible": True,
+        "visualization_only": True,
+        "visual_material_parity_claim_allowed": False,
+        "official_visual_a_compatible": False,
+    }
+
+
+def resolve_omniglass_mdl_source_asset(
+    mdl_source_asset: str | Path | None = None,
+    *,
+    closure_base_dir: str | Path | None = None,
+) -> Path | None:
+    candidates: list[Path] = []
+    if mdl_source_asset is not None:
+        candidates.append(Path(mdl_source_asset))
+    candidates.append(ISAACSIM41_CORE_MDL_ROOT / "Base" / "OmniGlass.mdl")
+    if closure_base_dir is not None:
+        candidates.append(Path(closure_base_dir) / "OmniGlass.mdl")
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def build_presentation_render_settings_contract(
@@ -1125,6 +1379,125 @@ def _try_create_and_bind_mdl_material_from_library(
     }
 
 
+def _author_omniglass_presentation_water_material(
+    stage: Any,
+    *,
+    glass_color: Sequence[float],
+    reflection_color: Sequence[float],
+    mdl_source_asset: str | Path | None = None,
+    closure_base_dir: str | Path | None = None,
+    material_path: str = WEEKLY_OMNIGLASS_WATER_MATERIAL_PATH,
+) -> dict[str, Any]:
+    """Author weekly OmniGlass-tinted water at a sibling Looks path (not ClearWater)."""
+    from pxr import Gf, Sdf, UsdShade
+
+    resolved = resolve_omniglass_mdl_source_asset(
+        mdl_source_asset,
+        closure_base_dir=closure_base_dir,
+    )
+    if resolved is None:
+        raise FileNotFoundError("OmniGlass.mdl not found for weekly OmniGlass water look")
+
+    _ensure_looks_scope(stage)
+    mat_path = Sdf.Path(material_path)
+    material = UsdShade.Material.Define(stage, mat_path)
+    shader_path = mat_path.AppendChild("Shader")
+    shader = UsdShade.Shader.Define(stage, shader_path)
+    shader.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceAsset)
+    shader.SetSourceAsset(Sdf.AssetPath(str(resolved)), "mdl")
+    shader.SetSourceAssetSubIdentifier("OmniGlass", "mdl")
+    shader.CreateInput("glass_color", Sdf.ValueTypeNames.Color3f).Set(
+        Gf.Vec3f(float(glass_color[0]), float(glass_color[1]), float(glass_color[2]))
+    )
+    shader.CreateInput("reflection_color", Sdf.ValueTypeNames.Color3f).Set(
+        Gf.Vec3f(
+            float(reflection_color[0]),
+            float(reflection_color[1]),
+            float(reflection_color[2]),
+        )
+    )
+    shader.CreateOutput("out", Sdf.ValueTypeNames.Token)
+    material.CreateSurfaceOutput("mdl").ConnectToSource(shader.ConnectableAPI(), "out")
+    material.CreateDisplacementOutput("mdl").ConnectToSource(shader.ConnectableAPI(), "out")
+    material.CreateVolumeOutput("mdl").ConnectToSource(shader.ConnectableAPI(), "out")
+    return build_omniglass_water_material_info(
+        source_asset=resolved,
+        glass_color=glass_color,
+        reflection_color=reflection_color,
+        shader_path=str(shader_path),
+        material_path=material_path,
+    )
+
+
+def _author_beaker2_presentation_glass_override(stage: Any, profile: dict[str, Any]) -> dict[str, Any]:
+    """Bind a sibling OmniGlass material to beaker2 only; leave beaker1 untouched."""
+    from pxr import Gf, Sdf, UsdShade
+
+    override = dict(profile.get("beaker_override") or {})
+    if not override.get("enabled"):
+        return {"enabled": False, "beaker_override_used": False}
+
+    target_mesh = str(override.get("target_mesh") or "/World/beaker2/mesh")
+    material_path = str(override.get("material_path") or WEEKLY_OMNIGLASS_BEAKER_MATERIAL_PATH)
+    glass_color = override.get("glass_color") or (0.85, 0.92, 0.95)
+    reflection_color = override.get("reflection_color") or (0.90, 0.95, 0.98)
+    cutout_opacity = float(override.get("cutout_opacity", 0.72))
+    enable_opacity = bool(override.get("enable_opacity", True))
+
+    resolved = resolve_omniglass_mdl_source_asset()
+    if resolved is None:
+        raise FileNotFoundError("OmniGlass.mdl not found for beaker2 presentation override")
+
+    _ensure_looks_scope(stage)
+    mat_path = Sdf.Path(material_path)
+    material = UsdShade.Material.Define(stage, mat_path)
+    shader_path = mat_path.AppendChild("Shader")
+    shader = UsdShade.Shader.Define(stage, shader_path)
+    shader.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceAsset)
+    shader.SetSourceAsset(Sdf.AssetPath(str(resolved)), "mdl")
+    shader.SetSourceAssetSubIdentifier("OmniGlass", "mdl")
+    shader.CreateInput("glass_color", Sdf.ValueTypeNames.Color3f).Set(
+        Gf.Vec3f(float(glass_color[0]), float(glass_color[1]), float(glass_color[2]))
+    )
+    shader.CreateInput("reflection_color", Sdf.ValueTypeNames.Color3f).Set(
+        Gf.Vec3f(
+            float(reflection_color[0]),
+            float(reflection_color[1]),
+            float(reflection_color[2]),
+        )
+    )
+    if enable_opacity:
+        shader.CreateInput("enable_opacity", Sdf.ValueTypeNames.Bool).Set(True)
+        shader.CreateInput("cutout_opacity", Sdf.ValueTypeNames.Float).Set(cutout_opacity)
+    shader.CreateOutput("out", Sdf.ValueTypeNames.Token)
+    material.CreateSurfaceOutput("mdl").ConnectToSource(shader.ConnectableAPI(), "out")
+
+    mesh_prim = stage.GetPrimAtPath(target_mesh)
+    if not mesh_prim:
+        raise RuntimeError(f"beaker override target missing: {target_mesh}")
+    UsdShade.MaterialBindingAPI.Apply(mesh_prim).Bind(material)
+
+    beaker1 = stage.GetPrimAtPath("/World/beaker1/mesh")
+    beaker1_binding = None
+    if beaker1:
+        bound, _rel = UsdShade.MaterialBindingAPI(beaker1).ComputeBoundMaterial()
+        beaker1_binding = str(bound.GetPath()) if bound else None
+
+    return {
+        "enabled": True,
+        "beaker_override_used": True,
+        "target_mesh": target_mesh,
+        "material_path": material_path,
+        "shader_path": str(shader_path),
+        "glass_color": [float(x) for x in glass_color],
+        "reflection_color": [float(x) for x in reflection_color],
+        "cutout_opacity": cutout_opacity,
+        "enable_opacity": enable_opacity,
+        "beaker1_binding_unchanged_probe": beaker1_binding,
+        "official_visual_a_compatible": False,
+    }
+
+
 def _author_liquid_presentation_water_material(
     stage: Any,
     *,
@@ -1187,39 +1560,71 @@ def _author_liquid_presentation_water_material(
     )
 
 
-def _author_liquid_presentation_lighting(stage: Any) -> dict[str, Any]:
-    """Spec §5.3: DomeLight fill + DistantLight key; lighting_contract_hash v2."""
+def _author_liquid_presentation_lighting(
+    stage: Any,
+    profile: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """DomeLight fill + DistantLight key; default v2 unless weekly look profile overrides."""
     from pxr import Gf, UsdLux
 
-    key_intensity = 950.0
-    key_rotate_xyz = [55.0, 0.0, 35.0]
-    dome_intensity = 400.0
+    lighting = dict((profile or {}).get("lighting") or {})
+    mode = str(lighting.get("mode") or "intensity_v2")
+    key_intensity = float(lighting.get("key_intensity", 950.0))
+    dome_intensity = float(lighting.get("dome_intensity", 400.0))
+    key_rotate_xyz = list(lighting.get("key_rotate_xyz") or [55.0, 0.0, 35.0])
+    lighting_hash = str(lighting.get("lighting_contract_hash") or LIQUID_PRESENTATION_LIGHTING_HASH)
 
     key_light = UsdLux.DistantLight.Define(stage, LIQUID_PRESENTATION_LIGHT_PATH)
     key_light.CreateIntensityAttr(key_intensity)
     key_light.ClearXformOpOrder()
     key_light.AddRotateXYZOp().Set(Gf.Vec3f(*key_rotate_xyz))
+    if mode == "exposure_ct_ref_v1":
+        if hasattr(key_light, "CreateExposureAttr"):
+            key_light.CreateExposureAttr(float(lighting.get("key_exposure", 10.0)))
+        key_light.CreateColorTemperatureAttr(float(lighting.get("key_color_temperature", 7250.0)))
+        if hasattr(key_light, "CreateEnableColorTemperatureAttr"):
+            key_light.CreateEnableColorTemperatureAttr(True)
 
     dome_light = UsdLux.DomeLight.Define(stage, LIQUID_PRESENTATION_DOME_LIGHT_PATH)
     dome_light.CreateIntensityAttr(dome_intensity)
+    if mode == "exposure_ct_ref_v1":
+        if hasattr(dome_light, "CreateExposureAttr"):
+            dome_light.CreateExposureAttr(float(lighting.get("dome_exposure", 9.0)))
+        dome_light.CreateColorTemperatureAttr(float(lighting.get("dome_color_temperature", 6150.0)))
+        if hasattr(dome_light, "CreateEnableColorTemperatureAttr"):
+            dome_light.CreateEnableColorTemperatureAttr(True)
 
-    return {
+    info = {
         "light_path": LIQUID_PRESENTATION_LIGHT_PATH,
         "key_light_path": LIQUID_PRESENTATION_LIGHT_PATH,
         "dome_light_path": LIQUID_PRESENTATION_DOME_LIGHT_PATH,
         "role": "leadership_presentation_dome_key",
+        "mode": mode,
         "intensity": key_intensity,
         "key_intensity": key_intensity,
         "dome_intensity": dome_intensity,
         "rotate_xyz": list(key_rotate_xyz),
-        "lighting_contract_hash": LIQUID_PRESENTATION_LIGHTING_HASH,
+        "lighting_contract_hash": lighting_hash,
     }
+    if mode == "exposure_ct_ref_v1":
+        info["key_exposure"] = float(lighting.get("key_exposure", 10.0))
+        info["dome_exposure"] = float(lighting.get("dome_exposure", 9.0))
+        info["key_color_temperature"] = float(lighting.get("key_color_temperature", 7250.0))
+        info["dome_color_temperature"] = float(lighting.get("dome_color_temperature", 6150.0))
+    return info
 
 
-def _define_liquid_presentation_camera(stage: Any, config: Any) -> dict[str, Any]:
+def _define_liquid_presentation_camera(
+    stage: Any,
+    config: Any,
+    profile: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     from pxr import Gf, UsdGeom
 
-    focus_source_weight = 0.72
+    camera_cfg = dict((profile or {}).get("camera") or {})
+    focus_source_weight = float(camera_cfg.get("focus_source_weight", 0.72))
+    eye_z_above_table = float(camera_cfg.get("eye_z_above_table", 0.34))
+    camera_hash = str(camera_cfg.get("main_hash") or "liquid_presentation_main_camera_v1")
     focus_target_weight = 1.0 - focus_source_weight
     focus_x = config.source_center[0] * focus_source_weight + config.target_center[0] * focus_target_weight
     focus_y = config.source_center[1] * focus_source_weight + config.target_center[1] * focus_target_weight
@@ -1236,7 +1641,7 @@ def _define_liquid_presentation_camera(stage: Any, config: Any) -> dict[str, Any
     eye = (
         focus_x + max(0.25, pair_span * 0.48),
         focus_y + source_side_y * max(0.40, pair_span * 0.90),
-        config.table_z + 0.34,
+        config.table_z + eye_z_above_table,
     )
     up = (0.0, 0.0, 1.0)
     camera = UsdGeom.Camera.Define(stage, LIQUID_PRESENTATION_CAMERA_PATH)
@@ -1256,7 +1661,9 @@ def _define_liquid_presentation_camera(stage: Any, config: Any) -> dict[str, Any
         "source_side_y": source_side_y,
         "pair_span": pair_span,
         "focus_source_weight": focus_source_weight,
-        "camera_contract_hash": "liquid_presentation_main_camera_v1",
+        "eye_z_above_table": eye_z_above_table,
+        "camera_contract_hash": camera_hash,
+        "capture_closeup": bool(camera_cfg.get("capture_closeup", False)),
     }
 
 
@@ -1316,19 +1723,27 @@ def _read_prim_attr(prim: Any, attr_name: str) -> Any:
 
 
 def build_native_scene_video_summary(frame_sources: dict[str, str]) -> dict[str, Any]:
-    presentation_count = sum(1 for value in frame_sources.values() if value == "presentation_isosurface_rgb")
+    presentation_iso_count = sum(
+        1 for value in frame_sources.values() if value == "presentation_isosurface_rgb"
+    )
+    presentation_particle_count = sum(
+        1 for value in frame_sources.values() if value == "presentation_particle_omniglass_rgb"
+    )
     slots = [
         "camera1_native_material",
         "camera2_native_material",
         "beaker2_closeup_native_material",
         "beaker2_closeup_review_markers",
     ]
-    if presentation_count:
+    if presentation_iso_count:
         slots.insert(0, "presentation_isosurface")
+    if presentation_particle_count:
+        slots.insert(0, "presentation_particle_omniglass")
     return {
         "native_scene_video_slots": slots,
         "native_camera_rgb_frame_count": sum(1 for value in frame_sources.values() if value == "native_camera_rgb"),
-        "presentation_isosurface_rgb_frame_count": presentation_count,
+        "presentation_isosurface_rgb_frame_count": presentation_iso_count,
+        "presentation_particle_omniglass_rgb_frame_count": presentation_particle_count,
         "closeup_native_rgb_frame_count": sum(1 for value in frame_sources.values() if value == "closeup_native_rgb"),
         "review_marker_rgb_frame_count": sum(1 for value in frame_sources.values() if value == "review_marker_rgb"),
         "frame_sources": dict(sorted(frame_sources.items())),
@@ -1346,6 +1761,7 @@ def build_native_scene_claim_boundary() -> dict[str, list[str]]:
             "50k_colleague_particles_stepped_in_native_scene=true",
             "leak_status_supported_by_particle_readback=true",
             "presentation_isosurface_video_recorded=true",
+            "presentation_particle_omniglass_video_recorded=true",
         ],
         "blocked": [
             "raw_usd_direct_step_passed",
@@ -1505,6 +1921,8 @@ def _author_completed_pbd_runtime_particles(
     visual_material_path: str,
     presentation_isosurface_video: bool = False,
     presentation_visual_material_path: str | None = None,
+    presentation_postprocess_overrides: dict[str, Any] | None = None,
+    display_particle_width: float | None = None,
 ) -> dict[str, Any]:
     from omni.physx.scripts import particleUtils, physicsUtils
     from pxr import Gf, Sdf, UsdGeom, UsdShade
@@ -1548,7 +1966,14 @@ def _author_completed_pbd_runtime_particles(
     isosurface_contract = {"enabled": False, "api_path": RUNTIME_PARTICLE_SYSTEM_PATH}
     postprocess_contract: dict[str, Any] = {"enabled": False, "api_path": RUNTIME_PARTICLE_SYSTEM_PATH}
     if presentation_isosurface_video:
-        postprocess_contract = build_presentation_postprocess_contract()
+        overrides = dict(presentation_postprocess_overrides or {})
+        postprocess_contract = build_presentation_postprocess_contract(
+            anisotropy_scale=overrides.get("anisotropy_scale"),
+            anisotropy_min=overrides.get("anisotropy_min"),
+            anisotropy_max=overrides.get("anisotropy_max"),
+            smoothing_strength=overrides.get("smoothing_strength"),
+            postprocess_hash=overrides.get("postprocess_hash"),
+        )
         particleUtils.add_physx_particle_smoothing(
             stage,
             Sdf.Path(RUNTIME_PARTICLE_SYSTEM_PATH),
@@ -1591,7 +2016,12 @@ def _author_completed_pbd_runtime_particles(
         UsdShade.MaterialBindingAPI.Apply(particle_system.GetPrim()).Bind(visual_material)
 
     velocities = [Gf.Vec3f(0.0, 0.0, 0.0)] * len(positions)
-    particle_widths = [widths["particle_width"]] * len(positions)
+    authored_display_width = (
+        widths["particle_width"]
+        if display_particle_width is None
+        else float(display_particle_width)
+    )
+    particle_widths = [authored_display_width] * len(positions)
     points = [Gf.Vec3f(float(p[0]), float(p[1]), float(p[2])) for p in positions]
     particle_set = particleUtils.add_physx_particleset_points(
         stage,
@@ -1644,6 +2074,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     artifact_dir.mkdir(parents=True, exist_ok=True)
     trace_path = artifact_dir / "particle_readback_trace.jsonl"
     trace_path.write_text("", encoding="utf-8")
+    strict_mode = bool(getattr(args, "real_beaker_static_hold", False))
 
     material_summary = inspect_native_material_bindings(usd_path)
     expectation = NativeMaterialExpectation()
@@ -1659,40 +2090,105 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         table_top_z=float(table_bbox.max[2]),
     )
     original_positions = _read_points(static_stage, EVIDENCE_PARTICLE_SET_PATH)
-    selected_positions = select_particle_subset(original_positions, limit=args.particle_limit)
-    authored_width = _read_width(static_stage, EVIDENCE_PARTICLE_SET_PATH)
-    offsets = resolve_particle_runtime_offsets(
-        authored_width=authored_width,
-        particle_width_override=args.particle_width_override,
-        particle_contact_offset_override=args.particle_contact_offset_override,
-    )
-    config = config.__class__(
-        **{
-            **asdict(config),
-            "particle_count": len(selected_positions),
-            "particle_width": offsets["particle_width"],
-            "particle_contact_offset": offsets["particle_contact_offset"],
-            "spawn_particle_contact_offset": offsets["particle_contact_offset"],
-            "particle_system_contact_offset": offsets["particle_system_contact_offset"],
-            "solid_rest_offset": offsets["solid_rest_offset"],
-            "fluid_rest_offset": offsets["fluid_rest_offset"],
-            "steps": args.steps,
-            "trace_interval": args.trace_interval,
-            "tail_window_steps": min(args.steps, max(1, args.trace_interval * 3)),
-            "render_width": args.width,
-            "render_height": args.height,
-            "physics_dt": args.physics_dt,
+    controlled_spawn_count = int(getattr(args, "controlled_spawn_count", 0) or 0)
+    controlled_spawn_plan: dict[str, Any] | None = None
+    spawn_frame: dict[str, Any] | None = None
+    classify_config = config
+    if controlled_spawn_count > 0:
+        if int(getattr(args, "particle_limit", 0) or 0) > 0:
+            raise ValueError("controlled_spawn_conflicts_with_particle_limit")
+        controlled_spawn_plan = build_controlled_spawn_plan(
+            controlled_spawn_count,
+            particle_seed=int(getattr(args, "controlled_spawn_seed", 0) or 0),
+        )
+        spawn_frame = build_full_scene_spawn_frame(
+            source_bbox=source_bbox,
+            target_bbox=target_bbox,
+            table_top_z=float(table_bbox.max[2]),
+            particle_count=controlled_spawn_count,
+        )
+        config = build_controlled_spawn_collider_config(
+            source_bbox=source_bbox,
+            target_bbox=target_bbox,
+            table_top_z=float(table_bbox.max[2]),
+            plan=controlled_spawn_plan,
+            steps=args.steps,
+            trace_interval=args.trace_interval,
+            tail_window_steps=min(args.steps, max(1, args.trace_interval * 3)),
+            render_width=args.width,
+            render_height=args.height,
+            physics_dt=args.physics_dt,
+        )
+        classify_config = build_classification_collider_config(
+            config,
+            classification_table_z=float(spawn_frame["classification_table_z"]),
+        )
+        selected_positions = build_source_particle_positions(config)
+        offsets = {
+            "particle_width": float(config.particle_width),
+            "particle_contact_offset": float(config.particle_contact_offset),
+            "particle_system_contact_offset": float(
+                config.particle_system_contact_offset
+                if config.particle_system_contact_offset is not None
+                else config.particle_contact_offset * 1.5
+            ),
+            "solid_rest_offset": float(
+                config.solid_rest_offset
+                if config.solid_rest_offset is not None
+                else config.particle_width * 0.99
+            ),
+            "fluid_rest_offset": float(
+                config.fluid_rest_offset
+                if config.fluid_rest_offset is not None
+                else config.particle_width * 0.99 * 0.99 * 0.6
+            ),
         }
+    else:
+        selected_positions = select_particle_subset(original_positions, limit=args.particle_limit)
+        authored_width = _read_width(static_stage, EVIDENCE_PARTICLE_SET_PATH)
+        offsets = resolve_particle_runtime_offsets(
+            authored_width=authored_width,
+            particle_width_override=args.particle_width_override,
+            particle_contact_offset_override=args.particle_contact_offset_override,
+        )
+        config = replace(
+            config,
+            particle_count=len(selected_positions),
+            particle_width=offsets["particle_width"],
+            particle_contact_offset=offsets["particle_contact_offset"],
+            spawn_particle_contact_offset=offsets["particle_contact_offset"],
+            particle_system_contact_offset=offsets["particle_system_contact_offset"],
+            solid_rest_offset=offsets["solid_rest_offset"],
+            fluid_rest_offset=offsets["fluid_rest_offset"],
+            steps=args.steps,
+            trace_interval=args.trace_interval,
+            tail_window_steps=min(args.steps, max(1, args.trace_interval * 3)),
+            render_width=args.width,
+            render_height=args.height,
+            physics_dt=args.physics_dt,
+        )
+
+    render_mode = resolve_presentation_render_mode(
+        presentation_render_mode=getattr(args, "presentation_render_mode", None),
+        presentation_isosurface_video=bool(args.presentation_isosurface_video),
+    )
+    presentation_enabled = presentation_video_enabled(render_mode)
+    enable_isosurface = enable_isosurface_for_mode(render_mode)
+    enable_particle_omniglass = enable_particle_omniglass_for_mode(render_mode)
+    presentation_slot = (
+        "presentation_isosurface"
+        if enable_isosurface
+        else ("presentation_particle_omniglass" if enable_particle_omniglass else None)
     )
 
     settings = carb.settings.get_settings()
     presentation_render_settings: dict[str, Any] = {}
-    if args.presentation_isosurface_video:
+    if presentation_enabled:
         presentation_render_settings = apply_presentation_render_settings(settings)
     settings.set(pb.SETTING_UPDATE_TO_USD, True)
     settings.set(pb.SETTING_UPDATE_PARTICLES_TO_USD, True)
     settings.set(pb.SETTING_UPDATE_VELOCITIES_TO_USD, True)
-    if args.presentation_isosurface_video or args.disable_particle_debug_display:
+    if presentation_enabled or args.disable_particle_debug_display:
         settings.set(pb.SETTING_DISPLAY_PARTICLES, _physx_visualizer_mode_none(pb))
     else:
         settings.set(pb.SETTING_DISPLAY_PARTICLES, pb.VisualizerMode.ALL)
@@ -1709,6 +2205,48 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         stage = context.get_stage()
     if not opened or stage is None:
         raise RuntimeError(f"open_stage_failed:{usd_path}")
+    cup_interior_frame = None
+    visible_spawn = None
+    visible_spawn_summary: dict[str, Any] | None = None
+    canonical_wrapper_summary: dict[str, Any] = {"enabled": False}
+    if strict_mode:
+        cup_interior_frame = derive_cup_interior_frame(
+            stage,
+            parent_path="/World/beaker2",
+            visual_mesh_path="/World/beaker2/mesh",
+            calibration_points_path=EVIDENCE_PARTICLE_SET_PATH,
+        )
+        visible_spawn = build_visible_beaker_spawn(
+            cup_interior_frame,
+            controlled_spawn_plan,
+            physics_particle_width=offsets["particle_width"],
+            particle_contact_offset=offsets["particle_contact_offset"],
+        )
+        selected_positions = list(visible_spawn.positions_world)
+        initial_visible_counts = classify_visible_beaker_positions(
+            selected_positions,
+            cup_interior_frame,
+            legacy_region_config=asdict(classify_config),
+        )
+        if (
+            cup_interior_frame.axis_alignment_dot < 0.999
+            or len(selected_positions) != controlled_spawn_count
+            or initial_visible_counts["strict_violating_point_count"] != 0
+        ):
+            raise ValueError("real_beaker_frame_or_spawn_validation_failed")
+        visible_spawn_summary = {
+            "particle_count": visible_spawn.particle_count,
+            "particle_seed": visible_spawn.particle_seed,
+            "physics_particle_width": visible_spawn.physics_particle_width,
+            "particle_contact_offset": visible_spawn.particle_contact_offset,
+            "physics_offsets": dict(visible_spawn.physics_offsets),
+            "canonical_bounds": dict(visible_spawn.canonical_bounds),
+            "derived_layer_count": visible_spawn.derived_layer_count,
+            "lattice_capacity": visible_spawn.lattice_capacity,
+            "positions_sha256": visible_spawn.positions_sha256,
+            "initial_visible_counts": initial_visible_counts,
+            "bbox_source_region_is_diagnostic_only": True,
+        }
     if args.material_closure_mode == "isaacsim41-core-local-mirror":
         material_closure_summary = _mirror_isaacsim41_core_mdl_closure(artifact_dir)
         material_retarget_summary = _retarget_stage_mdl_source_assets(stage, material_closure_summary)
@@ -1736,7 +2274,24 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             "authoring": apply_native_collider_approximation(stage, candidate),
         }
     fluid_safe_wrapper_overlay_summary: dict[str, Any] = {"enabled": False}
-    if bool(getattr(args, "fluid_safe_wrapper_overlay", False)):
+    if strict_mode:
+        canonical_wrapper_summary = {
+            "enabled": True,
+            **author_canonical_fluid_wrapper(
+                stage,
+                frame=cup_interior_frame,
+                parent_path="/World/beaker2",
+                visual_mesh_path="/World/beaker2/mesh",
+            ),
+        }
+        wrapper_prim = stage.GetPrimAtPath(canonical_wrapper_summary["wrapper_path"])
+        if (
+            not wrapper_prim.IsValid()
+            or canonical_wrapper_summary["bottom_axis_alignment_dot"] < 0.999
+            or canonical_wrapper_summary["support_plane_error_m"] > 0.001
+        ):
+            raise ValueError("real_beaker_canonical_wrapper_validation_failed")
+    elif bool(getattr(args, "fluid_safe_wrapper_overlay", False)):
         if native_collider_variant_id:
             raise ValueError(
                 "fluid_safe_wrapper_overlay_conflicts_with_native_collider_approximation_variant"
@@ -1746,14 +2301,27 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         # is not the G1-passing stack.
         import math as _math
 
+        wrapper_particle_count = (
+            int(controlled_spawn_count)
+            if controlled_spawn_count > 0
+            else int(config.particle_count or 0)
+        )
+        if spawn_frame is not None:
+            wrapper_table_z = float(spawn_frame["mesh_floor_z"])
+            wrapper_bottom_overlap = float(spawn_frame["bottom_overlap"])
+            wrapper_bottom_thickness = float(spawn_frame["bottom_thickness"])
+        else:
+            wrapper_table_z = float(config.table_z)
+            wrapper_bottom_overlap = g1_wrapper_bottom_overlap(wrapper_particle_count)
+            wrapper_bottom_thickness = 0.008
         wrapper_config = ColliderConfig(
             source_center=config.source_center,
             source_radius=config.source_radius,
             wall_height=config.wall_height,
-            table_z=config.table_z,
+            table_z=wrapper_table_z,
             wall_thickness=0.026,
-            bottom_overlap=0.016,
-            bottom_thickness=0.012,
+            bottom_overlap=wrapper_bottom_overlap,
+            bottom_thickness=wrapper_bottom_thickness,
             particle_contact_offset=offsets["particle_contact_offset"],
             collider_contact_offset=max(getattr(config, "collider_contact_offset", 0.003), 0.004),
             collider_rest_offset=getattr(config, "collider_rest_offset", 0.0),
@@ -1771,7 +2339,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 visual_mesh_path="/World/beaker2/mesh",
                 panel_count=72,
                 wall_thickness=0.026,
-                bottom_overlap=0.016,
+                bottom_overlap=wrapper_config.bottom_overlap,
                 panel_arc_overlap_factor=1.35,
                 panel_phase_offset_rad=_math.pi / 72,
                 panel_ring_count=2,
@@ -1799,32 +2367,69 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     presentation_camera_info: dict[str, Any] = {}
     presentation_visual_contract: dict[str, Any] = {}
     presentation_visual_material_path = None
+    presentation_look_profile = resolve_presentation_look_profile(
+        getattr(args, "presentation_look_preset", None)
+    )
+    beaker_override_info: dict[str, Any] = {"enabled": False, "beaker_override_used": False}
+    presentation_postprocess_overrides: dict[str, Any] | None = None
     product_water_fx_info = author_product_water_fx(
         stage,
         enabled=bool(getattr(args, "product_water_fx", False)),
     )
-    if args.presentation_isosurface_video:
-        presentation_material_info = _author_liquid_presentation_water_material(
-            stage,
-            attempt_mdl=True,
-            closure_base_dir=None,
-            # Bind absolute path from version-matched PRESENTATION_WATER_MDL_ROOT
-            # (conda omni.mdl.core). Kit absolute Base + conda OmniSurfaceBase mismatch
-            # causes round_edges createMdlModule failures.
-            prefer_kit_bind=False,
-            mdl_source_asset=PRESENTATION_WATER_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET,
-        )
-        presentation_lighting_info = _author_liquid_presentation_lighting(stage)
-        presentation_camera_info = _define_liquid_presentation_camera(stage, config)
-        presentation_visual_material_path = LIQUID_PRESENTATION_MATERIAL_PATH
+    if presentation_enabled:
+        use_omniglass_look = is_weekly_omniglass_look(presentation_look_profile["look_id"]) or enable_particle_omniglass
+        if use_omniglass_look:
+            look_profile = presentation_look_profile
+            if not is_weekly_omniglass_look(look_profile["look_id"]):
+                look_profile = resolve_presentation_look_profile(PRESENTATION_LOOK_WEEKLY_B)
+                presentation_look_profile = look_profile
+            presentation_material_info = _author_omniglass_presentation_water_material(
+                stage,
+                glass_color=look_profile["glass_color"],
+                reflection_color=look_profile["reflection_color"],
+                material_path=str(look_profile["water_material_path"]),
+            )
+            beaker_override_info = _author_beaker2_presentation_glass_override(
+                stage,
+                look_profile,
+            )
+            presentation_lighting_info = _author_liquid_presentation_lighting(
+                stage,
+                look_profile,
+            )
+            presentation_camera_info = _define_liquid_presentation_camera(
+                stage,
+                config,
+                look_profile,
+            )
+            presentation_visual_material_path = str(look_profile["water_material_path"])
+            presentation_postprocess_overrides = dict(look_profile["postprocess"])
+        else:
+            presentation_material_info = _author_liquid_presentation_water_material(
+                stage,
+                attempt_mdl=True,
+                closure_base_dir=None,
+                # Bind absolute path from version-matched PRESENTATION_WATER_MDL_ROOT
+                # (conda omni.mdl.core). Kit absolute Base + conda OmniSurfaceBase mismatch
+                # causes round_edges createMdlModule failures.
+                prefer_kit_bind=False,
+                mdl_source_asset=PRESENTATION_WATER_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET,
+            )
+            presentation_lighting_info = _author_liquid_presentation_lighting(stage)
+            presentation_camera_info = _define_liquid_presentation_camera(stage, config)
+            presentation_visual_material_path = LIQUID_PRESENTATION_MATERIAL_PATH
     authored = _author_completed_pbd_runtime_particles(
         stage=stage,
         positions=selected_positions,
         widths=offsets,
         physics_scene_path="/World/PhysicsScene",
         visual_material_path="/World/Looks/OmniGlass_01",
-        presentation_isosurface_video=bool(args.presentation_isosurface_video),
+        presentation_isosurface_video=bool(enable_isosurface),
         presentation_visual_material_path=presentation_visual_material_path,
+        presentation_postprocess_overrides=presentation_postprocess_overrides,
+        display_particle_width=(
+            getattr(args, "display_particle_width", None) if strict_mode else None
+        ),
     )
     visual_acceptance_provenance = build_visual_acceptance_provenance(
         visual_acceptance_scenario=getattr(args, "visual_acceptance_scenario", None),
@@ -1835,14 +2440,15 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         wrapper_variant_id=getattr(args, "wrapper_variant_id", None),
         physics_classification=getattr(args, "physics_classification", None),
     )
-    if args.presentation_isosurface_video:
+    if presentation_enabled:
+        liquid_material_path = presentation_visual_material_path or LIQUID_PRESENTATION_MATERIAL_PATH
         presentation_visual_contract = build_presentation_visual_contract(
             variant_id=native_collider_variant_id or NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
             camera_info=presentation_camera_info,
             lighting_info=presentation_lighting_info,
             isosurface_contract=authored.get("isosurface_contract") or {},
             postprocess_contract=authored.get("postprocess_contract") or {},
-            material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
+            material_path=liquid_material_path,
             particle_count=len(selected_positions),
             render_settings=presentation_render_settings
             or build_presentation_render_settings_contract(),
@@ -1852,6 +2458,21 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             if visual_acceptance_provenance.get("visual_acceptance_scenario")
             else None,
         )
+        presentation_visual_contract["presentation_look_preset"] = presentation_look_profile["look_id"]
+        presentation_visual_contract["official_visual_a_compatible"] = bool(
+            presentation_look_profile.get("official_visual_a_compatible")
+        )
+        presentation_visual_contract["presentation_render_mode"] = render_mode
+        presentation_visual_contract["presentation_isosurface_enabled"] = bool(enable_isosurface)
+        presentation_visual_contract["beaker_override"] = beaker_override_info
+        if is_weekly_omniglass_look(presentation_look_profile["look_id"]) or enable_particle_omniglass:
+            presentation_visual_contract["official_visual_a_claim_allowed"] = False
+            presentation_visual_contract["official_visual_a_compatible"] = False
+            if "visual_acceptance" in presentation_visual_contract and presentation_visual_contract["visual_acceptance"]:
+                presentation_visual_contract["visual_acceptance"] = {
+                    **presentation_visual_contract["visual_acceptance"],
+                    "official_visual_a_claim_allowed": False,
+                }
     evidence_scene_path = artifact_dir / "native_scene_completed_pbd_overlay.usda"
     stage.GetRootLayer().Export(str(evidence_scene_path))
 
@@ -1866,15 +2487,19 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     settings.set(pb.SETTING_UPDATE_VELOCITIES_TO_USD, True)
 
     cameras: dict[str, Any | None] = {}
-    if args.capture_native_cameras:
+    if args.capture_native_cameras or strict_mode:
         for slot, prim_path in NATIVE_CAMERA_PATHS.items():
+            if strict_mode and not args.capture_native_cameras and slot != "camera1_native_material":
+                continue
             cameras[slot] = _make_camera_sensor(
                 prim_path,
                 name=slot,
                 width=args.width,
                 height=args.height,
             )
-    if args.capture_closeup_camera or args.capture_review_markers:
+    if strict_mode or args.capture_closeup_camera or args.capture_review_markers or bool(
+        (presentation_camera_info or {}).get("capture_closeup")
+    ):
         cameras["beaker2_closeup_native_material"] = _make_positioned_camera_sensor(
             CLOSEUP_CAMERA_PATH,
             name="beaker2_closeup_native_material_camera",
@@ -1884,8 +2509,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             target=closeup_camera_info["target"],
             up=closeup_camera_info["up"],
         )
-    if args.presentation_isosurface_video:
-        cameras["presentation_isosurface"] = _make_positioned_camera_sensor(
+    if presentation_slot:
+        cameras[presentation_slot] = _make_positioned_camera_sensor(
             LIQUID_PRESENTATION_CAMERA_PATH,
             name="liquid_presentation_main_camera",
             width=args.width,
@@ -1901,8 +2526,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "beaker2_closeup_native_material": artifact_dir / "beaker2_closeup_native_material_frames",
         "beaker2_closeup_review_markers": artifact_dir / "beaker2_closeup_review_marker_frames",
     }
-    if args.presentation_isosurface_video:
-        frame_dirs["presentation_isosurface"] = artifact_dir / "presentation_isosurface_frames"
+    if presentation_slot:
+        frame_dirs[presentation_slot] = artifact_dir / f"{presentation_slot}_frames"
     frame_paths: dict[str, list[Path]] = {slot: [] for slot in frame_dirs}
     frame_sources: dict[str, str] = {}
     camera_diagnostics: dict[str, dict[str, Any]] = {}
@@ -1918,10 +2543,16 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 "particle_count": len(positions),
                 "aabb": _aabb(positions),
                 "centroid": _centroid(positions),
-                "region_counts": compute_region_counts(positions, config),
+                "region_counts": compute_region_counts(positions, classify_config),
                 "nan_count": _nan_count(positions),
                 "positions": _jsonable_positions(positions),
             }
+            if strict_mode:
+                record["strict_visible_beaker_counts"] = classify_visible_beaker_positions(
+                    positions,
+                    cup_interior_frame,
+                    legacy_region_config=asdict(classify_config),
+                )
             records.append(record)
             _write_trace_line(trace_path, record)
         if step_index % args.video_stride == 0 or step_index in (0, args.steps):
@@ -1930,10 +2561,14 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             native_slots = []
             if args.capture_native_cameras:
                 native_slots.extend(["camera1_native_material", "camera2_native_material"])
-            if args.capture_closeup_camera:
+            elif strict_mode:
+                native_slots.append("camera1_native_material")
+            if strict_mode or args.capture_closeup_camera or bool(
+                (presentation_camera_info or {}).get("capture_closeup")
+            ):
                 native_slots.append("beaker2_closeup_native_material")
-            if args.presentation_isosurface_video:
-                native_slots.insert(0, "presentation_isosurface")
+            if presentation_slot:
+                native_slots.insert(0, presentation_slot)
             for slot in native_slots:
                 camera = cameras.get(slot)
                 frame_path = frame_dirs[slot] / f"frame_{step_index:04d}.png"
@@ -1943,6 +2578,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                     frame_paths[slot].append(frame_path)
                     if slot == "presentation_isosurface":
                         frame_source = "presentation_isosurface_rgb"
+                    elif slot == "presentation_particle_omniglass":
+                        frame_source = "presentation_particle_omniglass_rgb"
                     elif slot == "beaker2_closeup_native_material":
                         frame_source = "closeup_native_rgb"
                     else:
@@ -1975,8 +2612,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 )
             omni.kit.app.get_app().update()
 
-    classification = classify_colleague_trace(records, config)
-    classification["variant_id"] = NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID
+    legacy_classification = classify_colleague_trace(records, classify_config)
+    legacy_classification["variant_id"] = NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID
     initial_positions = records[0].get("positions", []) if records else []
     final_positions = records[-1].get("positions", []) if records else []
     videos: dict[str, dict[str, Any]] = {}
@@ -1988,6 +2625,30 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             "written": written,
             "frame_count": len(paths),
         }
+    kit_log_segment = _read_kit_log_segment(getattr(args, "_kit_log_cursor", None))
+    strict_visible_classification: dict[str, Any] | None = None
+    classification = legacy_classification
+    if strict_mode:
+        strict_visible_classification = classify_visible_beaker_trace(
+            records,
+            cup_interior_frame,
+            requested_count=controlled_spawn_count,
+            steps=args.steps,
+            cadence=args.trace_interval,
+            tail_window_steps=min(args.steps, max(1, args.trace_interval * 3)),
+            source_usd_sha256=_sha256_file(usd_path),
+            particle_seed=int(getattr(args, "controlled_spawn_seed", 0) or 0),
+            legacy_region_config=asdict(classify_config),
+            diagnostic_log_text=kit_log_segment["log_text"],
+            diagnostic_scan_complete=kit_log_segment["diagnostic_scan_complete"],
+            readback_available=bool(initial_positions) and bool(final_positions),
+        )
+        classification = strict_visible_classification
+    isaac_log_summary = (
+        _isaac_log_summary_for_segment(kit_log_segment)
+        if strict_mode
+        else _latest_isaac_log_summary()
+    )
     material_post_summary = {
         "beaker2": _material_summary(stage, "/World/beaker2/mesh"),
         "beaker1": _material_summary(stage, "/World/beaker1/mesh"),
@@ -1999,6 +2660,52 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         selected_particle_count=len(selected_positions),
         particle_limit=args.particle_limit,
     )
+    if controlled_spawn_plan is not None:
+        particle_scope = {
+            **particle_scope,
+            "particle_scope": "controlled_spawn_g1_layout",
+            "full_original_50k_completed_pbd_overlay": False,
+            "sampled_overlay": False,
+            "controlled_spawn": True,
+            "raw_colleague_points_used": False,
+        }
+    claim_boundary = build_native_scene_claim_boundary()
+    if controlled_spawn_plan is not None:
+        claim_boundary = merge_claim_boundaries(claim_boundary, build_fluid_recipe_claim_boundary())
+        claim_boundary["allowed"] = [
+            item
+            for item in claim_boundary["allowed"]
+            if item != "50k_colleague_particles_stepped_in_native_scene=true"
+        ]
+    strict_summary_contract: dict[str, Any] = {}
+    if strict_mode:
+        strict_summary_contract = build_real_beaker_summary_contract(
+            visible_classification=strict_visible_classification,
+            frame=cup_interior_frame.as_dict(),
+            physics_offsets=offsets,
+            display_particle_width=(
+                float(args.display_particle_width)
+                if args.display_particle_width is not None
+                else offsets["particle_width"]
+            ),
+        )
+        claim_boundary = merge_claim_boundaries(
+            claim_boundary,
+            {
+                "allowed": [
+                    "visible_beaker_containment_verified=true"
+                    if strict_summary_contract["visible_beaker_containment_verified"]
+                    else "strict_visible_beaker_classification_recorded=true",
+                    "canonical_visible_interior_controls_spawn_wrapper_and_classification=true",
+                    "physics_and_display_particle_widths_are_independent=true",
+                ],
+                "blocked": [
+                    "legacy_bbox_source_hold_is_visible_beaker_proof=true",
+                    "display_particle_width_changes_physics_offsets=true",
+                    "missing_kit_log_segment_defaults_to_pass=true",
+                ],
+            },
+        )
     summary = {
         "schema_version": 1,
         "manifest_type": "fluid_spike_colleague_native_usd_completed_pbd_step_video",
@@ -2017,6 +2724,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "steps": args.steps,
         "physics_dt": args.physics_dt,
         "particle_scope": particle_scope,
+        "controlled_spawn_plan": controlled_spawn_plan,
+        "spawn_frame": spawn_frame_summary(spawn_frame) if spawn_frame else None,
         "source_particle_count": len(original_positions),
         "selected_particle_count": len(selected_positions),
         "runtime_particle_offsets": offsets,
@@ -2075,12 +2784,22 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         ),
         "product_water_fx_authoring": product_water_fx_info,
         "product_water_fx_cli_enabled": bool(getattr(args, "product_water_fx", False)),
-        "presentation_video_enabled": bool(args.presentation_isosurface_video),
-        "presentation_isosurface_enabled": bool(args.presentation_isosurface_video),
+        "presentation_render_mode": render_mode,
+        "presentation_video_enabled": bool(presentation_enabled),
+        "presentation_isosurface_enabled": bool(enable_isosurface),
+        "presentation_particle_omniglass_enabled": bool(enable_particle_omniglass),
+        "presentation_look_preset": presentation_look_profile["look_id"],
+        "official_visual_a_compatible": bool(
+            presentation_look_profile.get("official_visual_a_compatible", True)
+        )
+        and not enable_particle_omniglass
+        and controlled_spawn_plan is None,
+        "beaker_override": beaker_override_info,
         "debug_particle_display_enabled": not bool(
-            args.disable_particle_debug_display or args.presentation_isosurface_video
+            args.disable_particle_debug_display or presentation_enabled
         ),
-        "region_config": asdict(config),
+        "region_config": asdict(classify_config),
+        "spawn_region_config": asdict(config) if controlled_spawn_plan is not None else None,
         "source_bbox": asdict(source_bbox),
         "target_bbox": asdict(target_bbox),
         "table_bbox": asdict(table_bbox),
@@ -2098,27 +2817,46 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             "updates": marker_updates,
         },
         "elapsed_seconds": time.monotonic() - start,
-        "claim_boundary": build_native_scene_claim_boundary(),
+        "claim_boundary": claim_boundary,
         "original_fluid_deactivate_summary": original_fluid_deactivate_summary,
         "physics_settings": physics_settings,
-        "isaac_log_summary": _latest_isaac_log_summary(),
+        "isaac_log_summary": isaac_log_summary,
+        **strict_summary_contract,
     }
-    # Honest MDL status: authoring may record PASS before Hydra createMdlModule.
-    summary["isaac_log_summary"] = _latest_isaac_log_summary()
-    if presentation_material_info:
-        presentation_material_info = reconcile_presentation_water_material_with_isaac_log(
-            presentation_material_info,
-            summary["isaac_log_summary"],
+    if strict_mode:
+        summary.update(
+            {
+                "visible_beaker_spawn": visible_spawn_summary,
+                "canonical_wrapper": canonical_wrapper_summary,
+                "legacy_classification": legacy_classification,
+                "strict_kit_log_segment": _kit_log_segment_summary(kit_log_segment),
+            }
         )
-        summary["presentation_material"] = presentation_material_info
+    # Honest MDL status: authoring may record PASS before Hydra createMdlModule.
+    summary["isaac_log_summary"] = isaac_log_summary
+    if presentation_material_info:
+        # ClearWater path only: OmniGlass weekly looks skip ClearWater log reconciliation.
+        if presentation_material_info.get("material_backend") == "MDL_WATER" or (
+            presentation_material_info.get("sub_identifier") == PRESENTATION_WATER_MDL_SUB_IDENTIFIER
+        ):
+            presentation_material_info = reconcile_presentation_water_material_with_isaac_log(
+                presentation_material_info,
+                summary["isaac_log_summary"],
+            )
+            summary["presentation_material"] = presentation_material_info
         if presentation_visual_contract:
+            liquid_material_path = (
+                presentation_visual_material_path
+                or presentation_material_info.get("material_path")
+                or LIQUID_PRESENTATION_MATERIAL_PATH
+            )
             presentation_visual_contract = build_presentation_visual_contract(
                 variant_id=native_collider_variant_id or NATIVE_SCENE_COMPLETED_PBD_VARIANT_ID,
                 camera_info=presentation_camera_info,
                 lighting_info=presentation_lighting_info,
                 isosurface_contract=authored.get("isosurface_contract") or {},
                 postprocess_contract=authored.get("postprocess_contract") or {},
-                material_path=LIQUID_PRESENTATION_MATERIAL_PATH,
+                material_path=liquid_material_path,
                 particle_count=len(selected_positions),
                 render_settings=presentation_render_settings
                 or build_presentation_render_settings_contract(),
@@ -2128,6 +2866,16 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 if visual_acceptance_provenance.get("visual_acceptance_scenario")
                 else None,
             )
+            presentation_visual_contract["presentation_look_preset"] = presentation_look_profile["look_id"]
+            presentation_visual_contract["official_visual_a_compatible"] = bool(
+                presentation_look_profile.get("official_visual_a_compatible")
+            )
+            presentation_visual_contract["presentation_render_mode"] = render_mode
+            presentation_visual_contract["presentation_isosurface_enabled"] = bool(enable_isosurface)
+            presentation_visual_contract["beaker_override"] = beaker_override_info
+            if is_weekly_omniglass_look(presentation_look_profile["look_id"]) or enable_particle_omniglass:
+                presentation_visual_contract["official_visual_a_claim_allowed"] = False
+                presentation_visual_contract["official_visual_a_compatible"] = False
             summary["presentation_visual_contract"] = presentation_visual_contract
             summary["official_visual_a_claim_allowed"] = bool(
                 presentation_visual_contract.get("official_visual_a_claim_allowed")
@@ -2141,7 +2889,13 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
 def _run_runtime(args: argparse.Namespace) -> dict[str, Any]:
     from isaacsim import SimulationApp
 
+    validate_presentation_look_cli(
+        presentation_look_preset=getattr(args, "presentation_look_preset", None),
+        visual_acceptance_scenario=getattr(args, "visual_acceptance_scenario", None),
+    )
+    validate_real_beaker_static_hold_args(args)
     app = SimulationApp({"headless": bool(args.headless), "width": args.width, "height": args.height})
+    args._kit_log_cursor = _capture_kit_log_cursor()
     try:
         return _native_stage_runtime(args)
     except Exception as exc:  # pragma: no cover - runtime-only path.
@@ -2159,6 +2913,24 @@ def _run_runtime(args: argparse.Namespace) -> dict[str, Any]:
             "claim_boundary": build_native_scene_claim_boundary(),
             "isaac_log_summary": _latest_isaac_log_summary(),
         }
+        if bool(getattr(args, "real_beaker_static_hold", False)):
+            kit_log_segment = _read_kit_log_segment(getattr(args, "_kit_log_cursor", None))
+            strict_failure = {
+                "classification": "FAIL_RUNTIME_FATAL_ERROR",
+                "trace_schema_valid": False,
+                "diagnostic_scan_complete": kit_log_segment["diagnostic_scan_complete"],
+                "fatal_error": fatal_error,
+            }
+            summary.update(
+                build_real_beaker_summary_contract(
+                    visible_classification=strict_failure,
+                    frame={},
+                    physics_offsets={},
+                    display_particle_width=getattr(args, "display_particle_width", None),
+                )
+            )
+            summary["strict_kit_log_segment"] = _kit_log_segment_summary(kit_log_segment)
+            summary["isaac_log_summary"] = _isaac_log_summary_for_segment(kit_log_segment)
         out_dir = Path(args.out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         _write_json(out_dir / "runtime_smoke_summary.json", summary)
@@ -2177,6 +2949,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--particle-limit", type=int, default=0)
     parser.add_argument("--particle-width-override", type=float, default=None)
     parser.add_argument("--particle-contact-offset-override", type=float, default=None)
+    parser.add_argument(
+        "--real-beaker-static-hold",
+        action="store_true",
+        help="Run the strict visible-interior controlled-spawn static-hold contract.",
+    )
+    parser.add_argument(
+        "--display-particle-width",
+        type=float,
+        default=None,
+        help="Optional Points display width; does not alter particle-system physics offsets.",
+    )
     parser.add_argument("--steps", type=int, default=120)
     parser.add_argument("--physics-dt", type=float, default=1.0 / 60.0)
     parser.add_argument("--trace-interval", type=int, default=10)
@@ -2214,8 +2997,45 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--presentation-isosurface-video",
         action="store_true",
         help=(
+            "Back-compat alias for --presentation-render-mode isosurface. "
             "Enable PhysX Isosurface visual reconstruction, fixed presentation camera, "
             "presentation water material, and MP4 capture."
+        ),
+    )
+    parser.add_argument(
+        "--presentation-render-mode",
+        default=PRESENTATION_RENDER_MODE_NONE,
+        choices=PRESENTATION_RENDER_MODES,
+        help=(
+            "Presentation render mode. 'isosurface' enables PhysX isosurface; "
+            "'particle_omniglass' binds OmniGlass to particles with debug viz off "
+            "(no isosurface). Default 'none'."
+        ),
+    )
+    parser.add_argument(
+        "--controlled-spawn-count",
+        type=int,
+        default=0,
+        help=(
+            "If >0, spawn G1-style controlled particles via d4_promotion_spawn_layout "
+            f"(default leadership density {RECIPE_DEFAULT_PARTICLE_COUNT}) instead of "
+            "raw colleague ParticleSet points. Mutually exclusive with --particle-limit."
+        ),
+    )
+    parser.add_argument(
+        "--controlled-spawn-seed",
+        type=int,
+        default=0,
+        help="Seed for controlled spawn layout (default 0).",
+    )
+    parser.add_argument(
+        "--presentation-look-preset",
+        default=PRESENTATION_LOOK_NONE,
+        choices=(PRESENTATION_LOOK_NONE, PRESENTATION_LOOK_WEEKLY_B, PRESENTATION_LOOK_WEEKLY_C),
+        help=(
+            "Presentation look preset. Default 'none' keeps official ClearWater Visual A contracts. "
+            "weekly_omniglass_B/C are weekly diagnostic OmniGlass water looks "
+            "(incompatible with --visual-acceptance-scenario A_static_clear_water)."
         ),
     )
     parser.add_argument(
