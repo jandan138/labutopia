@@ -623,7 +623,9 @@ def validate_real_beaker_static_hold_args(args: argparse.Namespace) -> None:
     if getattr(args, "native_collider_approximation_variant", None):
         raise ValueError("real_beaker_static_hold_conflicts_with_native_collider_approximation")
     display_width = getattr(args, "display_particle_width", None)
-    if display_width is not None and float(display_width) <= 0.0:
+    if display_width is not None and (
+        not math.isfinite(float(display_width)) or float(display_width) <= 0.0
+    ):
         raise ValueError("display_particle_width_must_be_positive")
 
 
@@ -635,6 +637,12 @@ def build_real_beaker_summary_contract(
     display_particle_width: float | None,
 ) -> dict[str, Any]:
     identity = visible_classification.get("physical_trace_identity")
+    physics_display_parameters_separated = (
+        bool(physics_offsets)
+        and display_particle_width is not None
+        and math.isfinite(float(display_particle_width))
+        and float(display_particle_width) > 0.0
+    )
     verified = (
         visible_classification.get("classification") == "PASS_VISIBLE_BEAKER_STATIC_HOLD"
         and visible_classification.get("trace_schema_valid") is True
@@ -650,15 +658,68 @@ def build_real_beaker_summary_contract(
         "physical_trace_identity": identity,
         "physics_particle_offsets": dict(physics_offsets),
         "display_particle_width": display_particle_width,
-        "physics_display_parameters_separated": True,
+        "physics_display_parameters_separated": physics_display_parameters_separated,
         "visible_beaker_containment_verified": verified,
         "strict_hold_claim_boundary": {
             "authoritative_gate": "strict_visible_classification",
             "visible_beaker_containment_claim_allowed": verified,
             "legacy_bbox_classification_is_diagnostic_only": True,
-            "display_particle_width_does_not_affect_physics_offsets": True,
+            "display_particle_width_does_not_affect_physics_offsets": (
+                physics_display_parameters_separated
+            ),
             "missing_runtime_log_segment_fails_closed": True,
         },
+    }
+
+
+def build_real_beaker_runtime_fatal_summary(
+    *,
+    fatal_error: dict[str, Any],
+    kit_log_segment: dict[str, Any],
+    display_particle_width: float | None,
+) -> dict[str, Any]:
+    classification = {
+        "classification": "FAIL_RUNTIME_FATAL_ERROR",
+        "trace_schema_valid": False,
+        "diagnostic_scan_complete": bool(
+            kit_log_segment.get("diagnostic_scan_complete")
+        ),
+        "fatal_error": fatal_error,
+    }
+    claim_boundary = {
+        "allowed": [
+            "runtime_fatal_error_recorded=true",
+            "strict_visible_classification_recorded=true",
+            "strict_kit_log_segment_provenance_recorded=true",
+        ],
+        "blocked": [
+            "runtime_video_recorded=true",
+            "runtime_pbd_completion_overlay_used=true",
+            "particles_stepped=true",
+            "particle_readback_available=true",
+            "leak_classification_passed=true",
+            "visible_beaker_containment_verified=true",
+            "physics_and_display_particle_widths_are_independent=true",
+        ],
+    }
+    return {
+        "runtime_step_executed": False,
+        "runtime_pbd_completion_overlay_used": False,
+        "classification": classification,
+        "strict_visible_classification": classification,
+        "cup_interior_frame": None,
+        "visible_beaker_spawn": None,
+        "canonical_wrapper": None,
+        "legacy_classification": None,
+        "physical_trace_identity": None,
+        "physics_particle_offsets": None,
+        "display_particle_width": display_particle_width,
+        "physics_display_parameters_separated": False,
+        "visible_beaker_containment_verified": False,
+        "strict_kit_log_segment": _kit_log_segment_summary(kit_log_segment),
+        "isaac_log_summary": _isaac_log_summary_for_segment(kit_log_segment),
+        "claim_boundary": claim_boundary,
+        "strict_hold_claim_boundary": claim_boundary,
     }
 
 
@@ -2915,22 +2976,13 @@ def _run_runtime(args: argparse.Namespace) -> dict[str, Any]:
         }
         if bool(getattr(args, "real_beaker_static_hold", False)):
             kit_log_segment = _read_kit_log_segment(getattr(args, "_kit_log_cursor", None))
-            strict_failure = {
-                "classification": "FAIL_RUNTIME_FATAL_ERROR",
-                "trace_schema_valid": False,
-                "diagnostic_scan_complete": kit_log_segment["diagnostic_scan_complete"],
-                "fatal_error": fatal_error,
-            }
             summary.update(
-                build_real_beaker_summary_contract(
-                    visible_classification=strict_failure,
-                    frame={},
-                    physics_offsets={},
+                build_real_beaker_runtime_fatal_summary(
+                    fatal_error=fatal_error,
+                    kit_log_segment=kit_log_segment,
                     display_particle_width=getattr(args, "display_particle_width", None),
                 )
             )
-            summary["strict_kit_log_segment"] = _kit_log_segment_summary(kit_log_segment)
-            summary["isaac_log_summary"] = _isaac_log_summary_for_segment(kit_log_segment)
         out_dir = Path(args.out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         _write_json(out_dir / "runtime_smoke_summary.json", summary)
