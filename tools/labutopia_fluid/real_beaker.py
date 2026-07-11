@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+import hashlib
+import json
 import math
+from pathlib import Path
+import statistics
 from types import MappingProxyType
 from typing import Any, Iterable, Sequence
 
@@ -13,6 +17,19 @@ from pxr import Gf, Usd, UsdGeom
 
 _FALLBACK_WALL_CLEARANCE = 0.005
 _RADIUS_CLAMP_EPSILON = 0.000001
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _json_sha256(value: Any) -> str:
+    payload = json.dumps(value, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _dot(left: Sequence[float], right: Sequence[float]) -> float:
@@ -120,6 +137,467 @@ class CupInteriorFrame:
             "axis_alignment_dot": self.axis_alignment_dot,
             **_thaw_json(self._measurements),
         }
+
+
+@dataclass(frozen=True)
+class VisibleBeakerSpawn:
+    positions_world: tuple[tuple[float, float, float], ...]
+    velocities_world: tuple[tuple[float, float, float], ...]
+    physics_particle_width: float
+    particle_contact_offset: float
+    canonical_bounds: Mapping[str, Any]
+    physics_offsets: Mapping[str, float]
+    particle_seed: int
+    particle_count: int
+    derived_layer_count: int
+    lattice_capacity: int
+    positions_sha256: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "canonical_bounds", _freeze_json(self.canonical_bounds))
+        object.__setattr__(self, "physics_offsets", _freeze_json(self.physics_offsets))
+
+
+def _radial_lattice_capacity(radius: float, spacing: float) -> int:
+    samples_per_axis = int(math.ceil((radius * 2.0) / spacing)) + 1
+    start = -radius
+    return sum(
+        1
+        for ix in range(samples_per_axis)
+        for iy in range(samples_per_axis)
+        if math.hypot(start + ix * spacing, start + iy * spacing) <= radius
+    )
+
+
+def build_visible_beaker_spawn(
+    frame: CupInteriorFrame,
+    plan: Mapping[str, Any],
+    *,
+    physics_particle_width: float,
+    particle_contact_offset: float,
+) -> VisibleBeakerSpawn:
+    """Build the controlled radial lattice inside the measured real beaker."""
+    from tools.labutopia_fluid.run_beaker_collider_smoke import (
+        ColliderConfig,
+        build_source_particle_positions,
+    )
+
+    count = int(plan["particle_count"])
+    seed = int(plan.get("particle_seed", 0))
+    layout = plan["spawn_layout"]
+    spacing = float(layout["particle_spacing"])
+    inset = float(layout["interior_inset"])
+    if count >= 4096:
+        inset = max(inset, 0.008)
+    radial_clearance = max(float(particle_contact_offset) * 1.2, inset)
+    usable_radius = frame.interior_radius - radial_clearance
+    if usable_radius <= 0.0:
+        raise ValueError("visible_beaker_spawn_has_no_radial_capacity")
+    per_layer_capacity = _radial_lattice_capacity(usable_radius, spacing)
+    if per_layer_capacity <= 0:
+        raise ValueError("visible_beaker_spawn_has_no_lattice_candidates")
+    layer_count = int(math.ceil(count / per_layer_capacity))
+
+    config = ColliderConfig(
+        particle_count=count,
+        particle_seed=seed,
+        grid_dims=(int(layout["grid_dims"][0]), int(layout["grid_dims"][1]), layer_count),
+        particle_spacing=spacing,
+        particle_width=float(physics_particle_width),
+        particle_contact_offset=float(particle_contact_offset),
+        spawn_particle_contact_offset=float(particle_contact_offset),
+        source_center=(0.0, 0.0, frame.interior_floor),
+        source_radius=frame.interior_radius,
+        source_height=frame.rim_height - frame.interior_floor,
+        bottom_thickness=0.012,
+        interior_inset=inset,
+        collider_contact_offset=float(layout["collider_contact_offset"]),
+        table_z=frame.interior_floor,
+        initial_radial_velocity=0.0,
+        spawn_prefer_interior=True,
+    )
+    positions_canonical = tuple(build_source_particle_positions(config))
+    top_clearance = max(float(particle_contact_offset), float(physics_particle_width) / 2.0)
+    if max(point[2] for point in positions_canonical) + top_clearance >= frame.rim_height:
+        raise ValueError("visible_beaker_spawn_reaches_rim")
+    positions_world = tuple(frame.canonical_to_world(point) for point in positions_canonical)
+    velocities = tuple((0.0, 0.0, 0.0) for _ in positions_world)
+    return VisibleBeakerSpawn(
+        positions_world=positions_world,
+        velocities_world=velocities,
+        physics_particle_width=float(physics_particle_width),
+        particle_contact_offset=float(particle_contact_offset),
+        canonical_bounds=_bounds(positions_canonical),
+        physics_offsets={
+            "particle_width": float(physics_particle_width),
+            "particle_contact_offset": float(particle_contact_offset),
+            "collider_contact_offset": float(layout["collider_contact_offset"]),
+            "radial_clearance": radial_clearance,
+            "bottom_lift": 0.012,
+        },
+        particle_seed=seed,
+        particle_count=count,
+        derived_layer_count=layer_count,
+        lattice_capacity=per_layer_capacity * layer_count,
+        positions_sha256=_json_sha256(positions_world),
+    )
+
+
+def classify_visible_beaker_positions(
+    positions_world: Iterable[Sequence[float]],
+    frame: CupInteriorFrame,
+    *,
+    legacy_region_config: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Count points against the measured visible interior in canonical space."""
+    canonical: list[tuple[float, float, float]] = []
+    finite_count = 0
+    nonfinite_count = 0
+    below_floor = 0
+    outside_radius = 0
+    above_rim = 0
+    inside = 0
+    violating = 0
+    legacy_source = 0
+
+    for point in positions_world:
+        point_tuple = _as_tuple(point)
+        is_finite = all(math.isfinite(value) for value in point_tuple)
+        if not is_finite:
+            nonfinite_count += 1
+            violating += 1
+            continue
+        finite_count += 1
+        coordinate = frame.world_to_canonical(point_tuple)
+        canonical.append(coordinate)
+        radius = math.hypot(coordinate[0], coordinate[1])
+        is_below = coordinate[2] < frame.interior_floor
+        is_outside = radius > frame.interior_radius
+        is_above = coordinate[2] >= frame.rim_height
+        below_floor += int(is_below)
+        outside_radius += int(is_outside)
+        above_rim += int(is_above)
+        point_violates = is_below or is_outside or is_above
+        violating += int(point_violates)
+        inside += int(not point_violates)
+
+        if legacy_region_config is not None:
+            center = legacy_region_config.get("source_center", (0.0, 0.0, 0.0))
+            radial = math.hypot(
+                point_tuple[0] - float(center[0]), point_tuple[1] - float(center[1])
+            )
+            floor = float(legacy_region_config.get("table_z", center[2]))
+            ceiling = floor + float(legacy_region_config.get("source_height", math.inf))
+            legacy_source += int(
+                radial <= float(legacy_region_config.get("source_radius", math.inf))
+                and floor <= point_tuple[2] <= ceiling
+            )
+
+    axial = [point[2] for point in canonical]
+    radii = [math.hypot(point[0], point[1]) for point in canonical]
+    return {
+        "particle_count": finite_count + nonfinite_count,
+        "inside_visible_interior_count": inside,
+        "below_visible_floor_count": below_floor,
+        "outside_visible_radial_count": outside_radius,
+        "above_visible_rim_count": above_rim,
+        "legacy_source_region_count": legacy_source,
+        "canonical_axial_min": min(axial) if axial else None,
+        "canonical_axial_median": statistics.median(axial) if axial else None,
+        "canonical_axial_max": max(axial) if axial else None,
+        "maximum_canonical_radius": max(radii) if radii else None,
+        "finite_count": finite_count,
+        "nonfinite_count": nonfinite_count,
+        "strict_violating_point_count": violating,
+    }
+
+
+def validate_strict_trace_schema(
+    records: Sequence[Mapping[str, Any]],
+    *,
+    requested_count: int,
+    steps: int,
+    cadence: int,
+    source_usd_sha256: str,
+    particle_seed: int,
+) -> dict[str, Any]:
+    """Validate complete readback evidence and return its replay identity."""
+    if not records:
+        raise ValueError("trace_has_no_records")
+    if requested_count <= 0 or steps < 0 or cadence <= 0:
+        raise ValueError("invalid_trace_contract")
+    expected_steps = list(range(0, steps + 1, cadence))
+    if expected_steps[-1] != steps:
+        expected_steps.append(steps)
+    actual_steps = [int(record["step_index"]) for record in records]
+    if actual_steps != expected_steps or len(set(actual_steps)) != len(actual_steps):
+        raise ValueError(f"trace_step_indices_mismatch:{actual_steps}!={expected_steps}")
+
+    counts: list[int] = []
+    ordered_positions: list[Any] = []
+    for index, record in enumerate(records):
+        positions = record.get("positions")
+        if not isinstance(positions, list):
+            raise ValueError(f"trace_positions_missing:{index}")
+        count = int(record.get("particle_count", -1))
+        if count != len(positions):
+            raise ValueError(f"trace_particle_count_mismatch:{index}")
+        if not 0 < count <= requested_count:
+            raise ValueError(f"trace_particle_count_out_of_range:{index}")
+        if index == 0 and count != requested_count:
+            raise ValueError("trace_initial_count_mismatch")
+        finite = sum(
+            1
+            for point in positions
+            if len(point) >= 3 and all(math.isfinite(float(value)) for value in point[:3])
+        )
+        nonfinite = count - finite
+        declared_finite = record.get(
+            "finite_count", record.get("region_counts", {}).get("finite_count")
+        )
+        declared_nonfinite = record.get("nonfinite_count")
+        if declared_finite is not None and int(declared_finite) != finite:
+            raise ValueError(f"trace_finite_count_mismatch:{index}")
+        if declared_nonfinite is not None and int(declared_nonfinite) != nonfinite:
+            raise ValueError(f"trace_nonfinite_count_mismatch:{index}")
+        if finite + nonfinite != count:
+            raise ValueError(f"trace_finite_partition_mismatch:{index}")
+        counts.append(count)
+        ordered_positions.append(positions)
+
+    positions_sha256 = _json_sha256(ordered_positions)
+    contract = {
+        "frame_indices": actual_steps,
+        "frame_particle_counts": counts,
+        "frame_count": len(records),
+        "source_usd_sha256": source_usd_sha256,
+        "particle_count": int(requested_count),
+        "seed": int(particle_seed),
+        "steps": int(steps),
+        "trace_interval": int(cadence),
+        "positions_sha256": positions_sha256,
+    }
+    contract["physical_trace_sha256"] = _json_sha256(contract)
+    return contract
+
+
+def strict_static_hold_pass(result: Mapping[str, Any]) -> bool:
+    initial_count = int(result["initial_count"])
+    final_count = int(result["final_count"])
+    return (
+        final_count > 0
+        and initial_count > 0
+        and final_count / initial_count >= 0.95
+        and int(result["max_below_floor"]) == 0
+        and int(result["max_outside_radius"]) == 0
+        and int(result["max_above_rim"]) == 0
+        and int(result["final_inside"]) == final_count
+        and int(result["nonfinite_count"]) == 0
+        and float(result["tail_leak_rate"]) == 0.0
+        and not bool(result["particle_explosion_detected"])
+        and bool(result["diagnostic_scan_complete"])
+        and not bool(result["cpu_collision_fallback_detected"])
+        and not bool(result["gpu_collider_unsupported"])
+        and result["fatal_error"] is None
+    )
+
+
+def _scan_run_diagnostics(log_text: str | None) -> tuple[bool, bool]:
+    text = (log_text or "").lower()
+    cpu_fallback = any(
+        marker in text
+        for marker in (
+            "fallback to cpu collision",
+            "falling back to cpu collision",
+            "cpu collision fallback",
+        )
+    )
+    gpu_unsupported = any(
+        marker in text
+        for marker in (
+            "gpu collider unsupported",
+            "gpu collision unsupported",
+            "unsupported gpu collider",
+            "gpu rigid body pipeline does not support",
+        )
+    )
+    return cpu_fallback, gpu_unsupported
+
+
+def classify_visible_beaker_trace(
+    records: Sequence[Mapping[str, Any]],
+    frame: CupInteriorFrame,
+    *,
+    requested_count: int,
+    steps: int,
+    cadence: int,
+    tail_window_steps: int,
+    source_usd_sha256: str,
+    particle_seed: int = 0,
+    legacy_region_config: Mapping[str, Any] | None = None,
+    diagnostic_log_text: str | None = None,
+    diagnostic_scan_complete: bool = False,
+    fatal_error: str | None = None,
+    readback_available: bool = True,
+) -> dict[str, Any]:
+    """Classify a complete trace without assigning identity to particle order."""
+    try:
+        identity = validate_strict_trace_schema(
+            records,
+            requested_count=requested_count,
+            steps=steps,
+            cadence=cadence,
+            source_usd_sha256=source_usd_sha256,
+            particle_seed=particle_seed,
+        )
+    except (KeyError, TypeError, ValueError, OverflowError) as exc:
+        return {
+            "classification": "STOP_INCOMPLETE_TRACE",
+            "trace_schema_valid": False,
+            "trace_schema_error": str(exc),
+            "diagnostic_scan_complete": bool(diagnostic_scan_complete),
+        }
+
+    frames = []
+    particle_explosion = False
+    cup_height = frame.rim_height - frame.interior_floor
+    for record in records:
+        classified = classify_visible_beaker_positions(
+            record["positions"], frame, legacy_region_config=legacy_region_config
+        )
+        classified["step_index"] = int(record["step_index"])
+        frames.append(classified)
+        if classified["nonfinite_count"]:
+            particle_explosion = True
+        if classified["maximum_canonical_radius"] is not None:
+            particle_explosion |= (
+                classified["maximum_canonical_radius"] > frame.interior_radius * 10.0
+            )
+        if classified["canonical_axial_min"] is not None:
+            particle_explosion |= (
+                classified["canonical_axial_min"]
+                < frame.interior_floor - cup_height * 10.0
+            )
+            particle_explosion |= (
+                classified["canonical_axial_max"] > frame.rim_height + cup_height * 10.0
+            )
+
+    tail_start = steps - max(int(tail_window_steps), 0)
+    tail_frames = [item for item in frames if item["step_index"] >= tail_start]
+    tail_violations = sum(item["strict_violating_point_count"] for item in tail_frames)
+    tail_population = sum(item["particle_count"] for item in tail_frames)
+    cpu_fallback, gpu_unsupported = _scan_run_diagnostics(diagnostic_log_text)
+    result = {
+        "initial_count": frames[0]["particle_count"],
+        "final_count": frames[-1]["particle_count"],
+        "final_inside": frames[-1]["inside_visible_interior_count"],
+        "inside_visible_interior_count": frames[-1]["inside_visible_interior_count"],
+        "below_visible_floor_count": max(item["below_visible_floor_count"] for item in frames),
+        "outside_visible_radial_count": max(
+            item["outside_visible_radial_count"] for item in frames
+        ),
+        "above_visible_rim_count": max(item["above_visible_rim_count"] for item in frames),
+        "max_below_floor": max(item["below_visible_floor_count"] for item in frames),
+        "max_outside_radius": max(item["outside_visible_radial_count"] for item in frames),
+        "max_above_rim": max(item["above_visible_rim_count"] for item in frames),
+        "nonfinite_count": sum(item["nonfinite_count"] for item in frames),
+        "tail_leak_rate": tail_violations / tail_population if tail_population else math.inf,
+        "particle_explosion_detected": particle_explosion,
+        "diagnostic_scan_complete": bool(diagnostic_scan_complete),
+        "cpu_collision_fallback_detected": cpu_fallback,
+        "gpu_collider_unsupported": gpu_unsupported,
+        "fatal_error": fatal_error,
+        "readback_available": bool(readback_available),
+        "trace_schema_valid": True,
+        "physical_trace_identity": identity,
+        "frames": frames,
+    }
+    passed = strict_static_hold_pass(result)
+    geometric_failure = any(
+        result[key] != 0
+        for key in ("max_below_floor", "max_outside_radius", "max_above_rim", "nonfinite_count")
+    ) or result["final_inside"] != result["final_count"]
+    if passed:
+        classification = "PASS_VISIBLE_BEAKER_STATIC_HOLD"
+    elif geometric_failure:
+        classification = "FAIL_VISIBLE_BEAKER_CONTAINMENT"
+    elif fatal_error is not None:
+        classification = "FAIL_RUNTIME_FATAL_ERROR"
+    elif not readback_available:
+        classification = "FAIL_READBACK_UNAVAILABLE"
+    elif not diagnostic_scan_complete:
+        classification = "STOP_INCOMPLETE_DIAGNOSTICS"
+    elif cpu_fallback:
+        classification = "FAIL_CPU_COLLISION_FALLBACK"
+    elif gpu_unsupported:
+        classification = "FAIL_GPU_COLLIDER_UNSUPPORTED"
+    elif particle_explosion:
+        classification = "FAIL_PARTICLE_EXPLOSION"
+    else:
+        classification = "FAIL_VISIBLE_BEAKER_CONTAINMENT"
+    result["passed"] = passed
+    result["classification"] = classification
+    return result
+
+
+def classify_visible_beaker_trace_from_files(*, manifest_path: str | Path) -> dict[str, Any]:
+    manifest_file = Path(manifest_path)
+    try:
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+        source_path = Path(manifest["source_usd_path"])
+        trace_path = Path(manifest["trace_path"])
+        if not source_path.is_absolute():
+            source_path = manifest_file.parent / source_path
+        if not trace_path.is_absolute():
+            trace_path = manifest_file.parent / trace_path
+        stage = Usd.Stage.Open(str(source_path))
+        if stage is None:
+            raise ValueError(f"cannot_open_source_usd:{source_path}")
+        frame = derive_cup_interior_frame(
+            stage,
+            parent_path="/World/beaker2",
+            visual_mesh_path="/World/beaker2/mesh",
+            calibration_points_path="/World/ParticleSet",
+        )
+        records = [
+            json.loads(line)
+            for line in trace_path.read_text(encoding="utf-8").splitlines()
+        ]
+    except (KeyError, OSError, json.JSONDecodeError, ValueError) as exc:
+        return {"classification": "STOP_INCOMPLETE_TRACE", "trace_schema_error": str(exc)}
+
+    region_config = manifest.get("region_config", {})
+    diagnostics = manifest.get("isaac_log_summary", {})
+    log_available = diagnostics.get("isaac_log_available") is True
+    log_text = None
+    if log_available:
+        try:
+            log_text = Path(diagnostics["isaac_log_path"]).read_text(
+                encoding="utf-8", errors="replace"
+            )
+        except (KeyError, OSError):
+            log_available = False
+    plan = manifest.get("controlled_spawn_plan", {})
+    result = classify_visible_beaker_trace(
+        records,
+        frame,
+        requested_count=int(manifest["selected_particle_count"]),
+        steps=int(manifest["steps"]),
+        cadence=int(region_config["trace_interval"]),
+        tail_window_steps=int(region_config["tail_window_steps"]),
+        source_usd_sha256=_sha256_file(source_path),
+        particle_seed=int(plan.get("particle_seed", 0)),
+        legacy_region_config=region_config,
+        diagnostic_log_text=log_text,
+        diagnostic_scan_complete=log_available,
+        fatal_error=manifest.get("runtime_exception") or manifest.get("fatal_error"),
+        readback_available=manifest.get("readback_diagnostics", {}).get(
+            "readback_available", False
+        ),
+    )
+    result["source_usd_path"] = str(source_path)
+    result["trace_path"] = str(trace_path)
+    return result
 
 
 def _parent_axes_world(parent_world: Gf.Matrix4d) -> tuple[tuple[float, float, float], ...]:

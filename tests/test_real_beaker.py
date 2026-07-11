@@ -1,3 +1,32 @@
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture(scope="module")
+def real_stage():
+    from pxr import Usd
+
+    scene_path = Path(
+        "outputs/usd_asset_packages/lab_001_localized_20260707/"
+        "lab_001_level1_pour_tabletop_with_liquid.usd"
+    )
+    assert scene_path.is_file(), f"required localized scene is missing: {scene_path}"
+    return Usd.Stage.Open(str(scene_path))
+
+
+@pytest.fixture(scope="module")
+def real_frame(real_stage):
+    from tools.labutopia_fluid.real_beaker import derive_cup_interior_frame
+
+    return derive_cup_interior_frame(
+        real_stage,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        calibration_points_path="/World/ParticleSet",
+    )
+
+
 def test_derive_cup_frame_maps_canonical_z_to_rotated_parent_local_y():
     import pytest
     from pxr import Gf, Usd, UsdGeom
@@ -231,3 +260,58 @@ def test_cup_frame_clamps_oversized_calibration_and_records_provenance():
     assert calibration["outer_to_calibrated_wall_clearance"] == pytest.approx(
         frame.outer_radius - frame.interior_radius
     )
+
+
+def test_strict_classifier_rejects_below_floor_and_outside_radius(real_frame):
+    from tools.labutopia_fluid.real_beaker import classify_visible_beaker_positions
+
+    inside = real_frame.canonical_to_world((0.0, 0.0, real_frame.interior_floor + 0.01))
+    below = real_frame.canonical_to_world((0.0, 0.0, real_frame.interior_floor - 0.001))
+    outside = real_frame.canonical_to_world((real_frame.interior_radius + 0.001, 0.0, 0.03))
+    result = classify_visible_beaker_positions([inside, below, outside], real_frame)
+    assert result["inside_visible_interior_count"] == 1
+    assert result["below_visible_floor_count"] == 1
+    assert result["outside_visible_radial_count"] == 1
+
+
+def test_old_false_pass_trace_fails_strict_visible_gate():
+    from tools.labutopia_fluid.real_beaker import classify_visible_beaker_trace_from_files
+
+    result = classify_visible_beaker_trace_from_files(
+        manifest_path="docs/labutopia_lab_poc/evidence_manifests/"
+        "fluid_spike_full_scene_controlled_spawn_hold_20260710_P4096.json"
+    )
+    assert result["classification"] == "FAIL_VISIBLE_BEAKER_CONTAINMENT"
+    assert result["below_visible_floor_count"] >= 3926
+
+
+@pytest.mark.parametrize(
+    ("particle_count", "particle_width", "particle_contact_offset"),
+    ((1024, 0.0006, 0.00054), (4096, 0.00045, 0.0005)),
+)
+def test_canonical_spawn_is_inside_real_visible_interior(
+    real_frame,
+    particle_count,
+    particle_width,
+    particle_contact_offset,
+):
+    from tools.labutopia_fluid.fluid_recipe import build_controlled_spawn_plan
+    from tools.labutopia_fluid.real_beaker import (
+        build_visible_beaker_spawn,
+        classify_visible_beaker_positions,
+    )
+
+    spawn = build_visible_beaker_spawn(
+        real_frame,
+        build_controlled_spawn_plan(particle_count, particle_seed=0),
+        physics_particle_width=particle_width,
+        particle_contact_offset=particle_contact_offset,
+    )
+    counts = classify_visible_beaker_positions(spawn.positions_world, real_frame)
+    assert len(spawn.positions_world) == particle_count
+    assert counts["inside_visible_interior_count"] == particle_count
+    assert counts["below_visible_floor_count"] == 0
+    assert counts["outside_visible_radial_count"] == 0
+    assert counts["above_visible_rim_count"] == 0
+    assert spawn.canonical_bounds["max"][2] < real_frame.rim_height
+    assert set(spawn.velocities_world) == {(0.0, 0.0, 0.0)}
