@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
+import math
 import os
 import signal
 import subprocess
@@ -38,11 +39,20 @@ DEFAULT_MANIFEST = (
 PASS_CLASSIFICATION = "PASS_VISIBLE_BEAKER_STATIC_HOLD"
 REQUIRED_COUNTS = (1024, 4096)
 REQUIRED_SEEDS = (0, 1, 2)
+REQUIRED_STEPS = 600
+REQUIRED_PHYSICS_DT = 1.0 / 60.0
+PHYSICS_DT_ABS_TOLERANCE = 1e-15
 SUPERSEDED_FALSE_POSITIVE_MANIFESTS = (
     "docs/labutopia_lab_poc/evidence_manifests/"
     "fluid_spike_full_scene_controlled_spawn_hold_20260710_P1024.json",
     "docs/labutopia_lab_poc/evidence_manifests/"
     "fluid_spike_full_scene_controlled_spawn_hold_20260710_P4096.json",
+)
+ISAAC_VERSION_FILES = (
+    Path(sys.prefix) / "VERSION",
+    Path(sys.executable).resolve().parent.parent / "VERSION",
+    Path("/isaac-sim/VERSION"),
+    Path("/isaac-sim/PACKAGE-INFO.yaml"),
 )
 
 
@@ -86,7 +96,24 @@ def static_hold_cells(
     counts: Sequence[int] = REQUIRED_COUNTS,
     seeds: Sequence[int] = REQUIRED_SEEDS,
 ) -> list[dict[str, int | str]]:
-    ordered_counts = sorted((int(count) for count in counts), key=lambda count: (count != 1024, count))
+    normalized_counts = tuple(counts)
+    normalized_seeds = tuple(seeds)
+    if not normalized_counts or not normalized_seeds:
+        raise ValueError("counts and seeds must be nonempty subsets of the canonical matrix")
+    if any(type(count) is not int for count in normalized_counts):
+        raise ValueError("counts must contain integers")
+    if any(type(seed) is not int for seed in normalized_seeds):
+        raise ValueError("seeds must contain integers")
+    if len(set(normalized_counts)) != len(normalized_counts):
+        raise ValueError("counts must not contain duplicates")
+    if len(set(normalized_seeds)) != len(normalized_seeds):
+        raise ValueError("seeds must not contain duplicates")
+    if not set(normalized_counts).issubset(REQUIRED_COUNTS):
+        raise ValueError(f"counts must be a subset of {REQUIRED_COUNTS}")
+    if not set(normalized_seeds).issubset(REQUIRED_SEEDS):
+        raise ValueError(f"seeds must be a subset of {REQUIRED_SEEDS}")
+    ordered_counts = [count for count in REQUIRED_COUNTS if count in normalized_counts]
+    ordered_seeds = [seed for seed in REQUIRED_SEEDS if seed in normalized_seeds]
     return [
         {
             "cell_id": f"P{count}_S{int(seed)}",
@@ -94,7 +121,7 @@ def static_hold_cells(
             "seed": int(seed),
         }
         for count in ordered_counts
-        for seed in seeds
+        for seed in ordered_seeds
     ]
 
 
@@ -118,6 +145,7 @@ def build_cell_argv(
     display_particle_width: float | None = None,
     headless: bool = False,
 ) -> list[str]:
+    _validate_runtime_pins(steps=steps, physics_dt=physics_dt)
     manifest = out_dir / "runtime_smoke_summary.json"
     argv = [
         sys.executable,
@@ -195,7 +223,33 @@ def _isaac_version() -> str:
             versions.append(f"{distribution}={importlib.metadata.version(distribution)}")
         except importlib.metadata.PackageNotFoundError:
             continue
-    return ",".join(versions) if versions else "unavailable"
+    if versions:
+        return ",".join(versions)
+    for candidate in ISAAC_VERSION_FILES:
+        path = candidate.expanduser().resolve()
+        if not path.is_file() or not os.access(path, os.R_OK):
+            continue
+        try:
+            payload = path.read_bytes()
+        except OSError:
+            continue
+        text = payload.decode("utf-8", errors="replace")
+        version = next(
+            (
+                line.split(":", 1)[1].strip()
+                for line in text.splitlines()
+                if line.lower().startswith("version:")
+            ),
+            next((line.strip() for line in text.splitlines() if line.strip()), "unknown"),
+        )
+        fingerprint = _sha256_bytes(str(path).encode("utf-8") + b"\0" + payload)
+        return (
+            f"version_file={version};path={path};"
+            f"installation_fingerprint_sha256={fingerprint};file_sha256={_sha256_file(path)}"
+        )
+    install_path = Path(sys.prefix).resolve()
+    fingerprint = _sha256_bytes(str(install_path).encode("utf-8"))
+    return f"undetected;path={install_path};installation_fingerprint_sha256={fingerprint}"
 
 
 def build_run_identity(args: argparse.Namespace) -> dict[str, Any]:
@@ -237,12 +291,7 @@ def _cell_key(cell: Mapping[str, Any]) -> tuple[int, int]:
 
 
 def cell_is_accepted(record: Mapping[str, Any]) -> bool:
-    return (
-        record.get("returncode") == 0
-        and record.get("timed_out") is False
-        and record.get("classification") == PASS_CLASSIFICATION
-        and record.get("visible_beaker_containment_verified") is True
-    )
+    return _has_authoritative_pass(record)
 
 
 def _has_authoritative_pass(record: Mapping[str, Any]) -> bool:
@@ -252,11 +301,18 @@ def _has_authoritative_pass(record: Mapping[str, Any]) -> bool:
     )
 
 
-def real_beaker_static_hold_closed(cells: Sequence[Mapping[str, Any]]) -> bool:
+def real_beaker_static_hold_closed(
+    cells: Sequence[Mapping[str, Any]],
+    *,
+    steps: int = REQUIRED_STEPS,
+    physics_dt: float = REQUIRED_PHYSICS_DT,
+) -> bool:
+    if not _runtime_pins_match(steps=steps, physics_dt=physics_dt):
+        return False
     required = set(_cell_key(cell) for cell in static_hold_cells())
     if len(cells) != len(required) or {_cell_key(cell) for cell in cells} != required:
         return False
-    return all(bool(cell.get("accepted")) and _has_authoritative_pass(cell) for cell in cells)
+    return all(_has_authoritative_pass(cell) for cell in cells)
 
 
 def _accepted_1024_keys(cells: Sequence[Mapping[str, Any]]) -> set[tuple[int, int]]:
@@ -264,7 +320,6 @@ def _accepted_1024_keys(cells: Sequence[Mapping[str, Any]]) -> set[tuple[int, in
         _cell_key(cell)
         for cell in cells
         if int(cell.get("particle_count", -1)) == 1024
-        and bool(cell.get("accepted"))
         and _has_authoritative_pass(cell)
     }
 
@@ -325,25 +380,35 @@ def execute_child(
         try:
             return ChildResult(returncode=process.wait(timeout=timeout_seconds), timed_out=False)
         except subprocess.TimeoutExpired:
-            termination = "SIGTERM"
-            try:
-                os.killpg(process.pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
-            try:
-                process.wait(timeout=30.0)
-            except subprocess.TimeoutExpired:
-                termination = "SIGKILL"
-                try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                process.wait()
+            termination = _terminate_and_reap(process)
             return ChildResult(
                 returncode=process.returncode,
                 timed_out=True,
                 termination=termination,
             )
+        except BaseException as exc:
+            termination = _terminate_and_reap(process)
+            setattr(exc, "child_returncode", process.returncode)
+            setattr(exc, "child_termination", termination)
+            raise
+
+
+def _terminate_and_reap(process: subprocess.Popen[Any]) -> str:
+    termination = "SIGTERM"
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    try:
+        process.wait(timeout=30.0)
+    except subprocess.TimeoutExpired:
+        termination = "SIGKILL"
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+    return termination
 
 
 def _read_summary(path: Path) -> tuple[dict[str, Any], str | None]:
@@ -399,6 +464,11 @@ def _cell_record(
         "stdout_path": str(out_dir / "stdout.log"),
         "stderr_path": str(out_dir / "stderr.log"),
         "returncode": result.returncode,
+        "returncode_warning": (
+            None
+            if result.returncode in (None, 0)
+            else f"nonzero child returncode {result.returncode}; authoritative summary controls acceptance"
+        ),
         "timed_out": result.timed_out,
         "termination": result.termination,
         "launch_error": result.launch_error,
@@ -429,22 +499,49 @@ def _cell_record(
 
 
 def _validate_args(args: argparse.Namespace) -> None:
-    if not args.counts or not args.seeds:
-        raise ValueError("counts and seeds must be nonempty")
-    if len(set(args.counts)) != len(args.counts) or len(set(args.seeds)) != len(args.seeds):
-        raise ValueError("counts and seeds must not contain duplicates")
-    if any(count <= 0 for count in args.counts) or any(seed < 0 for seed in args.seeds):
-        raise ValueError("counts must be positive and seeds must be nonnegative")
-    if args.steps <= 0:
-        raise ValueError("steps must be positive")
-    if args.physics_dt <= 0:
-        raise ValueError("physics dt must be positive")
+    static_hold_cells(counts=args.counts, seeds=args.seeds)
+    _validate_runtime_pins(steps=args.steps, physics_dt=args.physics_dt)
     if args.trace_interval <= 0 or args.trace_interval > 30:
         raise ValueError("trace interval must be between 1 and 30")
     if args.runtime_timeout_seconds < 900:
         raise ValueError("runtime timeout must be at least 900 seconds")
-    if args.process_timeout_seconds < args.runtime_timeout_seconds:
-        raise ValueError("process timeout must be at least the child runtime timeout")
+    if args.process_timeout_seconds < args.runtime_timeout_seconds + 60.0:
+        raise ValueError("process timeout must be at least 60 seconds above the child runtime timeout")
+
+
+def _runtime_pins_match(*, steps: int, physics_dt: float) -> bool:
+    return (
+        steps == REQUIRED_STEPS
+        and math.isfinite(physics_dt)
+        and math.isclose(
+            physics_dt,
+            REQUIRED_PHYSICS_DT,
+            rel_tol=0.0,
+            abs_tol=PHYSICS_DT_ABS_TOLERANCE,
+        )
+    )
+
+
+def _validate_runtime_pins(*, steps: int, physics_dt: float) -> None:
+    if steps != REQUIRED_STEPS:
+        raise ValueError(f"steps must be exactly {REQUIRED_STEPS}")
+    if not math.isfinite(physics_dt) or not math.isclose(
+        physics_dt,
+        REQUIRED_PHYSICS_DT,
+        rel_tol=0.0,
+        abs_tol=PHYSICS_DT_ABS_TOLERANCE,
+    ):
+        raise ValueError("physics dt must be exactly 1/60 within absolute tolerance 1e-15")
+
+
+def _resolve_manifest_path(path_value: str | os.PathLike[str]) -> Path:
+    path = Path(path_value).expanduser().resolve()
+    immutable_paths = {
+        (REPO_ROOT / relative).resolve() for relative in SUPERSEDED_FALSE_POSITIVE_MANIFESTS
+    }
+    if path in immutable_paths:
+        raise ValueError(f"immutable legacy manifest path is superseded and read-only: {path}")
+    return path
 
 
 def _new_manifest(args: argparse.Namespace, run_identity: Mapping[str, Any]) -> dict[str, Any]:
@@ -473,10 +570,10 @@ def _new_manifest(args: argparse.Namespace, run_identity: Mapping[str, Any]) -> 
 
 
 def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
+    manifest_path = _resolve_manifest_path(args.manifest)
     _validate_args(args)
     requested_cells = static_hold_cells(counts=args.counts, seeds=args.seeds)
     run_identity = build_run_identity(args)
-    manifest_path = Path(args.manifest).resolve()
     if args.append:
         if not manifest_path.is_file():
             raise FileNotFoundError(f"append manifest does not exist: {manifest_path}")
@@ -550,30 +647,51 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
                 stdout_path=stdout_path,
                 stderr_path=stderr_path,
             )
-        except Exception as exc:
+        except BaseException as exc:
             with stderr_path.open("a", encoding="utf-8") as stream:
                 stream.write(f"orchestrator child error: {type(exc).__name__}: {exc}\n")
             result = ChildResult(
-                returncode=None,
+                returncode=getattr(exc, "child_returncode", None),
                 timed_out=False,
+                termination=getattr(exc, "child_termination", None),
                 launch_error=f"{type(exc).__name__}: {exc}",
             )
+            existing_cells.append(
+                _cell_record(cell, argv=argv, out_dir=out_dir, result=result, args=args)
+            )
+            manifest["updated_at_utc"] = _utc_now()
+            manifest["real_beaker_static_hold_closed"] = real_beaker_static_hold_closed(
+                existing_cells,
+                steps=args.steps,
+                physics_dt=args.physics_dt,
+            )
+            _atomic_write_json(manifest_path, manifest)
+            raise
         existing_cells.append(
             _cell_record(cell, argv=argv, out_dir=out_dir, result=result, args=args)
         )
         manifest["updated_at_utc"] = _utc_now()
-        manifest["real_beaker_static_hold_closed"] = real_beaker_static_hold_closed(existing_cells)
+        manifest["real_beaker_static_hold_closed"] = real_beaker_static_hold_closed(
+            existing_cells,
+            steps=args.steps,
+            physics_dt=args.physics_dt,
+        )
         _atomic_write_json(manifest_path, manifest)
 
     if wants_4096 and not all_required_1024_accepted(existing_cells):
         manifest["blocked_before_4096"] = True
     manifest["updated_at_utc"] = _utc_now()
-    manifest["real_beaker_static_hold_closed"] = real_beaker_static_hold_closed(existing_cells)
+    manifest["real_beaker_static_hold_closed"] = real_beaker_static_hold_closed(
+        existing_cells,
+        steps=args.steps,
+        physics_dt=args.physics_dt,
+    )
     _atomic_write_json(manifest_path, manifest)
     return manifest
 
 
 def build_dry_plan(args: argparse.Namespace) -> dict[str, Any]:
+    manifest_path = _resolve_manifest_path(args.manifest)
     _validate_args(args)
     cells = []
     for cell in static_hold_cells(counts=args.counts, seeds=args.seeds):
@@ -605,7 +723,7 @@ def build_dry_plan(args: argparse.Namespace) -> dict[str, Any]:
         "launches_performed": 0,
         "cells": cells,
         "4096_prerequisite": "all three accepted 1024 cells",
-        "manifest": str(Path(args.manifest).resolve()),
+        "manifest": str(manifest_path),
     }
 
 
@@ -613,14 +731,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--counts", nargs="+", type=int, default=list(REQUIRED_COUNTS))
     parser.add_argument("--seeds", nargs="+", type=int, default=list(REQUIRED_SEEDS))
-    parser.add_argument("--steps", type=int, default=600)
+    parser.add_argument("--steps", type=int, default=REQUIRED_STEPS)
     parser.add_argument("--out-root", default=str(DEFAULT_OUT_ROOT))
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     parser.add_argument("--append", action="store_true")
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--dry-plan", action="store_true")
     parser.add_argument("--usd", default=str(DEFAULT_USD))
-    parser.add_argument("--physics-dt", type=float, default=1.0 / 60.0)
+    parser.add_argument("--physics-dt", type=float, default=REQUIRED_PHYSICS_DT)
     parser.add_argument("--trace-interval", type=int, default=30)
     parser.add_argument("--runtime-timeout-seconds", type=float, default=900.0)
     parser.add_argument("--process-timeout-seconds", type=float, default=1020.0)

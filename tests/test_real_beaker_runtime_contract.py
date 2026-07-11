@@ -1,4 +1,6 @@
 import json
+import signal
+import subprocess
 import sys
 import types
 
@@ -320,6 +322,35 @@ def test_static_hold_matrix_has_required_six_cells():
     ]
 
 
+def test_static_hold_matrix_canonicalizes_count_and_seed_order():
+    cells = matrix.static_hold_cells(counts=(4096, 1024), seeds=(2, 0, 1))
+
+    assert [(cell["particle_count"], cell["seed"]) for cell in cells] == [
+        (1024, 0),
+        (1024, 1),
+        (1024, 2),
+        (4096, 0),
+        (4096, 1),
+        (4096, 2),
+    ]
+
+
+@pytest.mark.parametrize(
+    "counts,seeds",
+    [
+        ((512,), (0,)),
+        ((1024, 1024), (0,)),
+        ((1024.5,), (0,)),
+        ((1024,), (3,)),
+        ((1024,), (1.5,)),
+        ((1024,), (0, 0)),
+    ],
+)
+def test_static_hold_matrix_rejects_noncanonical_or_duplicate_cells(counts, seeds):
+    with pytest.raises(ValueError, match="counts|seeds"):
+        matrix.static_hold_cells(counts=counts, seeds=seeds)
+
+
 def test_matrix_command_pins_strict_runtime_and_capture_contract(tmp_path):
     argv = matrix.build_cell_argv(matrix.static_hold_cells()[0], out_dir=tmp_path)
 
@@ -337,6 +368,19 @@ def test_matrix_command_pins_strict_runtime_and_capture_contract(tmp_path):
     assert "--hard-exit-after-run" in argv
 
 
+@pytest.mark.parametrize(
+    "extra,match",
+    [
+        (("--steps", "599"), "exactly 600"),
+        (("--physics-dt", "0.016666666667666666"), "exactly 1/60"),
+        (("--physics-dt", "nan"), "exactly 1/60"),
+    ],
+)
+def test_matrix_rejects_unpinned_steps_and_physics_dt(tmp_path, extra, match):
+    with pytest.raises(ValueError, match=match):
+        matrix.build_dry_plan(_matrix_args(tmp_path, *extra))
+
+
 def test_matrix_closure_requires_exactly_six_accepted_cells():
     accepted = [
         {
@@ -351,6 +395,36 @@ def test_matrix_closure_requires_exactly_six_accepted_cells():
     assert matrix.real_beaker_static_hold_closed(accepted) is True
     assert matrix.real_beaker_static_hold_closed(accepted[:-1]) is False
     assert matrix.real_beaker_static_hold_closed([*accepted, {**accepted[0], "seed": 99}]) is False
+
+
+def test_matrix_closure_rejects_noncanonical_runtime_config():
+    accepted = [
+        {
+            **cell,
+            "accepted": True,
+            "classification": "PASS_VISIBLE_BEAKER_STATIC_HOLD",
+            "visible_beaker_containment_verified": True,
+        }
+        for cell in matrix.static_hold_cells()
+    ]
+
+    assert matrix.real_beaker_static_hold_closed(accepted, steps=599) is False
+    assert matrix.real_beaker_static_hold_closed(accepted, physics_dt=(1.0 / 60.0) + 1e-12) is False
+
+
+def test_matrix_closure_recomputes_acceptance_from_authoritative_summary():
+    cells = [
+        {
+            **cell,
+            "accepted": False,
+            "classification": "PASS_VISIBLE_BEAKER_STATIC_HOLD",
+            "visible_beaker_containment_verified": True,
+        }
+        for cell in matrix.static_hold_cells()
+    ]
+
+    assert matrix.real_beaker_static_hold_closed(cells) is True
+    assert matrix.all_required_1024_accepted(cells) is True
 
 
 def test_matrix_append_rejects_run_identity_mismatch():
@@ -388,8 +462,12 @@ def test_matrix_append_rejects_4096_without_three_accepted_1024_cells():
                 "particle_count": 1024,
                 "seed": seed,
                 "accepted": seed != 2,
-                "classification": "PASS_VISIBLE_BEAKER_STATIC_HOLD",
-                "visible_beaker_containment_verified": True,
+                "classification": (
+                    "FAIL_VISIBLE_BEAKER_CONTAINMENT"
+                    if seed == 2
+                    else "PASS_VISIBLE_BEAKER_STATIC_HOLD"
+                ),
+                "visible_beaker_containment_verified": seed != 2,
             }
             for seed in (0, 1, 2)
         ],
@@ -401,6 +479,41 @@ def test_matrix_append_rejects_4096_without_three_accepted_1024_cells():
             run_identity=identity,
             requested_cells=matrix.static_hold_cells(counts=(4096,), seeds=(0, 1, 2)),
         )
+
+
+def test_matrix_watchdog_requires_sixty_second_runtime_margin(tmp_path):
+    with pytest.raises(ValueError, match="at least 60 seconds"):
+        matrix.build_dry_plan(
+            _matrix_args(
+                tmp_path,
+                "--runtime-timeout-seconds",
+                "900",
+                "--process-timeout-seconds",
+                "959.999",
+            )
+        )
+
+
+@pytest.mark.parametrize("append", [False, True])
+@pytest.mark.parametrize("legacy_relative", matrix.SUPERSEDED_FALSE_POSITIVE_MANIFESTS)
+def test_matrix_rejects_immutable_legacy_manifest_before_dry_or_append(
+    tmp_path, monkeypatch, append, legacy_relative
+):
+    legacy_path = (matrix.REPO_ROOT / legacy_relative).resolve()
+    before = legacy_path.read_bytes() if legacy_path.exists() else None
+    extra = ["--manifest", str(legacy_path)]
+    if append:
+        extra.append("--append")
+        monkeypatch.setattr(matrix, "build_run_identity", lambda _args: pytest.fail("identity reached"))
+        call = matrix.run_matrix
+    else:
+        call = matrix.build_dry_plan
+
+    with pytest.raises(ValueError, match="immutable legacy manifest"):
+        call(_matrix_args(tmp_path, *extra))
+
+    after = legacy_path.read_bytes() if legacy_path.exists() else None
+    assert after == before
 
 
 def _matrix_args(tmp_path, *extra):
@@ -494,6 +607,26 @@ def test_matrix_mocked_children_require_summary_pass_not_returncode(tmp_path, mo
     assert launched == [(1024, 0), (1024, 1), (1024, 2)]
 
 
+def test_matrix_accepts_authoritative_pass_with_nonzero_returncode(tmp_path, monkeypatch):
+    def fake_child(argv, **_kwargs):
+        count = int(argv[argv.index("--controlled-spawn-count") + 1])
+        seed = int(argv[argv.index("--controlled-spawn-seed") + 1])
+        return _write_mock_child_result(
+            argv,
+            classification="PASS_VISIBLE_BEAKER_STATIC_HOLD",
+            verified=True,
+            returncode=7 if (count, seed) == (1024, 0) else 0,
+        )
+
+    monkeypatch.setattr(matrix, "execute_child", fake_child)
+    manifest = matrix.run_matrix(_matrix_args(tmp_path))
+
+    assert manifest["real_beaker_static_hold_closed"] is True
+    assert manifest["cells"][0]["accepted"] is True
+    assert manifest["cells"][0]["returncode"] == 7
+    assert manifest["cells"][0]["returncode_warning"] is not None
+
+
 def test_matrix_mocked_six_passes_close_and_hash_artifacts(tmp_path, monkeypatch):
     def fake_child(argv, **_kwargs):
         return _write_mock_child_result(
@@ -511,3 +644,92 @@ def test_matrix_mocked_six_passes_close_and_hash_artifacts(tmp_path, monkeypatch
     assert all("summary_path" in cell and "trace_path" in cell for cell in manifest["cells"])
     assert all("stdout.log" in cell["artifact_hashes"] for cell in manifest["cells"])
     assert all("command.json" in cell["artifact_hashes"] for cell in manifest["cells"])
+
+
+class _FatalChildWait(BaseException):
+    pass
+
+
+@pytest.mark.parametrize(
+    "wait_exception,reraised",
+    [
+        (subprocess.TimeoutExpired("child", 1), None),
+        (KeyboardInterrupt(), KeyboardInterrupt),
+        (_FatalChildWait(), _FatalChildWait),
+    ],
+)
+def test_matrix_execute_child_terminates_reaps_and_persists_logs(
+    tmp_path, monkeypatch, wait_exception, reraised
+):
+    processes = []
+    signals = []
+
+    class FakeProcess:
+        pid = 4321
+        returncode = None
+
+        def __init__(self, **kwargs):
+            self.wait_calls = 0
+            kwargs["stdout"].write(b"available stdout\n")
+            kwargs["stderr"].write(b"available stderr\n")
+
+        def wait(self, timeout=None):
+            self.wait_calls += 1
+            if self.wait_calls == 1:
+                raise wait_exception
+            self.returncode = -signal.SIGTERM
+            return self.returncode
+
+    def fake_popen(*_args, **kwargs):
+        process = FakeProcess(**kwargs)
+        processes.append(process)
+        return process
+
+    monkeypatch.setattr(matrix.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(matrix.os, "killpg", lambda pid, sig: signals.append((pid, sig)))
+    stdout_path = tmp_path / "stdout.log"
+    stderr_path = tmp_path / "stderr.log"
+
+    if reraised is None:
+        result = matrix.execute_child(
+            ["child"],
+            cwd=tmp_path,
+            env={},
+            timeout_seconds=1,
+            stdout_path=stdout_path,
+            stderr_path=stderr_path,
+        )
+        assert result.timed_out is True
+    else:
+        with pytest.raises(reraised):
+            matrix.execute_child(
+                ["child"],
+                cwd=tmp_path,
+                env={},
+                timeout_seconds=1,
+                stdout_path=stdout_path,
+                stderr_path=stderr_path,
+            )
+
+    assert signals == [(4321, signal.SIGTERM)]
+    assert processes[0].wait_calls == 2
+    assert stdout_path.read_text(encoding="utf-8") == "available stdout\n"
+    assert stderr_path.read_text(encoding="utf-8") == "available stderr\n"
+
+
+def test_matrix_isaac_version_falls_back_to_version_file(tmp_path, monkeypatch):
+    version_path = tmp_path / "VERSION"
+    version_path.write_text("4.1.0.0\n", encoding="utf-8")
+
+    def missing_metadata(_distribution):
+        raise matrix.importlib.metadata.PackageNotFoundError
+
+    monkeypatch.setattr(matrix.importlib.metadata, "version", missing_metadata)
+    monkeypatch.setattr(matrix, "ISAAC_VERSION_FILES", (version_path,))
+
+    version = matrix._isaac_version()
+
+    assert version != "unavailable"
+    assert "4.1.0.0" in version
+    assert str(version_path.resolve()) in version
+    assert matrix._sha256_file(version_path) in version
