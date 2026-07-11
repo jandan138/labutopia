@@ -961,13 +961,17 @@ def _write_accepted_replay_input(tmp_path):
         "diagnostic_scan_complete": True,
         "physical_trace_identity": identity,
     }
+    log_path = tmp_path / "kit.log"
+    log_prefix = b"x" * 123
+    log_bytes = b"clean run segment"
+    log_path.write_bytes(log_prefix + log_bytes)
     log_segment = {
-        "log_path": str(tmp_path / "kit.log"),
-        "byte_offset": 123,
+        "log_path": str(log_path),
+        "byte_offset": len(log_prefix),
         "cursor_captured": True,
         "diagnostic_scan_complete": True,
-        "segment_byte_count": 17,
-        "segment_sha256": "d" * 64,
+        "segment_byte_count": len(log_bytes),
+        "segment_sha256": hashlib.sha256(log_bytes).hexdigest(),
     }
     summary = {
         "source_usd_path": str(source_path),
