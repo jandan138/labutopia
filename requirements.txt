@@ -5,6 +5,7 @@ numcodecs==0.16.5
 opencv-python==4.9.0.80
 pandas==2.3.3
 scipy==1.15.3
+scikit-image==0.25.2
 zarr==3.1.5
 tqdm==4.67.1
 einops==0.8.1

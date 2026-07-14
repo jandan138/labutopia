@@ -89,6 +89,30 @@ def test_weekly_report_states_verified_result_and_delivery_boundaries() -> None:
     )
 
 
+def test_weekly_report_publishes_final_derived_surface_outcome() -> None:
+    html, _ = _parse_report()
+
+    for fact in (
+        "离线连续液面",
+        "70 帧",
+        "零物理步",
+        "高置信度 WARN",
+        "surface_replay_final.usda",
+        "outputs/interndata_surface_replay_20260714/final_render",
+        "outputs/interndata_surface_replay_20260714/mesh_cache",
+        "tools/labutopia_fluid/run_interndata_surface_replay.py",
+        "e4d62bc2b33ef73ae601a0b322cded3dd32685c4dc97e76944fa95d802453a16",
+    ):
+        assert fact in html
+
+    for stale_copy in (
+        "当前证据视频直接显示 3 mm 粒子点",
+        "在运行时接入稳定的 isosurface",
+        "尚未达到参考视频的连续液面质感",
+    ):
+        assert stale_copy not in html
+
+
 def test_weekly_report_removes_stale_experiment_report() -> None:
     html, _ = _parse_report()
 

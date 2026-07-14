@@ -46,6 +46,8 @@ All report media is local to
 
 ## Remaining Boundary
 
-The accepted evidence directly renders 3 mm points, so visible granularity remains.
-The next milestone is to preserve the accepted physics trace while adding stable
-live isosurface reconstruction and matching material, lighting, and camera work.
+This boundary was superseded later on 2026-07-14 by the derived-surface replay.
+The report now embeds the final 70-frame continuous-surface videos generated from
+the same accepted particle trace. The remaining presentation issue is mild mesh
+faceting, not visible 3 mm Points. See
+`docs/runs/2026-07-14-interndata-derived-surface-replay-outcome.md`.
