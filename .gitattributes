@@ -6,4 +6,5 @@ assets/** filter=lfs diff=lfs merge=lfs -text
 *.JPG filter=lfs diff=lfs merge=lfs -text
 reports/2026-06-15-labutopia-weekly/assets/*.png -filter -diff -merge -text
 reports/2026-07-07-labutopia-fluid-weekly/assets/*.png -filter -diff -merge -text
+reports/2026-07-07-labutopia-fluid-weekly/assets/pm-restructure/** -filter -diff -merge -text
 *.urdf filter=lfs diff=lfs merge=lfs -text

@@ -3,307 +3,815 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LabUtopia 液体周报：静置持液 G1 + ClearWater G2</title>
+  <title>LabUtopia 液体周报｜真实烧杯倒液闭环</title>
   <link rel="icon" href="data:,">
   <style>
     :root {
       color-scheme: light;
-      --bg: #f5f7f8;
+      --page: #f5f7f9;
       --paper: #ffffff;
-      --paper-2: #eef5f2;
-      --paper-3: #f8fbfa;
-      --ink: #142126;
-      --muted: #5f7078;
-      --line: #d7e0de;
-      --green: #0f766e;
-      --amber: #b45309;
-      --red: #be123c;
-      --warn: #fff4d6;
-      --shadow: 0 12px 34px rgba(20, 33, 38, 0.08);
+      --ink: #17212b;
+      --muted: #5f6b77;
+      --line: #d7dee5;
+      --soft-line: #e8edf1;
+      --header: #202a33;
+      --success: #087768;
+      --success-soft: #e7f4f0;
+      --reference: #956000;
+      --reference-soft: #fff4d8;
+      --baseline: #a3463f;
+      --baseline-soft: #fbecea;
+      --info: #315f95;
+      --info-soft: #eaf1f8;
+      --radius: 6px;
+      --content: 1160px;
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+      letter-spacing: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       margin: 0;
-      background: var(--bg);
+      background: var(--page);
       color: var(--ink);
-      font-family: "Noto Sans CJK SC", "WenQuanYi Micro Hei", "DejaVu Sans", "Segoe UI", Arial, sans-serif;
-      line-height: 1.62;
+      font-family: Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
     }
-    main { max-width: 980px; margin: 0 auto; padding: 28px 18px 48px; }
-    .hero, .card, .panel, .note {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--paper);
-      box-shadow: var(--shadow);
+
+    img,
+    video {
+      display: block;
+      max-width: 100%;
     }
-    .hero { padding: 26px; margin-bottom: 16px; }
-    .eyebrow { color: var(--amber); font-size: 12px; font-weight: 850; text-transform: uppercase; }
-    h1 { margin: 8px 0 10px; font-size: clamp(28px, 4.5vw, 44px); line-height: 1.1; }
-    h2 { margin: 0 0 10px; font-size: 20px; }
-    h3 { margin: 0 0 8px; font-size: 16px; }
-    p { margin: 0 0 10px; }
-    a { color: var(--green); }
+
+    a {
+      color: var(--info);
+      text-underline-offset: 3px;
+    }
+
     code {
-      font-family: "SFMono-Regular", Consolas, Menlo, monospace;
-      font-size: 0.92em;
       overflow-wrap: anywhere;
+      color: #263746;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.9em;
     }
-    .lede { color: var(--muted); font-size: 17px; max-width: 820px; }
-    .metrics {
+
+    .container {
+      width: min(calc(100% - 40px), var(--content));
+      margin: 0 auto;
+    }
+
+    .report-header {
+      padding: 34px 0 30px;
+      background: var(--header);
+      color: #f7f9fb;
+      border-bottom: 4px solid #41a996;
+    }
+
+    .report-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 24px;
+      margin: 0 0 16px;
+      color: #bfcbd5;
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 850px;
+      margin-bottom: 12px;
+      font-size: 2.25rem;
+      line-height: 1.18;
+      font-weight: 780;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+      font-size: 1.65rem;
+      line-height: 1.28;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 1.12rem;
+      line-height: 1.35;
+    }
+
+    .header-summary {
+      max-width: 830px;
+      margin-bottom: 0;
+      color: #dce5eb;
+      font-size: 1.04rem;
+    }
+
+    .status-strip {
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 16px;
     }
-    .metric {
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--paper-2);
+
+    .status-item {
+      min-width: 0;
+      padding: 17px 20px 17px 0;
+      border-right: 1px solid var(--line);
     }
-    .metric strong { display: block; color: var(--green); font-size: 26px; line-height: 1.1; }
-    .metric .danger { color: var(--red); }
-    .metric span { color: var(--muted); font-size: 12px; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin: 16px 0;
+
+    .status-item + .status-item {
+      padding-left: 20px;
     }
-    .card, .panel, .note { padding: 16px; }
-    .pass { border-left: 5px solid var(--green); background: #f3fbf9; }
-    .verdict { border-left: 5px solid var(--red); background: #fff7f8; }
-    .caution { border-left: 5px solid var(--amber); background: var(--warn); }
-    .section { margin: 16px 0; padding: 16px; }
-    .video-lead {
-      display: grid;
-      grid-template-columns: minmax(0, 1.55fr) minmax(240px, 0.45fr);
-      gap: 12px;
+
+    .status-item:last-child {
+      border-right: 0;
     }
-    .figure-row {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin: 12px 0 0;
+
+    .status-value {
+      display: block;
+      color: var(--success);
+      font-size: 1.35rem;
+      font-weight: 800;
+      line-height: 1.25;
     }
-    figure.diagnostic {
-      margin: 0;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
+
+    .status-label {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    main {
       background: var(--paper);
     }
-    figure.diagnostic img,
-    figure.diagnostic video {
-      display: block;
+
+    .section {
+      padding: 54px 0;
+      border-bottom: 1px solid var(--soft-line);
+    }
+
+    .section-intro {
+      max-width: 850px;
+      margin-bottom: 26px;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr);
+      gap: 28px;
+      align-items: start;
+    }
+
+    figure {
+      margin: 0;
+    }
+
+    .media-frame video,
+    .media-frame img {
       width: 100%;
       aspect-ratio: 16 / 9;
+      border: 1px solid #cbd3da;
+      border-radius: var(--radius);
+      background: #111820;
       object-fit: cover;
-      background: #edf1f2;
     }
-    figure.diagnostic figcaption {
-      padding: 9px 11px;
+
+    figcaption {
+      margin-top: 9px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 0.84rem;
+      line-height: 1.55;
     }
-    figure.diagnostic figcaption strong { color: var(--green); }
-    .table-wrap {
-      overflow-x: auto;
+
+    .result-summary {
+      border-top: 4px solid var(--success);
+      background: var(--success-soft);
+      padding: 22px;
+    }
+
+    .result-summary h3 {
+      color: #075f55;
+    }
+
+    .result-list,
+    .plain-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .result-list li {
+      padding: 12px 0;
+      border-bottom: 1px solid #c9e2db;
+    }
+
+    .result-list li:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .result-list strong {
+      display: block;
+      font-size: 1.08rem;
+    }
+
+    .result-list span {
+      color: #3d675f;
+      font-size: 0.88rem;
+    }
+
+    .scope-note {
+      margin: 24px 0 0;
+      padding: 14px 17px;
+      border-left: 4px solid var(--info);
+      background: var(--info-soft);
+      color: #294866;
+      font-size: 0.91rem;
+    }
+
+    .change-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
       border: 1px solid var(--line);
-      border-radius: 8px;
     }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td {
-      padding: 10px 11px;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      vertical-align: top;
-    }
-    th { background: var(--paper-2); font-size: 13px; }
-    tr:last-child td { border-bottom: 0; }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-      padding: 2px 8px;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      background: var(--paper-2);
-      font-size: 12px;
-      font-weight: 850;
-      white-space: nowrap;
-    }
-    .badge.green { color: var(--green); background: #eefaf7; border-color: #9ed7ca; }
-    .badge.amber { color: var(--amber); background: var(--warn); border-color: #efd58d; }
-    ul { margin: 0; padding-left: 18px; }
-    li { margin: 6px 0; }
-    .small { color: var(--muted); font-size: 13px; }
-    details.evidence-details {
-      margin-top: 10px;
-      padding: 8px 10px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
+
+    .change-item {
+      min-width: 0;
+      padding: 22px;
       background: var(--paper);
     }
-    details.evidence-details summary { cursor: pointer; color: var(--green); font-weight: 850; }
-    details.evidence-details pre {
-      margin: 8px 0 0;
-      padding: 10px;
-      border-radius: 8px;
-      background: #0f1720;
-      color: #e6edf3;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      font-size: 12px;
-      line-height: 1.5;
+
+    .change-number {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--success);
+      font-size: 0.79rem;
+      font-weight: 800;
     }
-    @media (max-width: 800px) {
-      .metrics, .grid, .video-lead, .figure-row { grid-template-columns: 1fr; }
+
+    .change-item p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .comparison-note {
+      margin: 22px 0 28px;
+      padding: 16px 18px;
+      border: 1px solid #e4c77d;
+      background: var(--reference-soft);
+      color: #674b11;
+      font-weight: 650;
+    }
+
+    .approach-list {
+      display: grid;
+      gap: 22px;
+    }
+
+    .approach {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.1fr);
+      gap: 26px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+
+    .approach.baseline {
+      border-top: 4px solid var(--baseline);
+    }
+
+    .approach.reference {
+      border-top: 4px solid var(--reference);
+    }
+
+    .approach.final {
+      border-top: 4px solid var(--success);
+    }
+
+    .approach-tag {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 0.79rem;
+      font-weight: 800;
+    }
+
+    .baseline .approach-tag {
+      color: var(--baseline);
+    }
+
+    .reference .approach-tag {
+      color: var(--reference);
+    }
+
+    .final .approach-tag {
+      color: var(--success);
+    }
+
+    .comparison-rows {
+      margin: 18px 0 0;
+      border-top: 1px solid var(--soft-line);
+    }
+
+    .comparison-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--soft-line);
+    }
+
+    .comparison-row dt {
+      color: var(--muted);
+      font-size: 0.83rem;
+      font-weight: 750;
+    }
+
+    .comparison-row dd {
+      min-width: 0;
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .proof-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px;
+    }
+
+    .proof-grid .media-frame img {
+      aspect-ratio: 2 / 1;
+      object-fit: contain;
+      background: #eef1f4;
+    }
+
+    .count-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 24px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+
+    .count-item {
+      padding: 16px;
+      background: var(--paper);
+      text-align: center;
+    }
+
+    .count-item strong {
+      display: block;
+      color: var(--success);
+      font-size: 1.3rem;
+    }
+
+    .count-item span {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .delivery-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px;
+    }
+
+    .delivery-block {
+      padding-top: 16px;
+      border-top: 3px solid var(--info);
+    }
+
+    .delivery-block p:last-child {
+      margin-bottom: 0;
+    }
+
+    .path {
+      display: block;
+      margin-top: 7px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: var(--page);
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+
+    .plain-list li {
+      position: relative;
+      margin-bottom: 10px;
+      padding-left: 18px;
+    }
+
+    .plain-list li::before {
+      position: absolute;
+      left: 0;
+      color: var(--success);
+      content: "•";
+      font-weight: 900;
+    }
+
+    .next-band {
+      background: #f0f5f4;
+    }
+
+    .next-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.75fr);
+      gap: 34px;
+    }
+
+    .next-target {
+      padding: 22px;
+      border-left: 4px solid var(--success);
+      background: var(--paper);
+    }
+
+    .next-target p:last-child {
+      margin-bottom: 0;
+    }
+
+    details {
+      margin-top: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+
+    summary {
+      padding: 15px 17px;
+      cursor: pointer;
+      font-weight: 750;
+    }
+
+    .details-body {
+      padding: 0 17px 17px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .details-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    footer {
+      padding: 26px 0;
+      background: var(--header);
+      color: #c5d0d8;
+      font-size: 0.82rem;
+    }
+
+    footer p {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 900px) {
+      .status-grid,
+      .count-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .status-item:nth-child(2) {
+        border-right: 0;
+      }
+
+      .status-item:nth-child(n + 3) {
+        border-top: 1px solid var(--line);
+      }
+
+      .result-grid,
+      .approach,
+      .next-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .container {
+        width: min(calc(100% - 28px), var(--content));
+      }
+
+      .report-header {
+        padding: 28px 0 24px;
+      }
+
+      h1 {
+        font-size: 1.8rem;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+      }
+
+      .section {
+        padding: 40px 0;
+      }
+
+      .status-grid,
+      .change-grid,
+      .proof-grid,
+      .count-grid,
+      .delivery-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .status-item,
+      .status-item + .status-item {
+        padding: 13px 0;
+        border-right: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .status-item:first-child {
+        border-top: 0;
+      }
+
+      .approach {
+        gap: 20px;
+        padding: 18px;
+      }
+
+      .comparison-row {
+        grid-template-columns: 76px minmax(0, 1fr);
+      }
     }
   </style>
 </head>
 <body>
+  <header class="report-header">
+    <div class="container">
+      <p class="report-meta">
+        <span>LABUTOPIA 液体专项周报</span>
+        <span>更新：2026-07-14</span>
+        <span>面向：产品 / 项目 / 研发</span>
+      </p>
+      <h1>真实烧杯倒液：从“能装住”推进到“能完整倒过去”</h1>
+      <p class="header-summary">本周第一次在 LabUtopia 真实双烧杯场景中完成了可重复的整杯转移。结果不再只是静置不漏，而是液体从源杯流入目标杯，并在结束帧全部留在目标杯内。</p>
+    </div>
+  </header>
+
+  <div class="status-strip" aria-label="本周关键结果">
+    <div class="container status-grid">
+      <div class="status-item">
+        <strong class="status-value">3,600 / 3,600</strong>
+        <span class="status-label">结束帧进入目标杯</span>
+      </div>
+      <div class="status-item">
+        <strong class="status-value">0</strong>
+        <span class="status-label">结束帧桌面与杯外残留</span>
+      </div>
+      <div class="status-item">
+        <strong class="status-value">3 mm</strong>
+        <span class="status-label">物理、间距与显示统一尺度</span>
+      </div>
+      <div class="status-item">
+        <strong class="status-value">通过</strong>
+        <span class="status-label">Isaac Sim 4.1 干净目录验证</span>
+      </div>
+    </div>
+  </div>
+
   <main>
-    <section class="hero">
-      <div class="eyebrow">LabUtopia · Fluid · 2026-07-09</div>
-      <h1>静置持液已过关；倒水还没验收</h1>
-      <p class="lede">同事真实 USD 场景里，看不见的 <code>fluid-safe wrapper</code>（D4A_018）让静置持液在 512/1024/4096/50k × 3 seed 上 <strong>12/12</strong> 过关（Physics A / G1）。同场景 ClearWater MDL 展示也过关（Visual A / G2）。倒水（S3）未放行；不能说口语「真实水」。</p>
-      <div class="metrics" aria-label="关键指标">
-        <div class="metric"><strong>12/12</strong><span>G1 静置持液矩阵</span></div>
-        <div class="metric"><strong>G2</strong><span>ClearWater MDL PASS</span></div>
-        <div class="metric"><strong>~15s</strong><span>真实 USD 持液主视频</span></div>
-        <div class="metric"><strong class="danger">未放行</strong><span>S3 慢倒</span></div>
+    <section id="result" class="section">
+      <div class="container">
+        <h2>本周结论：真实烧杯倒液已经跑通</h2>
+        <p class="section-intro">先看最终全景。画面中的两个容器都是 LabUtopia 原场景烧杯，不是为了液体实验临时换成的方盒。</p>
+        <div class="result-grid">
+          <figure class="media-frame">
+            <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/final-context-poster.png" aria-label="最终真实烧杯倒液全景视频">
+              <source src="assets/pm-restructure/final-context.mp4" type="video/mp4">
+            </video>
+            <figcaption>最终方案全景证据：源杯移动到目标杯上方，完成倒液后回正；视频来自最终交付包的同一条 690 步轨迹。</figcaption>
+          </figure>
+
+          <aside class="result-summary" aria-label="最终结果摘要">
+            <h3>这次真正完成了什么</h3>
+            <ul class="result-list">
+              <li><strong>完整转移</strong><span>结束帧 3,600 / 3,600 个粒子在目标杯</span></li>
+              <li><strong>没有结束残留</strong><span>源杯、传输区、桌面、桌下和异常粒子均为 0</span></li>
+              <li><strong>过程可复现</strong><span>690 步控制轨迹，共记录 691 个状态</span></li>
+              <li><strong>可独立打开</strong><span>交付目录已通过 Isaac Sim 4.1 打开与短时运行检查</span></li>
+            </ul>
+          </aside>
+        </div>
+        <p class="scope-note"><strong>结论口径：</strong>以上数字是本次指定场景、液量、参数和轨迹的结束帧回读，不代表任意容器、任意液量或任意动作都已经适配。</p>
       </div>
     </section>
 
-    <section class="grid">
-      <article class="card pass">
-        <h2>已证明</h2>
-        <p>杯子静置能装住水（粒子读回权威）；过关轨迹上 ClearWater 材质编译通过。</p>
-      </article>
-      <article class="card verdict">
-        <h2>还没做</h2>
-        <p>慢倒水 B：倾斜过程/倒完是否仍不漏。飞溅泡沫等特效仅占位。</p>
-      </article>
-      <article class="card caution">
-        <h2>不能说</h2>
-        <p>「真实水完成」「倒水也像真的」「视频好看=物理过关」「可 EBench score」。</p>
-      </article>
-    </section>
-
-    <section id="main-video" class="panel section">
-      <h2>主证据：真实 USD 静置持液渲染</h2>
-      <p>入口是同事完整 <code>lab_001_level1_pour_tabletop_with_liquid.usd</code>；物理用 G1 dual-ring wrapper；渲染为 PhysX Isosurface + <code>OmniSurface_ClearWater</code>。漏液判定仍看 particle readback，不看画面。</p>
-      <div class="video-lead">
-        <figure class="diagnostic">
-          <video controls muted preload="metadata" playsinline poster="assets/g1g2-hold-long-poster.png">
-            <source src="assets/g1g2-hold-long.webm" type="video/webm">
-            <source src="assets/g1g2-hold-long.mp4" type="video/mp4">
-          </video>
-          <figcaption><strong>主视频（~15s）：</strong>真实 USD 场景录制。1024 粒子子集 + G1 wrapper + ClearWater；全程 readback <code>PASS_SOURCE_HOLD</code>（outside/spill/below=0）。</figcaption>
-        </figure>
-        <article class="note pass">
-          <h3>怎么读</h3>
-          <p>这是周报唯一主视频；旧漏液/诊断片已删。</p>
-          <p>时长取自已验证不漏窗口（120 step 密帧），不是硬拉长到漏水再播。</p>
-          <p>G1 的 50k 过关在受控晋级矩阵；同事 USD 全量 50k 长持液 overlay 仍会漏，故主视频不用那条。</p>
-        </article>
-      </div>
-      <div class="figure-row" aria-label="关键帧">
-        <figure class="diagnostic">
-          <img src="assets/g1g2-hold-long-frame-early.png" alt="持液 early">
-          <figcaption><strong>Early</strong></figcaption>
-        </figure>
-        <figure class="diagnostic">
-          <img src="assets/g1g2-hold-long-frame-mid.png" alt="持液 mid">
-          <figcaption><strong>Mid</strong></figcaption>
-        </figure>
-        <figure class="diagnostic">
-          <img src="assets/g1g2-hold-long-frame-late.png" alt="持液 late">
-          <figcaption><strong>Late</strong></figcaption>
-        </figure>
+    <section id="why-it-worked" class="section">
+      <div class="container">
+        <h2>为什么这次比原版清楚很多</h2>
+        <p class="section-intro">进步不是简单地换了一个水的颜色，而是把粒子尺度、烧杯内壁、液体模型和倒液动作统一成一套能协同工作的方案。</p>
+        <div class="change-grid">
+          <article class="change-item">
+            <span class="change-number">01 · 同一把尺子</span>
+            <h3>物理粒子和画面粒子都用 3 mm</h3>
+            <p>原版把很细的物理粒子画成更大的球，球会互相覆盖，容易看成碎渣或泡沫。现在物理接触、粒子间距和显示宽度一致。这里的 3 mm 是仿真工程尺度，不是现实水分子的大小。</p>
+          </article>
+          <article class="change-item">
+            <span class="change-number">02 · 烧杯真的“有内壁”</span>
+            <h3>透明外观之外，补齐可承液碰撞结构</h3>
+            <p>看得见的玻璃模型不等于液体能碰到的内壁。最终方案为每个烧杯建立 145 个开放式碰撞单元，保留杯口，同时封住杯壁与杯底。</p>
+          </article>
+          <article class="change-item">
+            <span class="change-number">03 · 完整液体配方</span>
+            <h3>借鉴 InternData 的公开 PBD 参数组织</h3>
+            <p>补齐粒子自碰撞、连续碰撞检测、求解强度与液体材料参数，让粒子不仅“受重力下落”，还会以更像一团液体的方式相互作用。</p>
+          </article>
+          <article class="change-item">
+            <span class="change-number">04 · 连续倒液动作</span>
+            <h3>杯口对准目标，轨迹可重复播放</h3>
+            <p>源杯采用连续的移动、倾倒、停留和回正动作，避免跳帧和突变。固定的 690 步轨迹也让每次验证可以比较同一个过程。</p>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section id="collider" class="panel section">
-      <h2>Collider 怎么修好的</h2>
-      <p>看得见的烧杯 ≠ 粒子撞到的墙。原生 mesh / SDF / 单圈拼板都会漏。做法：原生杯子只负责好看；物理挂看不见的 <code>FluidSafeWrapper</code>。</p>
-      <ul>
-        <li><strong>双圈 72 壁板 + 半格错缝</strong>：堵住拼缝</li>
-        <li><strong>壁厚 ≥26mm、底盘盖过外壁、arc≥1.35</strong>：墙底盖严</li>
-        <li><strong>按外壁分类 + 1mm slack</strong>：贴壁不误判</li>
-        <li><strong>CCD + 50k 内缩 ≥10mm</strong>：防穿墙 / 出生炸穿</li>
-      </ul>
-      <p class="small">放弃：连续开杯 mesh、平面 box 杯。正式方案只有 D4A_018 dual-ring。</p>
-    </section>
+    <section id="three-approaches" class="section">
+      <div class="container">
+        <h2>三种方案对比：我们是怎么走到最终结果的</h2>
+        <p class="comparison-note">这三种方案承担的验证任务不同，用来说明技术演进，<strong>不是同条件性能排行</strong>：第一种是静置起点，第二种是视觉参考，第三种才是最终方案。</p>
 
-    <section id="next" class="panel section">
-      <h2>下一步</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>阶段</th><th>状态</th><th>说明</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="badge green">G1 Physics A</span></td>
-              <td>GO · 12/12</td>
-              <td><code>fluid_spike_d4_wrapper_promotion_v4_20260709.json</code></td>
-            </tr>
-            <tr>
-              <td><span class="badge green">G2 Visual A</span></td>
-              <td>GO · ClearWater PASS</td>
-              <td><code>fluid_spike_visual_a_official_20260709.json</code></td>
-            </tr>
-            <tr>
-              <td><span class="badge amber">Task 11 慢倒 B</span></td>
-              <td>未开</td>
-              <td><code>s3_kinematic_pour_released=false</code>；先定口径再工程</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="approach-list">
+          <article id="original-attempt" class="approach baseline">
+            <figure class="media-frame">
+              <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/original-static-hold-poster.png" aria-label="原版真实烧杯静置液体代表画面">
+                <source src="assets/pm-restructure/original-static-hold.mp4" type="video/mp4">
+              </video>
+              <figcaption>旧路线的代表性静置画面，用于展示“液体碎、难看清”的视觉问题；它不是下述 4,096 粒子基线同一次运行的一一对应录像。</figcaption>
+            </figure>
+            <div>
+              <span class="approach-tag">01 · 静置起点</span>
+              <h3>原版尝试：真实烧杯能装住，但液体看不清</h3>
+              <p>这一阶段先解决“真实烧杯里能不能静置一团粒子”。物理验证有进展，但画面中水的主体不连贯，还没有证明完整倒液能做好。</p>
+              <dl class="comparison-rows">
+                <div class="comparison-row"><dt>容器</dt><dd>真实 LabUtopia 烧杯</dd></div>
+                <div class="comparison-row"><dt>尺度</dt><dd>验证过的 4,096 粒子静置基线中，物理宽度约 0.45 mm，显示宽度约 4.3 mm，相差约 9.6 倍</dd></div>
+                <div class="comparison-row"><dt>结果</dt><dd>可以证明指定静置窗口内留在杯中，但视觉上像细碎反光点，杯内水体不容易辨认</dd></div>
+                <div class="comparison-row"><dt>产品价值</dt><dd>确认真实烧杯具备持液可行性；尚不能作为倒液演示交付</dd></div>
+                <div class="comparison-row"><dt>学到什么</dt><dd>单独把显示球放大不能解决观感，反而会让细粒子互相遮盖</dd></div>
+              </dl>
+            </div>
+          </article>
+
+          <article id="rectangular-reference" class="approach reference">
+            <figure class="media-frame">
+              <img src="assets/pm-restructure/rectangular-tank-reference.png" alt="A18 FloatBall 薄壁长方形缸液体参考场景">
+              <figcaption>A18 FloatBall 本地 USD 直接渲染。它展示的是大尺寸规则方缸中的液体与浮球，仅作为视觉和尺度参考，不是 LabUtopia 烧杯验证结果。</figcaption>
+            </figure>
+            <div>
+              <span class="approach-tag">02 · 视觉参考</span>
+              <h3>薄壁长方形缸：容易形成完整水体，但不能直接搬到烧杯</h3>
+              <p>参考场景使用约 30 cm 宽的规则方缸、简单盒状内壁和约 20 mm 粒子。容器大、边界规则，所以大粒子和连续表面更容易稳定地呈现出来。</p>
+              <dl class="comparison-rows">
+                <div class="comparison-row"><dt>容器</dt><dd>大尺寸薄壁长方形缸，碰撞结构规则</dd></div>
+                <div class="comparison-row"><dt>尺度</dt><dd>2,376 个粒子，显示宽度约 20 mm，邻近间距约 20–30 mm</dd></div>
+                <div class="comparison-row"><dt>结果</dt><dd>水体轮廓完整、尺度醒目，适合观察浮球和液面</dd></div>
+                <div class="comparison-row"><dt>产品价值</dt><dd>帮助我们理解参考画面为什么清楚；它不是可交付的真实烧杯方案</dd></div>
+                <div class="comparison-row"><dt>学到什么</dt><dd>粒子大小必须和容器匹配；20 mm 对半径约 32 mm 的烧杯过大，杯内横向只能容纳很少几层</dd></div>
+              </dl>
+            </div>
+          </article>
+
+          <article id="final-approach" class="approach final">
+            <figure class="media-frame">
+              <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/final-closeup-poster.png" aria-label="最终真实烧杯倒液近景视频">
+                <source src="assets/pm-restructure/final-closeup.mp4" type="video/mp4">
+              </video>
+              <figcaption>最终方案近景证据：可以清楚看到粒子流从源杯杯口进入目标杯。媒体与首页全景来自同一最终交付轨迹。</figcaption>
+            </figure>
+            <div>
+              <span class="approach-tag">03 · 最终方案</span>
+              <h3>InternData 启发方案：在真实烧杯里完成整杯转移</h3>
+              <p>最终方案借鉴 InternData 公开示例的 3 mm PBD 液体配方与呈现思路，同时由本项目完成真实烧杯碰撞、倒液轨迹、粒子回读和独立交付封装。</p>
+              <dl class="comparison-rows">
+                <div class="comparison-row"><dt>容器</dt><dd>真实 LabUtopia 双烧杯，每杯 145 个开放式内壁碰撞单元</dd></div>
+                <div class="comparison-row"><dt>尺度</dt><dd>3,600 个粒子；物理接触、粒子间距和显示宽度统一为 3 mm</dd></div>
+                <div class="comparison-row"><dt>结果</dt><dd>液流可读，结束帧全部进入目标杯，没有落到桌面或留在杯外</dd></div>
+                <div class="comparison-row"><dt>产品价值</dt><dd>形成可重复验证、可打包交付的真实烧杯倒液演示链路</dd></div>
+                <div class="comparison-row"><dt>仍有差距</dt><dd>当前证据视频直接显示 3 mm 粒子点，仍有颗粒和分层感，尚未达到参考视频的连续液面质感</dd></div>
+              </dl>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section id="evidence" class="panel section">
-      <h2>证据与话术边界</h2>
-      <div class="grid">
-        <article class="card pass">
-          <h3>可以说</h3>
-          <ul>
-            <li>静置持液 G1 过关（含 50k）</li>
-            <li>ClearWater Visual A 过关</li>
-            <li>漏液以 particle readback 为准</li>
-          </ul>
-        </article>
-        <article class="card verdict">
-          <h3>不能说</h3>
-          <ul>
-            <li>口语「真实水 / 像水」</li>
-            <li>倒水已验收 / S3 放行</li>
-            <li>视频等于物理成功</li>
-          </ul>
-        </article>
-        <article class="card">
-          <h3>主文件</h3>
-          <ul>
-            <li>主视频 <code>assets/g1g2-hold-long.mp4</code></li>
-            <li>长片 manifest <code>fluid_spike_g1g2_hold_long_20260709.json</code></li>
-            <li>G1 / G2 官方 JSON 见下方</li>
-          </ul>
-        </article>
+    <section id="verification" class="section">
+      <div class="container">
+        <h2>结果不是只靠“看起来没漏”</h2>
+        <p class="section-intro">视频负责说明动作和观感，粒子回读负责说明最终去了哪里；两类证据来自同一条最终轨迹。</p>
+        <div class="proof-grid">
+          <figure class="media-frame">
+            <img src="assets/pm-restructure/final-keyframes.png" alt="最终倒液全景六个关键帧">
+            <figcaption>六个关键时刻：初始、抬杯、开始倒液、接近倒空、回正、最终状态。</figcaption>
+          </figure>
+          <figure class="media-frame">
+            <img src="assets/pm-restructure/final-validation.png" alt="Isaac Sim 4.1 干净目录验证接触表">
+            <figcaption>干净目录复核：初始状态、短时运行后状态与结果状态均能独立打开并保持场景结构正常。</figcaption>
+          </figure>
+        </div>
+        <div class="count-grid" aria-label="结束帧粒子分区统计">
+          <div class="count-item"><strong>3,600</strong><span>目标杯</span></div>
+          <div class="count-item"><strong>0</strong><span>源杯</span></div>
+          <div class="count-item"><strong>0</strong><span>传输区</span></div>
+          <div class="count-item"><strong>0</strong><span>桌面 / 桌下</span></div>
+          <div class="count-item"><strong>0</strong><span>异常数值</span></div>
+        </div>
       </div>
-      <details class="evidence-details">
-        <summary>证据路径</summary>
-        <pre>main_video=assets/g1g2-hold-long.mp4
-hold_long=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_g1g2_hold_long_20260709.json
-g1=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_d4_wrapper_promotion_v4_20260709.json
-g2=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_visual_a_official_20260709.json
-g2_rubric=../../docs/labutopia_lab_poc/evidence_manifests/fluid_spike_visual_a_official_rubric_20260709.json
-source_usd=../../outputs/usd_asset_packages/lab_001_localized_20260707/lab_001_level1_pour_tabletop_with_liquid.usd</pre>
-      </details>
-      <p class="small">周报已精简：只保留过关结论、一条真实 USD 持液主视频（~15s，readback PASS）、collider 要点与下一步。旧漏液/诊断视频已删除。同事 USD 全量 50k 长持液 overlay 仍会漏，故未挂那条。</p>
+    </section>
+
+    <section id="delivery" class="section">
+      <div class="container">
+        <h2>现在可以交付什么</h2>
+        <p class="section-intro">交付包已经把场景、烧杯、液体快照、材质依赖和验证证据放在同一个独立目录中。</p>
+        <div class="delivery-grid">
+          <div class="delivery-block">
+            <h3>给同事的目录</h3>
+            <p>完整交付根目录：</p>
+            <code class="path">/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_level1_pour_interndata_liquid_v1_20260714</code>
+            <p style="margin-top: 16px;">这个目录可以整体复制，不依赖报告页面中的旧实验文件。</p>
+          </div>
+          <div class="delivery-block">
+            <h3>两个 USD 入口</h3>
+            <ul class="plain-list">
+              <li><strong>初始状态快照：</strong><code>lab_001_level1_pour_interndata_liquid_v1.usda</code>，打开后看到液体稳定装在源杯。</li>
+              <li><strong>结果状态快照：</strong><code>lab_001_level1_pour_interndata_pour_result_v1.usda</code>，打开后看到液体全部位于目标杯。</li>
+            </ul>
+          </div>
+          <div class="delivery-block">
+            <h3>完整倒液如何播放</h3>
+            <p>两个 USD 是便于裸打开检查的稳定快照。完整 690 步动作由外部轨迹控制脚本播放，不是单个 USD 自带的自动动画。</p>
+          </div>
+          <div class="delivery-block">
+            <h3>附带证据</h3>
+            <p>包内同时包含全景视频、近景视频、关键帧、粒子统计、干净目录验证和可追溯清单，便于复核这次结果。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="next-step" class="section next-band">
+      <div class="container">
+        <div class="next-grid">
+          <div>
+            <h2>下一个大目标：物理不回退，画面继续接近真实液体</h2>
+            <p>当前最重要的问题已经从“会不会漏”变成“怎样让同一条已通过的轨迹看起来更像连续的水”。因此下一阶段不再扩大粒子，也不重新做一轮大范围碰撞搜索。</p>
+            <ul class="plain-list">
+              <li>保留当前 3 mm 物理粒子、真实烧杯内壁和 690 步轨迹作为基线。</li>
+              <li>在运行时接入稳定的 isosurface，把离散粒子重建为连续液面。</li>
+              <li>对齐透明水材质、灯光和相机，让液流和杯内液面更容易辨认。</li>
+              <li>每次视觉升级都复跑同一粒子统计，避免画面变好但物理结果退化。</li>
+            </ul>
+          </div>
+          <aside class="next-target">
+            <h3>下一阶段的产品验收标准</h3>
+            <p><strong>物理：</strong>保持本次完整转移结果。</p>
+            <p><strong>视觉：</strong>液流与杯内水体呈现连续液面，不再有明显分层颗粒感。</p>
+            <p><strong>交付：</strong>保留可独立打开的快照，并输出同一轨迹的最终渲染视频。</p>
+          </aside>
+        </div>
+
+        <details>
+          <summary>技术依据与证据路径</summary>
+          <div class="details-body">
+            <p><strong>公开方法来源：</strong><a href="https://github.com/InternRobotics/InternDataEngine/tree/2a0a21f2c836df97c925729084e13d68950b4deb" target="_blank" rel="noreferrer">InternRobotics/InternDataEngine，commit 2a0a21f2c836df97c925729084e13d68950b4deb</a>。本项目只借鉴其公开液体配方组织与呈现思路，没有声称复用受限资产或完全复现原视频。</p>
+            <p><strong>原版静置数据：</strong><code>docs/labutopia_lab_poc/evidence_manifests/fluid_spike_real_beaker_static_hold_support_aligned_v1_20260712/P4096_S2/runtime_smoke_summary.json</code></p>
+            <p><strong>方缸参考 USD：</strong><code>inputs/usd/scene/liquid/physics_fidelity_A18_FloatBall.usd</code></p>
+            <p><strong>最终运行统计：</strong><code>outputs/usd_asset_packages/lab_001_level1_pour_interndata_liquid_v1_20260714/evidence/runtime_summary.json</code></p>
+            <p><strong>轨迹可追溯记录：</strong><code>outputs/usd_asset_packages/lab_001_level1_pour_interndata_liquid_v1_20260714/evidence/trace_provenance.json</code></p>
+          </div>
+        </details>
+      </div>
     </section>
   </main>
+
+  <footer>
+    <div class="container">
+      <p>LabUtopia 液体专项 · 2026-07-14 · 本页媒体均已复制到报告本地目录，可离线查看。</p>
+    </div>
+  </footer>
 </body>
 </html>
