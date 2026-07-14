@@ -218,3 +218,8 @@ artifacts/videos/
 
 # Local git worktrees
 .worktrees/
+
+# Isaac Sim run directories are generated evidence. Keep curated root-level
+# manifests trackable, but never add frame trees, traces, or copied materials.
+docs/labutopia_lab_poc/evidence_manifests/*/
+docs/labutopia_lab_poc/evidence_manifests/*.lock
