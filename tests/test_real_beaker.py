@@ -309,7 +309,11 @@ def test_old_false_pass_trace_fails_strict_visible_gate():
         manifest_path="docs/labutopia_lab_poc/evidence_manifests/"
         "fluid_spike_full_scene_controlled_spawn_hold_20260710_P4096.json"
     )
-    assert result["classification"] == "FAIL_VISIBLE_BEAKER_CONTAINMENT"
+    assert result["classification"] in {
+        "FAIL_VISIBLE_BEAKER_CONTAINMENT",
+        "STOP_INCOMPLETE_DIAGNOSTICS",
+    }
+    assert result["passed"] is False
     assert result["below_visible_floor_count"] >= 3926
 
 
@@ -343,6 +347,28 @@ def test_canonical_spawn_is_inside_real_visible_interior(
     assert counts["above_visible_rim_count"] == 0
     assert spawn.canonical_bounds["max"][2] < real_frame.rim_height
     assert set(spawn.velocities_world) == {(0.0, 0.0, 0.0)}
+
+
+def test_real_beaker_spawn_starts_near_floor_without_legacy_bottom_lift(real_frame):
+    from tools.labutopia_fluid.fluid_recipe import build_controlled_spawn_plan
+    from tools.labutopia_fluid.real_beaker import build_visible_beaker_spawn
+
+    contact_offset = 0.00054
+    spawn = build_visible_beaker_spawn(
+        real_frame,
+        build_controlled_spawn_plan(1024, particle_seed=0),
+        physics_particle_width=0.0006,
+        particle_contact_offset=contact_offset,
+        fluid_rest_offset=0.000352836,
+    )
+
+    minimum_axial = min(
+        real_frame.world_to_canonical(point)[2] for point in spawn.positions_world
+    )
+    assert minimum_axial == pytest.approx(contact_offset * 3.0)
+    assert spawn.physics_offsets["bottom_lift"] == pytest.approx(0.0)
+    assert spawn.physics_offsets["particle_spacing"] == pytest.approx(2.0 * 0.000352836)
+    assert spawn.canonical_bounds["size"][2] < 0.01
 
 
 @pytest.mark.parametrize(

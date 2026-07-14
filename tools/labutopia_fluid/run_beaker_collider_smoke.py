@@ -135,6 +135,7 @@ class ColliderConfig:
     bottom_thickness: float = 0.008
     bottom_overlap: float = 0.0
     interior_inset: float | None = None
+    spawn_prefer_interior: bool = False
     collider_contact_offset: float = 0.003
     collider_rest_offset: float = 0.0
     sdf_resolution: int | None = None
@@ -520,6 +521,10 @@ def build_source_particle_positions(config: ColliderConfig) -> list[tuple[float,
                         )
                     )
     candidates.sort(key=lambda item: (-item[3], item[2], item[0], item[1]))
+    if config.spawn_prefer_interior:
+        # Hold-oriented: keep the densest stack near the cup axis (G1 default
+        # prefers the outer rim to exercise walls).
+        candidates.sort(key=lambda item: (item[3], item[2], item[0], item[1]))
     if len(candidates) < config.particle_count:
         raise ValueError(f"particle_count_exceeds_source_capacity:{config.particle_count}>{len(candidates)}")
     for x, y, z, _ in candidates[: config.particle_count]:

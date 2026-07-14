@@ -597,7 +597,10 @@ The runner must:
 
 - run 1024 seeds first;
 - stop before 4096 if any 1024 cell is not `PASS_VISIBLE_BEAKER_STATIC_HOLD`;
-- execute Isaac with 600 steps, physics dt `1/60`, trace interval at most 30;
+- execute 600 logical steps at `1/60 s` each, with 10 explicit direct PhysX
+  integration substeps at `1/600 s` per logical step (6,000 exact
+  `simulate`/`fetch_results` pairs, 10 simulated seconds total), and keep the
+  logical trace interval at most 30;
 - set the per-cell runtime timeout to at least 900 seconds because two-camera RTX
   capture can exceed the legacy 300-second timeout;
 - retain stdout/stderr, per-cell summary, trace, scene overlay, closeup/context frames, and videos;

@@ -408,6 +408,80 @@ Local Isaac Sim API evidence:
 速度 / SDF cooking”。我们下一步要做的就是把这套经验变成可复现的 S2F follow-up，而不是直接进
 倒液视频。
 
+## 外部参考调研：InternData-A1 倒酒/流体任务
+
+2026-07-09 补充调研了用户提到的 `inerndata` / `InternData` 倒酒仿真，公开材料对应
+`InternData-A1: Pioneering High-Fidelity Synthetic Data for Pre-training Generalist Policy`。
+这不是 LabUtopia 当前证据链的一部分，只作为外部参考和 claim boundary。
+
+公开材料能确认的事实：
+
+| 证据 | 结论 | 对 LabUtopia 的意义 |
+|---|---|---|
+| arXiv 论文 / 项目页 | InternData-A1 覆盖 `fluid-object manipulation`，数据集包含 4 个 fluid-related tasks。 | 行业里确实有人把机器人操作任务和流体对象放进大规模合成数据 pipeline。 |
+| 论文 4.1 Environment Construction | 论文明确写到：fluid objects 使用 `particle-based dynamics`，particles 在 containers 内自适应生成，液面通过 `isosurface rendering` 重建，并使用多种 `PBD materials`。 | 它不是单纯贴图或手工水面动画；路线与我们当前 `PBD particles + Isosurface` 展示层方向一致。 |
+| 论文附录任务统计 | 任务表列出 `Pour Baijiu`、`Pour Redwine`、`Pour Water`，各约 5000 条轨迹。 | 用户说的“倒酒/倒水仿真”在公开论文中确实存在。 |
+| Hugging Face dataset card | 页面嵌入 `pour_baijiu.mp4`，公开数据格式是 LeRobot 风格的 RGB 视频、状态、动作、相机参数等。 | 公开数据更像“已经录好的训练数据/视频”，不是可直接重新 step 的 Isaac/PhysX 场景工程。 |
+| GitHub / Hugging Face 公开入口 | 数据卡引用 `InternRobotics/InternManip`；该仓库公开 README 主要是训练/评测套件，当前公开材料没有给出 `Pour Baijiu` 的具体 USD scene、PBD particle config、container collider 或 leak classifier。 | 不能从公开材料直接复用他们的 collider，也不能把它当作我们烧杯问题的直接解法。 |
+
+因此，本次调研对“真液体”与“collider 经验”的判断要分开：
+
+```text
+internData_a1_fluid_claim_status=SUPPORTED_BY_PUBLIC_PAPER_DESCRIPTION
+internData_a1_pour_tasks_publicly_named=true
+internData_a1_pour_baijiu_public_video_available=true
+internData_a1_scene_usd_publicly_available_in_checked_sources=false
+internData_a1_container_collider_recipe_publicly_available=false
+internData_a1_direct_step_reproduction_allowed=false
+```
+
+给产品经理的白话解释：InternData-A1 可以证明“外部团队已经把倒酒/倒水类任务做成了粒子流体 +
+液面重建的视频和数据集”，这给我们路线信心；但公开资料没有给“摄影棚和特效工程文件”，也就是没有具体
+USD 场景、粒子初始状态、PBD material、容器 collider、solver 设置和成功/漏液筛选脚本。只有视频和
+LeRobot 轨迹时，我们可以学习展示效果和任务设计，不能直接拿来 `step`，也不能抽出 collider 解决
+LabUtopia 的烧杯漏液。
+
+对我们可复用的经验：
+
+- 继续坚持真实 `PBD particles`，不要把液体降级成纯视觉贴图。
+- 展示层采用 `Isosurface` / smoothing / material 调整，让水面比红色 debug 粒子更适合汇报。
+- 把“容器内自适应生成粒子”和“容器功能标注 / collision properties”纳入后续 asset contract。
+- 只把通过物理 gate 的轨迹升级为 benchmark / policy / score 证据；presentation video 不替代 readback。
+
+不能复用或不能宣称的内容：
+
+```text
+internData_a1_public_video_proves_labutopia_beaker_collider_fixed=false
+internData_a1_public_dataset_contains_reusable_beaker_collider=false
+internData_a1_pour_video_equals_zero_leak_evidence=false
+internData_a1_lerobot_data_can_be_directly_stepped_as_usd_scene=false
+```
+
+下一步如果要把 InternData-A1 经验工程化到 LabUtopia，正确问题不是“把他们的视频拿来 step”，而是：
+我们自己的 `level1_pour` 是否也能形成一套可公开复现的 asset/runtime contract，包括
+`scene USD + ParticleSystem + ParticleSet + PBD material + fluid-safe wrapper collider + readback gate +
+presentation Isosurface`。其中当前 blocker 仍然是 `fluid-safe wrapper collider`，不是水体渲染。
+
+参考资料：
+
+```text
+InternData-A1 arXiv:
+https://arxiv.org/abs/2511.16651
+https://arxiv.org/html/2511.16651v1
+
+InternData-A1 project page:
+https://internrobotics.github.io/interndata-a1.github.io/
+
+InternData-A1 Hugging Face dataset card:
+https://huggingface.co/datasets/InternRobotics/InternData-A1
+
+Public Pour Baijiu media referenced by the dataset card:
+https://huggingface.co/spaces/xushicd/InternData_Media/resolve/main/pour_baijiu.mp4
+
+InternManip public repository entry:
+https://github.com/InternRobotics/InternManip
+```
+
 ## 不会混淆的主线
 
 这条 fluid spike 不改变以下结论：

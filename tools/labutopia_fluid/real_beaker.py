@@ -13,8 +13,6 @@ import statistics
 from types import MappingProxyType
 from typing import Any, Iterable, Sequence
 
-from pxr import Gf, Usd, UsdGeom
-
 
 _FALLBACK_WALL_CLEARANCE = 0.005
 _RADIUS_CLAMP_EPSILON = 0.000001
@@ -176,12 +174,21 @@ def _radial_lattice_capacity(radius: float, spacing: float) -> int:
     )
 
 
+def _minimum_lattice_radius(required_count: int, spacing: float) -> float:
+    radius = 0.0
+    increment = spacing / 2.0
+    while _radial_lattice_capacity(radius, spacing) < required_count:
+        radius += increment
+    return radius
+
+
 def build_visible_beaker_spawn(
     frame: CupInteriorFrame,
     plan: Mapping[str, Any],
     *,
     physics_particle_width: float,
     particle_contact_offset: float,
+    fluid_rest_offset: float | None = None,
 ) -> VisibleBeakerSpawn:
     """Build the controlled radial lattice inside the measured real beaker."""
     from tools.labutopia_fluid.run_beaker_collider_smoke import (
@@ -192,18 +199,30 @@ def build_visible_beaker_spawn(
     count = int(plan["particle_count"])
     seed = int(plan.get("particle_seed", 0))
     layout = plan["spawn_layout"]
-    spacing = float(layout["particle_spacing"])
+    recipe_spacing = float(layout["particle_spacing"])
+    resolved_fluid_rest_offset = (
+        float(fluid_rest_offset)
+        if fluid_rest_offset is not None
+        else float(physics_particle_width) * 0.58806
+    )
+    if resolved_fluid_rest_offset <= 0.0:
+        raise ValueError("visible_beaker_fluid_rest_offset_must_be_positive")
+    spacing = 2.0 * resolved_fluid_rest_offset
     inset = float(layout["interior_inset"])
     if count >= 4096:
         inset = max(inset, 0.008)
     radial_clearance = max(float(particle_contact_offset) * 1.2, inset)
-    usable_radius = frame.interior_radius - radial_clearance
-    if usable_radius <= 0.0:
+    maximum_usable_radius = frame.interior_radius - radial_clearance
+    if maximum_usable_radius <= 0.0:
         raise ValueError("visible_beaker_spawn_has_no_radial_capacity")
+    layer_count = int(math.ceil(count ** (1.0 / 3.0)))
+    required_per_layer = int(math.ceil(count / layer_count))
+    usable_radius = _minimum_lattice_radius(required_per_layer, spacing)
+    if usable_radius > maximum_usable_radius:
+        raise ValueError("visible_beaker_dense_spawn_exceeds_interior_radius")
     per_layer_capacity = _radial_lattice_capacity(usable_radius, spacing)
     if per_layer_capacity <= 0:
         raise ValueError("visible_beaker_spawn_has_no_lattice_candidates")
-    layer_count = int(math.ceil(count / per_layer_capacity))
 
     config = ColliderConfig(
         particle_count=count,
@@ -214,9 +233,9 @@ def build_visible_beaker_spawn(
         particle_contact_offset=float(particle_contact_offset),
         spawn_particle_contact_offset=float(particle_contact_offset),
         source_center=(0.0, 0.0, frame.interior_floor),
-        source_radius=frame.interior_radius,
+        source_radius=usable_radius + radial_clearance,
         source_height=frame.rim_height - frame.interior_floor,
-        bottom_thickness=0.012,
+        bottom_thickness=0.0,
         interior_inset=inset,
         collider_contact_offset=float(layout["collider_contact_offset"]),
         table_z=frame.interior_floor,
@@ -240,7 +259,11 @@ def build_visible_beaker_spawn(
             "particle_contact_offset": float(particle_contact_offset),
             "collider_contact_offset": float(layout["collider_contact_offset"]),
             "radial_clearance": radial_clearance,
-            "bottom_lift": 0.012,
+            "bottom_lift": 0.0,
+            "fluid_rest_offset": resolved_fluid_rest_offset,
+            "particle_spacing": spacing,
+            "legacy_recipe_particle_spacing": recipe_spacing,
+            "dense_spawn_radius": usable_radius,
         },
         particle_seed=seed,
         particle_count=count,
@@ -574,6 +597,8 @@ def classify_visible_beaker_trace(
 
 
 def classify_visible_beaker_trace_from_files(*, manifest_path: str | Path) -> dict[str, Any]:
+    from pxr import Usd
+
     try:
         manifest_file = Path(manifest_path)
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
@@ -645,6 +670,8 @@ def classify_visible_beaker_trace_from_files(*, manifest_path: str | Path) -> di
 
 
 def _parent_axes_world(parent_world: Gf.Matrix4d) -> tuple[tuple[float, float, float], ...]:
+    from pxr import Gf
+
     origin = parent_world.Transform(Gf.Vec3d(0.0, 0.0, 0.0))
     axes = []
     for index in range(3):
@@ -698,6 +725,8 @@ def derive_cup_interior_frame(
     calibration_points_path: str | None,
 ) -> CupInteriorFrame:
     """Derive the visible beaker frame from composed mesh and particle points."""
+    from pxr import Gf, Usd, UsdGeom
+
     parent_prim = stage.GetPrimAtPath(parent_path)
     mesh_prim = stage.GetPrimAtPath(visual_mesh_path)
     if not parent_prim.IsValid():
@@ -910,6 +939,8 @@ def _set_wrapper_collision_offsets(prim: Any, *, contact_offset: float, rest_off
 
 
 def _set_wrapper_proxy_imageable(prim: Any) -> None:
+    from pxr import UsdGeom
+
     imageable = UsdGeom.Imageable(prim)
     imageable.CreatePurposeAttr().Set(UsdGeom.Tokens.proxy)
     imageable.MakeInvisible()
@@ -921,6 +952,8 @@ def _canonical_to_parent_transform(
     frame: CupInteriorFrame,
     parent_path: str,
 ) -> tuple[Gf.Matrix4d, dict[str, tuple[float, float, float]]]:
+    from pxr import Gf, Usd, UsdGeom
+
     parent_prim = stage.GetPrimAtPath(parent_path)
     if not parent_prim.IsValid():
         raise ValueError(f"invalid_parent_path:{parent_path}")
@@ -953,6 +986,8 @@ def _authored_bottom_measurements(
     expected_axis_world: Sequence[float],
     expected_support_world: Sequence[float],
 ) -> dict[str, Any]:
+    from pxr import Gf, Usd, UsdGeom
+
     bottom = stage.GetPrimAtPath(bottom_path)
     if not bottom.IsValid():
         raise ValueError(f"invalid_bottom_path:{bottom_path}")
@@ -1005,7 +1040,7 @@ def author_canonical_fluid_wrapper(
     bottom_overlap: float = 0.018,
 ) -> dict[str, Any]:
     """Author a frame-aligned, invisible GPU collider wrapper below the real cup."""
-    from pxr import Sdf, UsdPhysics
+    from pxr import Gf, Sdf, UsdGeom, UsdPhysics
     from tools.labutopia_fluid.run_beaker_collider_smoke import (
         _add_box_collider_prim,
         fluid_safe_wrapper_bottom_xy_extent,

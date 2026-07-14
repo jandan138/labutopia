@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import glob
 import hashlib
+import importlib.metadata
 import json
 import math
 import os
@@ -13,13 +14,21 @@ import shutil
 import sys
 import time
 import traceback
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
+REPO_ROOT = Path(
+    os.environ.get("LABUTOPIA_REPO_ROOT", Path(__file__).resolve().parents[2])
+).resolve()
+_SEALED_RUNTIME = os.environ.get("LABUTOPIA_SEALED_RUNTIME") == "1"
+if _SEALED_RUNTIME and any(
+    path == str(REPO_ROOT) or path.startswith(str(REPO_ROOT) + os.sep)
+    for path in sys.path
+):
+    raise RuntimeError("sealed_runtime_live_repo_on_sys_path")
+if not _SEALED_RUNTIME and str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.labutopia_fluid.full_scene_spawn_frame import (
@@ -193,37 +202,498 @@ def physics_steps_per_second(physics_dt: float) -> int:
     return frequency
 
 
+def validate_strict_step_schedule(
+    *,
+    logical_dt: float,
+    integration_dt: float,
+    substeps_per_logical_step: int,
+) -> dict[str, Any]:
+    logical_frequency = physics_steps_per_second(logical_dt)
+    integration_frequency = physics_steps_per_second(integration_dt)
+    if (
+        type(substeps_per_logical_step) is not int
+        or substeps_per_logical_step <= 0
+        or not math.isclose(
+            logical_dt,
+            integration_dt * substeps_per_logical_step,
+            rel_tol=0.0,
+            abs_tol=1e-15,
+        )
+    ):
+        raise ValueError("strict_physx_step_schedule_mismatch")
+    return {
+        "logical_dt": float(logical_dt),
+        "integration_dt": float(integration_dt),
+        "substeps_per_logical_step": substeps_per_logical_step,
+        "logical_steps_per_second": logical_frequency,
+        "integration_steps_per_second": integration_frequency,
+    }
+
+
+def author_and_verify_strict_si_stage_units(stage: Any) -> dict[str, Any]:
+    from pxr import UsdGeom, UsdPhysics
+
+    source_meters = float(UsdGeom.GetStageMetersPerUnit(stage))
+    source_kilograms = float(UsdPhysics.GetStageKilogramsPerUnit(stage))
+    source_meters_authored = bool(stage.HasAuthoredMetadata("metersPerUnit"))
+    source_kilograms_authored = bool(
+        stage.HasAuthoredMetadata("kilogramsPerUnit")
+    )
+    root_layer = stage.GetRootLayer()
+    previous_edit_target = stage.GetEditTarget()
+    stage.SetEditTarget(root_layer)
+    try:
+        meters_authored = UsdGeom.SetStageMetersPerUnit(stage, 1.0)
+        kilograms_authored = UsdPhysics.SetStageKilogramsPerUnit(stage, 1.0)
+    finally:
+        stage.SetEditTarget(previous_edit_target)
+
+    effective_meters = float(UsdGeom.GetStageMetersPerUnit(stage))
+    effective_kilograms = float(UsdPhysics.GetStageKilogramsPerUnit(stage))
+    verified = (
+        meters_authored is True
+        and kilograms_authored is True
+        and stage.HasAuthoredMetadata("metersPerUnit")
+        and stage.HasAuthoredMetadata("kilogramsPerUnit")
+        and effective_meters == 1.0
+        and effective_kilograms == 1.0
+    )
+    if not verified:
+        raise RuntimeError("strict_si_stage_unit_authoring_failed")
+    return {
+        "source_meters_per_unit": source_meters,
+        "source_kilograms_per_unit": source_kilograms,
+        "source_meters_per_unit_authored": source_meters_authored,
+        "source_kilograms_per_unit_authored": source_kilograms_authored,
+        "effective_meters_per_unit": effective_meters,
+        "effective_kilograms_per_unit": effective_kilograms,
+        "meters_per_unit_authored": True,
+        "kilograms_per_unit_authored": True,
+        "unit_authoring_layer": root_layer.identifier,
+        "strict_si_units_verified": True,
+    }
+
+
+def verify_strict_si_density_authoring(
+    stage: Any,
+    *,
+    material_path: str,
+    particle_set_path: str,
+) -> dict[str, Any]:
+    material_prim = stage.GetPrimAtPath(material_path)
+    particle_set_prim = stage.GetPrimAtPath(particle_set_path)
+    material_density_attr = material_prim.GetAttribute(
+        "physxPBDMaterial:density"
+    )
+    particle_density_attr = particle_set_prim.GetAttribute("physics:density")
+    particle_mass_attr = particle_set_prim.GetAttribute("physics:mass")
+    attrs = (
+        material_density_attr,
+        particle_density_attr,
+        particle_mass_attr,
+    )
+    if (
+        not material_prim.IsValid()
+        or not particle_set_prim.IsValid()
+        or any(not attr or not attr.HasAuthoredValueOpinion() for attr in attrs)
+    ):
+        raise RuntimeError("strict_si_density_authoring_failed")
+    material_density = float(material_density_attr.Get())
+    particle_density = float(particle_density_attr.Get())
+    particle_mass = float(particle_mass_attr.Get())
+    if (
+        not math.isfinite(material_density)
+        or material_density != 1000.0
+        or not math.isfinite(particle_density)
+        or particle_density != 1000.0
+        or not math.isfinite(particle_mass)
+        or particle_mass != 0.0
+    ):
+        raise RuntimeError("strict_si_density_authoring_failed")
+    return {
+        "material_path": material_path,
+        "particle_set_path": particle_set_path,
+        "material_density_kg_m3": material_density,
+        "particle_density_kg_m3": particle_density,
+        "particle_mass_kg": particle_mass,
+        "density_authority": "authored_density_with_zero_mass",
+        "strict_si_density_verified": True,
+    }
+
+
+def _canonical_json_sha256(value: Any) -> str:
+    payload = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def build_strict_physical_authoring_identity(
+    *,
+    source_usd_sha256: str,
+    runner_script_sha256: str,
+    isaacsim_version: str,
+    particle_count: int,
+    seed: int,
+    spawn_positions_sha256: str,
+    logical_dt: float,
+    integration_dt: float,
+    substeps_per_logical_step: int,
+    stage_unit_contract: Mapping[str, Any],
+    particle_system_collision_offsets: Mapping[str, Any],
+    canonical_wrapper_summary: Mapping[str, Any],
+    physics_settings: Mapping[str, Any],
+) -> dict[str, Any]:
+    schedule = validate_strict_step_schedule(
+        logical_dt=logical_dt,
+        integration_dt=integration_dt,
+        substeps_per_logical_step=substeps_per_logical_step,
+    )
+    hash_fields = {
+        "source_usd_sha256": source_usd_sha256,
+        "runner_script_sha256": runner_script_sha256,
+        "spawn_positions_sha256": spawn_positions_sha256,
+    }
+    if any(
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value.lower())
+        for value in hash_fields.values()
+    ):
+        raise ValueError("strict_physical_authoring_hash_invalid")
+    if (
+        not isinstance(isaacsim_version, str)
+        or not isaacsim_version.startswith("4.1")
+    ):
+        raise ValueError("strict_physical_authoring_requires_isaacsim41")
+    if type(particle_count) is not int or particle_count <= 0:
+        raise ValueError("strict_physical_authoring_particle_count_invalid")
+    if type(seed) is not int or seed < 0:
+        raise ValueError("strict_physical_authoring_seed_invalid")
+
+    density = stage_unit_contract.get("density_contract")
+    strict_si_contract = {
+        "effective_meters_per_unit": stage_unit_contract.get(
+            "effective_meters_per_unit"
+        ),
+        "effective_kilograms_per_unit": stage_unit_contract.get(
+            "effective_kilograms_per_unit"
+        ),
+        "strict_si_units_verified": stage_unit_contract.get(
+            "strict_si_units_verified"
+        ),
+        "numeric_geometry_invariant": stage_unit_contract.get(
+            "numeric_geometry_invariant"
+        ),
+        "density_contract": dict(density) if isinstance(density, Mapping) else {},
+    }
+    if (
+        strict_si_contract["effective_meters_per_unit"] != 1.0
+        or strict_si_contract["effective_kilograms_per_unit"] != 1.0
+        or strict_si_contract["strict_si_units_verified"] is not True
+        or strict_si_contract["numeric_geometry_invariant"] is not True
+        or strict_si_contract["density_contract"].get("material_density_kg_m3")
+        != 1000.0
+        or strict_si_contract["density_contract"].get("particle_density_kg_m3")
+        != 1000.0
+        or strict_si_contract["density_contract"].get("particle_mass_kg") != 0.0
+        or strict_si_contract["density_contract"].get(
+            "strict_si_density_verified"
+        )
+        is not True
+    ):
+        raise ValueError("strict_physical_authoring_si_contract_invalid")
+
+    offset_names = (
+        "contact_offset",
+        "rest_offset",
+        "particle_contact_offset",
+        "solid_rest_offset",
+        "fluid_rest_offset",
+    )
+    offsets = {
+        name: float(particle_system_collision_offsets[name])
+        for name in offset_names
+    }
+    if (
+        any(not math.isfinite(value) for value in offsets.values())
+        or offsets["rest_offset"] <= 0.0
+        or offsets["rest_offset"] != offsets["solid_rest_offset"]
+        or offsets["rest_offset"] >= offsets["contact_offset"]
+        or offsets["particle_contact_offset"] < offsets["solid_rest_offset"]
+        or offsets["fluid_rest_offset"] <= 0.0
+    ):
+        raise ValueError("strict_physical_authoring_collision_offsets_invalid")
+    if canonical_wrapper_summary.get("enabled") is not True:
+        raise ValueError("strict_physical_authoring_wrapper_invalid")
+    if (
+        physics_settings.get("strict_timestep_verified") is not True
+        or physics_settings.get("time_steps_per_second")
+        != schedule["integration_steps_per_second"]
+        or physics_settings.get("effective_physics_dt") != integration_dt
+    ):
+        raise ValueError("strict_physical_authoring_physics_settings_invalid")
+
+    wrapper_contract_sha256 = _canonical_json_sha256(canonical_wrapper_summary)
+    identity = {
+        "schema_version": 1,
+        **hash_fields,
+        "isaacsim_version": isaacsim_version,
+        "particle_count": particle_count,
+        "seed": seed,
+        "step_schedule": schedule,
+        "strict_si_contract": strict_si_contract,
+        "particle_system_collision_offsets": offsets,
+        "wrapper_contract_sha256": wrapper_contract_sha256,
+        "physics_settings": dict(physics_settings),
+    }
+    return {
+        **identity,
+        "physics_authoring_sha256": _canonical_json_sha256(identity),
+    }
+
+
+def normalize_strict_particle_offsets(
+    offsets: Mapping[str, float],
+) -> dict[str, Any]:
+    normalized = {key: float(value) for key, value in offsets.items()}
+    required = (
+        "particle_width",
+        "particle_contact_offset",
+        "particle_system_contact_offset",
+        "solid_rest_offset",
+        "fluid_rest_offset",
+    )
+    if any(
+        key not in normalized
+        or not math.isfinite(normalized[key])
+        or normalized[key] <= 0.0
+        for key in required
+    ):
+        raise ValueError("strict_particle_offsets_must_be_positive_and_finite")
+    particle_contact = max(
+        normalized["particle_contact_offset"],
+        normalized["solid_rest_offset"],
+        2.0 * normalized["fluid_rest_offset"],
+    )
+    normalized["particle_contact_offset"] = particle_contact
+    normalized["particle_system_contact_offset"] = max(
+        normalized["particle_system_contact_offset"],
+        1.5 * particle_contact,
+    )
+    normalized["physx_offset_hierarchy_verified"] = True
+    return normalized
+
+
 @dataclass
 class StrictPhysicsStepper:
     interface: Any
-    physics_dt: float
-    executed_steps: int = 0
+    logical_dt: float
+    integration_dt: float
+    substeps_per_logical_step: int
+    stage_id: int
+    attach_verified: bool = False
+    detach_verified: bool = False
+    executed_logical_steps: int = 0
+    executed_integration_steps: int = 0
+    render_invariance_checks: int = 0
+    simulate_fetch_pair_count: int = 0
+    lifecycle_event_count: int = 0
+    _ordered_lifecycle_valid: bool = True
+    _fetch_pending: bool = False
+    _lifecycle_hasher: Any = field(
+        default_factory=hashlib.sha256,
+        init=False,
+        repr=False,
+    )
 
     def __post_init__(self) -> None:
-        physics_steps_per_second(self.physics_dt)
+        validate_strict_step_schedule(
+            logical_dt=self.logical_dt,
+            integration_dt=self.integration_dt,
+            substeps_per_logical_step=self.substeps_per_logical_step,
+        )
 
-    def step(self) -> None:
-        current_time = self.executed_steps * self.physics_dt
-        self.interface.simulate(self.physics_dt, current_time)
-        self.interface.fetch_results()
-        self.executed_steps += 1
+    def _record_lifecycle_event(self, event: str, **payload: Any) -> None:
+        encoded = json.dumps(
+            {
+                "event_index": self.lifecycle_event_count,
+                "event": event,
+                **payload,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        self._lifecycle_hasher.update(encoded)
+        self._lifecycle_hasher.update(b"\n")
+        self.lifecycle_event_count += 1
+
+    @classmethod
+    def attach(
+        cls,
+        *,
+        interface: Any,
+        logical_dt: float,
+        integration_dt: float,
+        substeps_per_logical_step: int,
+        stage_id: int,
+    ) -> "StrictPhysicsStepper":
+        if type(stage_id) is not int or stage_id <= 0:
+            raise ValueError("strict_physx_stage_id_invalid")
+        candidate = cls(
+            interface=interface,
+            logical_dt=logical_dt,
+            integration_dt=integration_dt,
+            substeps_per_logical_step=substeps_per_logical_step,
+            stage_id=stage_id,
+        )
+        attached = interface.attach_stage(stage_id)
+        if attached is not True or interface.get_attached_stage() != stage_id:
+            raise RuntimeError("strict_physx_stage_attach_failed")
+        candidate.attach_verified = True
+        candidate._record_lifecycle_event("attach_completed", stage_id=stage_id)
+        return candidate
+
+    def step(
+        self,
+        *,
+        after_integration_step: Callable[[int, float], None] | None = None,
+    ) -> None:
+        if not self.attach_verified or self.detach_verified:
+            raise RuntimeError("strict_physx_step_without_active_attachment")
+        for _ in range(self.substeps_per_logical_step):
+            current_time = self.executed_integration_steps * self.integration_dt
+            integration_step = self.executed_integration_steps + 1
+            try:
+                self.interface.simulate(self.integration_dt, current_time)
+            except Exception:
+                self._ordered_lifecycle_valid = False
+                self._record_lifecycle_event(
+                    "simulate_failed",
+                    integration_step=integration_step,
+                )
+                raise
+            self._record_lifecycle_event(
+                "simulate_completed",
+                integration_step=integration_step,
+                integration_dt=self.integration_dt,
+                current_time=current_time,
+            )
+            self._fetch_pending = True
+            try:
+                self.interface.fetch_results()
+            except Exception:
+                self._ordered_lifecycle_valid = False
+                self._record_lifecycle_event(
+                    "fetch_failed",
+                    integration_step=integration_step,
+                )
+                raise
+            self._record_lifecycle_event(
+                "fetch_completed",
+                integration_step=integration_step,
+            )
+            self._fetch_pending = False
+            self.simulate_fetch_pair_count += 1
+            self.executed_integration_steps += 1
+            if after_integration_step is not None:
+                after_integration_step(
+                    self.executed_integration_steps,
+                    self.executed_integration_steps * self.integration_dt,
+                )
+        self.executed_logical_steps += 1
+        self._record_lifecycle_event(
+            "logical_step_completed",
+            logical_step=self.executed_logical_steps,
+        )
+
+    def record_render_invariance_check(self) -> None:
+        if not self.attach_verified or self.detach_verified or self._fetch_pending:
+            self._ordered_lifecycle_valid = False
+            raise RuntimeError("strict_render_check_outside_stable_physics_boundary")
+        self.render_invariance_checks += 1
+        self._record_lifecycle_event(
+            "render_invariance_verified",
+            check_index=self.render_invariance_checks,
+            integration_step=self.executed_integration_steps,
+        )
+
+    def detach(self) -> None:
+        if self.detach_verified:
+            return
+        if not self.attach_verified:
+            raise RuntimeError("strict_physx_detach_without_attachment")
+        self.interface.detach_stage()
+        if self.interface.get_attached_stage() == self.stage_id:
+            self._ordered_lifecycle_valid = False
+            raise RuntimeError("strict_physx_stage_detach_failed")
+        self.detach_verified = True
+        self._record_lifecycle_event("detach_completed", stage_id=self.stage_id)
 
     def summary(self, *, requested_steps: int) -> dict[str, Any]:
         requested = int(requested_steps)
+        requested_integration_steps = requested * self.substeps_per_logical_step
+        exact_logical = self.executed_logical_steps == requested
+        exact_integration = (
+            self.executed_integration_steps == requested_integration_steps
+        )
+        expected_lifecycle_events = (
+            1
+            + 2 * self.executed_integration_steps
+            + self.executed_logical_steps
+            + self.render_invariance_checks
+            + int(self.detach_verified)
+        )
+        ordered_lifecycle_verified = (
+            self._ordered_lifecycle_valid
+            and not self._fetch_pending
+            and self.simulate_fetch_pair_count == self.executed_integration_steps
+            and self.lifecycle_event_count == expected_lifecycle_events
+        )
         return {
-            "requested_steps": requested,
-            "executed_steps": self.executed_steps,
-            "physics_dt": self.physics_dt,
-            "simulated_seconds": self.executed_steps * self.physics_dt,
-            "exact_step_count_verified": self.executed_steps == requested,
+            "requested_logical_steps": requested,
+            "executed_logical_steps": self.executed_logical_steps,
+            "requested_integration_steps": requested_integration_steps,
+            "executed_integration_steps": self.executed_integration_steps,
+            "logical_dt": self.logical_dt,
+            "integration_dt": self.integration_dt,
+            "substeps_per_logical_step": self.substeps_per_logical_step,
+            "logical_steps_per_second": physics_steps_per_second(self.logical_dt),
+            "integration_steps_per_second": physics_steps_per_second(
+                self.integration_dt
+            ),
+            "simulated_seconds": (
+                self.executed_integration_steps * self.integration_dt
+            ),
+            "exact_logical_step_count_verified": exact_logical,
+            "exact_integration_step_count_verified": exact_integration,
+            "exact_step_count_verified": exact_logical and exact_integration,
+            "simulate_fetch_pair_count": self.simulate_fetch_pair_count,
+            "ordered_lifecycle_verified": ordered_lifecycle_verified,
+            "lifecycle_event_count": self.lifecycle_event_count,
+            "lifecycle_event_sha256": self._lifecycle_hasher.hexdigest(),
+            "stage_id": self.stage_id,
+            "attach_verified": self.attach_verified,
+            "detach_verified": self.detach_verified,
             "render_updates_advance_physics": False,
+            "render_invariance_checks": self.render_invariance_checks,
         }
 
 
-def paused_render_update(app: Any, timeline: Any) -> None:
+def paused_render_update(app: Any, timeline: Any, *, settings: Any) -> None:
     if timeline.is_playing():
         raise RuntimeError("strict_render_update_while_timeline_playing")
-    app.update()
+    key = "/app/player/playSimulations"
+    previous = settings.get(key)
+    settings.set_bool(key, False)
+    try:
+        app.update()
+    finally:
+        settings.set_bool(key, bool(previous) if previous is not None else True)
 
 
 def scan_mdl_compile_errors(log_text: str, *, max_errors: int = 40) -> dict[str, Any]:
@@ -430,17 +900,19 @@ def resolve_presentation_water_mdl_source_asset(
 ) -> Path | None:
     """Resolve OmniSurface_ClearWater presets from a version-matched MDL tree.
 
-    Prefer the conda omni.mdl.core tree (matching OmniSurfaceBase) over kit Base
-    absolute paths, which fail createMdlModule when Hydra resolves Base from conda.
-    Local artifact mirrors remain last resort.
+    A supplied cell-local closure is authoritative. Outside closure mode, prefer
+    the version-matched conda tree over kit Base paths.
     """
-    candidates: list[Path] = []
     if mdl_source_asset is not None:
-        candidates.append(Path(mdl_source_asset))
-    candidates.append(PRESENTATION_WATER_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET)
-    candidates.append(ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET)
+        explicit = Path(mdl_source_asset)
+        return explicit if explicit.exists() else None
     if closure_base_dir is not None:
-        candidates.append(Path(closure_base_dir) / PRESENTATION_WATER_MDL_ASSET)
+        closure_asset = Path(closure_base_dir) / PRESENTATION_WATER_MDL_ASSET
+        return closure_asset if closure_asset.exists() else None
+    candidates = [
+        PRESENTATION_WATER_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET,
+        ISAACSIM41_CORE_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET,
+    ]
     for candidate in candidates:
         if candidate.exists():
             return candidate
@@ -672,6 +1144,13 @@ def validate_real_beaker_static_hold_args(args: argparse.Namespace) -> None:
         not math.isfinite(float(display_width)) or float(display_width) <= 0.0
     ):
         raise ValueError("display_particle_width_must_be_positive")
+    validate_strict_step_schedule(
+        logical_dt=float(args.logical_dt),
+        integration_dt=float(args.integration_dt),
+        substeps_per_logical_step=args.substeps_per_logical_step,
+    )
+    if args.integration_trace_substeps < 0:
+        raise ValueError("integration_trace_substeps_must_be_nonnegative")
 
 
 def build_real_beaker_summary_contract(
@@ -1006,12 +1485,13 @@ def resolve_omniglass_mdl_source_asset(
     *,
     closure_base_dir: str | Path | None = None,
 ) -> Path | None:
-    candidates: list[Path] = []
     if mdl_source_asset is not None:
-        candidates.append(Path(mdl_source_asset))
-    candidates.append(ISAACSIM41_CORE_MDL_ROOT / "Base" / "OmniGlass.mdl")
+        explicit = Path(mdl_source_asset)
+        return explicit if explicit.exists() else None
     if closure_base_dir is not None:
-        candidates.append(Path(closure_base_dir) / "OmniGlass.mdl")
+        closure_asset = Path(closure_base_dir) / "OmniGlass.mdl"
+        return closure_asset if closure_asset.exists() else None
+    candidates = [ISAACSIM41_CORE_MDL_ROOT / "Base" / "OmniGlass.mdl"]
     for candidate in candidates:
         if candidate.exists():
             return candidate
@@ -1962,11 +2442,88 @@ def _set_review_markers_visible(stage: Any, visible: bool) -> None:
         prim.SetActive(bool(visible))
 
 
+def remove_legacy_particle_sampling_api(
+    stage: Any,
+    *,
+    execute_command: Any,
+) -> dict[str, Any]:
+    sampler_path = "/World/fluid/Cylinder"
+    sampler_prim = stage.GetPrimAtPath(sampler_path)
+    if sampler_prim and not sampler_prim.IsActive():
+        raise RuntimeError("legacy_particle_sampling_prim_inactive")
+    sampling_schema_token = "PhysxParticleSamplingAPI"
+    api_present_before = bool(sampler_prim) and (
+        sampling_schema_token in sampler_prim.GetAppliedSchemas()
+    )
+    if api_present_before:
+        execute_command(
+            "RemoveParticleSamplingCommand",
+            stage=stage,
+            prim=sampler_prim,
+        )
+    api_present_after = bool(sampler_prim) and (
+        sampling_schema_token in sampler_prim.GetAppliedSchemas()
+    )
+    if api_present_after:
+        raise RuntimeError("legacy_particle_sampling_api_removal_failed")
+    return {
+        "sampler_path": sampler_path,
+        "prim_exists": bool(sampler_prim),
+        "api_present_before": api_present_before,
+        "api_present_after": api_present_after,
+        "official_remove_command_executed": api_present_before,
+        "verified": True,
+    }
+
+
 def _deactivate_original_fluid_prims(stage: Any) -> dict[str, Any]:
     from pxr import Sdf, UsdGeom
 
     stage.SetEditTarget(stage.GetRootLayer())
-    results = {}
+    results: dict[str, Any] = {}
+    physics_graph_changed = False
+    sampler_path = "/World/fluid/Cylinder"
+    sampler_prim = stage.GetPrimAtPath(sampler_path)
+    sampler_summary = {
+        "existed": bool(sampler_prim),
+        "deactivated": False,
+        "kept_active_to_avoid_physx_expired_prim": bool(sampler_prim),
+        "disabled_attrs": {},
+        "cleared_relationships": {},
+    }
+    if sampler_prim:
+        sampler_graph_active = (
+            "PhysxParticleSamplingAPI" in sampler_prim.GetAppliedSchemas()
+        )
+        UsdGeom.Imageable(sampler_prim).MakeInvisible()
+        particles_rel = sampler_prim.GetRelationship(
+            "physxParticleSampling:particles"
+        )
+        targets_before = list(particles_rel.GetTargets()) if particles_rel else []
+        if targets_before:
+            particles_rel.ClearTargets(True)
+            physics_graph_changed = physics_graph_changed or sampler_graph_active
+        sampler_summary["cleared_relationships"][
+            "physxParticleSampling:particles"
+        ] = {
+            "targets_before": [str(path) for path in targets_before],
+            "targets_after": (
+                [str(path) for path in particles_rel.GetTargets()]
+                if particles_rel
+                else []
+            ),
+        }
+        volume_attr = sampler_prim.GetAttribute("physxParticleSampling:volume")
+        if not volume_attr:
+            volume_attr = sampler_prim.CreateAttribute(
+                "physxParticleSampling:volume", Sdf.ValueTypeNames.Bool
+            )
+        if volume_attr.Get() is not False:
+            volume_attr.Set(False)
+            physics_graph_changed = physics_graph_changed or sampler_graph_active
+        sampler_summary["disabled_attrs"]["physxParticleSampling:volume"] = False
+    results[sampler_path] = sampler_summary
+
     for path in ("/World/fluid", EVIDENCE_PARTICLE_SET_PATH, EVIDENCE_PARTICLE_SYSTEM_PATH):
         prim = stage.GetPrimAtPath(path)
         results[path] = {
@@ -1974,6 +2531,7 @@ def _deactivate_original_fluid_prims(stage: Any) -> dict[str, Any]:
             "deactivated": False,
             "kept_active_to_avoid_physx_expired_prim": bool(prim),
             "disabled_attrs": {},
+            "cleared_relationships": {},
         }
         if prim:
             imageable = UsdGeom.Imageable(prim)
@@ -1982,23 +2540,126 @@ def _deactivate_original_fluid_prims(stage: Any) -> dict[str, Any]:
                 attr = prim.GetAttribute("particleSystemEnabled")
                 if not attr:
                     attr = prim.CreateAttribute("particleSystemEnabled", Sdf.ValueTypeNames.Bool)
-                attr.Set(False)
+                if attr.Get() is not False:
+                    attr.Set(False)
+                    physics_graph_changed = True
                 results[path]["disabled_attrs"]["particleSystemEnabled"] = False
             if path == EVIDENCE_PARTICLE_SET_PATH:
+                particle_set_graph_active = (
+                    "PhysxParticleSetAPI" in prim.GetAppliedSchemas()
+                )
+                system_rel = prim.GetRelationship("physxParticle:particleSystem")
+                targets_before = list(system_rel.GetTargets()) if system_rel else []
+                if targets_before:
+                    system_rel.ClearTargets(True)
+                    physics_graph_changed = (
+                        physics_graph_changed or particle_set_graph_active
+                    )
+                results[path]["cleared_relationships"][
+                    "physxParticle:particleSystem"
+                ] = {
+                    "targets_before": [str(target) for target in targets_before],
+                    "targets_after": (
+                        [str(target) for target in system_rel.GetTargets()]
+                        if system_rel
+                        else []
+                    ),
+                }
                 for attr_name in ("physxParticle:selfCollision", "physxParticle:fluid"):
                     attr = prim.GetAttribute(attr_name)
                     if not attr:
                         attr = prim.CreateAttribute(attr_name, Sdf.ValueTypeNames.Bool)
-                    attr.Set(False)
+                    if attr.Get() is not False:
+                        attr.Set(False)
+                        physics_graph_changed = (
+                            physics_graph_changed or particle_set_graph_active
+                        )
                     results[path]["disabled_attrs"][attr_name] = False
+    sampler_targets_after = (
+        list(
+            sampler_prim.GetRelationship(
+                "physxParticleSampling:particles"
+            ).GetTargets()
+        )
+        if sampler_prim
+        and sampler_prim.GetRelationship("physxParticleSampling:particles")
+        else []
+    )
+    particle_set_prim = stage.GetPrimAtPath(EVIDENCE_PARTICLE_SET_PATH)
+    particle_set_targets_after = (
+        list(
+            particle_set_prim.GetRelationship(
+                "physxParticle:particleSystem"
+            ).GetTargets()
+        )
+        if particle_set_prim
+        and particle_set_prim.GetRelationship("physxParticle:particleSystem")
+        else []
+    )
+    sampler_volume_disabled = (
+        not sampler_prim
+        or sampler_prim.GetAttribute("physxParticleSampling:volume").Get() is False
+    )
+    particle_system_prim = stage.GetPrimAtPath(EVIDENCE_PARTICLE_SYSTEM_PATH)
+    particle_system_disabled = (
+        not particle_system_prim
+        or particle_system_prim.GetAttribute("particleSystemEnabled").Get() is False
+    )
+    results["ownership_isolation"] = {
+        "sampler_path": sampler_path,
+        "sampler_targets_after": [str(path) for path in sampler_targets_after],
+        "particle_set_targets_after": [
+            str(path) for path in particle_set_targets_after
+        ],
+        "synchronization_required": physics_graph_changed,
+        "verified": (
+            not sampler_targets_after
+            and not particle_set_targets_after
+            and sampler_volume_disabled
+            and particle_system_disabled
+        ),
+    }
     return results
+
+
+def synchronize_legacy_particle_graph(
+    *,
+    app: Any,
+    timeline: Any,
+    settings: Any,
+    isolation_summary: dict[str, Any],
+    warmup_updates: int,
+    strict_mode: bool,
+) -> dict[str, Any]:
+    update_count = int(warmup_updates)
+    if update_count < 0:
+        raise ValueError("legacy_particle_graph_sync_updates_must_be_nonnegative")
+    ownership = isolation_summary.get("ownership_isolation")
+    if not isinstance(ownership, dict) or ownership.get("verified") is not True:
+        raise RuntimeError("legacy_particle_graph_isolation_unverified")
+    synchronization_required = ownership.get("synchronization_required") is True
+    if strict_mode and timeline.is_playing():
+        timeline.stop()
+    if strict_mode and synchronization_required and update_count < 1:
+        raise RuntimeError("strict_legacy_particle_graph_sync_missing")
+    for _ in range(update_count):
+        if strict_mode:
+            paused_render_update(app, timeline, settings=settings)
+        else:
+            app.update()
+    ownership["synchronization_updates"] = update_count
+    ownership["synchronization_verified"] = (
+        not synchronization_required or update_count > 0
+    )
+    return isolation_summary
 
 
 def _configure_physics_scene_for_pbd(
     stage: Any,
     physics_scene_path: str,
     *,
-    physics_dt: float,
+    integration_dt: float,
+    strict_mode: bool,
 ) -> dict[str, Any]:
     from pxr import Gf, PhysxSchema, UsdPhysics
 
@@ -2012,8 +2673,26 @@ def _configure_physics_scene_for_pbd(
     physx_scene_api.CreateBroadphaseTypeAttr().Set("GPU")
     physx_scene_api.CreateSolverTypeAttr().Set("TGS")
     physx_scene_api.CreateGpuMaxParticleContactsAttr().Set(1_048_576)
-    steps_per_second = physics_steps_per_second(physics_dt)
-    physx_scene_api.GetTimeStepsPerSecondAttr().Set(steps_per_second)
+    timestep_attr = physx_scene_api.CreateTimeStepsPerSecondAttr()
+    if strict_mode:
+        steps_per_second = physics_steps_per_second(integration_dt)
+        if timestep_attr.Set(steps_per_second) is not True:
+            raise RuntimeError("strict_physics_timestep_authoring_failed")
+        authored_steps_per_second = timestep_attr.Get()
+        timestep_verified = (
+            timestep_attr.HasAuthoredValueOpinion()
+            and authored_steps_per_second == steps_per_second
+        )
+        if not timestep_verified:
+            raise RuntimeError("strict_physics_timestep_readback_mismatch")
+    else:
+        authored_steps_per_second = timestep_attr.Get()
+        steps_per_second = (
+            int(authored_steps_per_second)
+            if authored_steps_per_second is not None
+            else None
+        )
+        timestep_verified = False
     return {
         "physics_scene_path": physics_scene_path,
         "gpu_dynamics_enabled": True,
@@ -2023,7 +2702,11 @@ def _configure_physics_scene_for_pbd(
         "gravity_magnitude": 9.81,
         "gpu_max_particle_contacts": 1_048_576,
         "time_steps_per_second": steps_per_second,
-        "effective_physics_dt": 1.0 / steps_per_second,
+        "effective_physics_dt": (
+            1.0 / steps_per_second if steps_per_second else None
+        ),
+        "time_steps_per_second_authored": timestep_attr.HasAuthoredValueOpinion(),
+        "strict_timestep_verified": timestep_verified,
     }
 
 
@@ -2038,11 +2721,20 @@ def _author_completed_pbd_runtime_particles(
     presentation_visual_material_path: str | None = None,
     presentation_postprocess_overrides: dict[str, Any] | None = None,
     display_particle_width: float | None = None,
+    non_particle_rest_offset: float = 0.0,
 ) -> dict[str, Any]:
     from omni.physx.scripts import particleUtils, physicsUtils
     from pxr import Gf, Sdf, UsdGeom, UsdShade
 
     stage.SetEditTarget(stage.GetRootLayer())
+    resolved_non_particle_rest_offset = float(non_particle_rest_offset)
+    if (
+        not math.isfinite(resolved_non_particle_rest_offset)
+        or resolved_non_particle_rest_offset < 0.0
+        or resolved_non_particle_rest_offset
+        >= float(widths["particle_system_contact_offset"])
+    ):
+        raise ValueError("particle_system_non_particle_rest_offset_invalid")
     pre_deactivate_summary = _deactivate_original_fluid_prims(stage)
     if not stage.GetPrimAtPath(RUNTIME_PBD_SCOPE_PATH):
         UsdGeom.Xform.Define(stage, RUNTIME_PBD_SCOPE_PATH)
@@ -2068,7 +2760,7 @@ def _author_completed_pbd_runtime_particles(
         particle_system_enabled=True,
         simulation_owner=Sdf.Path(physics_scene_path),
         contact_offset=widths["particle_system_contact_offset"],
-        rest_offset=0.0,
+        rest_offset=resolved_non_particle_rest_offset,
         particle_contact_offset=widths["particle_contact_offset"],
         solid_rest_offset=widths["solid_rest_offset"],
         fluid_rest_offset=widths["fluid_rest_offset"],
@@ -2148,7 +2840,7 @@ def _author_completed_pbd_runtime_particles(
         True,
         True,
         0,
-        0.001,
+        0.0,
         1000.0,
     )
     physicsUtils.add_physics_material_to_prim(stage, particle_set.GetPrim(), physics_material_path)
@@ -2160,6 +2852,19 @@ def _author_completed_pbd_runtime_particles(
         "source_particle_system_path": EVIDENCE_PARTICLE_SYSTEM_PATH,
         "source_particle_set_path": EVIDENCE_PARTICLE_SET_PATH,
         "physics_material_path": str(physics_material_path),
+        "declared_density_contract": {
+            "material_density_kg_m3": 1000.0,
+            "particle_density_kg_m3": 1000.0,
+            "particle_mass_kg": 0.0,
+            "density_authority": "authored_density_with_zero_mass",
+        },
+        "particle_system_collision_offsets": {
+            "contact_offset": float(widths["particle_system_contact_offset"]),
+            "rest_offset": resolved_non_particle_rest_offset,
+            "particle_contact_offset": float(widths["particle_contact_offset"]),
+            "solid_rest_offset": float(widths["solid_rest_offset"]),
+            "fluid_rest_offset": float(widths["fluid_rest_offset"]),
+        },
         "visual_material_path": render_material_path,
         "source_visual_material_path": visual_material_path,
         "presentation_visual_material_path": presentation_visual_material_path,
@@ -2179,6 +2884,7 @@ def _physx_visualizer_mode_none(pb: Any) -> Any:
 def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     import carb
     import omni.kit.app
+    import omni.kit.commands
     import omni.physx
     import omni.timeline
     import omni.usd
@@ -2190,7 +2896,14 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     artifact_dir.mkdir(parents=True, exist_ok=True)
     trace_path = artifact_dir / "particle_readback_trace.jsonl"
     trace_path.write_text("", encoding="utf-8")
+    integration_trace_path = artifact_dir / "particle_integration_substep_trace.jsonl"
+    if args.integration_trace_substeps > 0:
+        integration_trace_path.write_text("", encoding="utf-8")
     strict_mode = bool(getattr(args, "real_beaker_static_hold", False))
+    legacy_sampling_api_removal = {
+        "requested": False,
+        "verified": True,
+    }
 
     material_summary = inspect_native_material_bindings(usd_path)
     expectation = NativeMaterialExpectation()
@@ -2233,7 +2946,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             tail_window_steps=min(args.steps, max(1, args.trace_interval * 3)),
             render_width=args.width,
             render_height=args.height,
-            physics_dt=args.physics_dt,
+            physics_dt=args.logical_dt,
         )
         classify_config = build_classification_collider_config(
             config,
@@ -2281,8 +2994,11 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             tail_window_steps=min(args.steps, max(1, args.trace_interval * 3)),
             render_width=args.width,
             render_height=args.height,
-            physics_dt=args.physics_dt,
+            physics_dt=args.logical_dt,
         )
+
+    if strict_mode:
+        offsets = normalize_strict_particle_offsets(offsets)
 
     render_mode = resolve_presentation_render_mode(
         presentation_render_mode=getattr(args, "presentation_render_mode", None),
@@ -2322,21 +3038,52 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     if not opened or stage is None:
         raise RuntimeError(f"open_stage_failed:{usd_path}")
     cup_interior_frame = None
+    strict_si_unit_contract: dict[str, Any] | None = None
     visible_spawn = None
     visible_spawn_summary: dict[str, Any] | None = None
     canonical_wrapper_summary: dict[str, Any] = {"enabled": False}
+    physical_authoring_identity: dict[str, Any] | None = None
     if strict_mode:
+        pre_unit_frame = derive_cup_interior_frame(
+            stage,
+            parent_path="/World/beaker2",
+            visual_mesh_path="/World/beaker2/mesh",
+            calibration_points_path=EVIDENCE_PARTICLE_SET_PATH,
+        )
+        numeric_geometry_before = {
+            "source_bbox": asdict(_bbox_from_stage(stage, "/World/beaker2")),
+            "target_bbox": asdict(_bbox_from_stage(stage, "/World/beaker1")),
+            "table_bbox": asdict(_bbox_from_stage(stage, "/World/table")),
+            "cup_interior_frame": pre_unit_frame.as_dict(),
+        }
+        strict_si_unit_contract = author_and_verify_strict_si_stage_units(stage)
         cup_interior_frame = derive_cup_interior_frame(
             stage,
             parent_path="/World/beaker2",
             visual_mesh_path="/World/beaker2/mesh",
             calibration_points_path=EVIDENCE_PARTICLE_SET_PATH,
         )
+        numeric_geometry_after = {
+            "source_bbox": asdict(_bbox_from_stage(stage, "/World/beaker2")),
+            "target_bbox": asdict(_bbox_from_stage(stage, "/World/beaker1")),
+            "table_bbox": asdict(_bbox_from_stage(stage, "/World/table")),
+            "cup_interior_frame": cup_interior_frame.as_dict(),
+        }
+        if numeric_geometry_before != numeric_geometry_after:
+            raise RuntimeError("strict_si_unit_numeric_geometry_changed")
+        strict_si_unit_contract.update(
+            {
+                "numeric_geometry_before": numeric_geometry_before,
+                "numeric_geometry_after": numeric_geometry_after,
+                "numeric_geometry_invariant": True,
+            }
+        )
         visible_spawn = build_visible_beaker_spawn(
             cup_interior_frame,
             controlled_spawn_plan,
             physics_particle_width=offsets["particle_width"],
             particle_contact_offset=offsets["particle_contact_offset"],
+            fluid_rest_offset=offsets["fluid_rest_offset"],
         )
         selected_positions = list(visible_spawn.positions_world)
         initial_visible_counts = classify_visible_beaker_positions(
@@ -2461,9 +3208,23 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 panel_ring_count=2,
             ),
         }
+    app = omni.kit.app.get_app()
+    timeline = omni.timeline.get_timeline_interface()
+    if strict_mode:
+        timeline.stop()
+        legacy_sampling_api_removal = remove_legacy_particle_sampling_api(
+            stage,
+            execute_command=omni.kit.commands.execute,
+        )
     original_fluid_deactivate_summary = _deactivate_original_fluid_prims(stage)
-    for _ in range(args.warmup_updates):
-        omni.kit.app.get_app().update()
+    original_fluid_deactivate_summary = synchronize_legacy_particle_graph(
+        app=app,
+        timeline=timeline,
+        settings=settings,
+        isolation_summary=original_fluid_deactivate_summary,
+        warmup_updates=args.warmup_updates,
+        strict_mode=strict_mode,
+    )
     settings.set_bool(pb.SETTING_SUPPRESS_READBACK, False)
     settings.set_bool("/physics/suppressReadback", False)
     settings.set(pb.SETTING_UPDATE_TO_USD, True)
@@ -2473,7 +3234,8 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     physics_settings = _configure_physics_scene_for_pbd(
         stage,
         "/World/PhysicsScene",
-        physics_dt=args.physics_dt,
+        integration_dt=args.integration_dt,
+        strict_mode=strict_mode,
     )
 
     if not stage.GetPrimAtPath("/World/DistantLight"):
@@ -2550,7 +3312,35 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         display_particle_width=(
             getattr(args, "display_particle_width", None) if strict_mode else None
         ),
+        non_particle_rest_offset=(
+            offsets["solid_rest_offset"] if strict_mode else 0.0
+        ),
     )
+    if strict_mode:
+        strict_density_contract = verify_strict_si_density_authoring(
+            stage,
+            material_path=authored["physics_material_path"],
+            particle_set_path=authored["particle_set_path"],
+        )
+        authored["strict_si_density_contract"] = strict_density_contract
+        strict_si_unit_contract["density_contract"] = strict_density_contract
+        physical_authoring_identity = build_strict_physical_authoring_identity(
+            source_usd_sha256=_sha256_file(usd_path),
+            runner_script_sha256=_sha256_file(Path(__file__).resolve()),
+            isaacsim_version=importlib.metadata.version("isaacsim"),
+            particle_count=controlled_spawn_count,
+            seed=int(getattr(args, "controlled_spawn_seed", 0) or 0),
+            spawn_positions_sha256=visible_spawn.positions_sha256,
+            logical_dt=args.logical_dt,
+            integration_dt=args.integration_dt,
+            substeps_per_logical_step=args.substeps_per_logical_step,
+            stage_unit_contract=strict_si_unit_contract,
+            particle_system_collision_offsets=authored[
+                "particle_system_collision_offsets"
+            ],
+            canonical_wrapper_summary=canonical_wrapper_summary,
+            physics_settings=physics_settings,
+        )
     visual_acceptance_provenance = build_visual_acceptance_provenance(
         visual_acceptance_scenario=getattr(args, "visual_acceptance_scenario", None),
         physics_trajectory_id=getattr(args, "physics_trajectory_id", None),
@@ -2596,25 +3386,30 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     evidence_scene_path = artifact_dir / "native_scene_completed_pbd_overlay.usda"
     stage.GetRootLayer().Export(str(evidence_scene_path))
 
-    timeline = omni.timeline.get_timeline_interface()
-    app = omni.kit.app.get_app()
     strict_stepper: StrictPhysicsStepper | None = None
+    strict_attach_position_hash: str | None = None
     if strict_mode:
         timeline.stop()
         stage_id = UsdUtils.StageCache.Get().GetId(stage).ToLongInt()
         if stage_id <= 0:
             raise RuntimeError("strict_physx_stage_cache_id_unavailable")
         simulation_interface = omni.physx.get_physx_simulation_interface()
-        simulation_interface.attach_stage(stage_id)
-        strict_stepper = StrictPhysicsStepper(
+        strict_stepper = StrictPhysicsStepper.attach(
             interface=simulation_interface,
-            physics_dt=args.physics_dt,
+            logical_dt=args.logical_dt,
+            integration_dt=args.integration_dt,
+            substeps_per_logical_step=args.substeps_per_logical_step,
+            stage_id=stage_id,
+        )
+        args._strict_physics_stepper = strict_stepper
+        strict_attach_position_hash = _position_hash(
+            _read_points(stage, RUNTIME_PARTICLE_SET_PATH)
         )
     else:
         timeline.play()
     for _ in range(args.camera_warmup_updates):
         if strict_mode:
-            paused_render_update(app, timeline)
+            paused_render_update(app, timeline, settings=settings)
         else:
             app.update()
     settings.set_bool(pb.SETTING_SUPPRESS_READBACK, False)
@@ -2670,7 +3465,40 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     camera_diagnostics: dict[str, dict[str, Any]] = {}
     marker_updates: dict[str, dict[str, Any]] = {}
     records: list[dict[str, Any]] = []
+    integration_trace_records: list[dict[str, Any]] = []
     start = time.monotonic()
+    if strict_stepper is not None:
+        post_warmup_hash = _position_hash(
+            _read_points(stage, RUNTIME_PARTICLE_SET_PATH)
+        )
+        if post_warmup_hash != strict_attach_position_hash:
+            raise RuntimeError("strict_render_warmup_advanced_physics")
+        strict_stepper.record_render_invariance_check()
+
+    def record_integration_substep(index: int, simulated_seconds: float) -> None:
+        if index > args.integration_trace_substeps:
+            return
+        substep_positions = _read_points(stage, RUNTIME_PARTICLE_SET_PATH)
+        record = {
+            "integration_step_index": index,
+            "logical_step_origin": (index - 1) // args.substeps_per_logical_step,
+            "substep_index_within_logical_step": (
+                (index - 1) % args.substeps_per_logical_step
+            ) + 1,
+            "simulated_seconds": simulated_seconds,
+            "particle_count": len(substep_positions),
+            "aabb": _aabb(substep_positions),
+            "centroid": _centroid(substep_positions),
+            "nan_count": _nan_count(substep_positions),
+            "positions": _jsonable_positions(substep_positions),
+            "strict_visible_beaker_counts": classify_visible_beaker_positions(
+                substep_positions,
+                cup_interior_frame,
+                legacy_region_config=asdict(classify_config),
+            ),
+        }
+        integration_trace_records.append(record)
+        _write_trace_line(integration_trace_path, record)
 
     for step_index in range(args.steps + 1):
         positions = _read_points(stage, RUNTIME_PARTICLE_SET_PATH)
@@ -2695,7 +3523,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         if step_index % args.video_stride == 0 or step_index in (0, args.steps):
             _set_review_markers_visible(stage, False)
             if strict_mode:
-                paused_render_update(app, timeline)
+                paused_render_update(app, timeline, settings=settings)
             else:
                 app.update()
             native_slots = []
@@ -2735,7 +3563,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 )
                 marker_updates[f"step_{step_index:04d}"] = marker_update
                 if strict_mode:
-                    paused_render_update(app, timeline)
+                    paused_render_update(app, timeline, settings=settings)
                 else:
                     app.update()
                 slot = "beaker2_closeup_review_markers"
@@ -2748,6 +3576,13 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
                 if source is not None:
                     frame_paths[slot].append(frame_path)
                     frame_sources[str(frame_path.relative_to(artifact_dir))] = "review_marker_rgb"
+            if strict_stepper is not None:
+                post_render_hash = _position_hash(
+                    _read_points(stage, RUNTIME_PARTICLE_SET_PATH)
+                )
+                if post_render_hash != _position_hash(positions):
+                    raise RuntimeError("strict_render_capture_advanced_physics")
+                strict_stepper.record_render_invariance_check()
         if step_index < args.steps:
             if args.runtime_timeout_seconds > 0 and (time.monotonic() - start) > args.runtime_timeout_seconds:
                 raise TimeoutError(
@@ -2756,10 +3591,19 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
             if strict_mode:
                 if strict_stepper is None:
                     raise RuntimeError("strict_physics_stepper_unavailable")
-                strict_stepper.step()
+                strict_stepper.step(
+                    after_integration_step=(
+                        record_integration_substep
+                        if strict_stepper.executed_integration_steps
+                        < args.integration_trace_substeps
+                        else None
+                    )
+                )
             else:
                 app.update()
 
+    if strict_stepper is not None:
+        strict_stepper.detach()
     strict_physics_execution = (
         strict_stepper.summary(requested_steps=args.steps)
         if strict_stepper is not None
@@ -2880,8 +3724,27 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "runtime_pbd_completion_overlay_used": True,
         "raw_usd_direct_step_claim_allowed": False,
         "steps": args.steps,
-        "physics_dt": args.physics_dt,
+        "logical_dt": args.logical_dt,
+        "integration_dt": args.integration_dt,
+        "substeps_per_logical_step": args.substeps_per_logical_step,
         "strict_physics_execution": strict_physics_execution,
+        "stage_unit_contract": strict_si_unit_contract,
+        "physical_authoring_identity": physical_authoring_identity,
+        "integration_substep_trace": {
+            "requested_substeps": args.integration_trace_substeps,
+            "recorded_substeps": len(integration_trace_records),
+            "path": (
+                str(integration_trace_path)
+                if args.integration_trace_substeps > 0
+                else None
+            ),
+            "sha256": (
+                _sha256_file(integration_trace_path)
+                if args.integration_trace_substeps > 0
+                and integration_trace_path.is_file()
+                else None
+            ),
+        },
         "particle_scope": particle_scope,
         "controlled_spawn_plan": controlled_spawn_plan,
         "spawn_frame": spawn_frame_summary(spawn_frame) if spawn_frame else None,
@@ -2978,6 +3841,7 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
         "elapsed_seconds": time.monotonic() - start,
         "claim_boundary": claim_boundary,
         "original_fluid_deactivate_summary": original_fluid_deactivate_summary,
+        "legacy_particle_sampling_api_removal": legacy_sampling_api_removal,
         "physics_settings": physics_settings,
         "isaac_log_summary": isaac_log_summary,
         **strict_summary_contract,
@@ -3045,6 +3909,15 @@ def _native_stage_runtime(args: argparse.Namespace) -> dict[str, Any]:
     return summary
 
 
+def _detach_strict_physics_stepper(args: argparse.Namespace) -> dict[str, Any] | None:
+    stepper = getattr(args, "_strict_physics_stepper", None)
+    if not isinstance(stepper, StrictPhysicsStepper):
+        return None
+    if not stepper.detach_verified:
+        stepper.detach()
+    return stepper.summary(requested_steps=int(args.steps))
+
+
 def _run_runtime(args: argparse.Namespace) -> dict[str, Any]:
     from isaacsim import SimulationApp
 
@@ -3058,7 +3931,18 @@ def _run_runtime(args: argparse.Namespace) -> dict[str, Any]:
     try:
         return _native_stage_runtime(args)
     except Exception as exc:  # pragma: no cover - runtime-only path.
+        cleanup_error = None
+        try:
+            strict_physics_execution = _detach_strict_physics_stepper(args)
+        except Exception as cleanup_exc:
+            strict_physics_execution = None
+            cleanup_error = {
+                "type": type(cleanup_exc).__name__,
+                "message": str(cleanup_exc),
+            }
         fatal_error = {"type": type(exc).__name__, "message": str(exc), "traceback": traceback.format_exc(limit=30)}
+        if cleanup_error is not None:
+            fatal_error["strict_physics_cleanup_error"] = cleanup_error
         summary = {
             "schema_version": 1,
             "manifest_type": "fluid_spike_colleague_native_usd_completed_pbd_step_video",
@@ -3071,6 +3955,7 @@ def _run_runtime(args: argparse.Namespace) -> dict[str, Any]:
             "classification": {"classification": "STOP_RUNTIME_ERROR", "fatal_error": fatal_error},
             "claim_boundary": build_native_scene_claim_boundary(),
             "isaac_log_summary": _latest_isaac_log_summary(),
+            "strict_physics_execution": strict_physics_execution,
         }
         if bool(getattr(args, "real_beaker_static_hold", False)):
             kit_log_segment = _read_kit_log_segment(getattr(args, "_kit_log_cursor", None))
@@ -3087,6 +3972,10 @@ def _run_runtime(args: argparse.Namespace) -> dict[str, Any]:
         _write_json(Path(args.manifest), summary)
         return summary
     finally:
+        try:
+            _detach_strict_physics_stepper(args)
+        except Exception:
+            pass
         if not args.skip_app_close:
             app.close()
 
@@ -3111,8 +4000,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Optional Points display width; does not alter particle-system physics offsets.",
     )
     parser.add_argument("--steps", type=int, default=120)
-    parser.add_argument("--physics-dt", type=float, default=1.0 / 60.0)
+    parser.add_argument("--logical-dt", type=float, default=1.0 / 60.0)
+    parser.add_argument("--integration-dt", type=float, default=1.0 / 600.0)
+    parser.add_argument("--substeps-per-logical-step", type=int, default=10)
     parser.add_argument("--trace-interval", type=int, default=10)
+    parser.add_argument(
+        "--integration-trace-substeps",
+        type=int,
+        default=0,
+        help="Record strict particle readback after this many initial integration substeps.",
+    )
     parser.add_argument("--video-stride", type=int, default=4)
     parser.add_argument("--video-fps", type=float, default=15.0)
     parser.add_argument("--width", type=int, default=960)

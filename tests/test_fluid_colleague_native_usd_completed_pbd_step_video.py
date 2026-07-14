@@ -179,7 +179,7 @@ def test_reconcile_presentation_water_material_downgrades_false_pass():
     assert reconciled["fallback_reason"] == "mdl_create_module_failed_after_bind"
 
 
-def test_resolve_presentation_water_mdl_prefers_version_matched_tree_over_local_mirror(tmp_path):
+def test_resolve_presentation_water_mdl_prefers_explicit_local_closure(tmp_path):
     from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import (
         PRESENTATION_WATER_MDL_ROOT,
         PRESENTATION_WATER_MDL_ASSET,
@@ -189,11 +189,51 @@ def test_resolve_presentation_water_mdl_prefers_version_matched_tree_over_local_
     mirror = tmp_path / "Base"
     mirror.mkdir()
     (mirror / PRESENTATION_WATER_MDL_ASSET).write_text("//mirror\n")
-    preferred = PRESENTATION_WATER_MDL_ROOT / "Base" / PRESENTATION_WATER_MDL_ASSET
-    if not preferred.exists():
-        return  # skip when neither conda nor kit tree is present
     resolved = resolve_presentation_water_mdl_source_asset(closure_base_dir=mirror)
-    assert resolved == preferred
+    assert resolved == mirror / PRESENTATION_WATER_MDL_ASSET
+
+
+def test_resolve_presentation_water_mdl_does_not_fallback_from_declared_closure(
+    tmp_path,
+):
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import (
+        resolve_presentation_water_mdl_source_asset,
+    )
+
+    empty_mirror = tmp_path / "Base"
+    empty_mirror.mkdir()
+
+    assert (
+        resolve_presentation_water_mdl_source_asset(
+            closure_base_dir=empty_mirror
+        )
+        is None
+    )
+
+
+def test_resolve_omniglass_mdl_prefers_explicit_local_closure(tmp_path):
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import (
+        resolve_omniglass_mdl_source_asset,
+    )
+
+    mirror = tmp_path / "Base"
+    mirror.mkdir()
+    (mirror / "OmniGlass.mdl").write_text("//mirror\n")
+
+    resolved = resolve_omniglass_mdl_source_asset(closure_base_dir=mirror)
+
+    assert resolved == mirror / "OmniGlass.mdl"
+
+
+def test_resolve_omniglass_mdl_does_not_fallback_from_declared_closure(tmp_path):
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import (
+        resolve_omniglass_mdl_source_asset,
+    )
+
+    empty_mirror = tmp_path / "Base"
+    empty_mirror.mkdir()
+
+    assert resolve_omniglass_mdl_source_asset(closure_base_dir=empty_mirror) is None
 
 
 def test_build_isaacsim41_core_mdl_closure_plan_includes_transitive_base_dependencies():
@@ -526,6 +566,36 @@ def test_native_step_video_parser_accepts_presentation_isosurface_video_flag():
     assert args.disable_particle_debug_display is True
 
 
+def test_native_step_video_parser_accepts_render_mode_and_controlled_spawn():
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import build_arg_parser
+
+    args = build_arg_parser().parse_args(
+        [
+            "--presentation-render-mode",
+            "particle_omniglass",
+            "--controlled-spawn-count",
+            "4096",
+            "--controlled-spawn-seed",
+            "0",
+        ]
+    )
+    assert args.presentation_render_mode == "particle_omniglass"
+    assert args.controlled_spawn_count == 4096
+    assert args.controlled_spawn_seed == 0
+    assert args.presentation_isosurface_video is False
+
+
+def test_build_native_scene_video_summary_records_particle_omniglass_slot():
+    summary = build_native_scene_video_summary(
+        frame_sources={
+            "presentation_particle_omniglass_frames/frame_0001.png": "presentation_particle_omniglass_rgb",
+        }
+    )
+    assert summary["presentation_particle_omniglass_rgb_frame_count"] == 1
+    assert "presentation_particle_omniglass" in summary["native_scene_video_slots"]
+    assert summary["presentation_isosurface_rgb_frame_count"] == 0
+
+
 def test_build_native_scene_video_summary_records_presentation_slot():
     summary = build_native_scene_video_summary(
         frame_sources={
@@ -542,6 +612,7 @@ def test_native_scene_claim_boundary_blocks_presentation_overclaims():
     boundary = build_native_scene_claim_boundary()
 
     assert "presentation_isosurface_video_recorded=true" in boundary["allowed"]
+    assert "presentation_particle_omniglass_video_recorded=true" in boundary["allowed"]
     assert "presentation_video_equals_physics_success" in boundary["blocked"]
     assert "isosurface_reconstruction_equals_zero_leak" in boundary["blocked"]
     assert "presentation_water_material_equals_labutopia51_visual_parity" in boundary["blocked"]
@@ -672,6 +743,67 @@ def test_native_step_video_parser_product_water_fx_defaults_off():
     )
     assert orthogonal.presentation_isosurface_video is True
     assert orthogonal.product_water_fx is True
+
+
+def test_parser_accepts_weekly_omniglass_look_preset():
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import build_arg_parser
+
+    args = build_arg_parser().parse_args(
+        [
+            "--presentation-isosurface-video",
+            "--presentation-look-preset",
+            "weekly_omniglass_B",
+        ]
+    )
+    assert args.presentation_look_preset == "weekly_omniglass_B"
+    default_args = build_arg_parser().parse_args([])
+    assert default_args.presentation_look_preset == "none"
+
+
+def test_validate_rejects_weekly_look_with_official_visual_a():
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import (
+        validate_presentation_look_cli,
+    )
+
+    try:
+        validate_presentation_look_cli(
+            presentation_look_preset="weekly_omniglass_B",
+            visual_acceptance_scenario="A_static_clear_water",
+        )
+        assert False, "expected ValueError"
+    except ValueError as exc:
+        assert "mutual" in str(exc).lower() or "incompatible" in str(exc).lower()
+
+
+def test_build_omniglass_water_material_info_is_not_clearwater():
+    from tools.labutopia_fluid.run_colleague_native_usd_completed_pbd_step_video import (
+        build_omniglass_water_material_info,
+    )
+
+    info = build_omniglass_water_material_info(
+        source_asset="/tmp/OmniGlass.mdl",
+        glass_color=(0.73344165, 0.9498069, 0.94228774),
+        reflection_color=(0.6368421, 0.9266409, 0.88300306),
+    )
+    assert info["material_backend"] == "MDL_OMNIGLASS_WATER"
+    assert info["sub_identifier"] == "OmniGlass"
+    assert info["official_visual_a_compatible"] is False
+    assert info["material_hash"] == "omniglass_water_tint_a18_v1"
+
+
+def test_build_presentation_postprocess_contract_accepts_weekly_overrides():
+    contract = build_presentation_postprocess_contract(
+        anisotropy_scale=2.0,
+        smoothing_strength=0.65,
+        postprocess_hash="anisotropy_2_1_2_smoothing_0_65_v1",
+    )
+    assert contract["anisotropy"]["scale"] == 2.0
+    assert contract["smoothing"]["strength"] == 0.65
+    assert contract["postprocess_hash"] == "anisotropy_2_1_2_smoothing_0_65_v1"
+    # default path unchanged
+    default = build_presentation_postprocess_contract()
+    assert default["anisotropy"]["scale"] == 5.0
+    assert default["postprocess_hash"] == "anisotropy_5_1_2_smoothing_0_5_v1"
 
 
 def test_missing_visual_a_provenance_blocks_official_claim():

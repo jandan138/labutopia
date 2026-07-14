@@ -209,6 +209,15 @@ mdl_water_visual_a_sub_identifier=OmniSurface_ClearWater
 mdl_water_visual_a_physics_trajectory_id=D4A_018_D4P_P50000_SEED000
 mdl_water_visual_a_pending_physics_a_provenance=false
 g2_visual_a=true
+a2_fluid_recipe_usd_exported=true
+a2_fluid_recipe_package=outputs/usd_asset_packages/lab_001_fluid_recipe_v1/
+a2_fluid_recipe_manifest=outputs/usd_asset_packages/lab_001_fluid_recipe_v1/recipe_manifest.json
+b2_fluid_recipe_dual_render_manifest=fluid_spike_fluid_recipe_dual_render_20260710.json
+b2_leadership_cell_id=LEADERSHIP_P1024_OMNIGLASS_PASSWINDOW
+b2_leadership_render_mode=particle_omniglass
+b2_leadership_presentation_isosurface_enabled=false
+b2_leadership_classification=PASS_SOURCE_HOLD
+b2_controlled_spawn_full_scene_4096=FAIL_CONTAINER_LEAK
 next_fluid_work=["S3_KINEMATIC_POUR_AFTER_VISUAL_A"]
 s2_s3_collider_matrix_required=false
 ```
@@ -388,6 +397,16 @@ fluid_spike_colleague_liquid_usd_leak_smoke_20260708_001/minimal_native_beaker_s
 source beaker 没能稳定装住这些粒子。它只释放 `512` 粒子采样 smoke 的 leak 诊断，不释放原始 `50000`
 粒子完整 runtime claim、产品级 RGB render、S3 倒液、S4 Franka replay、EBench score、policy score 或
 leaderboard claim。红色视频是对准 source beaker 的 diagnostic side projection，不是最终视觉效果。
+
+External InternData-A1 pouring reference 已调研并登记到
+[`../true_physx_pbd_fluid_spike.md`](../true_physx_pbd_fluid_spike.md) 的“外部参考调研：InternData-A1
+倒酒/流体任务”小节。公开论文和数据卡能支持的口径是：InternData-A1 确实包含 `Pour Baijiu`、
+`Pour Redwine`、`Pour Water` 这类流体任务，论文描述其 fluid objects 使用 `particle-based dynamics`、
+container 内自适应生成 particles、`isosurface rendering` 和多种 `PBD materials`；Hugging Face
+数据卡也公开了 `pour_baijiu.mp4`。但本次公开材料检查没有发现可直接复现的 scene USD、PBD particle
+config、容器 collider recipe、leak classifier 或完整 generation source。因此它是外部路线参考，不能释放
+`labutopia_beaker_collider_fixed_by_interndata=true`、`interndata_public_data_can_direct_step_as_usd_scene=true`
+或 `interndata_pour_video_equals_zero_leak_evidence=true`。
 
 Colleague raw 50k liquid USD D0 direct-step readiness audit 已完成，且
 `runtime_step_executed=false`：
