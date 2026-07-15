@@ -463,6 +463,65 @@ def test_tracked_child_world_matrix_follows_physics_parent_pose():
     np.testing.assert_allclose(current_child[2, :3], [0.0, 0.0, 1.0], atol=1e-7)
 
 
+def test_source_visual_mesh_sync_resets_stale_delta_then_follows_physics():
+    authored_source = _translation(0.3, -0.2, 0.8)
+    authored_mesh = _translation(0.4, -0.2, 0.85)
+    authored_mesh[:3, :3] = np.diag([1.2, 0.8, 1.1])
+    stale_source = _rotation_z(45)
+    stale_source[3, :3] = [0.8, 0.3, 1.1]
+    current_source = _rotation_z(90)
+    current_source[3, :3] = [1.0, 2.0, 3.0]
+    current_mesh = (
+        authored_mesh
+        @ np.linalg.inv(authored_source)
+        @ stale_source
+    )
+    written_deltas = []
+
+    def write_visual_mesh_parent_delta(delta):
+        nonlocal current_mesh
+        written_deltas.append(np.asarray(delta, dtype=np.float64).copy())
+        current_mesh = (
+            authored_mesh
+            @ np.linalg.inv(authored_source)
+            @ written_deltas[-1]
+            @ authored_source
+        )
+
+    synchronizer = isaac_fluid.SourceVisualMeshSynchronizer(
+        source_authored_world_matrix=authored_source,
+        read_source_world_matrix=lambda: current_source.copy(),
+        read_visual_mesh_world_matrix=lambda: current_mesh.copy(),
+        write_visual_mesh_parent_delta=write_visual_mesh_parent_delta,
+    )
+
+    np.testing.assert_allclose(written_deltas[0], np.eye(4), atol=1e-8)
+    np.testing.assert_allclose(current_mesh, authored_mesh, atol=1e-8)
+
+    moved = synchronizer.sync()
+    expected_moved = isaac_fluid._tracked_child_world_matrix(
+        child_authored_world=authored_mesh,
+        parent_authored_world=authored_source,
+        parent_current_world=current_source,
+    )
+
+    assert moved["policy"] == "visual_mesh_parent_delta_v1"
+    assert moved["valid"] is True
+    np.testing.assert_allclose(current_mesh, expected_moved, atol=1e-8)
+    np.testing.assert_allclose(
+        written_deltas[-1],
+        current_source @ np.linalg.inv(authored_source),
+        atol=1e-8,
+    )
+
+    current_source = authored_source.copy()
+    reset = synchronizer.sync()
+
+    assert reset["valid"] is True
+    np.testing.assert_allclose(written_deltas[-1], np.eye(4), atol=1e-8)
+    np.testing.assert_allclose(current_mesh, authored_mesh, atol=1e-8)
+
+
 def test_physics_pose_reader_and_source_score_share_current_rigid_pose():
     from tools.labutopia_fluid.real_beaker import CupInteriorFrame
 

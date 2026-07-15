@@ -100,6 +100,7 @@ def _make_loop(
     world: _World | None = None,
     task: _Task | None = None,
     adapt_state=None,
+    sync_source_visual_state=None,
 ):
     world = world or _World(events)
     task = task or _Task(events)
@@ -164,6 +165,7 @@ def _make_loop(
         invalidate_surface=invalidate,
         attachment=attachment,
         adapt_state=adapt_state,
+        sync_source_visual_state=sync_source_visual_state,
         expected_camera_keys=("Camera1_rgb", "Camera2_rgb"),
         expected_camera_shape=(3, 4, 4),
         camera_contract={
@@ -372,6 +374,7 @@ def test_final_success_keeps_controller_and_raw_fluid_gates_separate():
         "task_transfer_passed": False,
         "expert_transfer_passed": False,
         "expert_attachment_valid": True,
+        "source_visual_sync_valid": True,
         "expert_episode_accepted": False,
         "success": False,
     }
@@ -386,6 +389,7 @@ def test_final_success_keeps_controller_and_raw_fluid_gates_separate():
         "task_transfer_passed": True,
         "expert_transfer_passed": True,
         "expert_attachment_valid": True,
+        "source_visual_sync_valid": True,
         "expert_episode_accepted": True,
         "success": True,
     }
@@ -415,6 +419,51 @@ def test_invalid_expert_attachment_rejects_h5_without_changing_task_score():
     assert result["success"] is True
     assert result["expert_transfer_passed"] is True
     assert result["expert_attachment_valid"] is False
+    assert result["expert_episode_accepted"] is False
+
+
+def test_invalid_source_visual_sync_rejects_expert_episode_without_changing_task_score():
+    events: list[str] = []
+    sync_records = [
+        {"policy": "visual_mesh_parent_delta_v1", "valid": True},
+        {"policy": "visual_mesh_parent_delta_v1", "valid": False},
+    ]
+
+    def sync_source_visual_state():
+        events.append("sync_source_visual")
+        return sync_records.pop(0)
+
+    loop, *_ = _make_loop(
+        events,
+        sync_source_visual_state=sync_source_visual_state,
+    )
+    loop.reset_episode("episode-1")
+    first = loop.observe()
+    loop.commit_action(None)
+    second = loop.observe()
+
+    result = loop.finalize_episode(controller_completed=True)
+
+    assert first["record"]["source_visual_sync"]["valid"] is True
+    assert second["record"]["source_visual_sync"]["valid"] is False
+    sync_indices = [
+        index
+        for index, event in enumerate(events)
+        if event == "sync_source_visual"
+    ]
+    read_indices = [
+        index for index, event in enumerate(events) if event == "read_particles"
+    ]
+    last_physics_step = max(
+        index
+        for index, event in enumerate(events)
+        if event == "world.step:False"
+    )
+    assert sync_indices[0] < read_indices[0]
+    assert last_physics_step < sync_indices[1] < read_indices[1]
+    assert result["task_transfer_passed"] is True
+    assert result["success"] is True
+    assert result["source_visual_sync_valid"] is False
     assert result["expert_episode_accepted"] is False
 
 

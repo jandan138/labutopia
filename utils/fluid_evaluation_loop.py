@@ -217,6 +217,7 @@ class FluidEvaluationLoop:
         camera_contract: Mapping[str, Any],
         attachment: Any | None = None,
         adapt_state: Callable[[Mapping[str, Any]], Any] | None = None,
+        sync_source_visual_state: Callable[[], Mapping[str, Any]] | None = None,
     ) -> None:
         if type(expected_particle_count) is not int or expected_particle_count <= 0:
             raise ValueError("expected_particle_count_invalid")
@@ -249,6 +250,10 @@ class FluidEvaluationLoop:
             raise TypeError("world_step_and_render_required")
         if not hasattr(task, "step"):
             raise TypeError("task_step_required")
+        if sync_source_visual_state is not None and not callable(
+            sync_source_visual_state
+        ):
+            raise TypeError("source_visual_sync_callable_required")
 
         self.world = world
         self.task = task
@@ -265,6 +270,7 @@ class FluidEvaluationLoop:
         }
         self.attachment = attachment if attachment is not None else _NullAttachment()
         self.adapt_state = adapt_state
+        self.sync_source_visual_state = sync_source_visual_state
 
         self._episode_id: str | None = None
         self._observation_index = 0
@@ -276,6 +282,7 @@ class FluidEvaluationLoop:
         self._last_authority: tuple[int, float] | None = None
         self._last_state: Mapping[str, Any] | None = None
         self._last_score: dict[str, Any] | None = None
+        self._last_source_visual_sync: dict[str, Any] | None = None
         self._failed = False
         self._render_index = 0
 
@@ -323,6 +330,7 @@ class FluidEvaluationLoop:
         self._last_authority = authority
         self._last_state = None
         self._last_score = None
+        self._last_source_visual_sync = None
         self._failed = False
         self._render_index = 0
 
@@ -467,6 +475,17 @@ class FluidEvaluationLoop:
             raise ValueError("strict_transfer_compatibility_alias_mismatch")
         return score
 
+    def _sync_source_visual_state(self) -> dict[str, Any] | None:
+        if self.sync_source_visual_state is None:
+            return None
+        value = self.sync_source_visual_state()
+        if not isinstance(value, Mapping):
+            raise ValueError("source_visual_sync_mapping_required")
+        result = dict(value)
+        if type(result.get("valid")) is not bool:
+            raise ValueError("source_visual_sync_valid_bool_required")
+        return result
+
     def observe(self) -> dict[str, Any]:
         if self._episode_id is None:
             raise RuntimeError("episode_not_reset")
@@ -518,6 +537,8 @@ class FluidEvaluationLoop:
         )
 
         try:
+            source_visual_sync = self._sync_source_visual_state()
+            self._last_source_visual_sync = source_visual_sync
             positions = validate_simulation_points(
                 self.read_particles(),
                 expected_particle_count=self.expected_particle_count,
@@ -530,6 +551,8 @@ class FluidEvaluationLoop:
             model_state_pose = self._model_state_pose_record(self._last_state)
             if model_state_pose is not None:
                 record["model_state_pose"] = model_state_pose
+            if source_visual_sync is not None:
+                record["source_visual_sync"] = source_visual_sync
             record["camera_contract"] = dict(self.camera_contract)
         except Exception:
             self._failed = True
@@ -565,6 +588,12 @@ class FluidEvaluationLoop:
         )
         if type(expert_attachment_valid) is not bool:
             raise ValueError("expert_attachment_valid_bool_required")
+        source_visual_sync_valid = (
+            True
+            if self.sync_source_visual_state is None
+            else self._last_source_visual_sync is not None
+            and self._last_source_visual_sync["valid"]
+        )
         return {
             "controller_completed": controller_completed,
             "fluid_transfer_passed": strict_passed,
@@ -572,10 +601,12 @@ class FluidEvaluationLoop:
             "task_transfer_passed": task_passed,
             "expert_transfer_passed": expert_passed,
             "expert_attachment_valid": expert_attachment_valid,
+            "source_visual_sync_valid": source_visual_sync_valid,
             "expert_episode_accepted": (
                 controller_completed
                 and expert_passed
                 and expert_attachment_valid
+                and source_visual_sync_valid
             ),
             "success": controller_completed and task_passed,
         }

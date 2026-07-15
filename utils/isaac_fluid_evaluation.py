@@ -881,6 +881,143 @@ def _tracked_child_world_matrix(
     return _affine_matrix(child_to_parent @ current_parent, name="child_current_world")
 
 
+class SourceVisualMeshSynchronizer:
+    """Align a collision-free source display mesh with the live PhysX body."""
+
+    def __init__(
+        self,
+        *,
+        source_authored_world_matrix: Any,
+        read_source_world_matrix: Callable[[], Any],
+        read_visual_mesh_world_matrix: Callable[[], Any],
+        write_visual_mesh_parent_delta: Callable[[np.ndarray], None],
+        translation_tolerance_m: float = 1.0e-5,
+        linear_tolerance: float = 1.0e-5,
+    ) -> None:
+        if not callable(read_source_world_matrix):
+            raise TypeError("source_visual_sync_source_reader_required")
+        if not callable(read_visual_mesh_world_matrix):
+            raise TypeError("source_visual_sync_mesh_reader_required")
+        if not callable(write_visual_mesh_parent_delta):
+            raise TypeError("source_visual_sync_mesh_writer_required")
+        if (
+            not math.isfinite(translation_tolerance_m)
+            or translation_tolerance_m < 0.0
+        ):
+            raise ValueError("source_visual_sync_translation_tolerance_invalid")
+        if not math.isfinite(linear_tolerance) or linear_tolerance < 0.0:
+            raise ValueError("source_visual_sync_linear_tolerance_invalid")
+        self._source_authored_world = _rigid_affine_matrix(
+            source_authored_world_matrix,
+            name="source_visual_sync_source_authored_world",
+        ).copy()
+        self._read_source_world = read_source_world_matrix
+        self._read_visual_mesh_world = read_visual_mesh_world_matrix
+        self._write_visual_mesh_parent_delta = write_visual_mesh_parent_delta
+        self._translation_tolerance_m = float(translation_tolerance_m)
+        self._linear_tolerance = float(linear_tolerance)
+        self._write_visual_mesh_parent_delta(np.eye(4, dtype=np.float64))
+        self._visual_mesh_authored_world = _affine_matrix(
+            self._read_visual_mesh_world(),
+            name="source_visual_sync_mesh_authored_world",
+        ).copy()
+
+    def sync(self) -> dict[str, Any]:
+        source_world = _rigid_affine_matrix(
+            self._read_source_world(), name="source_visual_sync_source_world"
+        )
+        parent_delta = _rigid_affine_matrix(
+            source_world @ np.linalg.inv(self._source_authored_world),
+            name="source_visual_sync_parent_delta",
+        )
+        self._write_visual_mesh_parent_delta(parent_delta)
+        expected_mesh_world = _tracked_child_world_matrix(
+            child_authored_world=self._visual_mesh_authored_world,
+            parent_authored_world=self._source_authored_world,
+            parent_current_world=source_world,
+        )
+        actual_mesh_world = _affine_matrix(
+            self._read_visual_mesh_world(),
+            name="source_visual_sync_mesh_world",
+        )
+        translation_error_m = float(
+            np.linalg.norm(
+                actual_mesh_world[3, :3] - expected_mesh_world[3, :3]
+            )
+        )
+        linear_error_max_abs = float(
+            np.max(
+                np.abs(
+                    actual_mesh_world[:3, :3] - expected_mesh_world[:3, :3]
+                )
+            )
+        )
+        valid = (
+            translation_error_m <= self._translation_tolerance_m
+            and linear_error_max_abs <= self._linear_tolerance
+        )
+        return {
+            "policy": "visual_mesh_parent_delta_v1",
+            "valid": valid,
+            "translation_error_m": translation_error_m,
+            "linear_error_max_abs": linear_error_max_abs,
+            "source_physics_world_matrix_sha256": _matrix_sha256(source_world),
+            "visual_mesh_parent_delta_sha256": _matrix_sha256(parent_delta),
+            "expected_visual_mesh_world_matrix_sha256": _matrix_sha256(
+                expected_mesh_world
+            ),
+            "actual_visual_mesh_world_matrix_sha256": _matrix_sha256(
+                actual_mesh_world
+            ),
+        }
+
+
+def _source_visual_mesh_parent_delta_writer(
+    stage: Any,
+    *,
+    visual_mesh_path: str,
+) -> Callable[[np.ndarray], None]:
+    """Author a display-only parent delta before a mesh's existing local ops."""
+    from pxr import Gf, UsdGeom
+
+    mesh = stage.GetPrimAtPath(visual_mesh_path)
+    if not mesh or not mesh.IsValid() or not mesh.IsA(UsdGeom.Mesh):
+        raise RuntimeError(f"source_visual_mesh_invalid:{visual_mesh_path}")
+    for attribute_name in ("physics:collisionEnabled", "physics:rigidBodyEnabled"):
+        attribute = mesh.GetAttribute(attribute_name)
+        if attribute and attribute.Get() is True:
+            raise RuntimeError(
+                f"source_visual_mesh_must_not_drive_physics:{visual_mesh_path}:"
+                f"{attribute_name}"
+            )
+
+    xformable = UsdGeom.Xformable(mesh)
+    existing_ops = list(xformable.GetOrderedXformOps())
+    sync_op_name = "xformOp:transform:labutopiaVisualSync"
+    sync_op = next(
+        (op for op in existing_ops if str(op.GetOpName()) == sync_op_name), None
+    )
+    if sync_op is None:
+        sync_op = xformable.AddTransformOp(
+            UsdGeom.XformOp.PrecisionDouble,
+            "labutopiaVisualSync",
+        )
+    elif sync_op.GetOpType() != UsdGeom.XformOp.TypeTransform:
+        raise RuntimeError(f"source_visual_sync_op_type_invalid:{visual_mesh_path}")
+    ordered_ops = [
+        sync_op
+    ] + [op for op in existing_ops if str(op.GetOpName()) != sync_op_name]
+    xformable.SetXformOpOrder(ordered_ops)
+
+    def write(parent_delta: np.ndarray) -> None:
+        values = _rigid_affine_matrix(
+            parent_delta, name="source_visual_mesh_parent_delta"
+        )
+        sync_op.Set(Gf.Matrix4d(*values.reshape(-1).tolist()))
+
+    return write
+
+
 def _frame_at_world_matrix(template: Any, world_matrix: Any) -> Any:
     world = _affine_matrix(world_matrix, name="frame_world")
 
@@ -1095,6 +1232,10 @@ def build_isaac_fluid_evaluation_loop(
         raise ValueError(f"attachment_matrix_policy_unsupported:{attachment_policy}")
     source_path = str(_config_value(fluid, "source_actor_path"))
     gripper_path = str(_config_value(fluid, "gripper_frame_path"))
+    source_visual_mesh_path = str(
+        _config_value(fluid, "source_visual_mesh_path")
+    )
+    source_authored_world = _prim_world_matrix(stage, source_path)
     source_body = SingleRigidPrim(
         prim_path=source_path,
         name="online_fluid_source_vessel",
@@ -1117,6 +1258,18 @@ def build_isaac_fluid_evaluation_loop(
             orientation_wxyz=orientation,
         )
 
+    source_visual_sync = SourceVisualMeshSynchronizer(
+        source_authored_world_matrix=source_authored_world,
+        read_source_world_matrix=read_source_world,
+        read_visual_mesh_world_matrix=lambda: _prim_world_matrix(
+            stage, source_visual_mesh_path
+        ),
+        write_visual_mesh_parent_delta=_source_visual_mesh_parent_delta_writer(
+            stage,
+            visual_mesh_path=source_visual_mesh_path,
+        ),
+    )
+
     attachment = GripperAttachedKinematicVessel(
         read_source_world_matrix=read_source_world,
         read_gripper_world_matrix=lambda: _prim_world_matrix(stage, gripper_path),
@@ -1125,7 +1278,7 @@ def build_isaac_fluid_evaluation_loop(
     source_frame = AuthoredWrapperFrameReader(
         stage,
         parent_path=source_path,
-        visual_mesh_path=str(_config_value(fluid, "source_visual_mesh_path")),
+        visual_mesh_path=source_visual_mesh_path,
         parent_world_matrix=read_source_world,
     )
     target_frame = AuthoredWrapperFrameReader(
@@ -1186,6 +1339,7 @@ def build_isaac_fluid_evaluation_loop(
         invalidate_surface=surface.invalidate,
         attachment=attachment,
         adapt_state=source_state,
+        sync_source_visual_state=source_visual_sync.sync,
         expected_camera_keys=tuple(_config_value(fluid, "model_camera_keys")),
         expected_camera_shape=tuple(_config_value(fluid, "model_camera_shape")),
         camera_contract=camera_contract,
