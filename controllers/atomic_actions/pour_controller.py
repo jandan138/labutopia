@@ -29,6 +29,8 @@ class PourController(BaseController):
         position_threshold: float = 0.006,
         fixed_height_offsets: typing.Optional[typing.Sequence[float]] = None,
         target_position_offset: typing.Optional[typing.Sequence[float]] = None,
+        require_entry_orientation: bool = False,
+        entry_orientation_threshold_degrees: float = 5.0,
     ) -> None:
         BaseController.__init__(self, name=name)
         self._event = 0
@@ -47,6 +49,24 @@ class PourController(BaseController):
 
         self._pour_default_speed = - 120.0 / 180.0 * np.pi
         self._position_threshold = position_threshold
+        if type(require_entry_orientation) is not bool:
+            raise TypeError("require_entry_orientation_must_be_bool")
+        if (
+            isinstance(entry_orientation_threshold_degrees, bool)
+            or not isinstance(
+                entry_orientation_threshold_degrees,
+                (int, float, np.number),
+            )
+            or not np.isfinite(entry_orientation_threshold_degrees)
+            or not 0.0 < float(entry_orientation_threshold_degrees) <= 180.0
+        ):
+            raise ValueError("entry_orientation_threshold_degrees_invalid")
+        self._require_entry_orientation = require_entry_orientation
+        self._entry_orientation_threshold_degrees = float(
+            entry_orientation_threshold_degrees
+        )
+        self._pour_forward_call_index = 0
+        self._reset_orientation_evidence()
 
         self._height_range_1 = (0.3, 0.4)
         self._height_range_2 = (0.1, 0.2)
@@ -81,6 +101,7 @@ class PourController(BaseController):
         pour_speed: float = None,
         target_end_effector_orientation=R.from_euler('xyz', np.radians([0, 90, 10])).as_quat(),
         source_position: typing.Optional[np.ndarray] = None,
+        current_end_effector_orientation: typing.Optional[np.ndarray] = None,
     ) -> ArticulationAction:
         """
         Execute one step of the controller.
@@ -100,6 +121,8 @@ class PourController(BaseController):
                 raise ValueError(f"{name}_must_be_three_finite_values")
             return position
 
+        pour_forward_call_index = self._pour_forward_call_index
+        self._pour_forward_call_index += 1
         self.object_size = source_size
         target_position = finite_position(target_position, "target_position").copy()
         gripper_position = finite_position(gripper_position, "gripper_position")
@@ -156,9 +179,33 @@ class PourController(BaseController):
             xy_distance = np.linalg.norm(
                 tracked_position[:2] - target_position[:2]
             )
-            if xy_distance < self._position_threshold:
+            orientation_passed = True
+            if self._require_entry_orientation:
+                orientation_error = self._quaternion_error_degrees(
+                    current_end_effector_orientation,
+                    target_end_effector_orientation,
+                )
+                orientation_valid = orientation_error is not None
+                orientation_passed = bool(
+                    orientation_valid
+                    and orientation_error
+                    <= self._entry_orientation_threshold_degrees + 1.0e-9
+                )
+                self._pour_entry_orientation_evidence = {
+                    "enabled": True,
+                    "threshold_degrees": self._entry_orientation_threshold_degrees,
+                    "error_degrees": orientation_error,
+                    "valid": orientation_valid,
+                    "passed": orientation_passed,
+                    "pour_forward_call_index": (
+                        pour_forward_call_index if orientation_passed else None
+                    ),
+                }
+            if xy_distance < self._position_threshold and orientation_passed:
                 self._event += 1
                 self._t = 0
+                return target_joints
+            if self._require_entry_orientation:
                 return target_joints
         elif self._event == 2:
             articulation_controller.switch_dof_control_mode(dof_index=6, mode="velocity")
@@ -204,6 +251,8 @@ class PourController(BaseController):
         self._event = 0
         self._t = 0
         self._last_emitted_event = None
+        self._pour_forward_call_index = 0
+        self._reset_orientation_evidence()
         self._start = True
         self.object_size = None
         if events_dt is not None:
@@ -217,6 +266,42 @@ class PourController(BaseController):
 
         self._sample_height_offsets()
         return
+
+    @staticmethod
+    def _quaternion_error_degrees(current, target) -> typing.Optional[float]:
+        if current is None or target is None:
+            return None
+        current_quaternion = np.asarray(current, dtype=np.float64)
+        target_quaternion = np.asarray(target, dtype=np.float64)
+        if (
+            current_quaternion.shape != (4,)
+            or target_quaternion.shape != (4,)
+            or not np.all(np.isfinite(current_quaternion))
+            or not np.all(np.isfinite(target_quaternion))
+        ):
+            return None
+        current_norm = float(np.linalg.norm(current_quaternion))
+        target_norm = float(np.linalg.norm(target_quaternion))
+        if current_norm <= 1.0e-12 or target_norm <= 1.0e-12:
+            return None
+        current_quaternion /= current_norm
+        target_quaternion /= target_norm
+        dot = float(abs(np.dot(current_quaternion, target_quaternion)))
+        return float(np.degrees(2.0 * np.arccos(np.clip(dot, 0.0, 1.0))))
+
+    def _reset_orientation_evidence(self) -> None:
+        self._pour_entry_orientation_evidence = {
+            "enabled": self._require_entry_orientation,
+            "threshold_degrees": self._entry_orientation_threshold_degrees,
+            "error_degrees": None,
+            "valid": False,
+            "passed": False,
+            "pour_forward_call_index": None,
+        }
+
+    @property
+    def pour_entry_orientation_evidence(self) -> dict:
+        return dict(self._pour_entry_orientation_evidence)
 
     def _sample_height_offsets(self) -> None:
         if self._fixed_height_offsets is not None:

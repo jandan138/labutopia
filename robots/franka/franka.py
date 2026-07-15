@@ -56,6 +56,7 @@ class Franka(Robot):
         gripper_open_position: Optional[np.ndarray] = None,
         gripper_closed_position: Optional[np.ndarray] = None,
         deltas: Optional[np.ndarray] = None,
+        camera_frequency: int = 60,
     ) -> None:
         prim = get_prim_at_path(prim_path)
         self._end_effector = None
@@ -127,7 +128,7 @@ class Franka(Robot):
         self.camera = Camera(
             prim_path=prim_path + "/panda_hand/arm_camera",
             translation=np.array([-0.2, -0, -0.02]),
-            frequency=60,
+            frequency=camera_frequency,
             resolution=(256, 256),
             orientation=np.array([0.20083, 0.67799, -0.67799, -0.20083]),
         )

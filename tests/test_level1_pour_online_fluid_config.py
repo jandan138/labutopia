@@ -69,16 +69,35 @@ def test_online_fluid_config_has_one_explicit_model_camera_contract():
     ]
     assert all(camera["resolution"] == [256, 256] for camera in cfg["cameras"])
     assert all(camera["focal_length"] == 5 for camera in cfg["cameras"])
+    assert all("frequency" not in camera for camera in cfg["cameras"])
 
 
-def test_v2_liquid_aware_camera_contract_is_separate_and_explicit():
+def test_v2_final_online_contract_is_separate_and_explicit():
     cfg = yaml.safe_load(V2_CONFIG_PATH.read_text(encoding="utf-8"))
     fluid = cfg["online_fluid"]
 
     assert cfg["usd_path"] == _config()["usd_path"]
     assert cfg["controller_type"] == "pour"
-    assert fluid["camera_contract"] == "level1_pour_rgb_v2_liquid_aware"
-    assert fluid["camera_contract_compatibility"] == "requires_v2_data_or_model"
+    assert fluid["camera_contract"] == "level1_pour_rgb_v4_full_action_30hz"
+    assert fluid["camera_contract_compatibility"] == "requires_v4_data_or_model"
+    assert len(fluid["camera_contract_sha256"]) == 64
+    assert fluid["initial_render_warmup_updates"] == 64
+    assert cfg["max_episodes"] == 1
+    assert fluid["max_observations_per_episode"] == 1200
+    assert fluid["synthetic_attachment_collision_filter_root_path"] == (
+        "/World/Franka"
+    )
+    assert cfg["robot"]["usd_path"] == "assets/robots/Franka.usd"
+    assert cfg["robot"]["camera_frequency"] == 30
+    assert fluid["expert_pour_height_offsets_m"] == [0.4, 0.14]
+    assert fluid["expert_pour_entry_orientation_required"] is True
+    assert fluid["expert_pour_entry_orientation_threshold_degrees"] == 5.0
+    assert fluid["expert_pick_target_orientation_wxyz"] == [
+        0.041126549288126785,
+        0.7652732142089947,
+        0.2961095276677087,
+        0.5700742602348328,
+    ]
     assert fluid["model_camera_keys"] == ["camera_1_rgb", "camera_2_rgb"]
     assert [camera["prim_path"] for camera in cfg["cameras"]] == [
         "/World/InternDataParityCamera",
@@ -89,5 +108,6 @@ def test_v2_liquid_aware_camera_contract_is_separate_and_explicit():
         "camera_2",
     ]
     assert all(camera["resolution"] == [256, 256] for camera in cfg["cameras"])
-    assert [camera["focal_length"] for camera in cfg["cameras"]] == [16, 22]
+    assert [camera["focal_length"] for camera in cfg["cameras"]] == [16, 16]
     assert all(camera["clipping_range"] == [0.01, 100.0] for camera in cfg["cameras"])
+    assert all(camera["frequency"] == 30 for camera in cfg["cameras"])

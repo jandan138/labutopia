@@ -1,14 +1,23 @@
 from __future__ import annotations
 
 from html.parser import HTMLParser
+import json
 from pathlib import Path
 import re
 import subprocess
+
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REPORT_DIR = REPO_ROOT / "reports" / "2026-07-07-labutopia-fluid-weekly"
 REPORT_HTML = REPORT_DIR / "index.html"
+FINAL_MANIFEST = (
+    REPORT_DIR
+    / "assets"
+    / "pm-restructure"
+    / "final-online-v4-manifest.json"
+)
 
 
 class _ReportParser(HTMLParser):
@@ -67,20 +76,22 @@ def test_weekly_report_states_verified_result_and_delivery_boundaries() -> None:
     normalized = html.replace(",", "")
 
     for fact in (
-        "3600 / 3600",
+        "3583 / 3600",
+        "99.53%",
         "3 mm",
-        "690 步",
-        "691 个状态",
+        "953 帧",
+        "31.8 秒",
+        "最后 100 帧",
         "结束帧",
         "Isaac Sim 4.1",
         "初始状态快照",
-        "结果状态快照",
-        "外部轨迹",
-        "连续液面",
+        "在线连续液面",
+        "H5 倒液策略片段",
+        "505 帧",
     ):
         assert fact in normalized
 
-    assert "源杯、传输区、桌面、桌下和异常粒子均为 0" in html
+    assert "源杯 0、目标杯 3583、传输区 10、桌面 7、桌下 0、异常 0" in normalized
     assert "不代表任意容器、任意液量或任意动作" in html
     assert "2a0a21f2c836df97c925729084e13d68950b4deb" in html
     assert any(
@@ -89,28 +100,95 @@ def test_weekly_report_states_verified_result_and_delivery_boundaries() -> None:
     )
 
 
-def test_weekly_report_publishes_final_derived_surface_outcome() -> None:
+def test_weekly_report_publishes_final_online_surface_outcome() -> None:
     html, _ = _parse_report()
 
     for fact in (
-        "离线连续液面",
-        "70 帧",
-        "零物理步",
-        "高置信度 WARN",
-        "surface_replay_final.usda",
-        "outputs/interndata_surface_replay_20260714/final_render",
-        "outputs/interndata_surface_replay_20260714/mesh_cache",
-        "tools/labutopia_fluid/run_interndata_surface_replay.py",
-        "e4d62bc2b33ef73ae601a0b322cded3dd32685c4dc97e76944fa95d802453a16",
+        "物理 → 表面重建 → RTX 渲染 → 模型相机",
+        "level1_pour_rgb_v4_full_action_30hz",
+        "3.03 FPS",
+        "5.10 FPS",
+        "30 FPS 是逻辑播放速度",
+        "视觉审核为高置信度 PASS",
+        "outputs/online_fluid_eval_20260715/v16_v4_full_action_isaacsim41",
+        "outputs/collect/2026.07.15/20.15.27_Level1_pour_online_fluid_v2",
     ):
         assert fact in html
 
     for stale_copy in (
-        "当前证据视频直接显示 3 mm 粒子点",
-        "在运行时接入稳定的 isosurface",
-        "尚未达到参考视频的连续液面质感",
+        "结束帧 3,600 / 3,600 个粒子在目标杯",
+        "70 帧画面来自同一条 690 步",
+        "展示回放为零物理步",
+        "完整 70 帧动态",
     ):
         assert stale_copy not in html
+
+
+def test_weekly_report_claims_are_bound_to_a_committed_evidence_manifest() -> None:
+    html, _ = _parse_report()
+    manifest = json.loads(FINAL_MANIFEST.read_text(encoding="utf-8"))
+
+    assert manifest["schema_version"] == 1
+    assert manifest["simulator"] == {"name": "Isaac Sim", "version": "4.1"}
+    assert manifest["episode"]["observation_count"] == 953
+    assert manifest["episode"]["stable_tail_observations"] == 100
+    assert manifest["episode"]["stable_tail_definition"] == (
+        "identical_partition_count_vector"
+    )
+    assert manifest["particles"]["total"] == 3600
+    assert manifest["particles"]["target"] == 3583
+    assert manifest["particles"]["tabletop_spill"] == 7
+    assert manifest["dataset"]["h5_frame_count"] == 505
+    assert manifest["dataset"]["observation_index_range"] == [447, 951]
+    assert manifest["camera_contract"]["id"] == (
+        "level1_pour_rgb_v4_full_action_30hz"
+    )
+    assert re.fullmatch(
+        r"[0-9a-f]{64}", manifest["camera_contract"]["sha256"]
+    )
+    assert manifest["camera_contract"]["sha256"] in html
+    assert manifest["performance"]["episode_wall_fps"] == pytest.approx(
+        2.9605, abs=0.0001
+    )
+    assert manifest["visual_review"]["result"] == "PASS"
+    assert manifest["visual_review"]["reviewed_frame_count"] == 10
+
+
+def test_final_online_v4_release_files_are_git_tracked() -> None:
+    release_files = [
+        FINAL_MANIFEST,
+        FINAL_MANIFEST.with_name("final-online-v4.mp4"),
+        FINAL_MANIFEST.with_name("final-online-v4-poster.png"),
+        FINAL_MANIFEST.with_name("final-online-v4-keyframes.png"),
+    ]
+    result = subprocess.run(
+        [
+            "git",
+            "ls-files",
+            "--error-unmatch",
+            "--",
+            *(str(path.relative_to(REPO_ROOT)) for path in release_files),
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_rectangular_reference_discloses_native_surface_reconstruction() -> None:
+    html, _ = _parse_report()
+
+    for fact in (
+        "PhysX 原生等值面",
+        "OmniGlass",
+        "4 次网格平滑",
+        "4 次法线平滑",
+        "不是裸 Points",
+        "不是当前烧杯使用的外部表面重建管线",
+    ):
+        assert fact in html
 
 
 def test_weekly_report_removes_stale_experiment_report() -> None:
@@ -134,15 +212,15 @@ def test_weekly_report_is_self_contained_and_media_complete() -> None:
         "assets/pm-restructure/original-static-hold.mp4",
         "assets/pm-restructure/original-static-hold-poster.png",
         "assets/pm-restructure/rectangular-tank-reference.png",
-        "assets/pm-restructure/final-context.mp4",
-        "assets/pm-restructure/final-context-poster.png",
-        "assets/pm-restructure/final-closeup.mp4",
-        "assets/pm-restructure/final-closeup-poster.png",
-        "assets/pm-restructure/final-keyframes.png",
-        "assets/pm-restructure/final-validation.png",
+        "assets/pm-restructure/final-online-v4.mp4",
+        "assets/pm-restructure/final-online-v4-poster.png",
+        "assets/pm-restructure/final-online-v4-keyframes.png",
     }
 
     assert expected_media.issubset(set(parser.media_sources))
+    assert (
+        "assets/pm-restructure/final-online-v4-manifest.json" in parser.links
+    )
     assert parser.video_attributes
     for attributes in parser.video_attributes:
         assert "controls" in attributes

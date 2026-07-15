@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import math
+import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Callable
@@ -108,6 +110,28 @@ def append_fluid_observation_evidence(
     return payload
 
 
+def append_fluid_episode_evidence(
+    path: str | Path,
+    evaluation: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Append one terminal episode evaluation for collect or infer mode."""
+    if not isinstance(evaluation, Mapping):
+        raise TypeError("fluid_episode_evaluation_mapping_required")
+    payload = dict(evaluation)
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("a", encoding="utf-8") as stream:
+        stream.write(encoded)
+        stream.write("\n")
+    return payload
+
+
 def observation_limit_reached(
     completed_observations: int,
     maximum_observations: int | None,
@@ -127,6 +151,42 @@ def attempt_limit_reached(completed_attempts: int, maximum_attempts: int) -> boo
     if type(maximum_attempts) is not int or maximum_attempts <= 0:
         raise ValueError("maximum_attempts_invalid")
     return completed_attempts >= maximum_attempts
+
+
+def online_fluid_run_complete(
+    *,
+    mode: str,
+    completed_attempts: int,
+    accepted_episodes: int,
+    maximum_episodes: int,
+    maximum_attempts: int,
+) -> bool:
+    if mode not in {"collect", "infer"}:
+        raise ValueError("online_fluid_mode_invalid")
+    if type(accepted_episodes) is not int or accepted_episodes < 0:
+        raise ValueError("accepted_episodes_invalid")
+    if type(maximum_episodes) is not int or maximum_episodes <= 0:
+        raise ValueError("maximum_episodes_invalid")
+    if attempt_limit_reached(completed_attempts, maximum_attempts):
+        return True
+    completed_episodes = (
+        accepted_episodes if mode == "collect" else completed_attempts
+    )
+    return completed_episodes >= maximum_episodes
+
+
+def observation_limit_failure_reason(
+    *,
+    per_episode_limit_hit: bool,
+    global_limit_hit: bool,
+) -> str | None:
+    if type(per_episode_limit_hit) is not bool or type(global_limit_hit) is not bool:
+        raise TypeError("observation_limit_flags_bool_required")
+    if per_episode_limit_hit:
+        return "max_observations_per_episode_reached"
+    if global_limit_hit:
+        return "max_fluid_observations_reached"
+    return None
 
 
 def initialize_controller_after_task_reset(
@@ -218,6 +278,7 @@ class FluidEvaluationLoop:
         attachment: Any | None = None,
         adapt_state: Callable[[Mapping[str, Any]], Any] | None = None,
         sync_source_visual_state: Callable[[], Mapping[str, Any]] | None = None,
+        initial_render_warmup_updates: int = 0,
     ) -> None:
         if type(expected_particle_count) is not int or expected_particle_count <= 0:
             raise ValueError("expected_particle_count_invalid")
@@ -228,6 +289,11 @@ class FluidEvaluationLoop:
             raise ValueError("physics_substeps_per_observation_invalid")
         if not math.isfinite(physics_substep_dt) or physics_substep_dt <= 0.0:
             raise ValueError("physics_substep_dt_invalid")
+        if (
+            type(initial_render_warmup_updates) is not int
+            or initial_render_warmup_updates < 0
+        ):
+            raise ValueError("initial_render_warmup_updates_invalid")
         camera_keys = tuple(expected_camera_keys)
         if not camera_keys or len(camera_keys) != len(set(camera_keys)):
             raise ValueError("expected_camera_keys_invalid")
@@ -260,11 +326,13 @@ class FluidEvaluationLoop:
         self.expected_particle_count = expected_particle_count
         self.physics_substeps_per_observation = physics_substeps_per_observation
         self.physics_substep_dt = float(physics_substep_dt)
+        self.initial_render_warmup_updates = initial_render_warmup_updates
         self.read_particles = read_particles
         self.score_particles = score_particles
         self.expected_camera_keys = camera_keys
         self.expected_camera_shape = camera_shape
-        self.camera_contract = {
+        self.camera_contract = copy.deepcopy(dict(camera_contract))
+        self.camera_contract_identity = {
             "id": camera_contract_id,
             "sha256": camera_contract_sha256,
         }
@@ -283,6 +351,7 @@ class FluidEvaluationLoop:
         self._last_state: Mapping[str, Any] | None = None
         self._last_score: dict[str, Any] | None = None
         self._last_source_visual_sync: dict[str, Any] | None = None
+        self._source_visual_sync_all_valid = True
         self._failed = False
         self._render_index = 0
 
@@ -331,6 +400,7 @@ class FluidEvaluationLoop:
         self._last_state = None
         self._last_score = None
         self._last_source_visual_sync = None
+        self._source_visual_sync_all_valid = True
         self._failed = False
         self._render_index = 0
 
@@ -374,6 +444,17 @@ class FluidEvaluationLoop:
 
     def _render_surface(self, token: SurfaceFrameToken) -> dict[str, Any]:
         before = self._authority_snapshot()
+        warmup_updates = (
+            self.initial_render_warmup_updates
+            if token.observation_index == 0
+            else 0
+        )
+        warmup_start = time.perf_counter()
+        for _ in range(warmup_updates):
+            self.world.render()
+            if self._authority_snapshot() != before:
+                raise RuntimeError("render_advanced_physics_or_timeline")
+        warmup_seconds = time.perf_counter() - warmup_start
         self.world.render()
         after = self._authority_snapshot()
         raw_step_delta = after[0] - before[0]
@@ -390,6 +471,9 @@ class FluidEvaluationLoop:
             "integration_steps_after": token.integration_step_after + raw_step_delta,
             "timeline_time_before": token.simulation_time_after,
             "timeline_time_after": token.simulation_time_after + (after[1] - before[1]),
+            "initial_warmup_updates": warmup_updates,
+            "initial_warmup_seconds": warmup_seconds,
+            "render_call_count": warmup_updates + 1,
         }
 
     def _capture_model_cameras(
@@ -491,6 +575,7 @@ class FluidEvaluationLoop:
             raise RuntimeError("episode_not_reset")
         if self._failed:
             raise RuntimeError("episode_runtime_failed_requires_reset")
+        observe_start = time.perf_counter()
         is_reset = self._observation_index == 0
         if is_reset:
             if self._pending_action is not _NO_PENDING_ACTION:
@@ -539,6 +624,11 @@ class FluidEvaluationLoop:
         try:
             source_visual_sync = self._sync_source_visual_state()
             self._last_source_visual_sync = source_visual_sync
+            if source_visual_sync is not None:
+                self._source_visual_sync_all_valid = (
+                    self._source_visual_sync_all_valid
+                    and source_visual_sync["valid"]
+                )
             positions = validate_simulation_points(
                 self.read_particles(),
                 expected_particle_count=self.expected_particle_count,
@@ -553,7 +643,10 @@ class FluidEvaluationLoop:
                 record["model_state_pose"] = model_state_pose
             if source_visual_sync is not None:
                 record["source_visual_sync"] = source_visual_sync
-            record["camera_contract"] = dict(self.camera_contract)
+            record["camera_contract"] = dict(self.camera_contract_identity)
+            record["latency_seconds"]["model_ready_total"] = (
+                time.perf_counter() - observe_start
+            )
         except Exception:
             self._failed = True
             raise
@@ -592,7 +685,7 @@ class FluidEvaluationLoop:
             True
             if self.sync_source_visual_state is None
             else self._last_source_visual_sync is not None
-            and self._last_source_visual_sync["valid"]
+            and self._source_visual_sync_all_valid
         )
         return {
             "controller_completed": controller_completed,

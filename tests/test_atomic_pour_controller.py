@@ -93,20 +93,28 @@ def _forward(
     *,
     gripper_position=None,
     source_position=None,
+    target_end_effector_orientation=None,
+    current_end_effector_orientation=None,
 ):
-    return controller.forward(
-        articulation_controller=_StubArticulationController(),
-        source_size=np.asarray([0.1, 0.1, 0.2], dtype=np.float64),
-        target_position=target_position,
-        current_joint_velocities=np.zeros(9, dtype=np.float64),
-        gripper_position=np.asarray(
+    kwargs = {
+        "articulation_controller": _StubArticulationController(),
+        "source_size": np.asarray([0.1, 0.1, 0.2], dtype=np.float64),
+        "target_position": target_position,
+        "current_joint_velocities": np.zeros(9, dtype=np.float64),
+        "gripper_position": np.asarray(
             [10.0, 10.0, 10.0]
             if gripper_position is None
             else gripper_position,
             dtype=np.float64,
         ),
-        source_name="beaker2",
-        source_position=source_position,
+        "source_name": "beaker2",
+        "source_position": source_position,
+        "current_end_effector_orientation": current_end_effector_orientation,
+    }
+    if target_end_effector_orientation is not None:
+        kwargs["target_end_effector_orientation"] = target_end_effector_orientation
+    return controller.forward(
+        **kwargs,
     )
 
 
@@ -263,6 +271,99 @@ def test_online_pour_phase_transition_uses_source_not_gripper_position(monkeypat
     assert controller._event == 1
 
 
+@pytest.mark.parametrize("sign", [1.0, -1.0])
+def test_online_pour_waits_for_end_effector_orientation_before_pouring(
+    monkeypatch,
+    sign,
+):
+    module = _load_atomic_pour_controller(monkeypatch)
+    controller = module.PourController(
+        name="pour",
+        cspace_controller=_StubCspaceController(),
+        events_dt=[2.0] * 6,
+        fixed_height_offsets=(0.4, 0.2),
+        target_position_offset=(0.0, 0.05, 0.0),
+        require_entry_orientation=True,
+        entry_orientation_threshold_degrees=5.0,
+    )
+    controller._event = 1
+    target = np.asarray([0.3, -0.2, 0.8], dtype=np.float64)
+    desired_source = np.asarray([0.3, -0.23, 1.12], dtype=np.float64)
+    target_quaternion = np.asarray([1.0, 0.0, 0.0, 0.0])
+    six_degrees = np.radians(6.0) / 2.0
+
+    _forward(
+        controller,
+        target,
+        source_position=desired_source,
+        gripper_position=desired_source,
+        target_end_effector_orientation=target_quaternion,
+        current_end_effector_orientation=np.asarray(
+            [np.cos(six_degrees), np.sin(six_degrees), 0.0, 0.0]
+        ),
+    )
+
+    # The event timer must not bypass the orientation gate.
+    assert controller._event == 1
+
+    five_degrees = np.radians(5.0) / 2.0
+    _forward(
+        controller,
+        target,
+        source_position=desired_source,
+        gripper_position=desired_source,
+        target_end_effector_orientation=target_quaternion,
+        current_end_effector_orientation=sign
+        * np.asarray([np.cos(five_degrees), np.sin(five_degrees), 0.0, 0.0]),
+    )
+
+    assert controller._event == 2
+    assert controller.pour_entry_orientation_evidence == {
+        "enabled": True,
+        "threshold_degrees": 5.0,
+        "error_degrees": pytest.approx(5.0),
+        "valid": True,
+        "passed": True,
+        "pour_forward_call_index": 1,
+    }
+
+
+@pytest.mark.parametrize(
+    "current_orientation",
+    [None, [0.0, 0.0, 0.0, 0.0], [1.0, 0.0, np.nan, 0.0]],
+)
+def test_online_pour_invalid_orientation_fails_closed(
+    monkeypatch,
+    current_orientation,
+):
+    module = _load_atomic_pour_controller(monkeypatch)
+    controller = module.PourController(
+        name="pour",
+        cspace_controller=_StubCspaceController(),
+        events_dt=[2.0] * 6,
+        fixed_height_offsets=(0.4, 0.2),
+        target_position_offset=(0.0, 0.05, 0.0),
+        require_entry_orientation=True,
+        entry_orientation_threshold_degrees=5.0,
+    )
+    controller._event = 1
+    target = np.asarray([0.3, -0.2, 0.8], dtype=np.float64)
+    desired_source = np.asarray([0.3, -0.23, 1.12], dtype=np.float64)
+
+    _forward(
+        controller,
+        target,
+        source_position=desired_source,
+        gripper_position=desired_source,
+        target_end_effector_orientation=np.asarray([1.0, 0.0, 0.0, 0.0]),
+        current_end_effector_orientation=current_orientation,
+    )
+
+    assert controller._event == 1
+    assert controller.pour_entry_orientation_evidence["valid"] is False
+    assert controller.pour_entry_orientation_evidence["passed"] is False
+
+
 def test_pour_controller_latches_the_event_that_emitted_each_action(monkeypatch):
     module = _load_atomic_pour_controller(monkeypatch)
     controller = module.PourController(
@@ -324,12 +425,19 @@ def test_online_pour_rejects_invalid_source_position(monkeypatch, source_positio
 def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
     captured = []
     forward_calls = []
+    pick_forward_calls = []
+    infer_forward_calls = []
 
     class StubBaseController:
         def __init__(self, cfg, robot):
             self.mode = cfg.mode
             self.robot = robot
-            self.rmp_controller = object()
+            self.gripper_control = object()
+            self.rmp_controller = SimpleNamespace(
+                get_end_effector_orientation_wxyz=lambda: np.asarray(
+                    [0.5, 0.5, 0.5, 0.5], dtype=np.float64
+                )
+            )
             if self.mode == "collect":
                 self._init_collect_mode(cfg, robot)
             else:
@@ -340,15 +448,37 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
 
         def _init_infer_mode(self, cfg, robot):
             del cfg, robot
+            self.inference_engine = SimpleNamespace(
+                step_inference=lambda state: infer_forward_calls.append(state)
+                or _StubArticulationAction(infer=True),
+                reset=lambda: None,
+            )
 
     class StubPickController:
         def __init__(self, **kwargs):
             self.kwargs = kwargs
+            self._event = 0
+            self.done = False
+
+        def is_done(self):
+            return self.done
+
+        def forward(self, **kwargs):
+            pick_forward_calls.append(kwargs)
+            return _StubArticulationAction(**kwargs)
 
     class StubPourController:
         def __init__(self, **kwargs):
             self.kwargs = kwargs
             captured.append(kwargs)
+            self.pour_entry_orientation_evidence = {
+                "enabled": True,
+                "threshold_degrees": 5.0,
+                "error_degrees": 4.5,
+                "valid": True,
+                "passed": True,
+                "pour_forward_call_index": 19,
+            }
 
         def is_done(self):
             return False
@@ -409,16 +539,76 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
         mode="collect",
         online_fluid=SimpleNamespace(
             enabled=True,
-            expert_pour_height_offsets_m=[0.4, 0.2],
+            expert_pour_height_offsets_m=[0.4, 0.14],
             expert_pour_target_offset_m=[0.0, 0.05, 0.0],
+            expert_pour_entry_orientation_required=True,
+            expert_pour_entry_orientation_threshold_degrees=5.0,
+            expert_pour_target_orientation_wxyz=[
+                -0.061628416716219346,
+                0.7044160264027586,
+                0.06162841671621935,
+                0.7044160264027587,
+            ],
+            expert_pick_gripper_offset_object_m=[
+                -0.03296920435460227,
+                0.11768984929933282,
+                -0.030909867065350535,
+            ],
+            expert_pick_target_orientation_wxyz=[
+                0.041126549288126785,
+                0.7652732142089947,
+                0.2961095276677087,
+                0.5700742602348328,
+            ],
         ),
     )
 
     robot = StubRobot()
     controller = module.PourTaskController(cfg, robot=robot)
 
-    assert captured[0]["fixed_height_offsets"] == (0.4, 0.2)
+    assert captured[0]["fixed_height_offsets"] == (0.4, 0.14)
     assert captured[0]["target_position_offset"] == (0.0, 0.05, 0.0)
+    assert captured[0]["require_entry_orientation"] is True
+    assert captured[0]["entry_orientation_threshold_degrees"] == 5.0
+
+    object_position = np.asarray([0.3118024, 0.0918024, 0.8251943])
+    object_quaternion = np.asarray(
+        [0.6532814, 0.2705981, 0.2705981, 0.6532815]
+    )
+    object_position_before = object_position.copy()
+    object_quaternion_before = object_quaternion.copy()
+    pick_state = {
+        "object_position": object_position,
+        "object_quaternion": object_quaternion,
+        "object_name": "beaker2",
+        "object_size": np.asarray([0.1, 0.1, 0.1]),
+        "joint_positions": np.zeros(9, dtype=np.float64),
+        "gripper_position": np.asarray([0.1, -0.1, 1.0]),
+        "target_position": np.asarray([0.0, -0.2, 0.8]),
+    }
+    original_check_phase_success = controller._check_phase_success
+    controller._check_phase_success = lambda: False
+    controller.current_phase = module.Phase.PICKING
+    controller.active_controller = controller.pick_controller
+    controller._step_collect(pick_state)
+
+    local_offset = np.asarray(
+        [-0.03296920435460227, 0.11768984929933282, -0.030909867065350535]
+    )
+    expected_anchor = object_position + module.R.from_quat(
+        object_quaternion / np.linalg.norm(object_quaternion)
+    ).apply(local_offset)
+    np.testing.assert_allclose(
+        pick_forward_calls[-1]["picking_position"], expected_anchor
+    )
+    np.testing.assert_allclose(
+        pick_forward_calls[-1]["end_effector_orientation"],
+        [0.041126549288126785, 0.7652732142089947,
+         0.2961095276677087, 0.5700742602348328],
+    )
+    np.testing.assert_array_equal(object_position, object_position_before)
+    np.testing.assert_array_equal(object_quaternion, object_quaternion_before)
+    controller._check_phase_success = original_check_phase_success
 
     target_position = np.asarray([0.0, -0.2, 0.8], dtype=np.float64)
     original_target = target_position.copy()
@@ -445,6 +635,49 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
 
     infer_cfg = SimpleNamespace(mode="infer", online_fluid=cfg.online_fluid)
     infer_controller = module.PourTaskController(infer_cfg, robot=object())
+    infer_controller._check_phase_success = lambda: False
+    infer_controller._step_infer(pick_state)
+    np.testing.assert_allclose(
+        pick_forward_calls[-1]["picking_position"], expected_anchor
+    )
+    np.testing.assert_allclose(
+        pick_forward_calls[-1]["end_effector_orientation"],
+        [0.041126549288126785, 0.7652732142089947,
+         0.2961095276677087, 0.5700742602348328],
+    )
+    infer_controller.pick_controller._event = 5
+    assert infer_controller.online_fluid_grasp_attachment_requested() is True
+    infer_controller.current_phase = module.Phase.POURING
+    assert infer_controller.online_fluid_rotation_handoff_requested() is True
+    assert infer_controller.online_fluid_control_evidence()["mode"] == "infer"
+    assert (
+        infer_controller.online_fluid_control_evidence()[
+            "pour_entry_orientation"
+        ]
+        is None
+    )
+    infer_controller.pick_controller.done = True
+    infer_controller.state = pick_state
+    infer_controller._check_phase_success = lambda: True
+    _action, infer_done, infer_success = infer_controller._step_infer(pick_state)
+    assert infer_done is True
+    assert infer_success is True
+    assert infer_forward_calls[-1] is pick_state
+    assert infer_controller.current_phase == module.Phase.FINISHED
+    infer_controller._check_phase_success = (
+        module.PourTaskController._check_phase_success.__get__(
+            infer_controller, module.PourTaskController
+        )
+    )
+
+    aborted_infer = module.PourTaskController(infer_cfg, robot=object())
+    assert aborted_infer.abort_online_fluid_episode("evaluation_timeout") == (
+        None,
+        True,
+        False,
+    )
+    assert aborted_infer.current_phase == module.Phase.FINISHED
+    assert aborted_infer._last_failure_reason == "evaluation_timeout"
     infer_controller.current_phase = module.Phase.POURING
     infer_controller.initial_position = np.asarray([0.0, 0.0, 0.0])
     infer_controller.initial_quaternion = np.asarray([0.0, 0.0, 0.0, 1.0])
@@ -471,6 +704,32 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
     np.testing.assert_array_equal(
         forward_calls[-1]["source_position"], online_state["object_position"]
     )
+    target_wxyz = np.asarray(
+        [-0.061628416716219346, 0.7044160264027586,
+         0.06162841671621935, 0.7044160264027587]
+    )
+    np.testing.assert_allclose(
+        forward_calls[-1]["target_end_effector_orientation"],
+        target_wxyz,
+    )
+    np.testing.assert_array_equal(
+        forward_calls[-1]["current_end_effector_orientation"],
+        [0.5, 0.5, 0.5, 0.5],
+    )
+    control_evidence = controller.online_fluid_control_evidence()
+    np.testing.assert_allclose(
+        control_evidence["pick_gripper_offset_object_m"], local_offset
+    )
+    np.testing.assert_allclose(
+        control_evidence["pick_target_orientation_wxyz"],
+        [0.041126549288126785, 0.7652732142089947,
+         0.2961095276677087, 0.5700742602348328],
+    )
+    assert control_evidence["pour_entry_orientation"]["passed"] is True
+    np.testing.assert_allclose(
+        control_evidence["target_end_effector_orientation_wxyz"],
+        target_wxyz,
+    )
 
     legacy_cfg = SimpleNamespace(mode="collect", online_fluid=None)
     legacy = module.PourTaskController(legacy_cfg, robot=robot)
@@ -480,6 +739,7 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
     legacy.initial_size = np.asarray([0.1, 0.1, 0.2])
     legacy._step_collect(online_state)
     assert forward_calls[-1]["source_position"] is None
+    assert "current_end_effector_orientation" not in forward_calls[-1]
 
 
 def test_online_fluid_collection_commits_only_after_combined_expert_acceptance(
@@ -556,13 +816,23 @@ def test_online_fluid_collection_commits_only_after_combined_expert_acceptance(
     spec.loader.exec_module(module)
     cfg = SimpleNamespace(
         mode="collect",
-        online_fluid=SimpleNamespace(
-            enabled=True,
-            expert_pour_height_offsets_m=[0.4, 0.2],
-            expert_pour_target_offset_m=[0.0, 0.05, 0.0],
-        ),
-    )
+            online_fluid=SimpleNamespace(
+                enabled=True,
+                expert_pour_height_offsets_m=[0.4, 0.14],
+                expert_pour_target_offset_m=[0.0, 0.05, 0.0],
+                expert_pour_target_orientation_wxyz=[
+                    -0.061628416716219346,
+                    0.7044160264027586,
+                    0.06162841671621935,
+                    0.7044160264027587,
+                ],
+            ),
+        )
     controller = module.PourTaskController(cfg, robot=object())
+    np.testing.assert_array_equal(
+        controller._expert_pick_gripper_offset_object, np.zeros(3)
+    )
+    assert controller._expert_pick_target_orientation_wxyz is None
     collector = StubCollector()
     controller.data_collector = collector
     controller.current_phase = module.Phase.POURING
@@ -608,3 +878,19 @@ def test_online_fluid_collection_commits_only_after_combined_expert_acceptance(
     )
     assert rejected_collector.writes == []
     assert rejected_collector.clear_count == 1
+
+    timed_out = module.PourTaskController(cfg, robot=object())
+    timed_out_collector = StubCollector()
+    timed_out.data_collector = timed_out_collector
+    action, done, success = timed_out.abort_online_fluid_collection_episode(
+        "max_observations_per_episode_reached"
+    )
+    assert (action, done, success) == (None, True, False)
+    assert timed_out.current_phase == module.Phase.FINISHED
+    assert timed_out._last_failure_reason == "max_observations_per_episode_reached"
+    timed_out.finalize_collection_episode(
+        accepted=False,
+        final_joint_positions=np.arange(8),
+        evaluation={**evaluation, "expert_episode_accepted": False},
+    )
+    assert timed_out_collector.clear_count == 1

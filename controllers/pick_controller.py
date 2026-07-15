@@ -7,7 +7,6 @@ from scipy.spatial.transform import Rotation as R
 from .base_controller import BaseController
 from .atomic_actions.pick_controller import PickController
 from .robot_controllers.trajectory_controller import FrankaTrajectoryController
-from .inference_engines.inference_engine_factory import InferenceEngineFactory
 class PickTaskController(BaseController):
     """
     Controller for pick-and-place tasks with two operation modes:
@@ -68,6 +67,10 @@ class PickTaskController(BaseController):
             cfg: Configuration object containing model paths and settings
             robot: Robot instance to control
         """
+        from .inference_engines.inference_engine_factory import (
+            InferenceEngineFactory,
+        )
+
         self.trajectory_controller = FrankaTrajectoryController(
             name="trajectory_controller",
             robot_articulation=robot

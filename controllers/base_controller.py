@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Tuple, Optional
 import torch
 from omegaconf import OmegaConf
-from controllers.inference_engines.inference_engine_factory import InferenceEngineFactory
 from controllers.robot_controllers.grapper_manager import Gripper
 from controllers.robot_controllers.trajectory_controller import FrankaTrajectoryController
 from factories.collector_factory import create_collector
@@ -109,6 +108,10 @@ class BaseController(ABC):
     
     def _init_infer_mode(self, cfg, robot=None): 
         """Initialize the controller for infer mode."""
+        from controllers.inference_engines.inference_engine_factory import (
+            InferenceEngineFactory,
+        )
+
         self.trajectory_controller = FrankaTrajectoryController(
             name="trajectory_controller",
             robot_articulation=robot,
@@ -152,6 +155,8 @@ class BaseController(ABC):
         """Clean up resources used by the controller."""
         if self.mode == "collect" and hasattr(self, 'data_collector'):
             self.data_collector.close()
+        elif self.mode == "infer" and hasattr(self, 'inference_engine'):
+            self.inference_engine.close()
         
     def need_reset(self) -> bool:
         """Check if the controller needs to be reset.

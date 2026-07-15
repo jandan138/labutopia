@@ -104,11 +104,12 @@ class BaseTask(ABC):
         """
         self.cameras = []
         for cam_cfg in self.cfg.cameras:
+            camera_frequency = int(getattr(cam_cfg, "frequency", 60))
             if self.stage.GetPrimAtPath(cam_cfg.prim_path).IsValid():
                 camera = Camera(
                     prim_path=cam_cfg.prim_path,
                     name=cam_cfg.name,
-                    frequency=60,
+                    frequency=camera_frequency,
                     resolution=tuple(cam_cfg.resolution)
                 )
             else:
@@ -116,7 +117,7 @@ class BaseTask(ABC):
                     prim_path=cam_cfg.prim_path,
                     translation=np.array(cam_cfg.translation),
                     name=cam_cfg.name,
-                    frequency=60,
+                    frequency=camera_frequency,
                     resolution=tuple(cam_cfg.resolution)
                 )
                 camera.set_local_pose(orientation=np.array(cam_cfg.orientation), camera_axes="usd")

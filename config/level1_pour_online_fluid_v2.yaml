@@ -6,18 +6,24 @@ mode: "collect"
 
 usd_path: "assets/chemistry_lab/lab_001_fluid_eval/lab_001_level1_pour_interndata_liquid_v1.usda"
 target_path: "/World/beaker1"
-max_episodes: 2
+max_episodes: 1
 
 online_fluid:
   enabled: true
-  expert_pour_height_offsets_m: [0.4, 0.2]
+  expert_pour_height_offsets_m: [0.4, 0.14]
   expert_pour_target_offset_m: [0.0, 0.05, 0.0]
+  expert_pour_entry_orientation_required: true
+  expert_pour_entry_orientation_threshold_degrees: 5.0
+  expert_pour_target_orientation_wxyz: [-0.061628416716219346, 0.7044160264027586, 0.06162841671621935, 0.7044160264027587]
+  expert_pick_gripper_offset_object_m: [-0.03296920435460227, 0.11768984929933282, -0.030909867065350535]
+  expert_pick_target_orientation_wxyz: [0.041126549288126785, 0.7652732142089947, 0.2961095276677087, 0.5700742602348328]
   attachment_matrix_policy: "captured_translation_then_recaptured_full_at_scripted_pour"
   expert_pour_position_control: "source_center_live_offset_v1"
   metric_policy_id: "level1_pour_transfer_v1"
   minimum_task_target_fraction: 0.5
   minimum_expert_target_fraction: 0.9
   max_attempts: 6
+  max_observations_per_episode: 1200
   fixed_layout: true
   physics_scene_path: "/World/PhysicsScene"
   physics_dt: 0.008333333333333333
@@ -31,6 +37,7 @@ online_fluid:
   source_visual_mesh_path: "/World/beaker2/mesh"
   target_visual_mesh_path: "/World/beaker1/mesh"
   source_ownership: "gripper_attached_kinematic_vessel"
+  synthetic_attachment_collision_filter_root_path: "/World/Franka"
   gripper_frame_path: "/World/Franka/panda_hand/tool_center"
   table_path: "/World/table"
   minimum_target_particles: 150
@@ -41,8 +48,10 @@ online_fluid:
     - "/World/InternDataParityFluid/VisualParticles"
     - "/World/ParticleSet"
     - "/World/fluid"
-  camera_contract: "level1_pour_rgb_v2_liquid_aware"
-  camera_contract_compatibility: "requires_v2_data_or_model"
+  camera_contract: "level1_pour_rgb_v4_full_action_30hz"
+  camera_contract_compatibility: "requires_v4_data_or_model"
+  camera_contract_sha256: "433993330829f0bdfe5ff98f9d2428eb34e9b16e59fde9ca9b8d9f51a75d6ccf"
+  initial_render_warmup_updates: 64
   model_camera_keys: ["camera_1_rgb", "camera_2_rgb"]
   model_camera_shape: [3, 256, 256]
   reset_particle_authority: "authored_world_reset"
@@ -77,6 +86,7 @@ cameras:
   - prim_path: "/World/InternDataParityCamera"
     name: "camera_1"
     resolution: [256, 256]
+    frequency: 30
     focal_length: 16
     clipping_range: [0.01, 100.0]
     image_type: "rgb"
@@ -84,12 +94,15 @@ cameras:
   - prim_path: "/World/InternDataParityCloseupCamera"
     name: "camera_2"
     resolution: [256, 256]
-    focal_length: 22
+    frequency: 30
+    focal_length: 16
     clipping_range: [0.01, 100.0]
     image_type: "rgb"
 
 robot:
   type: "franka"
+  usd_path: "assets/robots/Franka.usd"
+  camera_frequency: 30
   position: [-0.4, 0, 0.71]
 
 collector:

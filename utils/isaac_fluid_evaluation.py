@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import math
 from collections.abc import Mapping, Sequence
@@ -14,6 +15,44 @@ import numpy as np
 
 STRICT_CONTAINMENT_EPSILON_M = 0.00005
 TABLETOP_SPILL_BAND_M = 0.02
+
+
+def construct_single_rigid_prim(
+    single_rigid_prim_type: Any,
+    *,
+    prim_path: str,
+    name: str,
+) -> Any:
+    kwargs = {"prim_path": prim_path, "name": name}
+    if "reset_xform_properties" in inspect.signature(
+        single_rigid_prim_type
+    ).parameters:
+        kwargs["reset_xform_properties"] = False
+    return single_rigid_prim_type(**kwargs)
+
+
+def configure_fluid_world_timing(
+    world: Any,
+    *,
+    physics_dt: float,
+    rendering_dt: float,
+) -> None:
+    world.set_simulation_dt(
+        physics_dt=physics_dt,
+        rendering_dt=rendering_dt,
+    )
+    actual_physics_dt = float(world.get_physics_dt())
+    actual_rendering_dt = float(world.get_rendering_dt())
+    if not math.isclose(actual_physics_dt, physics_dt, abs_tol=1.0e-12):
+        raise RuntimeError(
+            "fluid_world_physics_dt_mismatch:"
+            f"expected={physics_dt}:actual={actual_physics_dt}"
+        )
+    if not math.isclose(actual_rendering_dt, rendering_dt, abs_tol=1.0e-12):
+        raise RuntimeError(
+            "fluid_world_rendering_dt_mismatch:"
+            f"expected={rendering_dt}:actual={actual_rendering_dt}"
+        )
 
 
 def _inside_frame(point: np.ndarray, frame: Any, epsilon: float) -> bool:
@@ -174,6 +213,34 @@ def scripted_pour_velocity_was_emitted(controller: Any) -> bool:
     return phase == "pouring" and emitted_event == 2
 
 
+def _controller_request(controller: Any, name: str) -> bool | None:
+    request = getattr(controller, name, None)
+    if not callable(request):
+        return None
+    result = request()
+    if type(result) is not bool:
+        raise TypeError(f"{name}_must_return_bool")
+    return result
+
+
+def fluid_grasp_attachment_requested(controller: Any) -> bool:
+    requested = _controller_request(
+        controller, "online_fluid_grasp_attachment_requested"
+    )
+    return scripted_grasp_is_closed(controller) if requested is None else requested
+
+
+def fluid_rotation_handoff_requested(controller: Any) -> bool:
+    requested = _controller_request(
+        controller, "online_fluid_rotation_handoff_requested"
+    )
+    return (
+        scripted_pour_velocity_was_emitted(controller)
+        if requested is None
+        else requested
+    )
+
+
 def _affine_matrix(value: Any, *, name: str) -> np.ndarray:
     matrix = np.asarray(value, dtype=np.float64)
     if matrix.shape != (4, 4) or not np.isfinite(matrix).all():
@@ -301,7 +368,7 @@ class GripperAttachedKinematicVessel:
     def maybe_attach(self, controller: Any, state: Mapping[str, Any]) -> bool:
         del state
         if self._attach_source is None:
-            if not scripted_grasp_is_closed(controller):
+            if not fluid_grasp_attachment_requested(controller):
                 return False
             source = _rigid_affine_matrix(
                 self._read_source(), name="attach_source_world"
@@ -325,7 +392,7 @@ class GripperAttachedKinematicVessel:
 
         if (
             self._active_relative is None
-            and scripted_pour_velocity_was_emitted(controller)
+            and fluid_rotation_handoff_requested(controller)
         ):
             source = _rigid_affine_matrix(
                 self._read_source(), name="pour_handoff_source_world"
@@ -374,9 +441,9 @@ class GripperAttachedKinematicVessel:
             and self._observed_relative is not None
             and all(value is not None for value in jump_values)
             and self._attachment_translation_jump_m <= 1.0e-9
-            and self._attachment_rotation_jump_degrees <= 1.0e-6
+            and self._attachment_rotation_jump_degrees <= 1.0e-5
             and self._pour_handoff_translation_jump_m <= 1.0e-9
-            and self._pour_handoff_rotation_jump_degrees <= 1.0e-6
+            and self._pour_handoff_rotation_jump_degrees <= 1.0e-5
         )
         return {
             "mode": "gripper_attached_kinematic_vessel",
@@ -675,6 +742,51 @@ def configure_particle_usd_readback() -> dict[str, Any]:
     return applied
 
 
+def author_synthetic_attachment_collision_filter(
+    stage: Any,
+    *,
+    source_body_path: str,
+    robot_root_path: str,
+) -> dict[str, Any]:
+    """Keep a synthetic kinematic grasp from colliding with its carrier."""
+    from pxr import Sdf, Usd, UsdPhysics
+
+    source = stage.GetPrimAtPath(source_body_path)
+    if not source or not source.IsValid():
+        raise RuntimeError(f"synthetic_attachment_source_missing:{source_body_path}")
+    if not source.HasAPI(UsdPhysics.RigidBodyAPI):
+        raise RuntimeError("synthetic_attachment_source_rigid_body_required")
+    kinematic = source.GetAttribute("physics:kinematicEnabled")
+    if not kinematic or kinematic.Get() is not True:
+        raise RuntimeError("synthetic_attachment_source_kinematic_required")
+
+    robot_root = stage.GetPrimAtPath(robot_root_path)
+    if not robot_root or not robot_root.IsValid():
+        raise RuntimeError(f"synthetic_attachment_robot_missing:{robot_root_path}")
+    robot_body_paths = []
+    for prim in Usd.PrimRange(robot_root):
+        if not prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            continue
+        enabled = prim.GetAttribute("physics:rigidBodyEnabled")
+        if enabled and enabled.Get() is False:
+            continue
+        robot_body_paths.append(str(prim.GetPath()))
+    robot_body_paths.sort()
+    if not robot_body_paths:
+        raise RuntimeError("synthetic_attachment_robot_rigid_bodies_missing")
+
+    filtered_pairs = UsdPhysics.FilteredPairsAPI.Apply(source)
+    relationship = filtered_pairs.CreateFilteredPairsRel()
+    targets = {str(path) for path in relationship.GetTargets()}
+    targets.update(robot_body_paths)
+    relationship.SetTargets([Sdf.Path(path) for path in sorted(targets)])
+    return {
+        "source_body_path": source_body_path,
+        "robot_root_path": robot_root_path,
+        "robot_rigid_body_paths": robot_body_paths,
+    }
+
+
 def validate_fluid_stage_contract(stage: Any, fluid_cfg: Any) -> dict[str, Any]:
     from pxr import Usd, UsdPhysics
 
@@ -735,11 +847,17 @@ def resolve_camera_contract_record(
     *,
     contract_id: str,
     camera_configs: Sequence[Any],
+    compatibility: str,
+    rendering_dt: float,
 ) -> dict[str, Any]:
     from pxr import UsdGeom
 
     if not isinstance(contract_id, str) or not contract_id:
         raise ValueError("camera_contract_id_invalid")
+    if not isinstance(compatibility, str) or not compatibility:
+        raise ValueError("camera_contract_compatibility_invalid")
+    if not math.isfinite(rendering_dt) or rendering_dt <= 0.0:
+        raise ValueError("camera_contract_rendering_dt_invalid")
     configs = tuple(camera_configs)
     if not configs:
         raise ValueError("camera_configs_required")
@@ -777,6 +895,9 @@ def resolve_camera_contract_record(
                 f"camera_clipping_range_mismatch:{prim_path}:"
                 f"expected={list(expected_clipping)}:actual={clipping_range}"
             )
+        frequency = _optional_config_value(config, "frequency", 60)
+        if type(frequency) is not int or frequency <= 0:
+            raise ValueError(f"camera_frequency_invalid:{prim_path}")
 
         cameras.append(
             {
@@ -786,6 +907,7 @@ def resolve_camera_contract_record(
                     int(value) for value in _config_value(config, "resolution")
                 ],
                 "image_type": str(_config_value(config, "image_type")),
+                "frequency": frequency,
                 "focal_length": focal_length,
                 "horizontal_aperture": horizontal_aperture,
                 "vertical_aperture": vertical_aperture,
@@ -795,8 +917,10 @@ def resolve_camera_contract_record(
         )
 
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "id": contract_id,
+        "compatibility": compatibility,
+        "rendering_dt": float(rendering_dt),
         "cameras": cameras,
     }
     encoded = json.dumps(
@@ -806,6 +930,25 @@ def resolve_camera_contract_record(
         allow_nan=False,
     ).encode("utf-8")
     return {**payload, "sha256": hashlib.sha256(encoded).hexdigest()}
+
+
+def require_camera_contract_sha256(
+    record: Mapping[str, Any],
+    *,
+    expected_sha256: str,
+) -> Mapping[str, Any]:
+    if (
+        not isinstance(expected_sha256, str)
+        or len(expected_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in expected_sha256)
+    ):
+        raise ValueError("camera_contract_expected_sha256_invalid")
+    if record.get("sha256") != expected_sha256:
+        raise ValueError(
+            "camera_contract_sha256_mismatch:"
+            f"expected={expected_sha256}:actual={record.get('sha256')}"
+        )
+    return record
 
 
 def _matrix_to_world_pose(matrix: Any) -> tuple[np.ndarray, np.ndarray]:
@@ -1222,6 +1365,11 @@ def build_isaac_fluid_evaluation_loop(
     from utils.online_fluid_surface import read_strict_simulation_points
 
     fluid = _config_value(cfg, "online_fluid")
+    configure_fluid_world_timing(
+        world,
+        physics_dt=float(_config_value(fluid, "physics_dt")),
+        rendering_dt=float(_config_value(fluid, "rendering_dt")),
+    )
     validate_fluid_stage_contract(stage, fluid)
     attachment_policy = str(
         _config_value(fluid, "attachment_matrix_policy")
@@ -1236,10 +1384,10 @@ def build_isaac_fluid_evaluation_loop(
         _config_value(fluid, "source_visual_mesh_path")
     )
     source_authored_world = _prim_world_matrix(stage, source_path)
-    source_body = SingleRigidPrim(
+    source_body = construct_single_rigid_prim(
+        SingleRigidPrim,
         prim_path=source_path,
         name="online_fluid_source_vessel",
-        reset_xform_properties=False,
     )
     source_body.initialize()
 
@@ -1315,10 +1463,32 @@ def build_isaac_fluid_evaluation_loop(
     )
     particle_path = str(_config_value(fluid, "particle_path"))
     expected_count = int(_config_value(fluid, "expected_particle_count"))
+    camera_contract_id = str(_config_value(fluid, "camera_contract"))
     camera_contract = resolve_camera_contract_record(
         stage,
-        contract_id=str(_config_value(fluid, "camera_contract")),
+        contract_id=camera_contract_id,
         camera_configs=tuple(_config_value(cfg, "cameras")),
+        compatibility=str(
+            _optional_config_value(
+                fluid,
+                "camera_contract_compatibility",
+                f"requires_{camera_contract_id}",
+            )
+        ),
+        rendering_dt=float(_config_value(fluid, "rendering_dt")),
+    )
+    expected_camera_contract_sha256 = _optional_config_value(
+        fluid, "camera_contract_sha256"
+    )
+    if expected_camera_contract_sha256 is not None:
+        require_camera_contract_sha256(
+            camera_contract,
+            expected_sha256=str(expected_camera_contract_sha256),
+        )
+    initial_render_warmup_updates = (
+        fluid.get("initial_render_warmup_updates", 0)
+        if isinstance(fluid, Mapping)
+        else getattr(fluid, "initial_render_warmup_updates", 0)
     )
     return FluidEvaluationLoop(
         world=world,
@@ -1343,4 +1513,5 @@ def build_isaac_fluid_evaluation_loop(
         expected_camera_keys=tuple(_config_value(fluid, "model_camera_keys")),
         expected_camera_shape=tuple(_config_value(fluid, "model_camera_shape")),
         camera_contract=camera_contract,
+        initial_render_warmup_updates=initial_render_warmup_updates,
     )

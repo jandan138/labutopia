@@ -577,31 +577,31 @@
     <div class="container">
       <p class="report-meta">
         <span>LABUTOPIA 液体专项周报</span>
-        <span>更新：2026-07-14</span>
+        <span>更新：2026-07-15</span>
         <span>面向：产品 / 项目 / 研发</span>
       </p>
-      <h1>真实烧杯倒液：物理完整转移，画面形成连续液面</h1>
-      <p class="header-summary">本周在 LabUtopia 真实双烧杯场景中完成了可重复的整杯转移，并把同一条已通过的粒子轨迹重建成连续水体。最终视频不再直接显示碎散粒子，物理结果和产品观感都形成了可交付证据。</p>
+      <h1>真实烧杯在线倒液：物理、液面与模型相机同帧跑通</h1>
+      <p class="header-summary">Isaac Sim 4.1 已完成一条自然结束的专家轨迹。机械臂夹起真实烧杯后由 PhysX 计算液体运动，程序在每个 observation 内把同帧粒子重建成连续液面，再交给两台模型相机。最终结果可用于评测链路验证，不再是离线演示回放。</p>
     </div>
   </header>
 
   <div class="status-strip" aria-label="本周关键结果">
     <div class="container status-grid">
       <div class="status-item">
-        <strong class="status-value">3,600 / 3,600</strong>
-        <span class="status-label">结束帧进入目标杯</span>
+        <strong class="status-value">3,583 / 3,600</strong>
+        <span class="status-label">结束帧位于目标杯</span>
       </div>
       <div class="status-item">
-        <strong class="status-value">0</strong>
-        <span class="status-label">结束帧桌面与杯外残留</span>
+        <strong class="status-value">99.53%</strong>
+        <span class="status-label">专家转移率，最后 100 帧稳定</span>
       </div>
       <div class="status-item">
-        <strong class="status-value">3 mm</strong>
-        <span class="status-label">物理接触与粒子间距尺度</span>
+        <strong class="status-value">953 帧</strong>
+        <span class="status-label">31.8 秒完整双机位视频</span>
       </div>
       <div class="status-item">
-        <strong class="status-value">70 帧</strong>
-        <span class="status-label">连续液面双机位回放</span>
+        <strong class="status-value">3.03 FPS</strong>
+        <span class="status-label">4.1 模型帧产出吞吐，不含首帧</span>
       </div>
     </div>
   </div>
@@ -609,60 +609,60 @@
   <main>
     <section id="result" class="section">
       <div class="container">
-        <h2>本周结论：真实烧杯倒液与连续液面都已跑通</h2>
-        <p class="section-intro">先看最终全景。两个容器都是 LabUtopia 原场景烧杯；画面是从已通过的 3,600 粒子轨迹离线重建的连续液面，不是为了演示另换方盒或重跑一套物理。</p>
+        <h2>本周结论：模型看到的就是正在发生的物理倒液</h2>
+        <p class="section-intro">最终链路是“物理 → 表面重建 → RTX 渲染 → 模型相机”。视频每一帧都来自当前 observation 的两张 256 × 256 RGB，不是事后把另一条轨迹重新做漂亮。</p>
         <div class="result-grid">
           <figure class="media-frame">
-            <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/final-context-poster.png" aria-label="最终真实烧杯倒液全景视频">
-              <source src="assets/pm-restructure/final-context.mp4" type="video/mp4">
+            <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/final-online-v4-poster.png" aria-label="Isaac Sim 4.1 真实烧杯在线倒液双机位视频">
+              <source src="assets/pm-restructure/final-online-v4.mp4" type="video/mp4">
             </video>
-            <figcaption>最终方案全景证据：源杯移动到目标杯上方，完成倒液后回正；70 帧画面来自同一条 690 步已通过轨迹的离线连续液面回放。</figcaption>
+            <figcaption>最终在线证据：31.8 秒、953 帧。可连续看到接近、夹持、抬杯、对准、倒液和回正，目标杯内液体在结束阶段保持稳定。</figcaption>
           </figure>
 
           <aside class="result-summary" aria-label="最终结果摘要">
             <h3>这次真正完成了什么</h3>
             <ul class="result-list">
-              <li><strong>完整转移</strong><span>结束帧 3,600 / 3,600 个粒子在目标杯</span></li>
-              <li><strong>没有结束残留</strong><span>源杯、传输区、桌面、桌下和异常粒子均为 0</span></li>
-              <li><strong>画面连续可读</strong><span>最终视频只显示重建水体，不再显示原始粒子球</span></li>
-              <li><strong>过程可复现</strong><span>690 步控制轨迹，共记录 691 个状态</span></li>
-              <li><strong>物理没有重跑</strong><span>展示回放为零物理步，原始粒子统计仍是物理结论</span></li>
+              <li><strong>物理倒液</strong><span>程序只操纵机械臂和被夹持的杯子，水由 PhysX 自己计算</span></li>
+              <li><strong>在线连续液面</strong><span>3,600 个 3 mm 粒子逐帧重建为连续网格并立即进入相机</span></li>
+              <li><strong>专家通过</strong><span>结束帧 3,583 / 3,600 在目标杯，达到 99.53%</span></li>
+              <li><strong>稳定结束</strong><span>最后 100 帧的各分区计数向量不变，非有限数值始终为 0</span></li>
+              <li><strong>可训练数据</strong><span>自然结束后写出 episode_0000.h5，不再混入第二条残缺 episode</span></li>
             </ul>
           </aside>
         </div>
-        <p class="scope-note"><strong>结论口径：</strong>3,600 / 3,600 和零残留来自本次指定场景、液量、参数和轨迹的结束帧粒子回读；连续网格只负责呈现，不参与物理判定。结果不代表任意容器、任意液量或任意动作都已经适配。</p>
+        <p class="scope-note"><strong>结论口径：</strong>结束帧分区为源杯 0、目标杯 3,583、传输区 10、桌面 7、桌下 0、异常 0。7 个桌面粒子按真实倒液飞溅保留，没有被视觉网格删除或改判。结果针对本次场景、液量和专家动作，不代表任意容器、任意液量或任意动作都已经适配。</p>
       </div>
     </section>
 
     <section id="why-it-worked" class="section">
       <div class="container">
-        <h2>为什么这次比原版清楚很多</h2>
-        <p class="section-intro">进步不是简单换颜色。前四项让液体在真实烧杯里稳定完成转移，第五项再把已通过的粒子状态重建为连续水体；物理和画面各做自己擅长的事。</p>
+        <h2>程序上改了什么，才不再像一团碎渣</h2>
+        <p class="section-intro">这次没有把显示球继续放大，也没有换成长方形缸。改动分别解决真实烧杯承液、4.1 抓取稳定、专家轨迹对准和同帧液面呈现。</p>
         <div class="change-grid">
           <article class="change-item">
-            <span class="change-number">01 · 同一把尺子</span>
-            <h3>物理粒子与容器尺度匹配</h3>
-            <p>原版把很细的物理粒子画成更大的球，球会互相覆盖，容易看成碎渣或泡沫。现在物理接触与粒子间距固定为 3 mm，最终画面则不再靠放大球体伪装成水。</p>
+            <span class="change-number">01 · 真实内壁</span>
+            <h3>透明烧杯补齐可承液碰撞结构</h3>
+            <p>每只烧杯使用 145 个开放式碰撞单元，杯壁和杯底封闭、杯口保持开放。玻璃负责外观，碰撞单元负责让 3 mm 粒子真正留在杯内。</p>
           </article>
           <article class="change-item">
-            <span class="change-number">02 · 烧杯真的“有内壁”</span>
-            <h3>透明外观之外，补齐可承液碰撞结构</h3>
-            <p>看得见的玻璃模型不等于液体能碰到的内壁。最终方案为每个烧杯建立 145 个开放式碰撞单元，保留杯口，同时封住杯壁与杯底。</p>
+            <span class="change-number">02 · 4.1 抓取稳定</span>
+            <h3>隔离合成夹持与复杂杯壁碰撞</h3>
+            <p>Isaac Sim 4.1 中，夹爪直接撞击 145 个杯壁单元会造成控制数值发散。现在只过滤源杯与 Franka 刚体对，杯子与液体、桌面、目标杯之间的碰撞全部保留。</p>
           </article>
           <article class="change-item">
-            <span class="change-number">03 · 完整液体配方</span>
-            <h3>借鉴 InternData 的公开 PBD 参数组织</h3>
-            <p>补齐粒子自碰撞、连续碰撞检测、求解强度与液体材料参数，让粒子不仅“受重力下落”，还会以更像一团液体的方式相互作用。</p>
+            <span class="change-number">03 · 抓取锚点</span>
+            <h3>按烧杯局部坐标复用成功夹持位置</h3>
+            <p>机械臂不再朝几何杯心钻入，而是以杯体局部偏移和校准姿态完成接近、闭合与抬升。第 420 帧建立合成附件时，位移和旋转跳变均为 0。</p>
           </article>
           <article class="change-item">
-            <span class="change-number">04 · 连续倒液动作</span>
-            <h3>杯口对准目标，轨迹可重复播放</h3>
-            <p>源杯采用连续的移动、倾倒、停留和回正动作，避免跳帧和突变。固定的 690 步轨迹也让每次验证可以比较同一个过程。</p>
+            <span class="change-number">04 · 专家轨迹</span>
+            <h3>仍使用 LabUtopia 控制器和 RMPFlow</h3>
+            <p>PickController 负责接近、闭合和抬杯，PourController 负责移动到目标杯、检查入口姿态、倾倒和回正。第 561 帧进入完整刚体倾倒，切换没有位置跳变。</p>
           </article>
           <article class="change-item">
-            <span class="change-number">05 · 表面重建</span>
-            <h3>把粒子轨迹变成连续液面</h3>
-            <p>程序按固定网格把每帧 3,600 个粒子重建为封闭网格，再做沿重力方向的窄缝连接与受约束平滑。Isaac Sim 只负责按原轨迹回放和渲染，整个呈现过程为零物理步。</p>
+            <span class="change-number">05 · 在线重建</span>
+            <h3>粒子物理与模型画面各司其职</h3>
+            <p>评分始终读取原始粒子；同一批粒子再经过密度场和 Marching Cubes 形成连续水体。首帧配置 64 次不推进物理的 RTX 预热，本次抽帧未出现黑屏或坏块；尚未做独立的预热开关 A/B，因此不把改善完全归因于预热。</p>
           </article>
         </div>
       </div>
@@ -670,27 +670,25 @@
 
     <section id="three-approaches" class="section">
       <div class="container">
-        <h2>三种方案对比：我们是怎么走到最终结果的</h2>
-        <p class="comparison-note">这三种方案承担的验证任务不同，用来说明技术演进，<strong>不是同条件性能排行</strong>：第一种是静置起点，第二种是视觉参考，第三种才是最终方案。</p>
-
+        <h2>三种方案对比：为什么最终选择在线表面重建</h2>
+        <p class="comparison-note">三种方案解决的问题不同，<strong>不是同条件性能排行</strong>：第一种是静置起点，第二种是视觉参考，第三种才是最终方案。</p>
         <div class="approach-list">
           <article id="original-attempt" class="approach baseline">
             <figure class="media-frame">
-              <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/original-static-hold-poster.png" aria-label="原版真实烧杯静置液体代表画面">
+              <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/original-static-hold-poster.png" aria-label="原版真实烧杯静置粒子画面">
                 <source src="assets/pm-restructure/original-static-hold.mp4" type="video/mp4">
               </video>
-              <figcaption>旧路线的代表性静置画面，用于展示“液体碎、难看清”的视觉问题；它不是下述 4,096 粒子基线同一次运行的一一对应录像。</figcaption>
+              <figcaption>原版代表画面：真实烧杯能静置持液，但放大的粒子球互相遮盖，水体边界破碎、反光杂乱。</figcaption>
             </figure>
             <div>
               <span class="approach-tag">01 · 静置起点</span>
-              <h3>原版尝试：真实烧杯能装住，但液体看不清</h3>
-              <p>这一阶段先解决“真实烧杯里能不能静置一团粒子”。物理验证有进展，但画面中水的主体不连贯，还没有证明完整倒液能做好。</p>
+              <h3>原版尝试：先证明能装住，但产品看不清</h3>
+              <p>细物理粒子有利于真实小烧杯碰撞，直接把它们画成大球却会重叠成泡沫状。这个阶段证明了持液可行性，没有解决倒液视频的连续水体观感。</p>
               <dl class="comparison-rows">
                 <div class="comparison-row"><dt>容器</dt><dd>真实 LabUtopia 烧杯</dd></div>
-                <div class="comparison-row"><dt>尺度</dt><dd>验证过的 4,096 粒子静置基线中，物理宽度约 0.45 mm，显示宽度约 4.3 mm，相差约 9.6 倍</dd></div>
-                <div class="comparison-row"><dt>结果</dt><dd>可以证明指定静置窗口内留在杯中，但视觉上像细碎反光点，杯内水体不容易辨认</dd></div>
-                <div class="comparison-row"><dt>产品价值</dt><dd>确认真实烧杯具备持液可行性；尚不能作为倒液演示交付</dd></div>
-                <div class="comparison-row"><dt>学到什么</dt><dd>单独把显示球放大不能解决观感，反而会让细粒子互相遮盖</dd></div>
+                <div class="comparison-row"><dt>呈现</dt><dd>直接显示 Points / 粒子球</dd></div>
+                <div class="comparison-row"><dt>结果</dt><dd>静置证据成立，倒液主体难以辨认</dd></div>
+                <div class="comparison-row"><dt>结论</dt><dd>显示球放大不能替代表面重建</dd></div>
               </dl>
             </div>
           </article>
@@ -698,39 +696,35 @@
           <article id="rectangular-reference" class="approach reference">
             <figure class="media-frame">
               <img src="assets/pm-restructure/rectangular-tank-reference.png" alt="A18 FloatBall 薄壁长方形缸液体参考场景">
-              <figcaption>A18 FloatBall 本地 USD 直接渲染。它展示的是大尺寸规则方缸中的液体与浮球，仅作为视觉和尺度参考，不是 LabUtopia 烧杯验证结果。</figcaption>
+              <figcaption>A18 FloatBall 本地 USD 直接渲染。它已开启 PhysX 原生等值面并绑定 OmniGlass，不是裸 Points。</figcaption>
             </figure>
             <div>
               <span class="approach-tag">02 · 视觉参考</span>
-              <h3>薄壁长方形缸：容易形成完整水体，但不能直接搬到烧杯</h3>
-              <p>参考场景使用约 30 cm 宽的规则方缸、简单盒状内壁和约 20 mm 粒子。容器大、边界规则，所以大粒子和连续表面更容易稳定地呈现出来。</p>
+              <h3>薄壁长方形缸：看起来很像水，但不能照搬</h3>
+              <p>参考场景使用约 30 cm 宽的规则方缸、简单盒状内壁和约 20 mm 粒子。USD 内配置 4 次网格平滑和 4 次法线平滑，再由 OmniGlass 提供透明与反射，因此液体轮廓天然醒目。它不是当前烧杯使用的外部表面重建管线。</p>
               <dl class="comparison-rows">
-                <div class="comparison-row"><dt>容器</dt><dd>大尺寸薄壁长方形缸，碰撞结构规则</dd></div>
-                <div class="comparison-row"><dt>尺度</dt><dd>2,376 个粒子，显示宽度约 20 mm，邻近间距约 20–30 mm</dd></div>
-                <div class="comparison-row"><dt>结果</dt><dd>水体轮廓完整、尺度醒目，适合观察浮球和液面</dd></div>
-                <div class="comparison-row"><dt>产品价值</dt><dd>帮助我们理解参考画面为什么清楚；它不是可交付的真实烧杯方案</dd></div>
-                <div class="comparison-row"><dt>学到什么</dt><dd>粒子大小必须和容器匹配；20 mm 对半径约 32 mm 的烧杯过大，杯内横向只能容纳很少几层</dd></div>
+                <div class="comparison-row"><dt>容器</dt><dd>大尺寸规则方缸</dd></div>
+                <div class="comparison-row"><dt>粒子</dt><dd>约 20 mm，适合大盒体，不适合半径约 32 mm 的烧杯</dd></div>
+                <div class="comparison-row"><dt>价值</dt><dd>证明“等值面 + 平滑 + 水材质”是完整水体观感的来源</dd></div>
+                <div class="comparison-row"><dt>边界</dt><dd>不能拿方缸成功代替真实烧杯物理验收</dd></div>
               </dl>
             </div>
           </article>
 
           <article id="final-approach" class="approach final">
             <figure class="media-frame">
-              <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/final-closeup-poster.png" aria-label="最终真实烧杯倒液近景视频">
-                <source src="assets/pm-restructure/final-closeup.mp4" type="video/mp4">
-              </video>
-              <figcaption>最终方案近景证据：可以清楚看到连续主水柱从源杯杯口进入目标杯。媒体与首页全景来自同一条已通过轨迹。</figcaption>
+              <img src="assets/pm-restructure/final-online-v4-keyframes.png" alt="最终在线倒液双机位十个关键时刻">
+              <figcaption>最终在线 episode 的十个关键时刻。每个格子都并列显示两台模型相机，覆盖初始、夹持、抬升、倒液、回正和结束。</figcaption>
             </figure>
             <div>
               <span class="approach-tag">03 · 最终方案</span>
-              <h3>InternData 启发方案：在真实烧杯里完成整杯转移</h3>
-              <p>最终方案借鉴 InternData 公开示例的 PBD 液体组织与连续水体观感。本项目完成真实烧杯碰撞、3 mm 粒子仿真、倒液轨迹和粒子回读，再从同一轨迹离线重建连续表面。</p>
+              <h3>InternData 启发方案：真实烧杯物理与连续液面同帧运行</h3>
+              <p>最终方案借鉴 InternData 公开示例的 PBD 组织和连续水体方向，但在 LabUtopia 中自行完成真实烧杯碰撞、专家控制、粒子评分、在线重建和模型相机合同。</p>
               <dl class="comparison-rows">
-                <div class="comparison-row"><dt>容器</dt><dd>真实 LabUtopia 双烧杯，每杯 145 个开放式内壁碰撞单元</dd></div>
-                <div class="comparison-row"><dt>尺度</dt><dd>3,600 个 3 mm 物理粒子；画面使用同帧粒子状态重建的连续网格</dd></div>
-                <div class="comparison-row"><dt>结果</dt><dd>主水柱连续可读，结束帧全部进入目标杯，没有落到桌面或留在杯外</dd></div>
-                <div class="comparison-row"><dt>产品价值</dt><dd>物理证据、连续液面视频和可追溯回放形成一条可交付链路</dd></div>
-                <div class="comparison-row"><dt>仍有差距</dt><dd>独立视觉审查为高置信度 WARN、无交付阻塞；水柱表面仍有轻微棱角，材质精细度尚未完全对齐参考原视频</dd></div>
+                <div class="comparison-row"><dt>物理</dt><dd>3,600 个 3 mm 粒子，四个 PhysX 子步对应一个 observation</dd></div>
+                <div class="comparison-row"><dt>呈现</dt><dd>同帧粒子重建连续网格，随后 RTX 渲染并读取双机位 RGB</dd></div>
+                <div class="comparison-row"><dt>结果</dt><dd>结束帧目标杯 3,583，桌面飞溅 7，异常 0；专家轨迹通过</dd></div>
+                <div class="comparison-row"><dt>视觉</dt><dd>独立视觉审核为高置信度 PASS；动作、连续液柱和目标杯留液均可读，无坏帧、明显穿模或漂浮杯</dd></div>
               </dl>
             </div>
           </article>
@@ -740,63 +734,58 @@
 
     <section id="verification" class="section">
       <div class="container">
-        <h2>结果不是只靠“看起来没漏”</h2>
-        <p class="section-intro">连续液面视频负责说明动作和观感，原始粒子回读负责说明最终去了哪里；两类证据绑定同一条轨迹，但不混淆各自职责。</p>
-        <div class="proof-grid">
-          <figure class="media-frame">
-            <img src="assets/pm-restructure/final-keyframes.png" alt="最终倒液全景六个关键帧">
-            <figcaption>连续液面全景六个关键时刻：初始、抬杯、开始倒液、接近倒空、回正、最终状态。</figcaption>
-          </figure>
-          <figure class="media-frame">
-            <img src="assets/pm-restructure/final-validation.png" alt="连续液面倒液密集段六个关键帧">
-            <figcaption>倒液密集段六帧抽查：用于确认主水柱连续进入目标杯；是否漏液仍以同轨迹的原始粒子回读为准。</figcaption>
-          </figure>
+        <h2>每秒能算多少帧：30 FPS 播放不等于 30 FPS 实时</h2>
+        <p class="section-intro">最终 episode 的 MP4 按仿真逻辑时间编码，所以 30 FPS 是逻辑播放速度。真实壁钟吞吐需要看每个 observation 从四个物理子步到视频写入的完整耗时。</p>
+        <div class="count-grid" aria-label="在线性能与结束帧统计">
+          <div class="count-item"><strong>3.03 FPS</strong><span>去掉首帧预热后的模型帧产出吞吐</span></div>
+          <div class="count-item"><strong>5.10 FPS</strong><span>同一运行扣除重建与 USD 写网格后的推导值</span></div>
+          <div class="count-item"><strong>131 ms</strong><span>平均表面重建耗时</span></div>
+          <div class="count-item"><strong>2.5 ms</strong><span>平均 USD 网格写入耗时</span></div>
+          <div class="count-item"><strong>2.96 FPS</strong><span>含 episode 生命周期的整体壁钟吞吐</span></div>
         </div>
-        <div class="count-grid" aria-label="结束帧粒子分区统计">
-          <div class="count-item"><strong>3,600</strong><span>目标杯</span></div>
-          <div class="count-item"><strong>0</strong><span>源杯</span></div>
-          <div class="count-item"><strong>0</strong><span>传输区</span></div>
-          <div class="count-item"><strong>0</strong><span>桌面 / 桌下</span></div>
-          <div class="count-item"><strong>0</strong><span>异常数值</span></div>
-        </div>
+        <p class="scope-note"><strong>性能边界：</strong>3.03 FPS 从每帧物理开始计到视频帧就绪，不含 controller step 和证据 JSONL 追加；2.96 FPS 是整个 episode 的壁钟结果。5.10 FPS 是同一次运行扣除重建与 USD 写网格后的推导值，不是另跑一条“无液体基线”，且仍包含液体物理、相机和 RTX。当前已经解决在线同帧正确性，但尚未解决壁钟 30 FPS 实时计算。</p>
       </div>
     </section>
 
     <section id="delivery" class="section">
       <div class="container">
-        <h2>现在可以交付什么</h2>
-        <p class="section-intro">交付分成两层：原有独立 USD 包负责裸打开检查物理初始态和结果态；新增连续液面目录负责最终双机位视频、静态末帧和可追溯动态回放。</p>
+        <h2>现在如何交付和复核</h2>
+        <p class="section-intro">页面内可直接查看最终 MP4 和精简证据清单；H5、逐帧 JSONL 与独立 USD 包保留在同事可访问的共享文件系统，页面列出其完整路径，但不把这些 <code>outputs/</code> 文件伪装成 Pages 下载。</p>
         <div class="delivery-grid">
           <div class="delivery-block">
-            <h3>物理快照交付目录</h3>
-            <p>可整体复制的独立 USD 包：</p>
-            <code class="path">/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/usd_asset_packages/lab_001_level1_pour_interndata_liquid_v1_20260714</code>
-            <p style="margin-top: 16px;">这个目录可以整体复制，用于核对真实场景、杯体、材质和粒子初末状态；它已通过 Isaac Sim 4.1 干净目录打开与短时运行检查。</p>
+            <h3>页面内证据清单</h3>
+            <p><a href="assets/pm-restructure/final-online-v4-manifest.json">final-online-v4-manifest.json</a></p>
+            <p>随页面提交的小型 manifest，记录最终粒子计数、相机合同、性能口径、视觉结论以及共享文件系统原件的 SHA-256。</p>
           </div>
           <div class="delivery-block">
-            <h3>两个 USD 入口</h3>
-            <ul class="plain-list">
-              <li><strong>初始状态快照：</strong><code>lab_001_level1_pour_interndata_liquid_v1.usda</code>，打开后看到液体稳定装在源杯。</li>
-              <li><strong>结果状态快照：</strong><code>lab_001_level1_pour_interndata_pour_result_v1.usda</code>，打开后看到液体全部位于目标杯。</li>
-            </ul>
+            <h3>最终在线视频</h3>
+            <code class="path">outputs/online_fluid_eval_20260715/v16_v4_full_action_isaacsim41/video/episode_0_h264.mp4</code>
+            <p style="margin-top: 16px;">H.264、512 × 256、30 FPS、953 帧、31.8 秒；左右两半分别对应两台模型相机。</p>
           </div>
           <div class="delivery-block">
-            <h3>连续液面交付目录</h3>
-            <p>最终双机位视频、清单和末帧 USD：</p>
-            <code class="path">/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/interndata_surface_replay_20260714/final_render</code>
-            <p style="margin-top: 16px;">动态回放权威由 <code>outputs/interndata_surface_replay_20260714/mesh_cache</code> 与 <code>tools/labutopia_fluid/run_interndata_surface_replay.py</code> 共同组成。</p>
+            <h3>物理与时延证据（共享文件系统）</h3>
+            <code class="path">outputs/collect/2026.07.15/20.15.27_Level1_pour_online_fluid_v2/online_fluid_evidence/observations.jsonl</code>
+            <p style="margin-top: 16px;">逐帧记录粒子分区、表面哈希、相机哈希、附件状态以及重建、渲染、相机和总耗时。</p>
           </div>
           <div class="delivery-block">
-            <h3>连续液面如何播放</h3>
-            <p><code>surface_replay_final.usda</code> 是便于裸打开检查的静态最终帧快照。完整 70 帧动态由网格缓存和外部轨迹回放脚本共同驱动，不把单个 USD 误说成自带完整动画。</p>
+            <h3>H5 倒液策略片段（共享文件系统）</h3>
+            <code class="path">outputs/collect/2026.07.15/20.15.27_Level1_pour_online_fluid_v2/dataset/episode_0000.h5</code>
+            <p style="margin-top: 16px;">505 帧，对应 observation 447–951；脚本化夹取段不在 H5 中。文件只包含自然结束并通过专家门禁的 episode_0000。</p>
           </div>
           <div class="delivery-block">
-            <h3>附带证据</h3>
-            <p><code>context.mp4</code> 与 <code>closeup.mp4</code> 均为 960 × 540、15 fps、H.264、70 帧。清单逐帧绑定源粒子哈希、网格哈希与源杯位姿，并记录零物理步。</p>
+            <h3>USD 与初始状态快照</h3>
+            <code class="path">assets/chemistry_lab/lab_001_fluid_eval/lab_001_level1_pour_interndata_liquid_v1.usda</code>
+            <p style="margin-top: 16px;">上方源 USD 随仓库提交；独立资产包位于共享文件系统 <code>outputs/usd_asset_packages/lab_001_level1_pour_interndata_liquid_v1_20260714</code>，用于裸打开检查场景、双烧杯、内壁和初始装液。</p>
           </div>
           <div class="delivery-block">
-            <h3>验收边界</h3>
-            <p>原始粒子轨迹负责“是否漏、最终在哪”；连续网格负责“是否像完整水体”。独立视觉审查结论为高置信度 WARN，但明确没有阻塞最终演示的问题。</p>
+            <h3>模型相机合同</h3>
+            <p><code>level1_pour_rgb_v4_full_action_30hz</code></p>
+            <p>SHA-256：<code>433993330829f0bdfe5ff98f9d2428eb34e9b16e59fde9ca9b8d9f51a75d6ccf</code></p>
+            <p>v4 固定双机位变换、光学参数、256 × 256 RGB、30 Hz 和 1/30 秒 rendering_dt；已有 v2/v3 数据或模型不能无声明混用。</p>
+          </div>
+          <div class="delivery-block">
+            <h3>视觉审核边界</h3>
+            <p>独立审阅 10 个关键帧后给出高置信度 PASS：完整动作、连续水柱、目标杯留液、无坏帧、无漂浮杯和无明显穿模均通过。透明源杯与白色夹爪接触边缘仍不够醒目，但不是阻塞问题。</p>
           </div>
         </div>
       </div>
@@ -806,34 +795,32 @@
       <div class="container">
         <div class="next-grid">
           <div>
-            <h2>下一个目标：保留连续液面，继续提升表面与材质精度</h2>
-            <p>“真实烧杯完整转移”和“同轨迹连续液面”两个里程碑已经完成。下一阶段不再扩大粒子或重做碰撞搜索，而是在不改变物理结论的前提下做产品级画面精修。</p>
+            <h2>下一个目标：把正确的在线链路从约 3 FPS 做快</h2>
+            <p>物理、抓取、在线液面和模型相机已经闭环。下一阶段不再换容器或盲目放大粒子，重点是性能拆解和有数据依据的优化。</p>
             <ul class="plain-list">
-              <li>保留当前 3 mm 物理粒子、真实烧杯内壁和 690 步轨迹作为基线。</li>
-              <li>减轻当前连续网格的轻微棱角，同时守住封闭、流形、体积和杯壁间距门禁。</li>
-              <li>继续对齐透明水材质、灯光和相机，提升杯内液面与细水柱的质感。</li>
-              <li>评估新版 Isaac Sim 或专用流体表面工具是否值得接入实时链路，但不阻塞当前交付。</li>
+              <li>固定当前 3 mm 粒子、145 单元内壁、抓取锚点和专家轨迹作为回归基线。</li>
+              <li>补一条完全匹配的无重建 A/B 运行，分开液体物理、表面重建、RTX 和相机读取成本。</li>
+              <li>优先优化当前平均约 131 ms 的密度场与 Marching Cubes，再评估是否需要新版 Isaac Sim 原生方案。</li>
+              <li>若产品演示需要更强抓取可读性，只调整辅机位或玻璃边缘对比，不修改已通过的液体物理。</li>
             </ul>
           </div>
           <aside class="next-target">
-            <h3>下一阶段的产品验收标准</h3>
-            <p><strong>物理：</strong>保持本次完整转移结果。</p>
-            <p><strong>视觉：</strong>保留连续主水柱，进一步减少表面棱角并提升透明材质质感。</p>
-            <p><strong>交付：</strong>保留可独立打开的快照、同一轨迹视频和逐帧可追溯清单。</p>
+            <h3>下一阶段验收标准</h3>
+            <p><strong>正确性：</strong>目标杯比例继续高于 90%，最后稳定窗口粒子守恒，异常为 0。</p>
+            <p><strong>性能：</strong>使用匹配 A/B 报告，而不是把逻辑 30 FPS 当成壁钟实时。</p>
+            <p><strong>兼容性：</strong>相机、物理或表面合同变化都生成新 ID，不污染已有数据。</p>
           </aside>
         </div>
 
         <details>
           <summary>技术依据与证据路径</summary>
           <div class="details-body">
-            <p><strong>公开方法来源：</strong><a href="https://github.com/InternRobotics/InternDataEngine/tree/2a0a21f2c836df97c925729084e13d68950b4deb" target="_blank" rel="noreferrer">InternRobotics/InternDataEngine，commit 2a0a21f2c836df97c925729084e13d68950b4deb</a>。本项目只借鉴其公开液体配方组织与呈现思路，没有声称复用受限资产或完全复现原视频。</p>
-            <p><strong>原版静置数据：</strong><code>docs/labutopia_lab_poc/evidence_manifests/fluid_spike_real_beaker_static_hold_support_aligned_v1_20260712/P4096_S2/runtime_smoke_summary.json</code></p>
+            <p><strong>公开方法来源：</strong><a href="https://github.com/InternRobotics/InternDataEngine/tree/2a0a21f2c836df97c925729084e13d68950b4deb" target="_blank" rel="noreferrer">InternRobotics/InternDataEngine，commit 2a0a21f2c836df97c925729084e13d68950b4deb</a>。本项目只借鉴公开液体组织与视觉方向，没有声称复用受限资产或完全复现原视频。</p>
+            <p><strong>4.1 配置：</strong><code>config/level1_pour_online_fluid_v2.yaml</code></p>
+            <p><strong>在线运行目录：</strong><code>outputs/collect/2026.07.15/20.15.27_Level1_pour_online_fluid_v2</code></p>
+            <p><strong>最终视频目录：</strong><code>outputs/online_fluid_eval_20260715/v16_v4_full_action_isaacsim41</code></p>
             <p><strong>方缸参考 USD：</strong><code>inputs/usd/scene/liquid/physics_fidelity_A18_FloatBall.usd</code></p>
-            <p><strong>最终运行统计：</strong><code>outputs/usd_asset_packages/lab_001_level1_pour_interndata_liquid_v1_20260714/evidence/runtime_summary.json</code></p>
-            <p><strong>轨迹可追溯记录：</strong><code>outputs/usd_asset_packages/lab_001_level1_pour_interndata_liquid_v1_20260714/evidence/trace_provenance.json</code></p>
-            <p><strong>连续液面输出：</strong><code>outputs/interndata_surface_replay_20260714/final_render</code></p>
-            <p><strong>重建契约 SHA-256：</strong><code>e4d62bc2b33ef73ae601a0b322cded3dd32685c4dc97e76944fa95d802453a16</code></p>
-            <p><strong>实现说明：</strong>固定 1.35 mm 世界网格、重力方向灰度闭运算、严格拓扑清理和受门禁约束的平滑；每帧保留所有连通分量，不用删除碎滴来掩盖泄漏。</p>
+            <p><strong>评分策略：</strong><code>level1_pour_transfer_v1</code>，任务通过阈值 50%，专家接收阈值 90%。</p>
           </div>
         </details>
       </div>
@@ -842,7 +829,7 @@
 
   <footer>
     <div class="container">
-      <p>LabUtopia 液体专项 · 2026-07-14 · 本页媒体均已复制到报告本地目录，可离线查看。</p>
+      <p>LabUtopia 液体专项 · 2026-07-15 · 页面媒体为本次最终在线 episode 的本地副本。</p>
     </div>
   </footer>
 </body>

@@ -101,6 +101,8 @@ def _make_loop(
     task: _Task | None = None,
     adapt_state=None,
     sync_source_visual_state=None,
+    initial_render_warmup_updates: int = 0,
+    camera_contract=None,
 ):
     world = world or _World(events)
     task = task or _Task(events)
@@ -168,10 +170,12 @@ def _make_loop(
         sync_source_visual_state=sync_source_visual_state,
         expected_camera_keys=("Camera1_rgb", "Camera2_rgb"),
         expected_camera_shape=(3, 4, 4),
-        camera_contract={
+        camera_contract=camera_contract
+        or {
             "id": "test_camera_contract_v1",
             "sha256": "a" * 64,
         },
+        initial_render_warmup_updates=initial_render_warmup_updates,
     )
     return loop, world, task, attachment, scored_arrays, reconstructed_arrays
 
@@ -223,6 +227,10 @@ def test_reset_then_action_observation_has_exact_model_facing_order():
         "id": "test_camera_contract_v1",
         "sha256": "a" * 64,
     }
+    assert (
+        action_observation["record"]["latency_seconds"]["model_ready_total"]
+        >= action_observation["record"]["latency_seconds"]["total"]
+    )
     assert action_observation["score"]["fluid_transfer_passed"] is True
     np.testing.assert_array_equal(scored[1], reconstructed[1])
     assert action_observation["attachment"]["mode"] == (
@@ -292,6 +300,52 @@ def test_render_that_advances_physics_invalidates_observation():
         loop.observe()
 
     assert any(item.startswith("invalidate:observation_failed") for item in events)
+
+
+def test_initial_render_warmup_is_unobserved_and_runs_once_per_episode():
+    events: list[str] = []
+    loop, world, task, *_ = _make_loop(
+        events,
+        initial_render_warmup_updates=3,
+    )
+    loop.reset_episode("episode-1")
+
+    first = loop.observe()
+    loop.commit_action(None)
+    second = loop.observe()
+
+    assert events.count("world.render") == 5
+    assert task.calls == 2
+    assert world.current_time_step_index == 44
+    assert first["record"]["observation_index"] == 0
+    assert second["record"]["observation_index"] == 1
+    assert first["record"]["render"]["initial_warmup_updates"] == 3
+    assert first["record"]["render"]["render_call_count"] == 4
+    assert second["record"]["render"]["initial_warmup_updates"] == 0
+    assert second["record"]["render"]["render_call_count"] == 1
+    assert first["record"]["render"]["physics_and_timeline_unchanged"] is True
+    assert second["record"]["render"]["physics_and_timeline_unchanged"] is True
+
+
+def test_full_camera_contract_is_retained_for_episode_metadata():
+    contract = {
+        "schema_version": 2,
+        "id": "test_camera_contract_v2",
+        "compatibility": "requires_v2_data_or_model",
+        "rendering_dt": 1.0 / 30.0,
+        "cameras": [{"name": "camera_1", "frequency": 30}],
+        "sha256": "b" * 64,
+    }
+    loop, *_ = _make_loop([], camera_contract=contract)
+
+    assert loop.camera_contract == contract
+    assert loop.camera_contract is not contract
+
+
+@pytest.mark.parametrize("value", [-1, True, 1.5])
+def test_initial_render_warmup_rejects_invalid_values(value):
+    with pytest.raises(ValueError, match="initial_render_warmup_updates_invalid"):
+        _make_loop([], initial_render_warmup_updates=value)
 
 
 @pytest.mark.parametrize(
@@ -467,12 +521,80 @@ def test_invalid_source_visual_sync_rejects_expert_episode_without_changing_task
     assert result["expert_episode_accepted"] is False
 
 
+def test_visual_sync_failure_cannot_be_hidden_by_a_later_valid_frame():
+    sync_records = iter(
+        [
+            {"policy": "visual_mesh_parent_delta_v1", "valid": False},
+            {"policy": "visual_mesh_parent_delta_v1", "valid": True},
+        ]
+    )
+    loop, *_ = _make_loop(
+        [],
+        sync_source_visual_state=lambda: next(sync_records),
+    )
+    loop.reset_episode("episode-1")
+    loop.observe()
+    loop.commit_action(None)
+    loop.observe()
+
+    result = loop.finalize_episode(controller_completed=True)
+
+    assert result["source_visual_sync_valid"] is False
+    assert result["expert_episode_accepted"] is False
+
+
 def test_attempt_limit_is_separate_from_accepted_episode_count():
     assert fluid_loop.attempt_limit_reached(0, 3) is False
     assert fluid_loop.attempt_limit_reached(2, 3) is False
     assert fluid_loop.attempt_limit_reached(3, 3) is True
     with pytest.raises(ValueError, match="maximum_attempts_invalid"):
         fluid_loop.attempt_limit_reached(0, 0)
+
+
+def test_online_fluid_run_completion_counts_collect_acceptance_and_infer_attempts():
+    assert fluid_loop.online_fluid_run_complete(
+        mode="collect",
+        completed_attempts=1,
+        accepted_episodes=0,
+        maximum_episodes=1,
+        maximum_attempts=3,
+    ) is False
+    assert fluid_loop.online_fluid_run_complete(
+        mode="collect",
+        completed_attempts=1,
+        accepted_episodes=1,
+        maximum_episodes=1,
+        maximum_attempts=3,
+    ) is True
+    assert fluid_loop.online_fluid_run_complete(
+        mode="infer",
+        completed_attempts=1,
+        accepted_episodes=0,
+        maximum_episodes=1,
+        maximum_attempts=3,
+    ) is True
+    assert fluid_loop.online_fluid_run_complete(
+        mode="collect",
+        completed_attempts=3,
+        accepted_episodes=0,
+        maximum_episodes=1,
+        maximum_attempts=3,
+    ) is True
+
+
+def test_observation_limit_reason_terminalizes_global_or_episode_limit():
+    assert fluid_loop.observation_limit_failure_reason(
+        per_episode_limit_hit=False,
+        global_limit_hit=False,
+    ) is None
+    assert fluid_loop.observation_limit_failure_reason(
+        per_episode_limit_hit=True,
+        global_limit_hit=False,
+    ) == "max_observations_per_episode_reached"
+    assert fluid_loop.observation_limit_failure_reason(
+        per_episode_limit_hit=False,
+        global_limit_hit=True,
+    ) == "max_fluid_observations_reached"
 
 
 def test_task_reset_precedes_controller_creation_and_later_controller_reset():
@@ -516,6 +638,21 @@ def test_append_observation_evidence_writes_compact_jsonl(tmp_path):
 
     fluid_loop.append_fluid_observation_evidence(path, observation)
     assert len(path.read_text(encoding="utf-8").splitlines()) == 2
+
+
+def test_append_episode_evidence_preserves_terminal_evaluation(tmp_path):
+    evaluation = {
+        "episode_id": "episode-0000",
+        "controller_completed": True,
+        "success": True,
+        "performance": {"episode_wall_fps": 2.5},
+    }
+    path = tmp_path / "episodes.jsonl"
+
+    payload = fluid_loop.append_fluid_episode_evidence(path, evaluation)
+
+    assert payload == evaluation
+    assert json.loads(path.read_text(encoding="utf-8")) == evaluation
 
 
 @pytest.mark.parametrize("maximum", [0, -1, True, 1.5])

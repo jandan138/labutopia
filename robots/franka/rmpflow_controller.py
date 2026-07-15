@@ -13,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import numpy as np
 import isaacsim.robot_motion.motion_generation as mg
 from isaacsim.core.prims import SingleArticulation
+from isaacsim.core.utils.rotations import rot_matrix_to_quat
 
 
 class RMPFlowController(mg.MotionPolicyController):
@@ -72,3 +74,15 @@ class RMPFlowController(mg.MotionPolicyController):
         self._motion_policy.set_robot_base_pose(
             robot_position=self._default_position, robot_orientation=self._default_orientation
         )
+
+    def get_end_effector_orientation_wxyz(self) -> np.ndarray:
+        """Return the live RMP end-effector orientation in Isaac quaternion order."""
+        active_joint_positions = (
+            self.articulation_rmp.get_active_joints_subset().get_joint_positions()
+        )
+        if hasattr(active_joint_positions, "detach"):
+            active_joint_positions = active_joint_positions.detach().cpu().numpy()
+        _, rotation_matrix = self.rmp_flow.get_end_effector_pose(
+            np.asarray(active_joint_positions, dtype=np.float64)
+        )
+        return rot_matrix_to_quat(np.asarray(rotation_matrix, dtype=np.float64))

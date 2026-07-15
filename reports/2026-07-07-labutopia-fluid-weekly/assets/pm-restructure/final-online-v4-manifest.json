@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "simulator": {
+    "name": "Isaac Sim",
+    "version": "4.1"
+  },
+  "config": "config/level1_pour_online_fluid_v2.yaml",
+  "run": {
+    "run_dir": "outputs/collect/2026.07.15/20.15.27_Level1_pour_online_fluid_v2",
+    "video": "outputs/online_fluid_eval_20260715/v16_v4_full_action_isaacsim41/video/episode_0_h264.mp4",
+    "evidence": "outputs/collect/2026.07.15/20.15.27_Level1_pour_online_fluid_v2/online_fluid_evidence/observations.jsonl",
+    "dataset": "outputs/collect/2026.07.15/20.15.27_Level1_pour_online_fluid_v2/dataset/episode_0000.h5"
+  },
+  "episode": {
+    "id": "episode-0000",
+    "observation_count": 953,
+    "observation_index_range": [
+      0,
+      952
+    ],
+    "logical_video_fps": 30.0,
+    "video_duration_seconds": 31.767,
+    "controller_completed": true,
+    "task_transfer_passed": true,
+    "expert_episode_accepted": true,
+    "stable_tail_observations": 100,
+    "stable_tail_definition": "identical_partition_count_vector"
+  },
+  "particles": {
+    "total": 3600,
+    "source": 0,
+    "target": 3583,
+    "transit": 10,
+    "tabletop_spill": 7,
+    "below_table": 0,
+    "nonfinite": 0,
+    "target_fraction": 0.9952777777777778
+  },
+  "dataset": {
+    "scope": "pouring_policy_segment",
+    "h5_frame_count": 505,
+    "observation_index_range": [
+      447,
+      951
+    ],
+    "scripted_pick_segment_included": false
+  },
+  "camera_contract": {
+    "id": "level1_pour_rgb_v4_full_action_30hz",
+    "sha256": "433993330829f0bdfe5ff98f9d2428eb34e9b16e59fde9ca9b8d9f51a75d6ccf",
+    "compatibility": "requires_v4_data_or_model"
+  },
+  "performance": {
+    "artifact_ready_fps_excluding_initial_warmup": 3.0349817522942617,
+    "episode_wall_fps": 2.960475849050719,
+    "derived_without_reconstruction_and_usd_authoring_fps": 5.104768428768418,
+    "reconstruction_mean_ms": 131.06878057262955,
+    "usd_authoring_mean_ms": 2.501021230208286
+  },
+  "attachment": {
+    "expert_attachment_valid": true,
+    "attachment_count": 1,
+    "rotation_handoff_count": 1,
+    "pour_handoff_rotation_jump_degrees": 1.2074182697257333e-06
+  },
+  "visual_review": {
+    "result": "PASS",
+    "confidence": "high",
+    "reviewed_frame_count": 10,
+    "reviewed_observation_indices": [
+      0,
+      106,
+      212,
+      318,
+      424,
+      530,
+      636,
+      742,
+      848,
+      952
+    ],
+    "main_risk": "Transparent grasp contact and the liquid stream are small and low-contrast in the wide camera views."
+  },
+  "sha256": {
+    "video_h264": "348fdeaf23d5990070adad02c7160fa346a63dcb967d2bd8e51607c3bc969cfb",
+    "h5": "2ca2c26e88a3dc05ac69e518c059779117a0be4229edd7f8f0e536c1f3ca785f",
+    "evidence_jsonl": "349aec2dedd619a6fcd23fd8ed6f3201872c753dd73cb36d57600d064a05ba1e"
+  }
+}

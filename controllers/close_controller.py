@@ -7,7 +7,6 @@ from controllers.atomic_actions.close_controller import CloseController
 from .base_controller import BaseController
 from .robot_controllers.trajectory_controller import FrankaTrajectoryController
 from isaacsim.core.utils.numpy.rotations import euler_angles_to_quats
-from .inference_engines.inference_engine_factory import InferenceEngineFactory
 
 class CloseTaskController(BaseController):
     """Controller for managing the task of closing a door in collect or infer mode.
@@ -52,6 +51,10 @@ class CloseTaskController(BaseController):
             cfg: Configuration object containing model paths and settings
             robot: Robot instance to control
         """
+        from .inference_engines.inference_engine_factory import (
+            InferenceEngineFactory,
+        )
+
         self.trajectory_controller = FrankaTrajectoryController(
             name="trajectory_controller",
             robot_articulation=robot

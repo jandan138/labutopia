@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import importlib.util
+import time
 from isaacsim import SimulationApp
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -74,6 +75,9 @@ simulation_config = {
 simulation_app = SimulationApp(simulation_config)
 
 ensure_project_root_on_path()
+from isaacsim_compat import install_legacy_isaacsim_aliases
+
+install_legacy_isaacsim_aliases()
 
 import hydra
 from omegaconf import OmegaConf
@@ -97,16 +101,19 @@ from utils.ebench_replay_action_source import EbenchReplayActionLogger
 from factories.task_factory import create_task
 from factories.controller_factory import create_controller
 from utils.isaac_fluid_evaluation import (
+    author_synthetic_attachment_collision_filter,
     build_isaac_fluid_evaluation_loop,
     configure_particle_usd_readback,
 )
 from utils.fluid_evaluation_loop import (
+    append_fluid_episode_evidence,
     append_fluid_observation_evidence,
-    attempt_limit_reached,
     initialize_controller_after_task_reset,
     model_camera_video_rgb,
+    observation_limit_failure_reason,
     observation_limit_reached,
     observation_video_fps,
+    online_fluid_run_complete,
     reset_task_then_controller,
 )
 
@@ -175,10 +182,31 @@ def main():
             allow_prefix_joint_positions=args.ebench_action_allow_prefix_dim,
         )
 
-    robot = create_robot(
-        cfg.robot.type,
-        position=np.array(cfg.robot.position)
-    )
+    robot_kwargs = {"position": np.array(cfg.robot.position)}
+    robot_usd_path = getattr(cfg.robot, "usd_path", None)
+    if robot_usd_path:
+        robot_kwargs["usd_path"] = os.path.abspath(str(robot_usd_path))
+    robot_camera_frequency = getattr(cfg.robot, "camera_frequency", None)
+    if robot_camera_frequency is not None:
+        robot_kwargs["camera_frequency"] = int(robot_camera_frequency)
+    robot = create_robot(cfg.robot.type, **robot_kwargs)
+    if fluid_enabled:
+        source_ownership = str(cfg.online_fluid.source_ownership)
+        if source_ownership != "gripper_attached_kinematic_vessel":
+            raise ValueError(
+                f"online_fluid_source_ownership_unsupported:{source_ownership}"
+            )
+        collision_filter_root = getattr(
+            cfg.online_fluid,
+            "synthetic_attachment_collision_filter_root_path",
+            None,
+        )
+        if collision_filter_root is not None:
+            author_synthetic_attachment_collision_filter(
+                stage,
+                source_body_path=str(cfg.online_fluid.source_actor_path),
+                robot_root_path=str(collision_filter_root),
+            )
     if not fluid_enabled:
         add_reference_to_stage(usd_path=os.path.abspath(cfg.usd_path), prim_path="/World")
     
@@ -205,6 +233,8 @@ def main():
     fluid_loop = None
     fluid_attempt_count = 0
     fluid_observation_count = 0
+    fluid_episode_observation_count = 0
+    fluid_episode_wall_start = None
     fluid_evidence_dir = os.path.abspath(
         args.fluid_evidence_dir
         or os.path.join(cfg.multi_run.run_dir, "online_fluid_evidence")
@@ -212,7 +242,11 @@ def main():
     fluid_evidence_path = os.path.join(
         fluid_evidence_dir, "observations.jsonl"
     )
+    fluid_episode_evidence_path = os.path.join(
+        fluid_evidence_dir, "episodes.jsonl"
+    )
     if fluid_enabled:
+        os.makedirs(fluid_evidence_dir, exist_ok=True)
         fluid_loop = build_isaac_fluid_evaluation_loop(
             cfg=cfg,
             world=world,
@@ -220,8 +254,10 @@ def main():
             stage=stage,
         )
         fluid_loop.reset_episode(f"episode-{fluid_attempt_count:04d}")
+        fluid_episode_wall_start = time.perf_counter()
 
     while simulation_app.is_running():
+        fluid_global_limit_hit = False
         if not fluid_enabled:
             world.step(render=True)
         
@@ -234,12 +270,12 @@ def main():
                     video_writer.release()
                     video_writer = None
                 if fluid_enabled:
-                    if (
-                        task_controller.episode_num() >= cfg.max_episodes
-                        or attempt_limit_reached(
-                            fluid_attempt_count,
-                            int(cfg.online_fluid.max_attempts),
-                        )
+                    if online_fluid_run_complete(
+                        mode=str(cfg.mode),
+                        completed_attempts=fluid_attempt_count,
+                        accepted_episodes=task_controller.episode_num(),
+                        maximum_episodes=int(cfg.max_episodes),
+                        maximum_attempts=int(cfg.online_fluid.max_attempts),
                     ):
                         task_controller.close()
                         simulation_app.close()
@@ -255,6 +291,8 @@ def main():
                     fluid_loop.reset_episode(
                         f"episode-{fluid_attempt_count:04d}"
                     )
+                    fluid_episode_observation_count = 0
+                    fluid_episode_wall_start = time.perf_counter()
                 else:
                     task_controller.reset()
                     if task_controller.episode_num() >= cfg.max_episodes:
@@ -267,14 +305,13 @@ def main():
                 continue
 
             if fluid_enabled:
+                fluid_artifact_frame_start = time.perf_counter()
                 fluid_observation = fluid_loop.observe()
                 state = fluid_observation["state"]
-                append_fluid_observation_evidence(
-                    fluid_evidence_path, fluid_observation
-                )
+                record = fluid_observation["record"]
                 fluid_observation_count += 1
+                fluid_episode_observation_count += 1
                 if args.fluid_evidence_dir:
-                    record = fluid_observation["record"]
                     episode_id = record["episode_id"]
                     observation_index = int(record["observation_index"])
                     for camera_name, camera_array in state["camera_data"].items():
@@ -319,21 +356,46 @@ def main():
                                 (width, height),
                             )
                         video_writer.write(combined_img)
-                if observation_limit_reached(
+                record["latency_seconds"]["artifact_ready_total"] = (
+                    time.perf_counter() - fluid_artifact_frame_start
+                )
+                append_fluid_observation_evidence(
+                    fluid_evidence_path, fluid_observation
+                )
+                fluid_episode_limit_hit = observation_limit_reached(
+                    fluid_episode_observation_count,
+                    int(
+                        getattr(
+                            cfg.online_fluid,
+                            "max_observations_per_episode",
+                            cfg.task.max_steps,
+                        )
+                    ),
+                )
+                fluid_global_limit_hit = observation_limit_reached(
                     fluid_observation_count, args.max_fluid_observations
-                ):
-                    if video_writer is not None:
-                        video_writer.release()
-                    task_controller.close()
-                    simulation_app.close()
-                    cv2.destroyAllWindows()
-                    break
+                )
             else:
                 state = task.step()
+                fluid_episode_limit_hit = False
             if state is None:
                 continue
-            
+
             action, done, is_success = task_controller.step(state)
+            limit_failure_reason = (
+                observation_limit_failure_reason(
+                    per_episode_limit_hit=fluid_episode_limit_hit,
+                    global_limit_hit=fluid_global_limit_hit,
+                )
+                if fluid_enabled
+                else None
+            )
+            if fluid_enabled and limit_failure_reason is not None and not done:
+                action, done, is_success = (
+                    task_controller.abort_online_fluid_episode(
+                        limit_failure_reason
+                    )
+                )
             if action is not None:
                 if ebench_action_logger is not None:
                     ebench_action_logger.log_action(
@@ -344,6 +406,12 @@ def main():
                 robot.get_articulation_controller().apply_action(action)
             if done:
                 if fluid_enabled:
+                    if video_writer is not None:
+                        video_writer.release()
+                        video_writer = None
+                    fluid_episode_wall_seconds = (
+                        time.perf_counter() - fluid_episode_wall_start
+                    )
                     combined = fluid_loop.finalize_episode(
                         controller_completed=bool(is_success)
                     )
@@ -351,12 +419,37 @@ def main():
                     score = fluid_observation["score"]
                     evaluation = {
                         **combined,
+                        "episode_id": str(record["episode_id"]),
                         "metric_policy_id": str(
                             cfg.online_fluid.metric_policy_id
                         ),
                         "camera_contract": dict(
-                            record["camera_contract"]
+                            fluid_loop.camera_contract
                         ),
+                        "control": task_controller.online_fluid_control_evidence(),
+                        "termination": {
+                            "max_observations_per_episode_reached": bool(
+                                fluid_episode_limit_hit
+                            ),
+                            "max_fluid_observations_reached": bool(
+                                fluid_global_limit_hit
+                            ),
+                            "observation_count": int(
+                                fluid_episode_observation_count
+                            ),
+                        },
+                        "performance": {
+                            "logical_video_fps": observation_video_fps(
+                                float(cfg.online_fluid.rendering_dt)
+                            ),
+                            "episode_wall_seconds": (
+                                fluid_episode_wall_seconds
+                            ),
+                            "episode_wall_fps": (
+                                fluid_episode_observation_count
+                                / fluid_episode_wall_seconds
+                            ),
+                        },
                         "terminal_observation": {
                             "episode_id": str(record["episode_id"]),
                             "observation_index": int(record["observation_index"]),
@@ -394,6 +487,10 @@ def main():
                             cfg.online_fluid.expert_pour_position_control
                         ),
                     }
+                    append_fluid_episode_evidence(
+                        fluid_episode_evidence_path,
+                        evaluation,
+                    )
                     if str(cfg.mode) == "collect":
                         task_controller.finalize_collection_episode(
                             accepted=combined["expert_episode_accepted"],
@@ -414,6 +511,11 @@ def main():
                         )
                 task_controller.print_failure_reason()
                 task.on_task_complete(is_success)
+                if fluid_enabled and fluid_global_limit_hit:
+                    task_controller.close()
+                    simulation_app.close()
+                    cv2.destroyAllWindows()
+                    break
                 continue
             if fluid_enabled:
                 fluid_loop.maybe_attach(task_controller, state)
