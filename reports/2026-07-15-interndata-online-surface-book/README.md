@@ -2,6 +2,8 @@
 
 面向有一点 Games101 基础的读者，系统讲解 LabUtopia 的 InternData-inspired **online liquid surface reconstruction**。
 
+页面已加入 2026-07-15 Isaac Sim 5.1 最终验收视频与产品口径：3594/3600 粒子进入目标杯，5 个桌面飞溅，0 个落到桌下；任务和专家 H5 验收通过，严格零飞溅诊断保留为 false。
+
 ## GitHub Pages
 
 https://jandan138.github.io/labutopia/reports/2026-07-15-interndata-online-surface-book/

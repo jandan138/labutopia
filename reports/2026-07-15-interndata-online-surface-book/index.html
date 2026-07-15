@@ -25,19 +25,35 @@
 .dl dt{font:600 12px Sora,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding-top:4px}
 .dl dd{margin:0}
 @media(max-width:820px){.compare,.dl{grid-template-columns:1fr}}
+.cover h2{font-size:72px;letter-spacing:0}
+h2,h3{letter-spacing:0}
+.evidence-media{display:block;width:100%;aspect-ratio:2/1;background:#0e2731;object-fit:contain}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:24px 0;background:var(--line);border:1px solid var(--line)}
+.metric{min-width:0;padding:15px;background:var(--white)}
+.metric strong{display:block;font:600 24px Sora,sans-serif;color:var(--water);overflow-wrap:anywhere}
+.metric span{display:block;font:12px/1.4 "IBM Plex Mono",monospace;color:var(--muted);margin-top:6px}
+.evidence-path{overflow-wrap:anywhere}
+main,.card{min-width:0}
+.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pipe,.timeline,.tablewrap{width:100%;max-width:100%;overflow-x:auto}
+.filemap{overflow-wrap:anywhere;word-break:break-word}
+code{overflow-wrap:anywhere;word-break:break-word}
+@media(max-width:1100px) and (min-width:821px){.three{grid-template-columns:1fr}}
+@media(max-width:820px){.cover h2{font-size:46px}.metrics{grid-template-columns:1fr}}
 </style>
 </head>
 
 <body><div class="grain"></div><div id="progress"></div>
 <div class="shell"><aside class="toc"><div class="mark">LabUtopia · field notebook</div><h1>把粒子<br>变成水面</h1><nav>
 <a href="#cover">00 / 封面</a>
+<a href="#result">FINAL / 最终实测</a>
 <a href="#why">01 / 为什么不像水</a>
 <a href="#model">02 / 三层模型</a>
 <a href="#games101">03 / Games101 桥</a>
 <a href="#intern">04 / InternData 边界</a>
 <a href="#beat">05 / 在线一帧</a>
 <a href="#pipeline">06 / 重建流水线</a>
-<a href="#budget">07 / 1000万体素</a>
+<a href="#budget">07 / 在线容量护栏</a>
 <a href="#split">08 / 打分与呈现</a>
 <a href="#failures">09 / 失败故事</a>
 <a href="#files">10 / 文件地图</a>
@@ -54,10 +70,52 @@
 <div class="hero-meta">
 <span>physics truth = particles</span>
 <span>presentation = reconstructed mesh</span>
-<span>live budget = 10M voxels</span>
-<span>Isaac Sim 4.1 · LabUtopia</span>
+<span>live budget = 24M voxels</span>
+<span>Isaac Sim 5.1 final gate</span>
 </div>
 <div class="waterline"><svg viewBox="0 0 1000 160" preserveAspectRatio="none"><path fill="#24b5b1" opacity=".65" d="M0 75 Q120 20 250 80 T500 65 T750 75 T1000 50 V160H0Z"/><path fill="#077f87" opacity=".65" d="M0 105 Q170 45 330 110 T650 85 T1000 105 V160H0Z"/></svg></div>
+</section>
+
+<section id="result">
+<div class="kicker">FINAL · 2026-07-15 Isaac Sim 5.1 acceptance</div>
+<h2>真实烧杯场景已经完成一次完整专家倾倒</h2>
+<p>这不是预录动画，也不是把水直接搬到目标杯。专家控制器驱动机械臂和源烧杯执行抬起、移动、倾斜与回位；3600 个 PhysX PBD 粒子依据重力、惯性和烧杯碰撞自己运动。相机看到的连续水面，则由每一帧的当前粒子现场重建。</p>
+
+<div class="metrics">
+<div class="metric"><strong>3594 / 3600</strong><span>进入目标杯 · 99.83%</span></div>
+<div class="metric"><strong>5</strong><span>桌面飞溅 · 0.14%</span></div>
+<div class="metric"><strong>0</strong><span>掉到桌面以下</span></div>
+<div class="metric"><strong>426 steps</strong><span>专家 H5 已验收入库</span></div>
+</div>
+
+<div class="figure">
+<h4>Final evidence · exact model-facing camera frames</h4>
+<video class="evidence-media" controls preload="metadata" poster="assets/final-online-pour-stream.png">
+<source src="assets/final-online-pour.mp4" type="video/mp4">
+</video>
+<p class="caption">28.23 秒，847 帧，512×256，30 FPS。左侧是机械臂全景，右侧是目标杯近景。独立视觉复核确认水流连续进入目标杯，未见杯子/桌面穿模、漂浮或破碎液面；WARN 仅指近景上沿裁掉部分源杯，后续取景应抬高或放宽。</p>
+</div>
+
+<div class="two">
+<div>
+<h3>静置密封看什么</h3>
+<p>同一进程第二次 reset 后连续观察 153 帧，仍是 <code>source=3600</code>、<code>tabletop=0</code>、<code>below=0</code>。这说明杯子静置时没有环境漏液。轻微移动仍应作为独立容器资格测试继续保留。</p>
+</div>
+<div>
+<h3>倒水质量看什么</h3>
+<p>最终是 <code>target=3594</code>、<code>tabletop=5</code>、<code>transit=1</code>、<code>below=0</code>。任务通过、专家示范通过；严格“一个粒子都不能洒”诊断仍为 false，但不会把正常飞溅误判成烧杯漏液。</p>
+</div>
+</div>
+
+<div class="callout"><span class="tag">本轮关键修复</span>
+<p>夹取完成后，源烧杯先只跟随机械臂的世界坐标平移并保持直立；只有控制器真正发出倾倒关节动作时，才无跳变地切换为完整刚体跟随。两次接管的位移/旋转跳变分别为 0 m / 0° 和约 2.3×10<sup>−16</sup> m / 0°，消除了“正式倒水前杯子先被随机姿态带翻”的错误。</p>
+</div>
+
+<div class="callout warn"><span class="tag">性能口径</span>
+<p>这条链路已经是 online、同帧、可供模型观察，但还不能称为 30 FPS 实时重建：完整 observation 延迟 p50 为 0.131 s、p95 为 0.344 s、最大 0.601 s。视频按仿真逻辑时间编码为 30 FPS；下一阶段若要求壁钟实时，需要优化密度场与 Marching Cubes，而不是改液体物理。</p>
+</div>
+
+<p class="lab-note evidence-path">证据：outputs/collect/2026.07.15/11.43.46_Level1_pour_online_fluid_v2 · camera contract level1_pour_rgb_v2_liquid_aware · metric policy level1_pour_transfer_v1</p>
 </section>
 
 <section id="why">
@@ -157,7 +215,7 @@
 <p>本地证据也对齐了 InternData-style 的流体尺度：约 <strong>3 mm</strong> contact/spacing、约 <strong>3600</strong> particles、接近 <code>12×12×25</code> 的初始化网格。这些数字帮助标定“看起来对”的观察表面，但它们写在 LabUtopia 的 run evidence / contract 里，不是把第三方引擎嵌进核心包层。</p>
 
 <div class="callout warn"><span class="tag">边界再强调</span>
-<p>PhysX SDK 提供原生 <code>PxSparseGridIsosurfaceExtractor</code> / <code>PxIsosurfaceParams</code>（可配置 isolevel、grid filtering、Taubin smoothing 等）。LabUtopia 的 online model-facing path <strong>刻意不</strong>把 Isaac Sim 4.1 native PhysX isosurface 当作唯一呈现权威；它把当前帧自己重建的 mesh author 进 USD，以便合同可测、可复现、可与 particle score 隔离。</p>
+<p>PhysX SDK 提供原生 <code>PxSparseGridIsosurfaceExtractor</code> / <code>PxIsosurfaceParams</code>（可配置 isolevel、grid filtering、Taubin smoothing 等）。LabUtopia 的 online model-facing path <strong>刻意不</strong>把 Isaac/PhysX native isosurface 当作唯一呈现权威；它把当前帧自己重建的 mesh author 进 USD，以便合同可测、可复现、可与 particle score 隔离。</p>
 </div>
 </section>
 
@@ -201,7 +259,7 @@
 
 <div class="codeblock"><span class="teal">physxParticle:simulationPoints</span>  (finite 3600×3)
 → <span class="violet">compute_lattice_spec</span>(AABB + padding_voxels=16, voxel_spacing_m=0.00135)
-→ guards: axis≤384, total≤10_000_000
+→ guards: axis≤512, total≤24_000_000
 → trilinear splat (unit mass)
 → Gaussian filter σ≈1.60 voxels
 → live grey_closing size <span class="violet">[7,7,17]</span> (gravity-Z; no support expansion)
@@ -235,8 +293,8 @@
 
 <section id="budget">
 <div class="kicker">07 · capacity guard</div>
-<h2>1000 万体素：我们定的护栏，不是 Isaac 的天条</h2>
-<p>先回答你最关心的那句：这个上限是 <strong>LabUtopia live reconstruction contract</strong> 自己写的 <code>max_total_voxels = 10_000_000</code>，外加 <code>max_axis_voxels = 384</code>。超出就抛 <code>lattice_total_limit_exceeded</code> / <code>lattice_axis_limit_exceeded</code>。它不是 Isaac Sim 内核硬编码，也不是 PhysX isosurface API 的强制配额；它是在线密度场的内存/时延保险丝。</p>
+<h2>2400 万体素：我们定的护栏，不是 Isaac 的天条</h2>
+<p>先回答你最关心的那句：这个上限是 <strong>LabUtopia live reconstruction contract</strong> 自己写的 <code>max_total_voxels = 24_000_000</code>，外加 <code>max_axis_voxels = 512</code>。超出就抛 <code>lattice_total_limit_exceeded</code> / <code>lattice_axis_limit_exceeded</code>。它不是 Isaac Sim 内核硬编码，也不是 PhysX isosurface API 的强制配额；它是在线密度场的内存/时延保险丝。</p>
 <p>离线回放合同更紧：axis 256、total 8,000,000。live 放宽一点，是因为倒液跨度更大、又要赶 observation 节拍。</p>
 
 <div class="figure">
@@ -257,7 +315,7 @@
 </div>
 <div class="gauge" id="gauge"><span id="gaugeText">—<small>voxels</small></span></div>
 </div>
-<p class="lab-note">示意公式：N ≈ ceil(span / spacing) + 2·padding。真实代码用 floor/ceil 量化 min/max 再加减 padding，量级一致。点 “long water column” 把 Z 拉长，看 gauge 如何撞上 10M。</p>
+<p class="lab-note">示意公式：N ≈ ceil(span / spacing) + 2·padding。真实代码用 floor/ceil 量化 min/max 再加减 padding，量级一致。点 “long water column” 把 Z 拉长，看 gauge 如何触发 axis / total guard。</p>
 </div>
 
 <div class="tablewrap"><table>
@@ -265,8 +323,8 @@
 <tbody>
 <tr><td>voxel_spacing_m</td><td>0.00135</td><td>0.00135</td></tr>
 <tr><td>padding_voxels</td><td>16</td><td>16</td></tr>
-<tr><td>max_axis_voxels</td><td>384</td><td>256</td></tr>
-<tr><td>max_total_voxels</td><td>10,000,000</td><td>8,000,000</td></tr>
+<tr><td>max_axis_voxels</td><td>512</td><td>256</td></tr>
+<tr><td>max_total_voxels</td><td>24,000,000</td><td>8,000,000</td></tr>
 <tr><td>gap closing</td><td>rectangular grey_closing [7,7,17]，禁止扩张 support</td><td>ellipsoidal closing + 更重的 mesh smoothing</td></tr>
 <tr><td>mesh smoothing</td><td>none（靠密度梯度法向）</td><td>guarded Taubin 等</td></tr>
 </tbody></table></div>
@@ -304,16 +362,19 @@
 
 <section id="failures">
 <div class="kicker">09 · incidents</div>
-<h2>两则真实风格的失败故事</h2>
+<h2>三则真实的失败故事</h2>
 
 <h3>故事 A ·「倒得很好，但示范不落盘」</h3>
 <p>液体 transfer 指标漂亮，但机械臂控制器自己的 return / home 条件没过。系统拒绝把这条轨迹当专家示范写入 H5。根因在 controller completion contract，不在液面重建。</p>
 
 <h3>故事 B ·「84% 还在空中就被打分？」</h3>
-<p>第一眼像 premature scoring：controller 结束时大量粒子仍在 transit。更精确的定位是：长水柱阶段，在线液面重建的 lattice 下一帧会超过 10M voxels，进程以 <code>lattice_total_limit_exceeded</code> 退出。看起来像“打分时机很怪”，实质是 presentation pipeline 先崩了。</p>
+<p>第一眼像 premature scoring：controller 结束时大量粒子仍在 transit。更精确的定位是：长水柱阶段，旧版在线液面重建会先撞到 axis / total guard。看起来像“打分时机很怪”，实质是 presentation pipeline 先停了。最终合同提高到 axis 512、total 24M；成功 run 的最大实测 lattice 是 <code>97×162×384 = 6,034,176</code> voxels。</p>
+
+<h3>故事 C ·「还没倒水，杯子怎么先翻了？」</h3>
+<p>这不是烧杯碰撞体漏，也不是液体粒子太大。旧跟随策略在夹取瞬间把机械臂的随机姿态完整传给源杯，杯子在正式倾倒事件前就被带歪。修复后，运输阶段只接管平移，真正发出倾倒动作时才接管旋转；最终 run 没有再出现预倾倒翻杯。</p>
 
 <div class="callout warn"><span class="tag">修复方向（合同友好）</span>
-<p>1）成功判定与倒液目标对齐（例如同一套 +Y 5 cm pour target）；2）把 live <code>max_total_voxels</code> 提高到足以覆盖该水柱；3）<strong>不改</strong>物理、不改倒液轨迹、不加飞溅限制来“躲”预算。先补失败测试，再改实现。</p>
+<p>已落地：成功判定与同一套 +Y 5 cm expert pour target 对齐；live 容量提高到 512 / 24M；运输与倾倒采用阶段式跟随。物理粒子、烧杯 collider 和表面重建尺度没有为“凑通过”而改小。</p>
 </div>
 
 <p>排查口诀：先分清是 <em>controller</em>、<em>particle score</em> 还是 <em>surface budget</em>。三件事症状可以长得很像，合同却完全不同。</p>
@@ -354,7 +415,7 @@ docs/runs/2026-07-14-online-physics-surface-evaluation-loop-plan.md
 <dt>grey_closing</dt><dd>形态学闭运算；live 用于补液柱缝隙，禁止扩张 support。</dd>
 <dt>frame token</dt><dd>绑定 episode/step/粒子 hash/几何 hash 的帧身份，证明同帧呈现。</dd>
 <dt>render barrier</dt><dd>渲染前后证明物理与 timeline 未推进的同步栅栏。</dd>
-<dt>max_total_voxels</dt><dd>LabUtopia live 自定总预算，默认 10,000,000。</dd>
+<dt>max_total_voxels</dt><dd>LabUtopia live 自定总预算，默认 24,000,000；offline 仍为 8,000,000。</dd>
 </dl>
 </section>
 
@@ -640,7 +701,7 @@ function budget() {
   const s = +$("spacing").value, p = +$("padding").value;
   const N = a => Math.ceil(a / s) + 2 * p;
   const nx = N(X), ny = N(Y), nz = N(Z), total = nx * ny * nz, axis = Math.max(nx, ny, nz);
-  const pct = total / 1e7 * 100, failAxis = axis > 384, failTotal = total > 1e7;
+  const pct = total / 2.4e7 * 100, failAxis = axis > 512, failTotal = total > 2.4e7;
   $("xv").textContent = X.toFixed(2); $("yv").textContent = Y.toFixed(2); $("zv").textContent = Z.toFixed(2);
   $("sv").textContent = s.toFixed(5); $("pv").textContent = p;
   $("formula").textContent = `N ≈ ceil(span/spacing)+2·padding → ${nx} × ${ny} × ${nz} = ${total.toLocaleString()} voxels`;
@@ -650,9 +711,9 @@ function budget() {
     : `conic-gradient(#077f87 ${Math.min(pct, 100)}%,#c6d7da 0)`;
   $("gaugeText").innerHTML = `${(total / 1e6).toFixed(2)}M<small>${nx}×${ny}×${nz}</small>`;
   $("guardText").innerHTML = failAxis
-    ? '<strong style="color:#c77716">lattice_axis_limit_exceeded</strong> — live max_axis_voxels = 384'
+    ? '<strong style="color:#c77716">lattice_axis_limit_exceeded</strong> — live max_axis_voxels = 512'
     : failTotal
-      ? '<strong style="color:#c77716">lattice_total_limit_exceeded</strong> — live max_total_voxels = 10,000,000'
+      ? '<strong style="color:#c77716">lattice_total_limit_exceeded</strong> — live max_total_voxels = 24,000,000'
       : `within live guard · ${pct.toFixed(1)}% of max_total_voxels`;
 }
 ["spanX", "spanY", "spanZ", "spacing", "padding"].forEach(id => $(id).oninput = budget);
@@ -704,4 +765,3 @@ addEventListener("resize", () => {
 });
 </script>
 </body></html>
-
