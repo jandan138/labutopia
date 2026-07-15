@@ -1,5 +1,6 @@
 import re
-from typing import Optional
+from collections.abc import Mapping
+from typing import Any, Optional
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 from enum import Enum
@@ -16,7 +17,14 @@ class Phase(Enum):
 
 class PourTaskController(BaseController):
     def __init__(self, cfg, robot):
+        self._expert_pour_target_offset = (0.0, 0.0, 0.0)
         super().__init__(cfg, robot)
+        online_fluid = getattr(cfg, "online_fluid", None)
+        self._online_fluid_enabled = bool(
+            online_fluid and getattr(online_fluid, "enabled", False)
+        )
+        self._collection_episode_terminal = False
+        self._collection_episode_finalized = False
         self.initial_position = None
         self.initial_size = None
         self.task_utils = TaskUtils.get_instance()
@@ -31,6 +39,27 @@ class PourTaskController(BaseController):
     def _init_collect_mode(self, cfg, robot):
         super()._init_collect_mode(cfg, robot)
         """Initialize controller for data collection mode."""
+        fixed_height_offsets = None
+        target_position_offset = None
+        online_fluid = getattr(cfg, "online_fluid", None)
+        if online_fluid is not None and bool(getattr(online_fluid, "enabled", False)):
+            configured_offsets = getattr(
+                online_fluid, "expert_pour_height_offsets_m", None
+            )
+            if configured_offsets is not None:
+                fixed_height_offsets = tuple(float(value) for value in configured_offsets)
+            configured_target_offset = getattr(
+                online_fluid, "expert_pour_target_offset_m", None
+            )
+            if configured_target_offset is not None:
+                offset = np.asarray(configured_target_offset, dtype=np.float64)
+                if offset.shape != (3,) or not np.all(np.isfinite(offset)):
+                    raise ValueError(
+                        "target_position_offset_must_be_three_finite_values"
+                    )
+                target_position_offset = tuple(float(value) for value in offset)
+                self._expert_pour_target_offset = target_position_offset
+
         self.pick_controller = PickController(
             name="pick_controller",
             cspace_controller=self.rmp_controller,
@@ -40,7 +69,9 @@ class PourTaskController(BaseController):
         self.pour_controller = PourController(
             name="pour_controller",
             cspace_controller=self.rmp_controller,
-            events_dt=[0.006, 0.002, 0.009, 0.01, 0.009, 0.01]
+            events_dt=[0.006, 0.002, 0.009, 0.01, 0.009, 0.01],
+            fixed_height_offsets=fixed_height_offsets,
+            target_position_offset=target_position_offset,
         )
         self.active_controller = self.pick_controller
 
@@ -53,6 +84,13 @@ class PourTaskController(BaseController):
         )
 
     def reset(self):
+        if (
+            self.mode == "collect"
+            and self._online_fluid_enabled
+            and self._collection_episode_terminal
+            and not self._collection_episode_finalized
+        ):
+            raise RuntimeError("online_fluid_collection_requires_finalization")
         super().reset()
         self.current_phase = Phase.PICKING
         self.initial_position = None
@@ -63,6 +101,8 @@ class PourTaskController(BaseController):
         self.return_complete = False
         self.return_timer = 0
         self.last_error_info = None
+        self._collection_episode_terminal = False
+        self._collection_episode_finalized = False
         self.pick_controller.reset()
         if self.mode == "collect":
             self.active_controller = self.pick_controller
@@ -102,7 +142,10 @@ class PourTaskController(BaseController):
             current_quat = self.state['object_quaternion']
             
             # First check if we're close enough to target for pouring
-            xy_dist = np.linalg.norm(object_pos[:2] - self.state['target_position'][:2])
+            expert_target_position = np.asarray(
+                self.state['target_position'], dtype=np.float64
+            ) + np.asarray(self._expert_pour_target_offset, dtype=np.float64)
+            xy_dist = np.linalg.norm(object_pos[:2] - expert_target_position[:2])
             pour_threshold = self.task_utils.get_pour_threshold(self.state['object_name'], self.state['object_size']) + 0.05
             
             if xy_dist > pour_threshold:
@@ -200,7 +243,12 @@ class PourTaskController(BaseController):
                 return None, False, False
             elif self.current_phase == Phase.POURING:
                 print("Pour task success!")
-                self.data_collector.write_cached_data(state['joint_positions'][:-1])
+                if self._online_fluid_enabled:
+                    self._collection_episode_terminal = True
+                else:
+                    self.data_collector.write_cached_data(
+                        state['joint_positions'][:-1]
+                    )
                 self._last_success = True
                 self.current_phase = Phase.FINISHED
                 return None, True, True
@@ -233,6 +281,11 @@ class PourTaskController(BaseController):
                     pour_speed=-1,
                     source_name=state['object_name'],
                     gripper_position=state['gripper_position'],
+                    source_position=(
+                        state['object_position']
+                        if self._online_fluid_enabled
+                        else None
+                    ),
                 )
                 
                 if 'camera_data' in state:
@@ -247,10 +300,43 @@ class PourTaskController(BaseController):
         print(f"{self.current_phase.value} task failed!")
         if self.last_error_info is not None:
             print(f"Phase failure details: {self.last_error_info}")
-        self.data_collector.clear_cache()
+        if self._online_fluid_enabled:
+            self._collection_episode_terminal = True
+        else:
+            self.data_collector.clear_cache()
         self._last_success = False
         self.current_phase = Phase.FINISHED
         return None, True, False
+
+    def finalize_collection_episode(
+        self,
+        *,
+        accepted: bool,
+        final_joint_positions: np.ndarray,
+        evaluation: Mapping[str, Any],
+    ) -> None:
+        if not self._online_fluid_enabled or self.mode != "collect":
+            raise RuntimeError("online_fluid_collection_not_enabled")
+        if not self._collection_episode_terminal:
+            raise RuntimeError("collection_episode_not_terminal")
+        if self._collection_episode_finalized:
+            raise RuntimeError("collection_episode_already_finalized")
+        if type(accepted) is not bool:
+            raise TypeError("collection_episode_accepted_bool_required")
+        if not isinstance(evaluation, Mapping):
+            raise TypeError("collection_episode_evaluation_mapping_required")
+
+        if accepted:
+            payload = dict(evaluation)
+            self.data_collector.set_task_properties(
+                {"online_fluid_evaluation": payload}
+            )
+            self.data_collector.write_cached_data(
+                np.asarray(final_joint_positions).copy()
+            )
+        else:
+            self.data_collector.clear_cache()
+        self._collection_episode_finalized = True
 
     def _step_infer(self, state):
         """Execute inference mode step."""

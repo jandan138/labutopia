@@ -26,11 +26,14 @@ class PourController(BaseController):
         cspace_controller: BaseController,
         events_dt: typing.Optional[typing.List[float]] = None,
         speed: float = 1,
-        position_threshold: float = 0.006
+        position_threshold: float = 0.006,
+        fixed_height_offsets: typing.Optional[typing.Sequence[float]] = None,
+        target_position_offset: typing.Optional[typing.Sequence[float]] = None,
     ) -> None:
         BaseController.__init__(self, name=name)
         self._event = 0
         self._t = 0
+        self._last_emitted_event = None
         self._events_dt = events_dt
         if self._events_dt is None:
             self._events_dt = [dt / speed for dt in [0.002, 0.01, 0.009, 0.005, 0.009, 0.5]]
@@ -47,8 +50,23 @@ class PourController(BaseController):
 
         self._height_range_1 = (0.3, 0.4)
         self._height_range_2 = (0.1, 0.2)
-        self._random_height_1 = np.random.uniform(*self._height_range_1)
-        self._random_height_2 = np.random.uniform(*self._height_range_2)
+        if fixed_height_offsets is None:
+            self._fixed_height_offsets = None
+        else:
+            offsets = np.asarray(fixed_height_offsets, dtype=np.float64)
+            if offsets.shape != (2,) or not np.all(np.isfinite(offsets)):
+                raise ValueError("fixed_height_offsets_must_be_two_finite_values")
+            self._fixed_height_offsets = (float(offsets[0]), float(offsets[1]))
+        position_offset = np.asarray(
+            (0.0, 0.0, 0.0)
+            if target_position_offset is None
+            else target_position_offset,
+            dtype=np.float64,
+        )
+        if position_offset.shape != (3,) or not np.all(np.isfinite(position_offset)):
+            raise ValueError("target_position_offset_must_be_three_finite_values")
+        self._target_position_offset = position_offset
+        self._sample_height_offsets()
         
         return
 
@@ -61,7 +79,8 @@ class PourController(BaseController):
         gripper_position: np.ndarray,
         source_name: str = None,
         pour_speed: float = None,
-        target_end_effector_orientation=R.from_euler('xyz', np.radians([0, 90, 10])).as_quat()
+        target_end_effector_orientation=R.from_euler('xyz', np.radians([0, 90, 10])).as_quat(),
+        source_position: typing.Optional[np.ndarray] = None,
     ) -> ArticulationAction:
         """
         Execute one step of the controller.
@@ -75,7 +94,29 @@ class PourController(BaseController):
         Returns:
             ArticulationAction: Action to be executed by the ArticulationController.
         """
+        def finite_position(value, name):
+            position = np.asarray(value, dtype=np.float64)
+            if position.shape != (3,) or not np.all(np.isfinite(position)):
+                raise ValueError(f"{name}_must_be_three_finite_values")
+            return position
+
         self.object_size = source_size
+        target_position = finite_position(target_position, "target_position").copy()
+        gripper_position = finite_position(gripper_position, "gripper_position")
+        tracked_position = gripper_position
+        source_position_value = None
+        if source_position is not None:
+            source_position_value = finite_position(
+                source_position, "source_position"
+            )
+            tracked_position = source_position_value
+        target_position += self._target_position_offset
+
+        def gripper_target_for(desired_source_position):
+            if source_position_value is None:
+                return desired_source_position
+            live_offset = source_position_value - gripper_position
+            return desired_source_position - live_offset
         
         if pour_speed is None:
             self._pour_speed = self._pour_default_speed
@@ -86,15 +127,19 @@ class PourController(BaseController):
             articulation_controller.switch_dof_control_mode(dof_index=6, mode="velocity")
             target_joint_velocities = [None] * current_joint_velocities.shape[0]
             return ArticulationAction(joint_velocities=target_joint_velocities)
+
+        self._last_emitted_event = self._event
         
         if self._event == 0:
             target_position[2] += self._random_height_1
+            gripper_target = gripper_target_for(target_position)
             target_joints = self._cspace_controller.forward(
-                target_end_effector_position=target_position, 
+                target_end_effector_position=gripper_target,
                 target_end_effector_orientation=target_end_effector_orientation
             )
-            self._random_height_1 = np.random.uniform(*self._height_range_1)
-            xy_distance = np.linalg.norm(gripper_position[:2] - target_position[:2])
+            xy_distance = np.linalg.norm(
+                tracked_position[:2] - target_position[:2]
+            )
             if xy_distance < 0.08:
                 self._event += 1
                 self._t = 0
@@ -103,12 +148,14 @@ class PourController(BaseController):
         elif self._event == 1:
             target_position[2] += self._random_height_2 + self.object_size[2] / 2 + self.get_pickz_offset(source_name)
             target_position[1] -= self.object_size[2] / 2 - self.get_pickz_offset(source_name)
+            gripper_target = gripper_target_for(target_position)
             target_joints = self._cspace_controller.forward(
-                target_end_effector_position=target_position, 
+                target_end_effector_position=gripper_target,
                 target_end_effector_orientation=target_end_effector_orientation
             )
-            self._random_height_2 = np.random.uniform(*self._height_range_2)
-            xy_distance = np.linalg.norm(gripper_position[:2] - target_position[:2])
+            xy_distance = np.linalg.norm(
+                tracked_position[:2] - target_position[:2]
+            )
             if xy_distance < self._position_threshold:
                 self._event += 1
                 self._t = 0
@@ -156,6 +203,7 @@ class PourController(BaseController):
         self._cspace_controller.reset()
         self._event = 0
         self._t = 0
+        self._last_emitted_event = None
         self._start = True
         self.object_size = None
         if events_dt is not None:
@@ -167,9 +215,15 @@ class PourController(BaseController):
             if len(self._events_dt) > 3:
                 raise Exception("events dt need have length of 3 or less")
 
-        self._random_height_1 = np.random.uniform(*self._height_range_1)
-        self._random_height_2 = np.random.uniform(*self._height_range_2)
+        self._sample_height_offsets()
         return
+
+    def _sample_height_offsets(self) -> None:
+        if self._fixed_height_offsets is not None:
+            self._random_height_1, self._random_height_2 = self._fixed_height_offsets
+            return
+        self._random_height_1 = float(np.random.uniform(*self._height_range_1))
+        self._random_height_2 = float(np.random.uniform(*self._height_range_2))
 
     def is_done(self) -> bool:
         """

@@ -103,6 +103,38 @@ def default_reconstruction_contract() -> dict[str, Any]:
     }
 
 
+def default_live_reconstruction_contract() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "axis_order": "XYZ",
+        "field_dtype": "float32",
+        "vertex_dtype": "float32",
+        "face_dtype": "int32",
+        "lattice_anchor_world_m": [0.0, 0.0, 0.0],
+        "voxel_spacing_m": 0.00135,
+        "padding_voxels": 16,
+        "max_axis_voxels": 512,
+        "max_total_voxels": 24_000_000,
+        "splat": "trilinear_trace_order_unit_mass",
+        "gaussian_sigma_voxels": 1.60,
+        "gaussian_truncate": 4.0,
+        "gaussian_mode": "constant",
+        "gaussian_cval": 0.0,
+        "density_gap_closing": "rectangular_grey_closing_gravity_z",
+        "density_gap_closing_size_voxels": [7, 7, 17],
+        "density_gap_closing_mode": "constant",
+        "density_gap_closing_cval": 0.0,
+        "iso_level": 0.02,
+        "marching_cubes_method": "lewiner",
+        "marching_cubes_step_size": 1,
+        "gradient_direction": "ascent",
+        "allow_degenerate": False,
+        "component_filter": "none",
+        "mesh_coordinate_frame": "lattice_local_translation",
+        "mesh_smoothing": "none_density_gradient_vertex_normals",
+    }
+
+
 def reconstruction_contract_sha256(contract: Mapping[str, Any]) -> str:
     return _json_sha256(dict(contract))
 
@@ -334,8 +366,10 @@ def compute_lattice_spec(
     spacing = float(cfg["voxel_spacing_m"])
     padding = int(cfg["padding_voxels"])
     anchor = np.asarray(cfg["lattice_anchor_world_m"], dtype=np.float64)
-    lower_index = np.floor((values.min(axis=0) - anchor) / spacing).astype(np.int64)
-    upper_index = np.ceil((values.max(axis=0) - anchor) / spacing).astype(np.int64)
+    scaled_min = np.round((values.min(axis=0) - anchor) / spacing, decimals=12)
+    scaled_max = np.round((values.max(axis=0) - anchor) / spacing, decimals=12)
+    lower_index = np.floor(scaled_min).astype(np.int64)
+    upper_index = np.ceil(scaled_max).astype(np.int64)
     lower_index -= padding
     upper_index += padding
     shape = upper_index - lower_index + 1
@@ -1244,6 +1278,210 @@ def reconstruct_surface(
         "vertices": vertices,
         "faces": faces,
         "normals": normals,
+        "geometry_sha256": geometry_hash,
+        "diagnostics": diagnostics,
+    }
+
+
+def _live_surface_sha256(
+    origin_world_m: Sequence[float],
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    normals: np.ndarray,
+) -> str:
+    digest = hashlib.sha256()
+    arrays = (
+        ("origin_world_m", _canonical_array(origin_world_m, "<f8")),
+        ("vertices", _canonical_array(vertices, "<f4")),
+        ("faces", _canonical_array(faces, "<i4")),
+        ("normals", _canonical_array(normals, "<f4")),
+    )
+    for name, array in arrays:
+        digest.update(name.encode("ascii") + b"\0")
+        digest.update(array.dtype.str.encode("ascii") + b"\0")
+        digest.update(
+            json.dumps(list(array.shape), separators=(",", ":")).encode("ascii")
+        )
+        digest.update(b"\0")
+        digest.update(array.tobytes(order="C"))
+    return digest.hexdigest()
+
+
+def _apply_live_density_gap_closing(
+    density: np.ndarray,
+    contract: Mapping[str, Any],
+) -> dict[str, Any]:
+    from scipy.ndimage import grey_closing
+
+    values = np.ascontiguousarray(density, dtype=np.float32)
+    if values.ndim != 3 or not np.isfinite(values).all():
+        raise ValueError("live_density_gap_closing_field_invalid")
+    if str(contract["density_gap_closing"]) != "rectangular_grey_closing_gravity_z":
+        raise ValueError("live_density_gap_closing_method_invalid")
+    size = np.asarray(contract["density_gap_closing_size_voxels"], dtype=np.int64)
+    if size.shape != (3,) or np.any(size <= 0) or np.any(size % 2 == 0):
+        raise ValueError("live_density_gap_closing_size_invalid")
+    before_bounds = _positive_support_bounds(values)
+    closed = grey_closing(
+        values,
+        size=tuple(int(value) for value in size),
+        mode=str(contract["density_gap_closing_mode"]),
+        cval=float(contract["density_gap_closing_cval"]),
+        output=np.float32,
+    )
+    closed = np.ascontiguousarray(closed, dtype=np.float32)
+    if not np.isfinite(closed).all():
+        raise ValueError("live_density_gap_closing_created_nonfinite_values")
+    after_bounds = _positive_support_bounds(closed)
+    expanded = before_bounds is None and after_bounds is not None
+    if before_bounds is not None and after_bounds is not None:
+        expanded = bool(
+            np.any(after_bounds[0] < before_bounds[0])
+            or np.any(after_bounds[1] > before_bounds[1])
+        )
+    if expanded:
+        raise ValueError("live_density_gap_closing_expanded_support_bounds")
+    return {
+        "density": closed,
+        "diagnostics": {
+            "method": str(contract["density_gap_closing"]),
+            "applied": True,
+            "size_voxels_xyz": size.astype(int).tolist(),
+            "mode": str(contract["density_gap_closing_mode"]),
+            "cval": float(contract["density_gap_closing_cval"]),
+            "support_bounds_before": (
+                None
+                if before_bounds is None
+                else [
+                    before_bounds[0].astype(int).tolist(),
+                    before_bounds[1].astype(int).tolist(),
+                ]
+            ),
+            "support_bounds_after": (
+                None
+                if after_bounds is None
+                else [
+                    after_bounds[0].astype(int).tolist(),
+                    after_bounds[1].astype(int).tolist(),
+                ]
+            ),
+            "support_bounds_expanded": expanded,
+        },
+    }
+
+
+def reconstruct_surface_live(
+    positions: Sequence[Sequence[float]] | np.ndarray,
+    contract: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    from scipy.ndimage import gaussian_filter
+    from skimage.measure import marching_cubes
+
+    cfg = dict(
+        default_live_reconstruction_contract() if contract is None else contract
+    )
+    values = np.asarray(positions, dtype=np.float64)
+    if values.ndim != 2 or values.shape[1] != 3 or values.shape[0] == 0:
+        raise ValueError("live_surface_positions_shape_invalid")
+    if not np.isfinite(values).all():
+        raise ValueError("live_surface_positions_nonfinite")
+    lattice = compute_lattice_spec(values, cfg)
+    splatted = _splat_density_field(values, lattice, cfg)
+    density = gaussian_filter(
+        splatted,
+        sigma=float(cfg["gaussian_sigma_voxels"]),
+        mode=str(cfg["gaussian_mode"]),
+        cval=float(cfg["gaussian_cval"]),
+        truncate=float(cfg["gaussian_truncate"]),
+        output=np.float32,
+    )
+    closing = _apply_live_density_gap_closing(density, cfg)
+    density = closing["density"]
+    level = float(cfg["iso_level"])
+    boundary_max = max(
+        float(np.max(density[0, :, :])),
+        float(np.max(density[-1, :, :])),
+        float(np.max(density[:, 0, :])),
+        float(np.max(density[:, -1, :])),
+        float(np.max(density[:, :, 0])),
+        float(np.max(density[:, :, -1])),
+    )
+    if boundary_max >= level:
+        raise ValueError(
+            f"live_surface_density_touches_lattice_boundary:{boundary_max}:{level}"
+        )
+    if float(np.max(density)) <= level:
+        raise ValueError("live_surface_iso_level_above_density")
+    vertices, faces, _density_normals, _density_values = marching_cubes(
+        density,
+        level=level,
+        spacing=(
+            float(cfg["voxel_spacing_m"]),
+            float(cfg["voxel_spacing_m"]),
+            float(cfg["voxel_spacing_m"]),
+        ),
+        gradient_direction=str(cfg["gradient_direction"]),
+        step_size=int(cfg["marching_cubes_step_size"]),
+        allow_degenerate=bool(cfg["allow_degenerate"]),
+        method=str(cfg["marching_cubes_method"]),
+    )
+    vertices = np.ascontiguousarray(vertices, dtype=np.float32)
+    faces = np.ascontiguousarray(faces, dtype=np.int32)
+    if len(vertices) == 0 or len(faces) == 0:
+        raise ValueError("live_surface_mesh_empty")
+    faces, component_volumes, flipped_components = _orient_faces_outward(
+        vertices, faces
+    )
+    if not component_volumes or any(volume <= 1.0e-15 for volume in component_volumes):
+        raise ValueError("live_surface_component_nonpositive_volume")
+    boundary_edges, nonmanifold_edges, inconsistent_edges = _edge_diagnostics(faces)
+    if boundary_edges or nonmanifold_edges or inconsistent_edges:
+        raise ValueError(
+            "live_surface_not_closed_manifold:"
+            f"boundary={boundary_edges}:nonmanifold={nonmanifold_edges}:"
+            f"inconsistent={inconsistent_edges}"
+        )
+    normals = _compute_vertex_normals(vertices, faces)
+    origin_world_m = [float(value) for value in lattice["origin_world_m"]]
+    geometry_hash = _live_surface_sha256(
+        origin_world_m,
+        vertices,
+        faces,
+        normals,
+    )
+    diagnostics = {
+        "particle_count": int(len(values)),
+        "vertex_count": int(len(vertices)),
+        "face_count": int(len(faces)),
+        "component_count": int(len(component_volumes)),
+        "component_filter": str(cfg["component_filter"]),
+        "component_volumes_m3": [float(value) for value in component_volumes],
+        "flipped_component_count": int(flipped_components),
+        "boundary_edge_count": int(boundary_edges),
+        "nonmanifold_edge_count": int(nonmanifold_edges),
+        "inconsistent_winding_edge_count": int(inconsistent_edges),
+        "max_boundary_density": boundary_max,
+        "max_density": float(np.max(density)),
+        "mesh_coordinate_frame": str(cfg["mesh_coordinate_frame"]),
+        "mesh_smoothing": str(cfg["mesh_smoothing"]),
+        "density_gap_closing": closing["diagnostics"],
+        "bounds_min_local_m": vertices.min(axis=0).astype(float).tolist(),
+        "bounds_max_local_m": vertices.max(axis=0).astype(float).tolist(),
+        "bounds_min_world_m": (
+            vertices.min(axis=0).astype(np.float64)
+            + np.asarray(origin_world_m, dtype=np.float64)
+        ).tolist(),
+        "bounds_max_world_m": (
+            vertices.max(axis=0).astype(np.float64)
+            + np.asarray(origin_world_m, dtype=np.float64)
+        ).tolist(),
+        "lattice": lattice,
+    }
+    return {
+        "origin_world_m": origin_world_m,
+        "vertices": _canonical_array(vertices, "<f4"),
+        "faces": _canonical_array(faces, "<i4"),
+        "normals": _canonical_array(normals, "<f4"),
         "geometry_sha256": geometry_hash,
         "diagnostics": diagnostics,
     }

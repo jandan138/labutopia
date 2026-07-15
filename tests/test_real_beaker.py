@@ -118,6 +118,61 @@ def test_cup_frame_dot_product_transforms_round_trip():
     assert frame.world_to_canonical(frame.canonical_to_world(point)) == pytest.approx(point)
 
 
+def test_derive_authored_wrapper_frame_uses_physics_interior_not_mesh_fallback():
+    from dataclasses import replace
+
+    from pxr import Gf, Usd, UsdGeom
+    from tools.labutopia_fluid.real_beaker import (
+        author_canonical_fluid_wrapper,
+        derive_authored_fluid_wrapper_frame,
+        derive_cup_interior_frame,
+    )
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    cup = UsdGeom.Xform.Define(stage, "/World/beaker2")
+    cup.AddTranslateOp().Set(Gf.Vec3d(0.295, 0.075, 0.87))
+    cup.AddRotateXYZOp().Set(Gf.Vec3f(90.0, 0.0, 45.0))
+    mesh = UsdGeom.Mesh.Define(stage, "/World/beaker2/mesh")
+    mesh.CreatePointsAttr(
+        [
+            Gf.Vec3f(x, y, z)
+            for x in (-0.03, 0.03)
+            for y in (-0.045, 0.045)
+            for z in (-0.03, 0.03)
+        ]
+    )
+    fallback = derive_cup_interior_frame(
+        stage,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+        calibration_points_path=None,
+    )
+    physics_frame = replace(fallback, interior_radius=0.0305)
+    author_canonical_fluid_wrapper(
+        stage,
+        frame=physics_frame,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+    )
+
+    loaded = derive_authored_fluid_wrapper_frame(
+        stage,
+        parent_path="/World/beaker2",
+        visual_mesh_path="/World/beaker2/mesh",
+    )
+
+    assert fallback.interior_radius == pytest.approx(0.025)
+    assert loaded.interior_radius == pytest.approx(0.0305)
+    assert loaded.interior_floor == pytest.approx(physics_frame.interior_floor)
+    assert loaded.rim_height == pytest.approx(physics_frame.rim_height)
+    assert loaded.calibration_source == "authored_fluid_wrapper"
+    point = (0.01, -0.02, 0.03)
+    assert loaded.world_to_canonical(loaded.canonical_to_world(point)) == pytest.approx(
+        point
+    )
+
+
 def test_derive_cup_frame_preserves_negative_parent_axis_sign():
     import pytest
     from pxr import Gf, Usd, UsdGeom

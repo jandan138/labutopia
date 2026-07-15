@@ -1,0 +1,104 @@
+name: Level1_pour_online_fluid_v2
+
+task_type: "pickpour"
+controller_type: "pour"
+mode: "collect"
+
+usd_path: "assets/chemistry_lab/lab_001_fluid_eval/lab_001_level1_pour_interndata_liquid_v1.usda"
+target_path: "/World/beaker1"
+max_episodes: 2
+
+online_fluid:
+  enabled: true
+  expert_pour_height_offsets_m: [0.4, 0.2]
+  expert_pour_target_offset_m: [0.0, 0.05, 0.0]
+  attachment_matrix_policy: "captured_translation_then_recaptured_full_at_scripted_pour"
+  expert_pour_position_control: "source_center_live_offset_v1"
+  metric_policy_id: "level1_pour_transfer_v1"
+  minimum_task_target_fraction: 0.5
+  minimum_expert_target_fraction: 0.9
+  max_attempts: 6
+  fixed_layout: true
+  physics_scene_path: "/World/PhysicsScene"
+  physics_dt: 0.008333333333333333
+  rendering_dt: 0.03333333333333333
+  physics_substeps_per_observation: 4
+  particle_path: "/World/InternDataParityFluid/Particles"
+  particle_system_path: "/World/InternDataParityFluid/ParticleSystem"
+  expected_particle_count: 3600
+  source_actor_path: "/World/beaker2"
+  target_actor_path: "/World/beaker1"
+  source_visual_mesh_path: "/World/beaker2/mesh"
+  target_visual_mesh_path: "/World/beaker1/mesh"
+  source_ownership: "gripper_attached_kinematic_vessel"
+  gripper_frame_path: "/World/Franka/panda_hand/tool_center"
+  table_path: "/World/table"
+  minimum_target_particles: 150
+  surface_path: "/World/LabUtopiaOnlineFluidSurface"
+  surface_material_path: "/World/Looks/LabUtopiaOnlineFluidWater"
+  hidden_liquid_paths:
+    - "/World/InternDataParityFluid/Particles"
+    - "/World/InternDataParityFluid/VisualParticles"
+    - "/World/ParticleSet"
+    - "/World/fluid"
+  camera_contract: "level1_pour_rgb_v2_liquid_aware"
+  camera_contract_compatibility: "requires_v2_data_or_model"
+  model_camera_keys: ["camera_1_rgb", "camera_2_rgb"]
+  model_camera_shape: [3, 256, 256]
+  reset_particle_authority: "authored_world_reset"
+  performance_label: "online"
+
+infer:
+  type: "local"
+  obs_names: {"camera_1_rgb": "camera_1_rgb", "camera_2_rgb": "camera_2_rgb"}
+  policy_model_path: ""
+  policy_config_path: ""
+  normalizer_path: ""
+  host: "127.0.0.1"
+  port: 8000
+  n_obs_steps: 1
+  timeout: 30
+  max_retries: 3
+
+task:
+  max_steps: 1500
+  left_pos:
+    x: [0.18, 0.33]
+    y: [-0.32, -0.17]
+    z: [0.87, 0.87]
+  obj_paths:
+    - path: "/World/beaker2"
+      position_range:
+        x: [0.295, 0.295]
+        y: [0.075, 0.075]
+        z: [0.8233382266115852, 0.8233382266115852]
+
+cameras:
+  - prim_path: "/World/InternDataParityCamera"
+    name: "camera_1"
+    resolution: [256, 256]
+    focal_length: 16
+    clipping_range: [0.01, 100.0]
+    image_type: "rgb"
+
+  - prim_path: "/World/InternDataParityCloseupCamera"
+    name: "camera_2"
+    resolution: [256, 256]
+    focal_length: 22
+    clipping_range: [0.01, 100.0]
+    image_type: "rgb"
+
+robot:
+  type: "franka"
+  position: [-0.4, 0, 0.71]
+
+collector:
+  type: "default"
+  compression: gzip
+
+hydra:
+  run:
+    dir: outputs/${mode}/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}
+
+multi_run:
+  run_dir: outputs/${mode}/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}

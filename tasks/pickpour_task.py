@@ -18,6 +18,12 @@ class PickPourTask(BaseTask):
         """Reset the task state."""
         super().reset()
         self.robot.initialize()
+        online_fluid = getattr(self.cfg, "online_fluid", None)
+        if online_fluid and bool(getattr(online_fluid, "enabled", False)):
+            self.current_obj_path = str(online_fluid.source_actor_path)
+            # The fixed fluid reset is immediately ready for observation 0.
+            self.frame_idx = 4
+            return
         self.current_obj_path = self.place_objects_with_visibility_management(self.current_obj_idx)
         self.randomize_object_position(
             self.target_path,
@@ -34,7 +40,15 @@ class PickPourTask(BaseTask):
         if not self.check_frame_limits():
             return None
 
-        source_quaternion = self.object_utils.get_transform_quat(object_path=self.current_obj_path+"/mesh")
+        online_fluid = getattr(self.cfg, "online_fluid", None)
+        if online_fluid and bool(getattr(online_fluid, "enabled", False)):
+            source_quaternion = self.object_utils.get_world_transform_quat(
+                object_path=self.current_obj_path
+            )
+        else:
+            source_quaternion = self.object_utils.get_transform_quat(
+                object_path=self.current_obj_path + "/mesh"
+            )
         
         return self.get_basic_state_info(
             object_path=self.current_obj_path,

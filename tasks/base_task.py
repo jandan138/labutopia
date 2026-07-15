@@ -350,7 +350,9 @@ class BaseTask(ABC):
             max_steps = self.cfg.task.max_steps
             
         if self.frame_idx > max_steps:
-            self.on_task_complete(True)
+            online_fluid = getattr(self.cfg, "online_fluid", None)
+            if not (online_fluid and bool(getattr(online_fluid, "enabled", False))):
+                self.on_task_complete(True)
             self.reset_needed = True
             
         return True

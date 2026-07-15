@@ -147,6 +147,28 @@ class ObjectUtils:
             quat = np.array([quat[1], quat[2], quat[3], quat[0]])
             
         return np.array([quat[3], quat[0], quat[1], quat[2]]) if w_first else quat
+
+    def get_world_transform_quat(self, object_path: str, w_first: bool = False) -> np.ndarray:
+        """Get the composed world rotation, including matrix xform ops."""
+        prim = self._stage.GetPrimAtPath(object_path)
+        if not prim.IsValid():
+            print(f"Object at path {object_path} not found.")
+            return None
+        transform = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(
+            Usd.TimeCode.Default()
+        )
+        rotation = transform.ExtractRotationQuat()
+        imaginary = rotation.GetImaginary()
+        wxyz = np.asarray(
+            [
+                rotation.GetReal(),
+                imaginary[0],
+                imaginary[1],
+                imaginary[2],
+            ],
+            dtype=np.float64,
+        )
+        return wxyz if w_first else wxyz[[1, 2, 3, 0]]
         
     def get_revolute_joint_positions(self, joint_path: str) -> np.ndarray:
         joint_prim = self._stage.GetPrimAtPath(joint_path)

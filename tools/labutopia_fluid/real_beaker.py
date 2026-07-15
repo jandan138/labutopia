@@ -894,6 +894,86 @@ def derive_cup_interior_frame(
     )
 
 
+def derive_authored_fluid_wrapper_frame(
+    stage: Any,
+    *,
+    parent_path: str,
+    visual_mesh_path: str,
+) -> CupInteriorFrame:
+    """Read the canonical interior actually used by the authored colliders."""
+    from dataclasses import replace
+
+    from pxr import Gf, Usd, UsdGeom
+
+    base = derive_cup_interior_frame(
+        stage,
+        parent_path=parent_path,
+        visual_mesh_path=visual_mesh_path,
+        calibration_points_path=None,
+    )
+    wrapper_path = f"{parent_path.rstrip('/')}/FluidSafeWrapperCanonical"
+    wrapper = stage.GetPrimAtPath(wrapper_path)
+    if not wrapper or not wrapper.IsValid():
+        raise ValueError(f"authored_fluid_wrapper_missing:{wrapper_path}")
+
+    def required(name: str) -> Any:
+        attribute = wrapper.GetAttribute(name)
+        value = attribute.Get() if attribute else None
+        if value is None:
+            raise ValueError(f"authored_fluid_wrapper_attribute_missing:{name}")
+        return value
+
+    if required("labutopia:fluidSafeWrapper") is not True:
+        raise ValueError("authored_fluid_wrapper_marker_invalid")
+    if str(required("labutopia:wrapperFrame")) != "canonical_to_parent":
+        raise ValueError("authored_fluid_wrapper_frame_invalid")
+
+    interior_radius = float(required("labutopia:panelInnerRadius"))
+    interior_floor = float(required("labutopia:bottomTopCanonicalZ"))
+    rim_height = float(required("labutopia:wallRimCanonicalZ"))
+    if (
+        not all(math.isfinite(value) for value in (interior_radius, interior_floor, rim_height))
+        or interior_radius <= 0.0
+        or rim_height <= interior_floor
+    ):
+        raise ValueError("authored_fluid_wrapper_dimensions_invalid")
+
+    world = UsdGeom.XformCache(Usd.TimeCode.Default()).GetLocalToWorldTransform(wrapper)
+    origin_world = _as_tuple(world.Transform(Gf.Vec3d(0.0, 0.0, 0.0)))
+    x_axis_world = _normalize(world.TransformDir(Gf.Vec3d(1.0, 0.0, 0.0)))
+    y_axis_world = _normalize(world.TransformDir(Gf.Vec3d(0.0, 1.0, 0.0)))
+    z_axis_world = _normalize(world.TransformDir(Gf.Vec3d(0.0, 0.0, 1.0)))
+    if (
+        abs(_dot(x_axis_world, y_axis_world)) > 1.0e-6
+        or abs(_dot(x_axis_world, z_axis_world)) > 1.0e-6
+        or abs(_dot(y_axis_world, z_axis_world)) > 1.0e-6
+        or _dot(_cross(x_axis_world, y_axis_world), z_axis_world) < 0.999999
+    ):
+        raise ValueError("authored_fluid_wrapper_basis_invalid")
+
+    measurements = dict(base._measurements)
+    measurements["authored_fluid_wrapper"] = {
+        "wrapper_path": wrapper_path,
+        "panel_inner_radius": interior_radius,
+        "bottom_top_canonical_z": interior_floor,
+        "wall_rim_canonical_z": rim_height,
+    }
+    return replace(
+        base,
+        origin_world=origin_world,
+        x_axis_world=x_axis_world,
+        y_axis_world=y_axis_world,
+        z_axis_world=z_axis_world,
+        outer_radius=max(float(base.outer_radius), interior_radius),
+        interior_radius=interior_radius,
+        interior_floor=interior_floor,
+        rim_height=rim_height,
+        calibration_source="authored_fluid_wrapper",
+        axis_alignment_dot=_dot(z_axis_world, base.z_axis_world),
+        _measurements=measurements,
+    )
+
+
 def _set_wrapper_metadata(prim: Any, name: str, type_name: Any, value: Any) -> None:
     attr = prim.GetAttribute(name)
     if not attr:
