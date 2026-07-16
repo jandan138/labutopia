@@ -81,6 +81,152 @@
     ],
     "main_risk": "Transparent grasp contact and the liquid stream are small and low-contrast in the wide camera views."
   },
+  "presentation_run": {
+    "run": {
+      "run_dir": "outputs/presentation_hd_20260716/final_viewport_full/run_evidence",
+      "raw_presentation_dir": "outputs/presentation_hd_20260716/final_viewport_full/presentation",
+      "model_video": "outputs/presentation_hd_20260716/final_viewport_full/model_video/episode_0.mp4",
+      "frame_manifest": "outputs/presentation_hd_20260716/final_viewport_full/presentation/presentation_video_frames.jsonl"
+    },
+    "episode": {
+      "id": "episode-0000",
+      "observation_count": 954,
+      "observation_index_range": [
+        0,
+        953
+      ],
+      "logical_video_fps": 30.0,
+      "video_duration_seconds": 31.8,
+      "accepted": true,
+      "controller_completed": true,
+      "task_transfer_passed": true
+    },
+    "particles": {
+      "total": 3600,
+      "source": 0,
+      "target": 3568,
+      "transit": 31,
+      "tabletop_spill": 1,
+      "below_table": 0,
+      "nonfinite": 0
+    },
+    "camera_contract": {
+      "id": "level1_pour_rgb_v4_full_action_30hz",
+      "sha256": "433993330829f0bdfe5ff98f9d2428eb34e9b16e59fde9ca9b8d9f51a75d6ccf",
+      "model_camera_resolution": [
+        256,
+        256
+      ]
+    },
+    "capture_policy": "viewport_same_observation_no_physics_step_v1",
+    "physics_unchanged_frame_count": 954,
+    "contact_grasp_claimed": false,
+    "performance": {
+      "episode_wall_seconds": 502.5763222128153,
+      "episode_wall_fps": 1.8982191516695248,
+      "presentation_capture_mean_ms": 199.812041091844,
+      "presentation_capture_median_ms": 192.02104583382607,
+      "presentation_capture_p95_ms": 239.49245363473892
+    },
+    "videos": [
+      {
+        "name": "camera_1",
+        "path": "reports/2026-07-07-labutopia-fluid-weekly/assets/pm-restructure/final-online-v4-camera-1-720p.mp4",
+        "source_prim_path": "/World/InternDataParityCamera",
+        "resolution": [
+          1280,
+          720
+        ],
+        "fps": 30.0,
+        "frame_count": 954,
+        "duration_seconds": 31.8,
+        "codec": "h264",
+        "pixel_format": "yuv420p",
+        "sha256": "f7cc58f3912fc7d024f92e992e0baf6497005487f36c8b05c7f64fe832554dcb",
+        "poster_sha256": "9befbb1163709bc6b1ce1b84576a2b2cec11d42c99065611fcbb4489637b6afb"
+      },
+      {
+        "name": "camera_2",
+        "path": "reports/2026-07-07-labutopia-fluid-weekly/assets/pm-restructure/final-online-v4-camera-2-720p.mp4",
+        "source_prim_path": "/World/InternDataParityCloseupCamera",
+        "resolution": [
+          1280,
+          720
+        ],
+        "fps": 30.0,
+        "frame_count": 954,
+        "duration_seconds": 31.8,
+        "codec": "h264",
+        "pixel_format": "yuv420p",
+        "sha256": "905dfc15e1329b61fcf46a299b2fa4b7b42e3ad14a1a080e9aa626786d70f413",
+        "poster_sha256": "5b08ea0ab331094bb6f9fc1c6426dd912802e0e2efc0fbf8f87afa5815a1676f"
+      }
+    ],
+    "visual_review": {
+      "result": "WARN",
+      "confidence": "high",
+      "review_scope": "dual-camera 720p presentation videos and report page",
+      "reviewed_observation_indices": [
+        0,
+        450,
+        580,
+        585,
+        590,
+        595,
+        600,
+        605,
+        610,
+        615,
+        620,
+        625,
+        630,
+        635,
+        640,
+        645,
+        650,
+        655,
+        675,
+        750,
+        850,
+        953
+      ],
+      "passed_checks": [
+        "Both beakers and the robot remain identifiable in both views.",
+        "The liquid stream is visible entering the target beaker.",
+        "No blank frames, unloaded assets, severe clipping, or liquid-through-table artifact is visible.",
+        "The target beaker visibly retains liquid after transfer."
+      ],
+      "main_risk": "The transparent source beaker does not read as a credible contact grasp at 720p; this run must only support the declared synthetic attachment plus physical liquid claim.",
+      "independent_reviewer": false,
+      "browser_review": {
+        "result": "PASS",
+        "viewports": [
+          [
+            1440,
+            1000
+          ],
+          [
+            1024,
+            900
+          ],
+          [
+            390,
+            844
+          ]
+        ],
+        "console_page_or_request_errors": 0,
+        "horizontal_overflow_viewports": 0,
+        "audit_path": "outputs/presentation_hd_20260716/final_viewport_full/browser_review/audit.json"
+      }
+    },
+    "sha256": {
+      "model_video": "615db6857f7562c17fdf7d6e5f7b0a1b500fb2941f8fb7710b2c9b494a1b5c5a",
+      "observations_jsonl": "c026c231e879b34394ba11fb40c3b75f3835ac2497f399bde840f8010e2f2eda",
+      "episodes_jsonl": "8042b4756e69a16d1fe75600468d6e6d39a62507078a8ffb32af17dc42d096fe",
+      "presentation_frames_jsonl": "5ceea3b9d67e4663dcb14155e1a61e2911b41292b8ec4bcd5a0234e886f41e18",
+      "dataset_h5": "4c98b539acfe1340f8b469a93c3d42ae0de934f4840a6b34a6f0feb7c164f664"
+    }
+  },
   "sha256": {
     "video_h264": "348fdeaf23d5990070adad02c7160fa346a63dcb967d2bd8e51607c3bc969cfb",
     "h5": "2ca2c26e88a3dc05ac69e518c059779117a0be4229edd7f8f0e536c1f3ca785f",

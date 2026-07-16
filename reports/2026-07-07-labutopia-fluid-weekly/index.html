@@ -175,11 +175,10 @@
       font-size: 1rem;
     }
 
-    .result-grid {
+    .presentation-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr);
-      gap: 28px;
-      align-items: start;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
     }
 
     figure {
@@ -204,6 +203,7 @@
     }
 
     .result-summary {
+      margin-top: 24px;
       border-top: 4px solid var(--success);
       background: var(--success-soft);
       padding: 22px;
@@ -220,14 +220,20 @@
       list-style: none;
     }
 
+    .result-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: #c9e2db;
+    }
+
     .result-list li {
-      padding: 12px 0;
-      border-bottom: 1px solid #c9e2db;
+      padding: 14px;
+      background: var(--success-soft);
     }
 
     .result-list li:last-child {
-      border-bottom: 0;
-      padding-bottom: 0;
+      padding-bottom: 14px;
     }
 
     .result-list strong {
@@ -238,6 +244,25 @@
     .result-list span {
       color: #3d675f;
       font-size: 0.88rem;
+    }
+
+    .model-evidence {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.25fr);
+      gap: 24px;
+      align-items: center;
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+
+    .model-evidence .media-frame video {
+      aspect-ratio: 2 / 1;
+      object-fit: contain;
+    }
+
+    .model-evidence p:last-child {
+      margin-bottom: 0;
     }
 
     .scope-note {
@@ -514,10 +539,15 @@
         grid-column: 1 / -1;
       }
 
-      .result-grid,
+      .presentation-grid,
+      .model-evidence,
       .approach,
       .next-grid {
         grid-template-columns: 1fr;
+      }
+
+      .result-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
@@ -544,6 +574,7 @@
 
       .status-grid,
       .change-grid,
+      .result-list,
       .proof-grid,
       .count-grid,
       .delivery-grid {
@@ -577,11 +608,11 @@
     <div class="container">
       <p class="report-meta">
         <span>LABUTOPIA 液体专项周报</span>
-        <span>更新：2026-07-15</span>
+        <span>更新：2026-07-16</span>
         <span>面向：产品 / 项目 / 研发</span>
       </p>
       <h1>真实烧杯在线倒液：物理、液面与模型相机同帧跑通</h1>
-      <p class="header-summary">Isaac Sim 4.1 已完成一条自然结束的专家轨迹。机械臂夹起真实烧杯后由 PhysX 计算液体运动，程序在每个 observation 内把同帧粒子重建成连续液面，再交给两台模型相机。最终结果可用于评测链路验证，不再是离线演示回放。</p>
+      <p class="header-summary">Isaac Sim 4.1 已完成一条自然结束的专家轨迹。专家控制器闭合夹爪后由已验证的合成附件带动真实烧杯，液体运动仍由 PhysX 计算；程序在每个 observation 内把同帧粒子重建成连续液面，再交给两台模型相机。最终结果可用于评测链路验证，不再是离线演示回放。</p>
     </div>
   </header>
 
@@ -589,15 +620,15 @@
     <div class="container status-grid">
       <div class="status-item">
         <strong class="status-value">3,583 / 3,600</strong>
-        <span class="status-label">结束帧位于目标杯</span>
+        <span class="status-label">原始模型证据结束帧位于目标杯</span>
       </div>
       <div class="status-item">
         <strong class="status-value">99.53%</strong>
-        <span class="status-label">专家转移率，最后 100 帧稳定</span>
+        <span class="status-label">原始模型证据转移率，最后 100 帧稳定</span>
       </div>
       <div class="status-item">
         <strong class="status-value">953 帧</strong>
-        <span class="status-label">31.8 秒完整双机位视频</span>
+        <span class="status-label">31.8 秒原始模型输入证据</span>
       </div>
       <div class="status-item">
         <strong class="status-value">3.03 FPS</strong>
@@ -609,28 +640,50 @@
   <main>
     <section id="result" class="section">
       <div class="container">
-        <h2>本周结论：模型看到的就是正在发生的物理倒液</h2>
-        <p class="section-intro">最终链路是“物理 → 表面重建 → RTX 渲染 → 模型相机”。视频每一帧都来自当前 observation 的两张 256 × 256 RGB，不是事后把另一条轨迹重新做漂亮。</p>
+        <h2>本周结论：模型看到物理倒液，高清复核也能看清</h2>
+        <p class="section-intro">最终链路仍是“物理 → 表面重建 → RTX 渲染 → 模型相机”。下方两支 1280 × 720 视频来自同配置的高清同步复跑：每个 observation 先完成原有模型输入和物理记录，再在不推进物理时间的前提下切换 Viewport 相机抓帧；它们不是把 256 × 256 画面插值放大。</p>
         <div class="result-grid">
-          <figure class="media-frame">
-            <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/final-online-v4-poster.png" aria-label="Isaac Sim 4.1 真实烧杯在线倒液双机位视频">
-              <source src="assets/pm-restructure/final-online-v4.mp4" type="video/mp4">
-            </video>
-            <figcaption>最终在线证据：31.8 秒、953 帧。可连续看到接近、夹持、抬杯、对准、倒液和回正，目标杯内液体在结束阶段保持稳定。</figcaption>
-          </figure>
+          <div class="presentation-grid" aria-label="高清同步复跑双机位">
+            <figure class="media-frame">
+              <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/final-online-v4-camera-1-720p-poster.png" aria-label="Isaac Sim 4.1 真实烧杯在线倒液高清全景视频">
+                <source src="assets/pm-restructure/final-online-v4-camera-1-720p.mp4" type="video/mp4">
+              </video>
+              <figcaption>高清同步复跑 · Camera 1 全景：1280 × 720、30 FPS、954 帧、31.8 秒。机械臂、源杯、目标杯和完整液柱同时可见。</figcaption>
+            </figure>
+            <figure class="media-frame">
+              <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/final-online-v4-camera-2-720p-poster.png" aria-label="Isaac Sim 4.1 真实烧杯在线倒液高清近景视频">
+                <source src="assets/pm-restructure/final-online-v4-camera-2-720p.mp4" type="video/mp4">
+              </video>
+              <figcaption>高清同步复跑 · Camera 2 近景：保持源杯、液柱和目标杯在同一画面，便于检查液体连续性与落点。</figcaption>
+            </figure>
+          </div>
 
           <aside class="result-summary" aria-label="最终结果摘要">
-            <h3>这次真正完成了什么</h3>
+            <h3>高清同步复跑验证了什么</h3>
             <ul class="result-list">
-              <li><strong>物理倒液</strong><span>程序只操纵机械臂和被夹持的杯子，水由 PhysX 自己计算</span></li>
-              <li><strong>在线连续液面</strong><span>3,600 个 3 mm 粒子逐帧重建为连续网格并立即进入相机</span></li>
-              <li><strong>专家通过</strong><span>结束帧 3,583 / 3,600 在目标杯，达到 99.53%</span></li>
-              <li><strong>稳定结束</strong><span>最后 100 帧的各分区计数向量不变，非有限数值始终为 0</span></li>
-              <li><strong>可训练数据</strong><span>自然结束后写出 episode_0000.h5，不再混入第二条残缺 episode</span></li>
+              <li><strong>物理倒液与在线连续液面</strong><span>源杯按现有专家附件轨迹移动，水粒子由 PhysX 自己计算</span></li>
+              <li><strong>高清复跑通过</strong><span>结束帧 3,568 / 3,600 在目标杯，任务门禁通过</span></li>
+              <li><strong>同一物理时刻</strong><span>954 / 954 帧抓取前后物理时间和仿真步数不变</span></li>
+              <li><strong>模型契约未改</strong><span>每台模型相机仍是 256 × 256 RGB，30 Hz</span></li>
+              <li><strong>浏览器可交付</strong><span>双路 H.264、yuv420p、1280 × 720，可在 Pages 直接播放</span></li>
+              <li><strong>证据可追溯</strong><span>逐帧清单、观测 JSONL、H5 与 SHA-256 均随运行保留</span></li>
             </ul>
           </aside>
         </div>
-        <p class="scope-note"><strong>结论口径：</strong>结束帧分区为源杯 0、目标杯 3,583、传输区 10、桌面 7、桌下 0、异常 0。7 个桌面粒子按真实倒液飞溅保留，没有被视觉网格删除或改判。结果针对本次场景、液量和专家动作，不代表任意容器、任意液量或任意动作都已经适配。</p>
+        <div class="model-evidence">
+          <figure class="media-frame">
+            <video controls muted preload="metadata" playsinline poster="assets/pm-restructure/final-online-v4-poster.png" aria-label="原始双路 256 像素模型输入证据">
+              <source src="assets/pm-restructure/final-online-v4.mp4" type="video/mp4">
+            </video>
+            <figcaption>原始模型输入证据：512 × 256 拼接画面，左右两半分别是两台 256 × 256 模型相机；953 帧、31.8 秒。</figcaption>
+          </figure>
+          <div>
+            <h3>为什么同时保留低分辨率视频</h3>
+            <p>它是模型实际接收内容的直接证据，不能被高清展示视频替代。原始 episode 的结束帧为源杯 0、目标杯 3,583、传输区 10、桌面 7、桌下 0、异常 0，最后 100 帧稳定。</p>
+            <p>高清同步复跑是另一条通过的 episode：源杯 0、目标杯 3,568、传输区 31、桌面 1、桌下 0、异常 0。两次运行共享配置与相机合同，但不是同一个 episode；高清复跑记录中的 <code>contact_grasp_claimed=false</code>，因此这里只声明专家合成附件带杯和液体物理成立，不声明真实接触抓取已经完成。</p>
+          </div>
+        </div>
+        <p class="scope-note"><strong>结论口径：</strong>两条证据都针对当前场景、液量和专家动作，不代表任意容器、任意液量或任意动作都已经适配。高清 Viewport 只用于人工复核，没有改变评分粒子、模型相机分辨率、控制动作或成功判定。</p>
       </div>
     </section>
 
@@ -763,6 +816,11 @@
             <p style="margin-top: 16px;">H.264、512 × 256、30 FPS、953 帧、31.8 秒；左右两半分别对应两台模型相机。</p>
           </div>
           <div class="delivery-block">
+            <h3>高清同步复跑</h3>
+            <code class="path">outputs/presentation_hd_20260716/final_viewport_full</code>
+            <p style="margin-top: 16px;">两支 H.264、1280 × 720、30 FPS、954 帧视频；同目录保存原模型拼接视频、逐帧同步记录、配置、H5 和物理证据。</p>
+          </div>
+          <div class="delivery-block">
             <h3>物理与时延证据（共享文件系统）</h3>
             <code class="path">outputs/collect/2026.07.15/20.15.27_Level1_pour_online_fluid_v2/online_fluid_evidence/observations.jsonl</code>
             <p style="margin-top: 16px;">逐帧记录粒子分区、表面哈希、相机哈希、附件状态以及重建、渲染、相机和总耗时。</p>
@@ -785,7 +843,7 @@
           </div>
           <div class="delivery-block">
             <h3>视觉审核边界</h3>
-            <p>独立审阅 10 个关键帧后给出高置信度 PASS：完整动作、连续水柱、目标杯留液、无坏帧、无漂浮杯和无明显穿模均通过。透明源杯与白色夹爪接触边缘仍不够醒目，但不是阻塞问题。</p>
+            <p>原始模型证据独立审阅 10 个关键帧后给出高置信度 PASS。新增 720p 复跑的液柱、目标杯留液、资产加载和画面连续性通过，但整体视觉结论为 WARN：透明源杯与夹爪不构成可信的真实接触抓取画面。它不阻塞当前液体物理复核，但阻塞“真实接触抓取已完成”的宣传口径。</p>
           </div>
         </div>
       </div>
@@ -829,7 +887,7 @@
 
   <footer>
     <div class="container">
-      <p>LabUtopia 液体专项 · 2026-07-15 · 页面媒体为本次最终在线 episode 的本地副本。</p>
+      <p>LabUtopia 液体专项 · 2026-07-16 · 页面同时保留原始模型输入证据与高清同步复跑。</p>
     </div>
   </footer>
 </body>

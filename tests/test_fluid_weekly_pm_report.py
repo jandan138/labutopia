@@ -18,6 +18,10 @@ FINAL_MANIFEST = (
     / "pm-restructure"
     / "final-online-v4-manifest.json"
 )
+PRESENTATION_VIDEO_NAMES = (
+    "final-online-v4-camera-1-720p.mp4",
+    "final-online-v4-camera-2-720p.mp4",
+)
 
 
 class _ReportParser(HTMLParser):
@@ -112,6 +116,10 @@ def test_weekly_report_publishes_final_online_surface_outcome() -> None:
         "视觉审核为高置信度 PASS",
         "outputs/online_fluid_eval_20260715/v16_v4_full_action_isaacsim41",
         "outputs/collect/2026.07.15/20.15.27_Level1_pour_online_fluid_v2",
+        "高清同步复跑",
+        "1280 × 720",
+        "原始模型输入证据",
+        "每台模型相机仍是 256 × 256",
     ):
         assert fact in html
 
@@ -152,6 +160,33 @@ def test_weekly_report_claims_are_bound_to_a_committed_evidence_manifest() -> No
     )
     assert manifest["visual_review"]["result"] == "PASS"
     assert manifest["visual_review"]["reviewed_frame_count"] == 10
+    presentation = manifest["presentation_run"]
+    assert presentation["episode"]["observation_count"] == 954
+    assert presentation["episode"]["observation_index_range"] == [0, 953]
+    assert presentation["episode"]["accepted"] is True
+    assert presentation["particles"] == {
+        "total": 3600,
+        "source": 0,
+        "target": 3568,
+        "transit": 31,
+        "tabletop_spill": 1,
+        "below_table": 0,
+        "nonfinite": 0,
+    }
+    assert presentation["capture_policy"] == (
+        "viewport_same_observation_no_physics_step_v1"
+    )
+    assert presentation["physics_unchanged_frame_count"] == 954
+    assert presentation["contact_grasp_claimed"] is False
+    assert [video["name"] for video in presentation["videos"]] == [
+        "camera_1",
+        "camera_2",
+    ]
+    for video in presentation["videos"]:
+        assert video["resolution"] == [1280, 720]
+        assert video["fps"] == 30.0
+        assert video["frame_count"] == 954
+        assert re.fullmatch(r"[0-9a-f]{64}", video["sha256"])
 
 
 def test_final_online_v4_release_files_are_git_tracked() -> None:
@@ -160,6 +195,14 @@ def test_final_online_v4_release_files_are_git_tracked() -> None:
         FINAL_MANIFEST.with_name("final-online-v4.mp4"),
         FINAL_MANIFEST.with_name("final-online-v4-poster.png"),
         FINAL_MANIFEST.with_name("final-online-v4-keyframes.png"),
+        *(
+            FINAL_MANIFEST.with_name(name)
+            for name in PRESENTATION_VIDEO_NAMES
+        ),
+        *(
+            FINAL_MANIFEST.with_name(name.replace(".mp4", "-poster.png"))
+            for name in PRESENTATION_VIDEO_NAMES
+        ),
     ]
     result = subprocess.run(
         [
@@ -215,6 +258,10 @@ def test_weekly_report_is_self_contained_and_media_complete() -> None:
         "assets/pm-restructure/final-online-v4.mp4",
         "assets/pm-restructure/final-online-v4-poster.png",
         "assets/pm-restructure/final-online-v4-keyframes.png",
+        "assets/pm-restructure/final-online-v4-camera-1-720p.mp4",
+        "assets/pm-restructure/final-online-v4-camera-1-720p-poster.png",
+        "assets/pm-restructure/final-online-v4-camera-2-720p.mp4",
+        "assets/pm-restructure/final-online-v4-camera-2-720p-poster.png",
     }
 
     assert expected_media.issubset(set(parser.media_sources))
@@ -236,6 +283,39 @@ def test_weekly_report_is_self_contained_and_media_complete() -> None:
 
     assert "@import" not in html
     assert not re.search(r"(?:src|poster)=[\"']/cpfs/", html)
+
+
+def test_presentation_videos_are_browser_ready_720p_h264() -> None:
+    for name in PRESENTATION_VIDEO_NAMES:
+        path = FINAL_MANIFEST.with_name(name)
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=codec_name,pix_fmt,width,height,avg_frame_rate,nb_frames",
+                "-of",
+                "json",
+                str(path),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        stream = json.loads(result.stdout)["streams"][0]
+
+        assert stream == {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "pix_fmt": "yuv420p",
+            "avg_frame_rate": "30/1",
+            "nb_frames": "954",
+        }
 
 
 def test_weekly_report_pages_media_are_not_managed_by_lfs() -> None:

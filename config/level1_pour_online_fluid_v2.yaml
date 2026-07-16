@@ -54,6 +54,11 @@ online_fluid:
   initial_render_warmup_updates: 64
   model_camera_keys: ["camera_1_rgb", "camera_2_rgb"]
   model_camera_shape: [3, 256, 256]
+  presentation_video:
+    camera_names: ["camera_1", "camera_2"]
+    resolution: [1280, 720]
+    fps: 30
+    framing: "preserve_vertical_fov"
   reset_particle_authority: "authored_world_reset"
   performance_label: "online"
 

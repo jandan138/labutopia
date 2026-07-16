@@ -61,6 +61,12 @@ def parse_args():
                        help='Stop online-fluid mode cleanly after this many model observations')
     parser.add_argument('--fluid-evidence-dir', type=str, default=None,
                        help='Optional directory that also receives exact model-camera PNG evidence')
+    parser.add_argument(
+        '--fluid-presentation-video-dir',
+        type=str,
+        default=None,
+        help='Optional directory for synchronized per-camera presentation videos',
+    )
     return parser.parse_args()
 
 # Get command line arguments
@@ -116,6 +122,7 @@ from utils.fluid_evaluation_loop import (
     online_fluid_run_complete,
     reset_task_then_controller,
 )
+from utils.presentation_video import build_isaac_presentation_video_recorder
 
 
 def _online_fluid_enabled(cfg):
@@ -153,6 +160,10 @@ def main():
         raise ValueError("max_fluid_observations_requires_online_fluid")
     if args.max_fluid_observations is not None:
         observation_limit_reached(0, args.max_fluid_observations)
+    if args.fluid_presentation_video_dir and not fluid_enabled:
+        raise ValueError("fluid_presentation_video_requires_online_fluid")
+    if args.fluid_presentation_video_dir and args.no_video:
+        raise ValueError("fluid_presentation_video_conflicts_with_no_video")
     stage = omni.usd.get_context().get_stage()
     if fluid_enabled:
         world = _create_fluid_world(cfg, stage)
@@ -230,6 +241,7 @@ def main():
     )
 
     video_writer = None
+    presentation_video_recorder = None
     fluid_loop = None
     fluid_attempt_count = 0
     fluid_observation_count = 0
@@ -247,6 +259,25 @@ def main():
     )
     if fluid_enabled:
         os.makedirs(fluid_evidence_dir, exist_ok=True)
+        if args.fluid_presentation_video_dir:
+            presentation_config = getattr(
+                cfg.online_fluid,
+                "presentation_video",
+                None,
+            )
+            if presentation_config is None:
+                raise ValueError("fluid_presentation_video_config_required")
+            presentation_video_recorder = (
+                build_isaac_presentation_video_recorder(
+                    model_camera_configs=tuple(cfg.cameras),
+                    world=world,
+                    presentation_config=presentation_config,
+                    output_dir=os.path.abspath(
+                        args.fluid_presentation_video_dir
+                    ),
+                )
+            )
+            presentation_video_recorder.initialize()
         fluid_loop = build_isaac_fluid_evaluation_loop(
             cfg=cfg,
             world=world,
@@ -270,6 +301,10 @@ def main():
                     video_writer.release()
                     video_writer = None
                 if fluid_enabled:
+                    if presentation_video_recorder is not None:
+                        presentation_video_recorder.close_attempt(
+                            status="interrupted"
+                        )
                     if online_fluid_run_complete(
                         mode=str(cfg.mode),
                         completed_attempts=fluid_attempt_count,
@@ -311,6 +346,18 @@ def main():
                 record = fluid_observation["record"]
                 fluid_observation_count += 1
                 fluid_episode_observation_count += 1
+                if presentation_video_recorder is not None:
+                    presentation_frame_start = time.perf_counter()
+                    presentation_record = dict(record)
+                    presentation_record["attempt_id"] = (
+                        f"attempt-{fluid_attempt_count:08d}"
+                    )
+                    presentation_video_recorder.capture(
+                        presentation_record
+                    )
+                    record["latency_seconds"]["presentation_video"] = (
+                        time.perf_counter() - presentation_frame_start
+                    )
                 if args.fluid_evidence_dir:
                     episode_id = record["episode_id"]
                     observation_index = int(record["observation_index"])
@@ -498,6 +545,10 @@ def main():
                             evaluation=evaluation,
                         )
                     is_success = combined["success"]
+                    if presentation_video_recorder is not None:
+                        presentation_video_recorder.close_attempt(
+                            status="accepted" if is_success else "rejected"
+                        )
                     task_controller._last_success = is_success
                     fluid_attempt_count += 1
                 if ebench_action_logger is not None:
@@ -547,6 +598,10 @@ def main():
                             video_writer = cv2.VideoWriter(output_path, fourcc, 60.0, (width, height))
                         video_writer.write(combined_img)
 
+    if video_writer is not None:
+        video_writer.release()
+    if presentation_video_recorder is not None:
+        presentation_video_recorder.close()
 
 if __name__ == "__main__":
     main()
