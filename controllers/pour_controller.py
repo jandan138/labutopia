@@ -551,17 +551,18 @@ class PourTaskController(BaseController):
                     required_height = self.initial_position[2]
                     height_reached = True
                 else:
-                    required_lift = 0.8 * self._expert_pick_lift_height_m
-                    required_height = self.initial_position[2] + required_lift
-                    gripper_z = self.state.get("gripper_position", object_pos)[2]
-                    height_reached = bool(gripper_z >= required_height)
+                    controller_done = True
+                    height_reached = True
             else:
                 required_height = self.initial_position[2] + 0.12
                 height_reached = bool(object_pos[2] > required_height)
             grasp_qualified = True
             controller_done = True
             grasp_failure_reason = None
-            if self._contact_grasp_required:
+            if self._contact_grasp_required and not (
+                self._native_expert_profile
+                and not self._contact_acquisition_probe
+            ):
                 grasp_record = self.state.get("online_fluid_grasp")
                 qualification_field = (
                     "probe_qualified_now"
