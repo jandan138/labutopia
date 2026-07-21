@@ -1420,19 +1420,22 @@ def _terminate_and_reap(process: subprocess.Popen[Any]) -> str:
 
 
 def _child_command(args: argparse.Namespace) -> list[str]:
+    bootstrap = (
+        f"import sys; sys.path.insert(0,{str(REPO_ROOT)!r});"
+        "import runpy;"
+        f"sys.argv=[{str(Path(__file__).resolve())!r},'run','--runtime-child',"
+        f"'--treatment',{args.treatment!r},"
+        f"'--config',{str(args.config)!r},"
+        f"'--out-dir',{str(args.out_dir)!r},"
+        f"'--run-nonce',{args.run_nonce!r}];"
+        f"runpy.run_path({str(Path(__file__).resolve())!r},run_name='__main__')"
+    )
     return [
         sys.executable,
-        str(Path(__file__).resolve()),
-        "run",
-        "--runtime-child",
-        "--treatment",
-        args.treatment,
-        "--config",
-        str(args.config),
-        "--out-dir",
-        str(args.out_dir),
-        "--run-nonce",
-        args.run_nonce,
+        "-I",
+        "-B",
+        "-c",
+        bootstrap,
     ]
 
 
