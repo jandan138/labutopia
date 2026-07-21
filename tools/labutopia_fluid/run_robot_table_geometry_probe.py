@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Sealed robot+table cooked-collider geometry probe.
+"""Sealed robot+table cooked-collider geometry and effective-offset probe.
 
-Loads the tabletop scene and Franka robot, creates a minimal World, then
+Loads the tabletop scene and Franka robot via USD references, then
 queries PhysX cooked-collider geometry for table, robot links, and source
-beaker. Timeline stays stopped; no step, no reset, no action.  Outputs typed
-evidence with a runtime receipt and manifest hashes.
+beaker. Also reads authored collision API offsets and attests runtime-effective
+values: where offsets are authored, the effective value equals the authored
+value (documented PhysX behaviour); where not authored, records the collider
+AABB as a geometry bound for downstream resolution. Timeline stays stopped;
+no step, no reset, no action. Outputs typed evidence with a runtime receipt
+and manifest hashes.
 """
 
 from __future__ import annotations
@@ -243,6 +247,80 @@ def _query_body_cooked_colliders(
     return result
 
 
+def _effective_offsets_for_bodies(
+    stage: Any, queries: Mapping[str, Any]
+) -> dict[str, Any]:
+    from pxr import PhysxSchema
+
+    body_offsets: dict[str, Any] = {}
+    for name, query in sorted(queries.items()):
+        if query["status"] not in {"COMPLETE", "STATIC_BODY"}:
+            body_offsets[name] = {"status": query["status"], "offsets": []}
+            continue
+        records = []
+        for collider in query.get("colliders", []):
+            path = collider["path"]
+            prim = stage.GetPrimAtPath(path)
+            if not prim or not prim.IsValid():
+                records.append({"path": path, "status": "prim_missing"})
+                continue
+            api = PhysxSchema.PhysxCollisionAPI(prim)
+            if not api:
+                records.append({"path": path, "status": "no_physx_collision_api"})
+                continue
+            contact_attr = api.GetContactOffsetAttr()
+            rest_attr = api.GetRestOffsetAttr()
+            contact_authored = bool(contact_attr and contact_attr.HasAuthoredValueOpinion())
+            rest_authored = bool(rest_attr and rest_attr.HasAuthoredValueOpinion())
+            record: dict[str, Any] = {
+                "path": path,
+                "contact_offset_authored": contact_authored,
+                "rest_offset_authored": rest_authored,
+            }
+            if contact_authored:
+                val = contact_attr.Get()
+                val_f = float(val) if val is not None and math.isfinite(float(val)) else None
+                record["contact_offset_m"] = val_f
+                record["contact_offset_authority"] = (
+                    "runtime_effective_physx_authored_v1"
+                    if val_f is not None
+                    else "physx_autocomputed_unresolved"
+                )
+            else:
+                aabb_min = collider.get("aabb_local_min_m")
+                aabb_max = collider.get("aabb_local_max_m")
+                if aabb_min and aabb_max:
+                    extents = [abs(max_val - min_val) for max_val, min_val in zip(aabb_max, aabb_min)]
+                    record["contact_offset_bounds_m"] = {
+                        "aabb_extent_max_m": float(max(extents)),
+                        "method": "collider_aabb_extent",
+                    }
+                record["contact_offset_authority"] = "physx_autocomputed_unresolved"
+            if rest_authored:
+                val = rest_attr.Get()
+                val_f = float(val) if val is not None and math.isfinite(float(val)) else None
+                record["rest_offset_m"] = val_f
+                record["rest_offset_authority"] = (
+                    "runtime_effective_physx_authored_v1"
+                    if val_f is not None
+                    else "physx_autocomputed_unresolved"
+                )
+            else:
+                record["rest_offset_authority"] = "physx_autocomputed_unresolved"
+            records.append(record)
+        all_offsets_authored = all(
+            record.get("contact_offset_authored", False)
+            and record.get("rest_offset_authored", False)
+            for record in records
+        )
+        body_offsets[name] = {
+            "status": query["status"],
+            "offsets": records,
+            "all_offsets_authored": all_offsets_authored,
+        }
+    return body_offsets
+
+
 def _runtime_receipt(experience_path: Path) -> dict[str, Any]:
     import importlib.metadata
 
@@ -358,6 +436,7 @@ def run_probe(
         )
 
         extension_closure = _runtime_extension_closure(app)
+        effective_offsets = _effective_offsets_for_bodies(stage, queries)
 
         report = {
             "authority": "robot_table_geometry_evidence_v1",
@@ -373,6 +452,7 @@ def run_probe(
                 "after_query": after_timeline,
             },
             "queries": queries,
+            "effective_offsets": effective_offsets,
             "extension_closure": extension_closure,
             "checks": {
                 "table_cooked_geometry_complete": table_complete,
