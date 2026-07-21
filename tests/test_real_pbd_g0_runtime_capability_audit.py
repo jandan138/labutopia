@@ -140,6 +140,13 @@ def _snapshot() -> dict:
             for path in collider_paths
         ],
         "profile_extension_evidence": _profile_evidence(),
+        "particle_authority": {
+            "authority": "stable_runtime_particle_ids_v1",
+            "expected_count": 0,
+            "stable_ids_sha256": None,
+            "particle_id_manifest_sha256": None,
+            "particle_ids_available": False,
+        },
         "capability_status": {
             "robot_table_cooked_geometry": "UNAVAILABLE",
             "physx_effective_offsets": "UNAVAILABLE",

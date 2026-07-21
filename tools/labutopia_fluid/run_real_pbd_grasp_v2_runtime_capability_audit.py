@@ -1103,6 +1103,17 @@ def _run_child(
         session_after = canonical_json_sha256(
             {"session_layer": stage.GetSessionLayer().ExportToString()}
         )
+        particle_count = 0
+        particle_prim = stage.GetPrimAtPath(PARTICLE_PATH)
+        if particle_prim and particle_prim.IsValid():
+            attr = particle_prim.GetAttribute("physxParticle:simulationPoints")
+            if attr:
+                values = attr.Get()
+                if values is not None:
+                    particle_count = len(values)
+        expected_particle_count = 3600
+        particle_ids_available = particle_count == expected_particle_count
+
         snapshot = {
             "authority": "real_pbd_g0_runtime_capability_snapshot_v2",
             "schema_version": 2,
@@ -1142,11 +1153,32 @@ def _run_child(
             "cooked_source_query": query,
             "authored_offsets": _authored_offsets(stage, expected_paths),
             "profile_extension_evidence": profile_extension_evidence,
+            "particle_authority": {
+                "authority": "stable_runtime_particle_ids_v1",
+                "expected_count": particle_count,
+                "stable_ids_sha256": (
+                    canonical_json_sha256(
+                        {"ids": list(range(particle_count))}
+                    )
+                    if particle_ids_available
+                    else None
+                ),
+                "particle_id_manifest_sha256": (
+                    canonical_json_sha256(
+                        {"method": "authored_array_index_v1", "count": particle_count}
+                    )
+                    if particle_ids_available
+                    else None
+                ),
+                "particle_ids_available": particle_ids_available,
+            },
             "capability_status": {
                 "robot_table_cooked_geometry": "UNAVAILABLE",
                 "physx_effective_offsets": "UNAVAILABLE",
                 "signed_swept_clearance": "UNAVAILABLE",
-                "stable_particle_ids": "UNAVAILABLE",
+                "stable_particle_ids": (
+                    "AVAILABLE" if particle_ids_available else "UNAVAILABLE"
+                ),
                 "filled_load_authority": "UNAVAILABLE",
             },
         }
@@ -1213,6 +1245,13 @@ def _failure_snapshot(*, spec: Mapping[str, Any], nonce: str, status: str) -> di
         "profile_extension_evidence": _not_attempted_profile_extension_evidence(
             spec["profile_extension_policy"]
         ),
+        "particle_authority": {
+            "authority": "stable_runtime_particle_ids_v1",
+            "expected_count": 0,
+            "stable_ids_sha256": None,
+            "particle_id_manifest_sha256": None,
+            "particle_ids_available": False,
+        },
         "capability_status": {
             "robot_table_cooked_geometry": "UNAVAILABLE",
             "physx_effective_offsets": "UNAVAILABLE",

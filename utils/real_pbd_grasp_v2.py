@@ -1078,6 +1078,7 @@ def evaluate_g0_runtime_capability_audit(*, snapshot: Mapping[str, Any]) -> dict
         "cooked_source_query",
         "authored_offsets",
         "profile_extension_evidence",
+        "particle_authority",
         "capability_status",
     }
     if (
