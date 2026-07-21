@@ -1,10 +1,12 @@
 from isaacsim.core.api.controllers import BaseController
 from isaacsim.core.api.controllers.articulation_controller import ArticulationController
 from isaacsim.core.utils.types import ArticulationAction
+from isaacsim.core.utils.stage import get_stage_units
 
 import numpy as np
 import typing
 from scipy.spatial.transform import Rotation as R
+from utils.fixed_frame_pose import FixedFramePoseAdapter
 class PourController(BaseController):
     """
     PourController implements a state machine for pouring liquid. The state transitions are as follows:
@@ -31,6 +33,8 @@ class PourController(BaseController):
         target_position_offset: typing.Optional[typing.Sequence[float]] = None,
         require_entry_orientation: bool = False,
         entry_orientation_threshold_degrees: float = 5.0,
+        control_to_end_effector_matrix_m: typing.Optional[np.ndarray] = None,
+        direct_control_frame_targets: bool = False,
     ) -> None:
         BaseController.__init__(self, name=name)
         self._event = 0
@@ -46,6 +50,12 @@ class PourController(BaseController):
                 self._events_dt = self._events_dt.tolist()
             assert len(self._events_dt) == 6, "events dt need have length of 6 or less"
         self._cspace_controller = cspace_controller
+        self._frame_adapter = FixedFramePoseAdapter(
+            control_to_end_effector_matrix_m
+        )
+        if type(direct_control_frame_targets) is not bool:
+            raise TypeError("direct_control_frame_targets_must_be_bool")
+        self._direct_control_frame_targets = direct_control_frame_targets
 
         self._pour_default_speed = - 120.0 / 180.0 * np.pi
         self._position_threshold = position_threshold
@@ -140,6 +150,20 @@ class PourController(BaseController):
                 return desired_source_position
             live_offset = source_position_value - gripper_position
             return desired_source_position - live_offset
+
+        def control_target_for(desired_end_effector_position):
+            if self._direct_control_frame_targets:
+                orientation = np.asarray(
+                    target_end_effector_orientation, dtype=np.float64
+                )
+                if orientation.shape != (4,) or not np.all(np.isfinite(orientation)):
+                    raise ValueError("target_end_effector_orientation_invalid")
+                return desired_end_effector_position.copy(), orientation.copy()
+            return self._frame_adapter.map_target_pose(
+                target_position_world=desired_end_effector_position,
+                target_orientation_wxyz=target_end_effector_orientation,
+                meters_per_stage_unit=float(get_stage_units()),
+            )
         
         if pour_speed is None:
             self._pour_speed = self._pour_default_speed
@@ -156,9 +180,12 @@ class PourController(BaseController):
         if self._event == 0:
             target_position[2] += self._random_height_1
             gripper_target = gripper_target_for(target_position)
+            control_position, control_orientation = control_target_for(
+                gripper_target
+            )
             target_joints = self._cspace_controller.forward(
-                target_end_effector_position=gripper_target,
-                target_end_effector_orientation=target_end_effector_orientation
+                target_end_effector_position=control_position,
+                target_end_effector_orientation=control_orientation,
             )
             xy_distance = np.linalg.norm(
                 tracked_position[:2] - target_position[:2]
@@ -172,9 +199,12 @@ class PourController(BaseController):
             target_position[2] += self._random_height_2 + self.object_size[2] / 2 + self.get_pickz_offset(source_name)
             target_position[1] -= self.object_size[2] / 2 - self.get_pickz_offset(source_name)
             gripper_target = gripper_target_for(target_position)
+            control_position, control_orientation = control_target_for(
+                gripper_target
+            )
             target_joints = self._cspace_controller.forward(
-                target_end_effector_position=gripper_target,
-                target_end_effector_orientation=target_end_effector_orientation
+                target_end_effector_position=control_position,
+                target_end_effector_orientation=control_orientation,
             )
             xy_distance = np.linalg.norm(
                 tracked_position[:2] - target_position[:2]
@@ -183,7 +213,7 @@ class PourController(BaseController):
             if self._require_entry_orientation:
                 orientation_error = self._quaternion_error_degrees(
                     current_end_effector_orientation,
-                    target_end_effector_orientation,
+                    control_orientation,
                 )
                 orientation_valid = orientation_error is not None
                 orientation_passed = bool(

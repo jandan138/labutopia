@@ -62,7 +62,7 @@ def test_live_contract_is_explicit_and_does_not_change_offline_contract():
     assert offline["density_gap_closing"] == "ellipsoidal_grey_closing_gravity_z"
     assert offline["mesh_smoothing"] == "guarded_uniform_taubin"
     assert live == {
-        "schema_version": 1,
+        "schema_version": 2,
         "axis_order": "XYZ",
         "field_dtype": "float32",
         "vertex_dtype": "float32",
@@ -88,7 +88,11 @@ def test_live_contract_is_explicit_and_does_not_change_offline_contract():
         "allow_degenerate": False,
         "component_filter": "none",
         "mesh_coordinate_frame": "lattice_local_translation",
-        "mesh_smoothing": "none_density_gradient_vertex_normals",
+        "mesh_smoothing": "none_area_weighted_face_normals_with_density_fallback_v1",
+        "normal_policy": "area_weighted_face_with_oriented_density_zero_sum_fallback_v1",
+        "normal_zero_sum_epsilon": 1.0e-15,
+        "normal_fallback_max_fraction": 0.01,
+        "normal_fallback_neighbor_alignment_min_dot": 0.5,
     }
 
 
@@ -243,3 +247,101 @@ def test_live_reconstruction_api_has_no_trace_cache_or_time_input():
     assert ".npz" not in source.lower()
     assert "cache" not in source.lower()
     assert "time" not in source.lower()
+
+
+def test_live_vertex_normal_fallback_is_local_and_disclosed(monkeypatch):
+    vertices = np.asarray(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ],
+        dtype=np.float32,
+    )
+    faces = np.asarray(
+        [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]], dtype=np.int32
+    )
+    density_normals = np.asarray(
+        [
+            [-1.0, -1.0, -1.0],
+            [-1.0, -1.0, -1.0],
+            [-1.0, -1.0, -1.0],
+            [-1.0, -1.0, -1.0],
+        ],
+        dtype=np.float32,
+    )
+    face_normals = np.asarray(
+        [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+        dtype=np.float64,
+    )
+    accumulated = np.asarray(
+        [
+            [0.0, 0.0, 0.0],
+            [-1.0, -1.0, -1.0],
+            [-1.0, -1.0, -1.0],
+            [-1.0, -1.0, -1.0],
+        ],
+        dtype=np.float64,
+    )
+
+    monkeypatch.setattr(
+        surface,
+        "_face_normal_sums",
+        lambda _vertices, _faces: (face_normals, accumulated),
+    )
+    normals, provenance = surface._compute_live_vertex_normals(
+        vertices,
+        faces,
+        density_normals,
+        surface.default_live_reconstruction_contract(),
+    )
+
+    assert provenance["fallback_vertex_count"] == 1
+    assert provenance["fallback_vertex_indices"] == [0]
+    assert provenance["component_orientation_signs"] == [1]
+    assert provenance["fallback_neighbor_alignment_min_dots"] == [pytest.approx(1.0)]
+    np.testing.assert_allclose(normals[0], density_normals[0] / np.linalg.norm(density_normals[0]))
+    np.testing.assert_allclose(
+        normals[1:],
+        accumulated[1:] / np.linalg.norm(accumulated[1:], axis=1)[:, None],
+    )
+
+
+def test_live_vertex_normal_fallback_rejects_invalid_density_normal(monkeypatch):
+    vertices = np.asarray(
+        [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+        dtype=np.float32,
+    )
+    faces = np.asarray(
+        [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]], dtype=np.int32
+    )
+    face_normals = np.asarray(
+        [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+        dtype=np.float64,
+    )
+    accumulated = np.asarray(
+        [
+            [0.0, 0.0, 0.0],
+            [-1.0, -1.0, -1.0],
+            [-1.0, -1.0, -1.0],
+            [-1.0, -1.0, -1.0],
+        ],
+        dtype=np.float64,
+    )
+    monkeypatch.setattr(
+        surface,
+        "_face_normal_sums",
+        lambda _vertices, _faces: (face_normals, accumulated),
+    )
+
+    with pytest.raises(ValueError, match="live_surface_density_normal_invalid"):
+        surface._compute_live_vertex_normals(
+            vertices,
+            faces,
+            np.asarray(
+                [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                dtype=np.float32,
+            ),
+            surface.default_live_reconstruction_contract(),
+        )

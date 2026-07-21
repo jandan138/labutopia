@@ -27,6 +27,9 @@ from isaacsim.sensors.physics import ContactSensor
 from isaacsim.sensors.camera import Camera
 
 from utils.object_utils import ObjectUtils
+from utils.franka_gripper_contract import (
+    gripper_pad_relative_velocities_m_s,
+)
 
 
 class Franka(Robot):
@@ -95,6 +98,7 @@ class Franka(Robot):
             if gripper_closed_position is None:
                 gripper_closed_position = np.array([0.0, 0.0])
                 
+        self._gripper_dof_names = tuple(gripper_dof_names)
         super().__init__(
             prim_path=prim_path, name=name, position=position, orientation=orientation, articulation_controller=None
         )
@@ -125,6 +129,13 @@ class Franka(Robot):
             max_threshold=10000000,
             radius=0.1,
         )
+        self.hand_contact_sensor = ContactSensor(
+            prim_path=prim_path + "/panda_hand/contact_sensor",
+            name="contact_sensor_hand",
+            min_threshold=0,
+            max_threshold=10000000,
+            radius=0.1,
+        )
         self.camera = Camera(
             prim_path=prim_path + "/panda_hand/arm_camera",
             translation=np.array([-0.2, -0, -0.02]),
@@ -141,11 +152,54 @@ class Franka(Robot):
         """Get contact sensors
         
         Returns:
-            tuple: (left_contact_sensor, right_contact_sensor)
-            left_contact_sensor: Left contact sensor
-            right_contact_sensor: Right contact sensor
+            tuple: left finger, right finger, and hand contact sensors
         """
-        return self.left_contact_sensor, self.right_contact_sensor
+        return (
+            self.left_contact_sensor,
+            self.right_contact_sensor,
+            self.hand_contact_sensor,
+        )
+
+    def initialize_contact_sensors(self, physics_dt: float) -> None:
+        if not np.isfinite(physics_dt) or physics_dt <= 0.0:
+            raise ValueError("contact_sensor_physics_dt_invalid")
+        for sensor in self.get_contact_sensor():
+            sensor.set_dt(float(physics_dt))
+            sensor.initialize()
+            sensor.add_raw_contact_data_to_frame()
+
+    def read_contact_sensor_frames(self) -> dict:
+        left, right, hand = self.get_contact_sensor()
+        return {
+            "left": dict(left.get_current_frame()),
+            "right": dict(right.get_current_frame()),
+            "hand": dict(hand.get_current_frame()),
+        }
+
+    def get_gripper_pad_relative_velocities_m_s(self) -> np.ndarray:
+        indices = tuple(int(index) for index in self.gripper.joint_dof_indicies)
+        return gripper_pad_relative_velocities_m_s(
+            joint_velocities=self.get_joint_velocities(),
+            dof_names=self.dof_names,
+            dof_types=self._articulation_view.get_dof_types(),
+            finger_joint_indices=indices,
+            finger_dof_names=self._gripper_dof_names,
+            meters_per_stage_unit=float(get_stage_units()),
+        )
+
+    def validate_gripper_dof_contract(
+        self,
+        expected_indices,
+    ) -> tuple[int, int]:
+        actual = tuple(int(index) for index in self.gripper.joint_dof_indicies)
+        expected = tuple(int(index) for index in expected_indices)
+        if actual != expected:
+            raise RuntimeError(
+                "franka_gripper_indices_mismatch:"
+                f"expected={expected}:actual={actual}"
+            )
+        self.get_gripper_pad_relative_velocities_m_s()
+        return actual
         
     @property
     def end_effector(self) -> SingleRigidPrim:

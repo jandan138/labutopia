@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import math
 import numpy as np
 import isaacsim.robot_motion.motion_generation as mg
 from isaacsim.core.prims import SingleArticulation
@@ -36,6 +37,14 @@ class RMPFlowController(mg.MotionPolicyController):
         physics_dt: float = 1.0 / 60.0,
         use_default_config: bool = True
     ) -> None:
+        if (
+            isinstance(physics_dt, bool)
+            or not isinstance(physics_dt, (int, float, np.number))
+            or not math.isfinite(float(physics_dt))
+            or float(physics_dt) <= 0.0
+        ):
+            raise ValueError("rmpflow_physics_dt_invalid")
+        self.physics_dt = float(physics_dt)
         # Choose between default config or custom config based on parameter
         if use_default_config:
             # Use system default RMPflow configuration
@@ -57,7 +66,11 @@ class RMPFlowController(mg.MotionPolicyController):
         print(self.rmp_flow_config)
         self.rmp_flow = mg.lula.motion_policies.RmpFlow(**self.rmp_flow_config)
 
-        self.articulation_rmp = mg.ArticulationMotionPolicy(robot_articulation, self.rmp_flow, physics_dt)
+        self.articulation_rmp = mg.ArticulationMotionPolicy(
+            robot_articulation,
+            self.rmp_flow,
+            self.physics_dt,
+        )
 
         mg.MotionPolicyController.__init__(self, name=name, articulation_motion_policy=self.articulation_rmp)
         (
@@ -75,14 +88,22 @@ class RMPFlowController(mg.MotionPolicyController):
             robot_position=self._default_position, robot_orientation=self._default_orientation
         )
 
-    def get_end_effector_orientation_wxyz(self) -> np.ndarray:
-        """Return the live RMP end-effector orientation in Isaac quaternion order."""
+    def get_end_effector_pose_world(self) -> tuple[np.ndarray, np.ndarray]:
+        """Return the live RMP end-effector world position and column rotation."""
         active_joint_positions = (
             self.articulation_rmp.get_active_joints_subset().get_joint_positions()
         )
         if hasattr(active_joint_positions, "detach"):
             active_joint_positions = active_joint_positions.detach().cpu().numpy()
-        _, rotation_matrix = self.rmp_flow.get_end_effector_pose(
+        position, rotation_matrix = self.rmp_flow.get_end_effector_pose(
             np.asarray(active_joint_positions, dtype=np.float64)
         )
-        return rot_matrix_to_quat(np.asarray(rotation_matrix, dtype=np.float64))
+        return (
+            np.ascontiguousarray(position, dtype=np.float64),
+            np.ascontiguousarray(rotation_matrix, dtype=np.float64),
+        )
+
+    def get_end_effector_orientation_wxyz(self) -> np.ndarray:
+        """Return the live RMP end-effector orientation in Isaac quaternion order."""
+        _, rotation_matrix = self.get_end_effector_pose_world()
+        return rot_matrix_to_quat(rotation_matrix)

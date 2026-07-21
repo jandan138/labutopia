@@ -1,0 +1,143 @@
+name: Native_expert_empty_beaker_unbound_lift_v4
+
+task_type: "pickpour"
+controller_type: "pour"
+
+mode: "collect"
+
+usd_path: "assets/chemistry_lab/lab_001/lab_001.usd"
+target_path: "/World/beaker1"
+
+max_episodes: 1
+
+diagnostic:
+  schema_version: 4
+  protocol_id: "native_expert_empty_beaker_unbound_lift_v4"
+  treatments: ["control", "instrumented"]
+  numpy_seed: 20260718
+  physics_dt: 0.016666666666666666
+  gravity_world_m_s2: [0.0, 0.0, -9.81]
+  stage_units_in_meters: 1.0
+  physics_scene_path: "/physicsScene"
+  isaac_sim_version: "4.1.0.0"
+  maximum_production_steps: 1500
+  child_timeout_seconds: 900
+  retention_steps: 60
+  rise_threshold_m: 0.12
+  stable_supported_steps: 10
+  stable_linear_speed_m_s: 0.001
+  stable_angular_speed_degrees_s: 0.1
+  stable_origin_displacement_m: 0.0001
+  post_pour_rotation_degrees: 50.0
+  initial_support_activation_max_absent_reports: 10
+  allow_active_support_pair_omission: true
+  source_reset_root_path: "/World/beaker2"
+  source_body_path: "/World/beaker2/mesh"
+  source_collider_path: "/World/beaker2/mesh"
+  support_collider_paths:
+    - "/World/Cube"
+    - "/World/table/surface/mesh"
+  left_finger_body_path: "/World/Franka/panda_leftfinger"
+  right_finger_body_path: "/World/Franka/panda_rightfinger"
+  hand_body_path: "/World/Franka/panda_hand"
+  local_franka:
+    usd_path: "assets/robots/Franka.usd"
+    sha256: "312a326e338949fb40fd245886508cc52cc47e2bebd696e99c7dcdd3d3a7f90b"
+  local_scene:
+    usd_path: "assets/chemistry_lab/lab_001_fluid_eval/dependencies/lab_001_localized_20260707/lab_001.usd"
+    sha256: "b3861b5a17945abe401062a04125969c3a63b0f8a0a5ce0026a461dbdfc935f2"
+  report_body_paths:
+    - "/World/beaker2/mesh"
+    - "/World/Franka/panda_leftfinger"
+    - "/World/Franka/panda_rightfinger"
+    - "/World/Franka/panda_hand"
+  topology:
+    normalized_height_range: [0.20, 0.80]
+    pad_edge_margin_m: 0.001
+    maximum_vertical_normal_cosine: 0.25
+    minimum_inward_face_cosine: 0.8
+  comparison_tolerances:
+    origin_m: 0.0001
+    orientation_degrees: 0.1
+    linear_velocity_m_s: 0.001
+    angular_velocity_degrees_s: 0.1
+  video:
+    sample_every_transitions: 2
+    fps: 30.0
+    camera_names: ["camera_1", "camera_2"]
+  required_implementation_files:
+    - "factories/robot_factory.py"
+    - "factories/task_factory.py"
+    - "factories/controller_factory.py"
+    - "tasks/base_task.py"
+    - "tasks/pickpour_task.py"
+    - "controllers/base_controller.py"
+    - "controllers/pour_controller.py"
+    - "controllers/atomic_actions/pick_controller.py"
+    - "controllers/atomic_actions/pour_controller.py"
+    - "controllers/robot_controllers/grapper_manager.py"
+    - "robots/franka/franka.py"
+    - "utils/object_utils.py"
+    - "data_collectors/data_collector.py"
+
+infer:
+  type: "local"
+  obs_names: {"camera_1_rgb": "camera_1_rgb", "camera_2_rgb": "camera_2_rgb"}
+  policy_model_path: ""
+  policy_config_path: ""
+  normalizer_path: ""
+  host: "127.0.0.1"
+  port: 8000
+  n_obs_steps: 1
+  timeout: 30
+  max_retries: 3
+
+task:
+  max_steps: 1500
+  left_pos:
+    x: [0.18, 0.33]
+    y: [-0.32, -0.17]
+    z: [0.87, 0.87]
+  obj_paths:
+    - path: "/World/beaker2"
+      position_range:
+        x: [0.22, 0.37]
+        y: [0.0, 0.15]
+        z: [0.87, 0.87]
+
+cameras:
+  - prim_path: "/World/Camera1"
+    name: "camera_1"
+    translation: [2, -0.1, 2]
+    resolution: [256, 256]
+    focal_length: 5
+    orientation: [0.61237, 0.35355, 0.35355, 0.61237]
+    image_type: "rgb"
+
+  - prim_path: "/World/Camera2"
+    name: "camera_2"
+    translation: [0.1, -0.1, 3]
+    resolution: [256, 256]
+    focal_length: 5
+    orientation: [0.70711, 0, 0, -0.70711]
+    image_type: "rgb"
+
+  - prim_path: "/World/Franka/panda_hand/arm_camera"
+    name: "camera_3"
+    resolution: [256, 256]
+    image_type: "rgb"
+
+robot:
+  type: "franka"
+  position: [-0.4, -0, 0.71]
+
+collector:
+  type: "default"
+  compression: gzip
+
+hydra:
+  run:
+    dir: hydra
+
+multi_run:
+  run_dir: collector

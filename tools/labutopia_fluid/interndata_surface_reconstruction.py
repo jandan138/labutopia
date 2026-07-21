@@ -105,7 +105,7 @@ def default_reconstruction_contract() -> dict[str, Any]:
 
 def default_live_reconstruction_contract() -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "axis_order": "XYZ",
         "field_dtype": "float32",
         "vertex_dtype": "float32",
@@ -131,7 +131,13 @@ def default_live_reconstruction_contract() -> dict[str, Any]:
         "allow_degenerate": False,
         "component_filter": "none",
         "mesh_coordinate_frame": "lattice_local_translation",
-        "mesh_smoothing": "none_density_gradient_vertex_normals",
+        "mesh_smoothing": "none_area_weighted_face_normals_with_density_fallback_v1",
+        "normal_policy": (
+            "area_weighted_face_with_oriented_density_zero_sum_fallback_v1"
+        ),
+        "normal_zero_sum_epsilon": 1.0e-15,
+        "normal_fallback_max_fraction": 0.01,
+        "normal_fallback_neighbor_alignment_min_dot": 0.5,
     }
 
 
@@ -915,7 +921,9 @@ def _orient_faces_outward(
     return oriented, volumes, flipped
 
 
-def _compute_vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
+def _face_normal_sums(
+    vertices: np.ndarray, faces: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     v0 = vertices[faces[:, 0]].astype(np.float64)
     v1 = vertices[faces[:, 1]].astype(np.float64)
     v2 = vertices[faces[:, 2]].astype(np.float64)
@@ -923,11 +931,165 @@ def _compute_vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarr
     normals = np.zeros((len(vertices), 3), dtype=np.float64)
     for corner in range(3):
         np.add.at(normals, faces[:, corner], face_normals)
+    return face_normals, normals
+
+
+def _compute_vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
+    _face_normals, normals = _face_normal_sums(vertices, faces)
     lengths = np.linalg.norm(normals, axis=1)
     if np.any(lengths <= 1e-15):
         raise ValueError("surface_zero_vertex_normal")
     normals /= lengths[:, None]
     return normals.astype(np.float32)
+
+
+def _canonical_array_sha256(values: Any, dtype: str) -> str:
+    array = _canonical_array(values, dtype)
+    digest = hashlib.sha256()
+    digest.update(array.dtype.str.encode("ascii") + b"\0")
+    digest.update(json.dumps(list(array.shape), separators=(",", ":")).encode("ascii"))
+    digest.update(b"\0")
+    digest.update(array.tobytes(order="C"))
+    return digest.hexdigest()
+
+
+def _compute_live_vertex_normals(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    density_normals: Any,
+    contract: Mapping[str, Any],
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Keep face normals unless a zero-sum vertex has a proven gradient fallback."""
+    try:
+        epsilon = float(contract["normal_zero_sum_epsilon"])
+        maximum_fraction = float(contract["normal_fallback_max_fraction"])
+        neighbor_alignment_minimum = float(
+            contract["normal_fallback_neighbor_alignment_min_dot"]
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("live_surface_normal_policy_invalid") from exc
+    if (
+        contract.get("normal_policy")
+        != "area_weighted_face_with_oriented_density_zero_sum_fallback_v1"
+        or not math.isfinite(epsilon)
+        or epsilon <= 0.0
+        or not math.isfinite(maximum_fraction)
+        or not 0.0 < maximum_fraction <= 1.0
+        or not math.isfinite(neighbor_alignment_minimum)
+        or not 0.0 < neighbor_alignment_minimum <= 1.0
+    ):
+        raise ValueError("live_surface_normal_policy_invalid")
+    if (
+        faces.ndim != 2
+        or faces.shape[1] != 3
+        or np.any(faces < 0)
+        or np.any(faces >= len(vertices))
+        or np.any(faces[:, 0] == faces[:, 1])
+        or np.any(faces[:, 1] == faces[:, 2])
+        or np.any(faces[:, 0] == faces[:, 2])
+    ):
+        raise ValueError("live_surface_normal_mesh_invalid")
+    incidences = np.bincount(faces.reshape(-1), minlength=len(vertices))
+    if len(incidences) != len(vertices) or np.any(incidences == 0):
+        raise ValueError("live_surface_normal_mesh_invalid")
+    face_normals, accumulated = _face_normal_sums(vertices, faces)
+    if np.any(np.linalg.norm(face_normals, axis=1) <= 0.0):
+        raise ValueError("live_surface_normal_mesh_invalid")
+    if any(_edge_diagnostics(faces)):
+        raise ValueError("live_surface_normal_mesh_invalid")
+    lengths = np.linalg.norm(accumulated, axis=1)
+    fallback_indices = np.flatnonzero(lengths <= epsilon)
+    normals = accumulated.copy()
+    nonzero = lengths > epsilon
+    normals[nonzero] /= lengths[nonzero, None]
+    component_count, labels = _vertex_components(len(vertices), faces)
+    if component_count <= 0:
+        raise ValueError("live_surface_normal_mesh_invalid")
+    edges = np.unique(
+        np.sort(
+            np.concatenate(
+                [faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]], axis=0
+            ),
+            axis=1,
+        ),
+        axis=0,
+    )
+    signs: list[int] = []
+    fallback_neighbor_alignment_min_dots: list[float] = []
+    density = None
+    if len(fallback_indices):
+        density = np.asarray(density_normals, dtype=np.float64)
+        if density.shape != normals.shape or not np.isfinite(density).all():
+            raise ValueError("live_surface_density_normal_invalid")
+        density_lengths = np.linalg.norm(density, axis=1)
+        if np.any(density_lengths <= epsilon):
+            raise ValueError("live_surface_density_normal_invalid")
+        density /= density_lengths[:, None]
+        maximum_count = max(1, int(math.floor(len(vertices) * maximum_fraction)))
+        if len(fallback_indices) > maximum_count:
+            raise ValueError("live_surface_normal_fallback_limit_exceeded")
+        for label in range(component_count):
+            anchors = (labels == label) & nonzero
+            if not np.any(anchors):
+                raise ValueError("live_surface_density_normal_orientation_invalid")
+            alignment = np.einsum(
+                "ij,ij->i", normals[anchors], density[anchors]
+            )
+            if np.all(alignment > 0.0):
+                signs.append(1)
+            elif np.all(alignment < 0.0):
+                signs.append(-1)
+            else:
+                raise ValueError("live_surface_density_normal_orientation_invalid")
+        for index in fallback_indices:
+            normals[index] = density[index] * signs[int(labels[index])]
+            adjacent = np.unique(
+                np.concatenate(
+                    [
+                        edges[edges[:, 0] == index, 1],
+                        edges[edges[:, 1] == index, 0],
+                    ]
+                )
+            )
+            trusted_neighbors = adjacent[nonzero[adjacent]]
+            if not len(trusted_neighbors):
+                raise ValueError("live_surface_density_normal_orientation_invalid")
+            minimum_alignment = float(
+                np.min(normals[index] @ normals[trusted_neighbors].T)
+            )
+            if minimum_alignment < neighbor_alignment_minimum:
+                raise ValueError("live_surface_density_normal_orientation_invalid")
+            fallback_neighbor_alignment_min_dots.append(minimum_alignment)
+    else:
+        signs = [0] * component_count
+    if (
+        not np.isfinite(normals).all()
+        or np.any(
+            np.abs(np.linalg.norm(normals, axis=1) - 1.0) > 1.0e-6
+        )
+    ):
+        raise ValueError("live_surface_normal_output_invalid")
+    fallback_list = [int(index) for index in fallback_indices]
+    provenance = {
+        "policy": str(contract["normal_policy"]),
+        "normal_zero_sum_epsilon": epsilon,
+        "normal_fallback_max_fraction": maximum_fraction,
+        "normal_fallback_neighbor_alignment_min_dot": neighbor_alignment_minimum,
+        "fallback_vertex_count": len(fallback_list),
+        "fallback_vertex_indices": fallback_list,
+        "fallback_vertex_indices_sha256": _json_sha256(fallback_list),
+        "density_normals_sha256": (
+            None
+            if density is None
+            else _canonical_array_sha256(density, "<f4")
+        ),
+        "fallback_neighbor_alignment_min_dots": (
+            fallback_neighbor_alignment_min_dots
+        ),
+        "component_count": component_count,
+        "component_orientation_signs": signs,
+    }
+    return normals.astype(np.float32), provenance
 
 
 def apply_guarded_taubin_smoothing(
@@ -1412,7 +1574,7 @@ def reconstruct_surface_live(
         )
     if float(np.max(density)) <= level:
         raise ValueError("live_surface_iso_level_above_density")
-    vertices, faces, _density_normals, _density_values = marching_cubes(
+    vertices, faces, density_normals, _density_values = marching_cubes(
         density,
         level=level,
         spacing=(
@@ -1441,7 +1603,13 @@ def reconstruct_surface_live(
             f"boundary={boundary_edges}:nonmanifold={nonmanifold_edges}:"
             f"inconsistent={inconsistent_edges}"
         )
-    normals = _compute_vertex_normals(vertices, faces)
+    normals, normal_provenance = _compute_live_vertex_normals(
+        vertices,
+        faces,
+        density_normals,
+        cfg,
+    )
+    normal_provenance["sha256"] = _json_sha256(normal_provenance)
     origin_world_m = [float(value) for value in lattice["origin_world_m"]]
     geometry_hash = _live_surface_sha256(
         origin_world_m,
@@ -1464,6 +1632,7 @@ def reconstruct_surface_live(
         "max_density": float(np.max(density)),
         "mesh_coordinate_frame": str(cfg["mesh_coordinate_frame"]),
         "mesh_smoothing": str(cfg["mesh_smoothing"]),
+        "normal_provenance": normal_provenance,
         "density_gap_closing": closing["diagnostics"],
         "bounds_min_local_m": vertices.min(axis=0).astype(float).tolist(),
         "bounds_max_local_m": vertices.max(axis=0).astype(float).tolist(),

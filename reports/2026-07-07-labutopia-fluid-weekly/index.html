@@ -796,7 +796,37 @@
           <div class="count-item"><strong>2.5 ms</strong><span>平均 USD 网格写入耗时</span></div>
           <div class="count-item"><strong>2.96 FPS</strong><span>含 episode 生命周期的整体壁钟吞吐</span></div>
         </div>
-        <p class="scope-note"><strong>性能边界：</strong>3.03 FPS 从每帧物理开始计到视频帧就绪，不含 controller step 和证据 JSONL 追加；2.96 FPS 是整个 episode 的壁钟结果。5.10 FPS 是同一次运行扣除重建与 USD 写网格后的推导值，不是另跑一条“无液体基线”，且仍包含液体物理、相机和 RTX。当前已经解决在线同帧正确性，但尚未解决壁钟 30 FPS 实时计算。</p>
+        <p class="scope-note"><strong>性能边界：</strong>3.03 FPS 从每帧物理开始计到视频帧就绪，不含 controller step 和证据 JSONL 追加；2.96 FPS 是整个 episode 的壁钟结果。5.10 FPS 是同一次运行扣除重建与 USD 写网格后的推导值，不是另跑一条“无液体基线”，且仍包含液体物理、相机和 RTX。当前已经解决在线同帧正确性，但尚未解决壁钟 30 FPS 实时计算。下方三态 A/B 实测已用真实 no-op 回调替换了 5.10 FPS 推导值。</p>
+
+        <h3 style="margin-top: 28px;">三态 A/B 实测：干场景 / 有液体无重建 / 完整链路</h3>
+        <p class="section-intro">2026-07-16 在隔离 worktree 中用同一台 RTX 4090、Isaac Sim 4.1、3600 粒子、2× 256×256 相机、headless 实测三态吞吐。场景 2 用 no-op 回调替换 Marching Cubes 重建和 USD 网格写入，保留全部粒子物理、readback、评分、渲染和相机读取。</p>
+        <div class="count-grid" aria-label="三态帧率实测">
+          <div class="count-item"><strong>19.4 FPS</strong><span>干场景（无粒子），850 步完整 pick+pour</span></div>
+          <div class="count-item"><strong>6.1 FPS</strong><span>有液体无重建，200 步 pick 阶段实测</span></div>
+          <div class="count-item"><strong>4.3 FPS</strong><span>完整 online fluid，200 步 pick 阶段实测</span></div>
+          <div class="count-item"><strong>70.3 ms</strong><span>表面重建实测均值（pick 阶段）</span></div>
+        </div>
+        <table style="width:100%; border-collapse:collapse; margin: 16px 0; font-size: 0.92rem;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--line);">
+              <th style="text-align:left; padding: 8px;">段</th>
+              <th style="text-align:right; padding: 8px;">无重建 (ms)</th>
+              <th style="text-align:right; padding: 8px;">完整 (ms)</th>
+              <th style="text-align:right; padding: 8px;">差值</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding: 6px 8px;">reconstruction</td><td style="text-align:right; padding: 6px 8px;">0.0</td><td style="text-align:right; padding: 6px 8px;">70.3</td><td style="text-align:right; padding: 6px 8px;">+70.3</td></tr>
+            <tr><td style="padding: 6px 8px;">usd_authoring</td><td style="text-align:right; padding: 6px 8px;">0.0</td><td style="text-align:right; padding: 6px 8px;">2.1</td><td style="text-align:right; padding: 6px 8px;">+2.1</td></tr>
+            <tr><td style="padding: 6px 8px;">render</td><td style="text-align:right; padding: 6px 8px;">13.0</td><td style="text-align:right; padding: 6px 8px;">12.0</td><td style="text-align:right; padding: 6px 8px;">-1.1</td></tr>
+            <tr><td style="padding: 6px 8px;">camera_read</td><td style="text-align:right; padding: 6px 8px;">3.0</td><td style="text-align:right; padding: 6px 8px;">3.0</td><td style="text-align:right; padding: 6px 8px;">-0.1</td></tr>
+            <tr style="border-top: 2px solid var(--line); font-weight: 700;">
+              <td style="padding: 6px 8px;">model_ready_total</td><td style="text-align:right; padding: 6px 8px;">163.8</td><td style="text-align:right; padding: 6px 8px;">233.3</td><td style="text-align:right; padding: 6px 8px;">+69.4</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="scope-note"><strong>实测边界：</strong>干场景 → 有粒子是断崖（19.4 → 6.1 FPS，跌 69%），代价来自 GPU PBD 粒子物理（4× 1/120s substeps）+ readback + 评分。有粒子 → 加重建只再跌 30%（6.1 → 4.3 FPS），重建本身 70.3 ms/帧。渲染和相机读取成本几乎不变（13 ms vs 12 ms，3 ms vs 3 ms），证明重建不影响渲染管线。model_ready_total 差值（69.4 ms）与 reconstruction（70.3 ms）高度吻合，确认场景 2 和 3 的唯一显著差异就是重建。</p>
+        <p class="scope-note"><strong>注意事项：</strong>场景 2/3 只跑了 200 帧 pick 阶段（倒液未开始），重建 70.3 ms 是粒子在杯中静止时的成本；倒液过程中 lattice 变大，重建可达约 131 ms（完整 episode 历史数据），完整 episode FPS 会从 4.3 降到约 3。场景 1 用不同 USD 场景和相机配置，绝对数字非严格同条件对比，但趋势和量级可靠。测量时有 embodied-eval-os 任务同时在跑，三态帧率均偏低，相对对比仍有意义。此前 manifest 中的 5.10 FPS 推导值现已由实测 6.1 FPS 验证——实测值更高，因为推导值包含了一些 no-op 能避免的额外开销。</p>
       </div>
     </section>
 
@@ -857,7 +887,7 @@
             <p>物理、抓取、在线液面和模型相机已经闭环。下一阶段不再换容器或盲目放大粒子，重点是性能拆解和有数据依据的优化。</p>
             <ul class="plain-list">
               <li>固定当前 3 mm 粒子、145 单元内壁、抓取锚点和专家轨迹作为回归基线。</li>
-              <li>补一条完全匹配的无重建 A/B 运行，分开液体物理、表面重建、RTX 和相机读取成本。</li>
+              <li><s>补一条完全匹配的无重建 A/B 运行，分开液体物理、表面重建、RTX 和相机读取成本。</s> 已于 2026-07-16 完成：干场景 19.4 FPS、有液体无重建 6.1 FPS、完整链路 4.3 FPS；粒子物理占 69% 性能下降，重建占 30%。</li>
               <li>优先优化当前平均约 131 ms 的密度场与 Marching Cubes，再评估是否需要新版 Isaac Sim 原生方案。</li>
               <li>若产品演示需要更强抓取可读性，只调整辅机位或玻璃边缘对比，不修改已通过的液体物理。</li>
             </ul>
@@ -865,7 +895,7 @@
           <aside class="next-target">
             <h3>下一阶段验收标准</h3>
             <p><strong>正确性：</strong>目标杯比例继续高于 90%，最后稳定窗口粒子守恒，异常为 0。</p>
-            <p><strong>性能：</strong>使用匹配 A/B 报告，而不是把逻辑 30 FPS 当成壁钟实时。</p>
+            <p><strong>性能：</strong>首份匹配 A/B 报告已于 2026-07-16 产出（见上方三态实测），后续优化需对照此基线，而不是把逻辑 30 FPS 当成壁钟实时。</p>
             <p><strong>兼容性：</strong>相机、物理或表面合同变化都生成新 ID，不污染已有数据。</p>
           </aside>
         </div>

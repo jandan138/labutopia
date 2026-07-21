@@ -171,6 +171,34 @@ class _FakeWorld:
         callback(rgba, rgba.nbytes, width, height, "RGBA8")
 
 
+class _FakeTimeline:
+    def __init__(self):
+        self.current_time = 2.0
+        self.playing = True
+        self.auto_updating = True
+
+    def get_current_time(self):
+        return self.current_time
+
+    def is_playing(self):
+        return self.playing
+
+    def pause(self):
+        self.playing = False
+
+    def play(self):
+        self.playing = True
+
+    def is_auto_updating(self):
+        return self.auto_updating
+
+    def set_auto_update(self, value):
+        self.auto_updating = bool(value)
+
+    def commit_silently(self):
+        return None
+
+
 def test_viewport_provider_captures_two_720p_frames_without_advancing_physics():
     specs = resolve_presentation_camera_specs(
         _model_camera_configs(),
@@ -204,6 +232,40 @@ def test_viewport_provider_captures_two_720p_frames_without_advancing_physics():
     assert viewport.camera_path == "/World/OriginalCamera"
     assert viewport.resolution == (640, 480)
     assert viewport.resolution_scale == pytest.approx(0.5)
+
+
+def test_viewport_provider_records_unchanged_timeline_receipt():
+    specs = resolve_presentation_camera_specs(
+        _model_camera_configs(),
+        _presentation_config(),
+    )
+    viewport = _FakeViewport()
+    world = _FakeWorld(viewport)
+    timeline = _FakeTimeline()
+
+    def schedule_capture(viewport_api, callback):
+        viewport_api.pending_capture = callback
+        return object()
+
+    provider = ViewportPresentationFrameProvider(
+        viewport=viewport,
+        world=world,
+        timeline=timeline,
+        schedule_capture=schedule_capture,
+        decode_buffer=lambda buffer, *_args: np.asarray(buffer)[..., :3].copy(),
+    )
+
+    _, synchronization = provider(specs)
+
+    assert synchronization["timeline_time_before"] == pytest.approx(2.0)
+    assert synchronization["timeline_time_after"] == pytest.approx(2.0)
+    assert synchronization["timeline_playing_before"] is True
+    assert synchronization["timeline_playing_after"] is True
+    assert synchronization["world_physics_unchanged"] is True
+    assert synchronization["omni_timeline_unchanged"] is True
+    assert synchronization["timeline_auto_update_before"] is True
+    assert synchronization["timeline_auto_update_after"] is True
+    assert synchronization["timeline_auto_update_disabled_for_capture"] is True
 
 
 class _FakeCamera:

@@ -109,18 +109,24 @@ from factories.controller_factory import create_controller
 from utils.isaac_fluid_evaluation import (
     author_synthetic_attachment_collision_filter,
     build_isaac_fluid_evaluation_loop,
+    configure_contact_grasp_scene,
     configure_particle_usd_readback,
+    fluid_rotation_handoff_requested,
 )
 from utils.fluid_evaluation_loop import (
     append_fluid_episode_evidence,
     append_fluid_observation_evidence,
+    execute_controlled_action_transaction,
     initialize_controller_after_task_reset,
     model_camera_video_rgb,
     observation_limit_failure_reason,
     observation_limit_reached,
+    observation_limit_termination_reason,
     observation_video_fps,
     online_fluid_run_complete,
+    prepare_fluid_evidence_directory,
     reset_task_then_controller,
+    validate_controlled_terminal_transition,
 )
 from utils.presentation_video import build_isaac_presentation_video_recorder
 
@@ -128,6 +134,28 @@ from utils.presentation_video import build_isaac_presentation_video_recorder
 def _online_fluid_enabled(cfg):
     online_fluid = getattr(cfg, "online_fluid", None)
     return bool(online_fluid and getattr(online_fluid, "enabled", False))
+
+
+def _controlled_contact_mode(cfg):
+    if not _online_fluid_enabled(cfg):
+        return False
+    fluid = cfg.online_fluid
+    return bool(
+        str(getattr(fluid, "expert_control_profile", ""))
+        == "contact_pick_v1"
+        and str(getattr(fluid, "execution_mode", ""))
+        == "contact_acquisition_probe_v1"
+    )
+
+
+def _close_controlled_runtime(task_controller, simulation_app):
+    try:
+        task_controller.close()
+    finally:
+        try:
+            simulation_app.close()
+        finally:
+            cv2.destroyAllWindows()
 
 
 def _create_fluid_world(cfg, stage):
@@ -152,10 +180,17 @@ def _create_fluid_world(cfg, stage):
 def main():
     hydra.initialize(config_path=args.config_dir, job_name=args.config_name)
     cfg = hydra.compose(config_name=args.config_name)
+    fluid_enabled = _online_fluid_enabled(cfg)
+    controlled_contact_loop_mode = _controlled_contact_mode(cfg)
+    fluid_evidence_dir = os.path.abspath(
+        args.fluid_evidence_dir
+        or os.path.join(cfg.multi_run.run_dir, "online_fluid_evidence")
+    )
+    if fluid_enabled:
+        prepare_fluid_evidence_directory(fluid_evidence_dir)
     os.makedirs(cfg.multi_run.run_dir, exist_ok=True)
     OmegaConf.save(cfg, cfg.multi_run.run_dir + "/config.yaml")
 
-    fluid_enabled = _online_fluid_enabled(cfg)
     if args.max_fluid_observations is not None and not fluid_enabled:
         raise ValueError("max_fluid_observations_requires_online_fluid")
     if args.max_fluid_observations is not None:
@@ -203,20 +238,23 @@ def main():
     robot = create_robot(cfg.robot.type, **robot_kwargs)
     if fluid_enabled:
         source_ownership = str(cfg.online_fluid.source_ownership)
-        if source_ownership != "gripper_attached_kinematic_vessel":
+        if source_ownership == "gripper_attached_kinematic_vessel":
+            collision_filter_root = getattr(
+                cfg.online_fluid,
+                "synthetic_attachment_collision_filter_root_path",
+                None,
+            )
+            if collision_filter_root is not None:
+                author_synthetic_attachment_collision_filter(
+                    stage,
+                    source_body_path=str(cfg.online_fluid.source_actor_path),
+                    robot_root_path=str(collision_filter_root),
+                )
+        elif source_ownership == "contact_friction_dynamic_v1":
+            configure_contact_grasp_scene(stage, cfg.online_fluid)
+        else:
             raise ValueError(
                 f"online_fluid_source_ownership_unsupported:{source_ownership}"
-            )
-        collision_filter_root = getattr(
-            cfg.online_fluid,
-            "synthetic_attachment_collision_filter_root_path",
-            None,
-        )
-        if collision_filter_root is not None:
-            author_synthetic_attachment_collision_filter(
-                stage,
-                source_body_path=str(cfg.online_fluid.source_actor_path),
-                robot_root_path=str(collision_filter_root),
             )
     if not fluid_enabled:
         add_reference_to_stage(usd_path=os.path.abspath(cfg.usd_path), prim_path="/World")
@@ -247,10 +285,6 @@ def main():
     fluid_observation_count = 0
     fluid_episode_observation_count = 0
     fluid_episode_wall_start = None
-    fluid_evidence_dir = os.path.abspath(
-        args.fluid_evidence_dir
-        or os.path.join(cfg.multi_run.run_dir, "online_fluid_evidence")
-    )
     fluid_evidence_path = os.path.join(
         fluid_evidence_dir, "observations.jsonl"
     )
@@ -258,7 +292,6 @@ def main():
         fluid_evidence_dir, "episodes.jsonl"
     )
     if fluid_enabled:
-        os.makedirs(fluid_evidence_dir, exist_ok=True)
         if args.fluid_presentation_video_dir:
             presentation_config = getattr(
                 cfg.online_fluid,
@@ -295,8 +328,20 @@ def main():
         if world.is_stopped():
             task_controller.reset_needed = True
             
-        if world.is_playing():
-            if task_controller.need_reset() or task.need_reset():
+        if world.is_playing() or (
+            controlled_contact_loop_mode
+            and fluid_loop is not None
+            and fluid_loop.controlled_loop_active
+        ):
+            if (
+                task_controller.need_reset() or task.need_reset()
+            ) and not (
+                controlled_contact_loop_mode
+                and (
+                    fluid_loop.controlled_terminal_pending
+                    or fluid_loop.controlled_interval_pending
+                )
+            ):
                 if video_writer is not None:
                     video_writer.release()
                     video_writer = None
@@ -305,6 +350,31 @@ def main():
                         presentation_video_recorder.close_attempt(
                             status="interrupted"
                         )
+                    if not fluid_loop.attempt_sealed:
+                        interrupted = {
+                            **fluid_loop.seal_attempt(
+                                status="interrupted",
+                                reason="task_or_controller_reset_before_terminal",
+                            ),
+                            "controller_completed": False,
+                            "expert_episode_accepted": False,
+                            "success": False,
+                            "metric_policy_id": str(
+                                cfg.online_fluid.metric_policy_id
+                            ),
+                            "camera_contract": dict(fluid_loop.camera_contract),
+                            "termination": {
+                                "reason": "task_or_controller_reset",
+                                "observation_count": int(
+                                    fluid_episode_observation_count
+                                ),
+                            },
+                        }
+                        append_fluid_episode_evidence(
+                            fluid_episode_evidence_path,
+                            interrupted,
+                        )
+                        fluid_attempt_count += 1
                     if online_fluid_run_complete(
                         mode=str(cfg.mode),
                         completed_attempts=fluid_attempt_count,
@@ -341,31 +411,271 @@ def main():
 
             if fluid_enabled:
                 fluid_artifact_frame_start = time.perf_counter()
-                fluid_observation = fluid_loop.observe()
+                try:
+                    fluid_observation = fluid_loop.observe()
+                except Exception:
+                    if controlled_contact_loop_mode:
+                        _close_controlled_runtime(
+                            task_controller,
+                            simulation_app,
+                        )
+                    raise
+                if (
+                    fluid_observation.get("kind")
+                    == "CONTROLLED_TERMINAL_TRANSITION"
+                ):
+                    try:
+                        terminal = fluid_observation.get("terminal")
+                        if not isinstance(terminal, dict):
+                            raise RuntimeError(
+                                "controlled_terminal_transition_record_required"
+                            )
+                        terminal_kind = terminal.get("terminal_kind")
+                        if (
+                            not isinstance(terminal_kind, str)
+                            or not terminal_kind
+                        ):
+                            raise RuntimeError(
+                                "controlled_terminal_transition_kind_required"
+                            )
+                        terminal_validation = (
+                            validate_controlled_terminal_transition(terminal)
+                        )
+                        requires_world_termination = terminal_validation[
+                            "requires_world_termination"
+                        ]
+                        world_counter = terminal.get("world_counter_after")
+                        if not isinstance(world_counter, dict):
+                            raise RuntimeError(
+                                "controlled_terminal_world_counter_required"
+                            )
+                        abort_reason = terminal.get("failure_reason")
+                        if not isinstance(abort_reason, str) or not abort_reason:
+                            abort_reason = terminal_kind
+                        current_step = world.current_time_step_index
+                        current_step = (
+                            current_step()
+                            if callable(current_step)
+                            else current_step
+                        )
+                        current_time = world.current_time
+                        current_time = (
+                            current_time()
+                            if callable(current_time)
+                            else current_time
+                        )
+                        if (
+                            int(current_step)
+                            != world_counter.get("physics_step")
+                            or float(current_time)
+                            != world_counter.get("simulation_time")
+                            or world.is_playing()
+                        ):
+                            raise RuntimeError(
+                                "controlled_terminal_cleanup_advanced_world"
+                            )
+                    except Exception:
+                        _close_controlled_runtime(
+                            task_controller,
+                            simulation_app,
+                        )
+                        raise
+                    if requires_world_termination:
+                        try:
+                            if video_writer is not None:
+                                video_writer.release()
+                                video_writer = None
+                            if presentation_video_recorder is not None:
+                                presentation_video_recorder.close_attempt(
+                                    status="rejected"
+                                )
+                            terminal_evidence = {
+                                **fluid_loop.seal_attempt(
+                                    status="failed",
+                                    reason=terminal_kind,
+                                ),
+                                "controller_completed": False,
+                                "expert_episode_accepted": False,
+                                "success": False,
+                                "metric_policy_id": str(
+                                    cfg.online_fluid.metric_policy_id
+                                ),
+                                "camera_contract": dict(
+                                    fluid_loop.camera_contract
+                                ),
+                                "controlled_terminal_transition": terminal,
+                                "attachment": dict(
+                                    fluid_observation.get("attachment", {})
+                                ),
+                                "termination": {
+                                    "reason": "controlled_terminal_transition",
+                                    "terminal_kind": terminal_kind,
+                                    "observation_count": int(
+                                        fluid_episode_observation_count
+                                    ),
+                                    "world_reuse_forbidden": True,
+                                },
+                            }
+                            append_fluid_episode_evidence(
+                                fluid_episode_evidence_path,
+                                terminal_evidence,
+                            )
+                            if ebench_action_logger is not None:
+                                ebench_action_logger.discard_episode(
+                                    success_observed=False,
+                                    reason="controlled_terminal_transition",
+                                )
+                            cleanup_step = world.current_time_step_index
+                            cleanup_step = (
+                                cleanup_step()
+                                if callable(cleanup_step)
+                                else cleanup_step
+                            )
+                            cleanup_time = world.current_time
+                            cleanup_time = (
+                                cleanup_time()
+                                if callable(cleanup_time)
+                                else cleanup_time
+                            )
+                            if (
+                                int(cleanup_step)
+                                != world_counter.get("physics_step")
+                                or float(cleanup_time)
+                                != world_counter.get("simulation_time")
+                                or world.is_playing()
+                            ):
+                                raise RuntimeError(
+                                    "controlled_terminal_cleanup_advanced_world"
+                                )
+                        finally:
+                            _close_controlled_runtime(
+                                task_controller,
+                                simulation_app,
+                            )
+                        break
+                    try:
+                        abort_result = task_controller.abort_online_fluid_episode(
+                            f"controlled_terminal:{terminal_kind}:{abort_reason}"
+                        )
+                        if abort_result != (None, True, False):
+                            raise RuntimeError(
+                                "controlled_terminal_abort_result_invalid"
+                            )
+                        post_abort_step = world.current_time_step_index
+                        post_abort_step = (
+                            post_abort_step()
+                            if callable(post_abort_step)
+                            else post_abort_step
+                        )
+                        post_abort_time = world.current_time
+                        post_abort_time = (
+                            post_abort_time()
+                            if callable(post_abort_time)
+                            else post_abort_time
+                        )
+                        if (
+                            int(post_abort_step)
+                            != world_counter.get("physics_step")
+                            or float(post_abort_time)
+                            != world_counter.get("simulation_time")
+                            or world.is_playing()
+                        ):
+                            raise RuntimeError(
+                                "controlled_terminal_abort_advanced_world"
+                            )
+                    except Exception:
+                        _close_controlled_runtime(
+                            task_controller,
+                            simulation_app,
+                        )
+                        raise
+                    if video_writer is not None:
+                        video_writer.release()
+                        video_writer = None
+                    if presentation_video_recorder is not None:
+                        presentation_video_recorder.close_attempt(
+                            status="rejected"
+                        )
+                    terminal_evidence = {
+                        **fluid_loop.seal_attempt(
+                            status="failed",
+                            reason=terminal_kind,
+                        ),
+                        "controller_completed": False,
+                        "expert_episode_accepted": False,
+                        "success": False,
+                        "metric_policy_id": str(
+                            cfg.online_fluid.metric_policy_id
+                        ),
+                        "camera_contract": dict(fluid_loop.camera_contract),
+                        "controlled_terminal_transition": terminal,
+                        "attachment": dict(
+                            fluid_observation.get("attachment", {})
+                        ),
+                        "termination": {
+                            "reason": "controlled_terminal_transition",
+                            "terminal_kind": terminal_kind,
+                            "observation_count": int(
+                                fluid_episode_observation_count
+                            ),
+                        },
+                    }
+                    append_fluid_episode_evidence(
+                        fluid_episode_evidence_path,
+                        terminal_evidence,
+                    )
+                    if ebench_action_logger is not None:
+                        ebench_action_logger.discard_episode(
+                            success_observed=False,
+                            reason="controlled_terminal_transition",
+                        )
+                    task_controller.print_failure_reason()
+                    task.on_task_complete(False)
+                    fluid_attempt_count += 1
+                    if online_fluid_run_complete(
+                        mode=str(cfg.mode),
+                        completed_attempts=fluid_attempt_count,
+                        accepted_episodes=task_controller.episode_num(),
+                        maximum_episodes=int(cfg.max_episodes),
+                        maximum_attempts=int(cfg.online_fluid.max_attempts),
+                    ):
+                        task_controller.close()
+                        simulation_app.close()
+                        cv2.destroyAllWindows()
+                        break
+                    reset_task_then_controller(task, task_controller)
+                    fluid_loop = build_isaac_fluid_evaluation_loop(
+                        cfg=cfg,
+                        world=world,
+                        task=task,
+                        stage=stage,
+                    )
+                    fluid_loop.reset_episode(
+                        f"episode-{fluid_attempt_count:04d}"
+                    )
+                    fluid_episode_observation_count = 0
+                    fluid_episode_wall_start = time.perf_counter()
+                    continue
                 state = fluid_observation["state"]
                 record = fluid_observation["record"]
                 fluid_observation_count += 1
                 fluid_episode_observation_count += 1
                 if presentation_video_recorder is not None:
                     presentation_frame_start = time.perf_counter()
-                    presentation_record = dict(record)
-                    presentation_record["attempt_id"] = (
-                        f"attempt-{fluid_attempt_count:08d}"
-                    )
-                    presentation_video_recorder.capture(
-                        presentation_record
-                    )
+                    presentation_video_recorder.capture(record)
                     record["latency_seconds"]["presentation_video"] = (
                         time.perf_counter() - presentation_frame_start
                     )
                 if args.fluid_evidence_dir:
+                    attempt_id = record["attempt_id"]
                     episode_id = record["episode_id"]
                     observation_index = int(record["observation_index"])
                     for camera_name, camera_array in state["camera_data"].items():
                         rgb = np.asarray(camera_array).transpose(1, 2, 0)
                         bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
                         filename = (
-                            f"{episode_id}_observation-{observation_index:04d}_"
+                            f"{attempt_id}_{episode_id}_"
+                            f"observation-{observation_index:04d}_"
                             f"{camera_name}.png"
                         )
                         output_path = os.path.join(fluid_evidence_dir, filename)
@@ -428,8 +738,37 @@ def main():
             if state is None:
                 continue
 
-            action, done, is_success = task_controller.step(state)
-            limit_failure_reason = (
+            controlled_contact_mode = controlled_contact_loop_mode
+            if controlled_contact_mode:
+                try:
+                    fluid_loop.maybe_attach(task_controller, state)
+                    if fluid_loop.mechanical_attachment_used:
+                        raise RuntimeError(
+                            "controlled_contact_attachment_forbidden"
+                        )
+                except Exception as exc:
+                    if not fluid_loop.controlled_terminal_pending:
+                        fluid_loop.queue_controlled_prephysics_failure(
+                            stage="preaction_authority",
+                            error=exc,
+                            application_outcome="not_invoked",
+                        )
+                    continue
+                if fluid_loop.controlled_terminal_pending:
+                    continue
+            try:
+                action, done, is_success = task_controller.step(state)
+            except Exception as exc:
+                if not controlled_contact_mode:
+                    raise
+                fluid_loop.queue_controlled_prephysics_failure(
+                    stage="controller_step",
+                    error=exc,
+                    application_outcome="not_invoked",
+                )
+                continue
+            controlled_action_precommitted = False
+            fluid_limit_boundary_reason = (
                 observation_limit_failure_reason(
                     per_episode_limit_hit=fluid_episode_limit_hit,
                     global_limit_hit=fluid_global_limit_hit,
@@ -437,13 +776,77 @@ def main():
                 if fluid_enabled
                 else None
             )
-            if fluid_enabled and limit_failure_reason is not None and not done:
+            fluid_limit_termination_reason = (
+                observation_limit_termination_reason(
+                    controller_done=bool(done),
+                    per_episode_limit_hit=fluid_episode_limit_hit,
+                    global_limit_hit=fluid_global_limit_hit,
+                )
+                if fluid_enabled
+                else None
+            )
+            if fluid_limit_termination_reason is not None:
                 action, done, is_success = (
                     task_controller.abort_online_fluid_episode(
-                        limit_failure_reason
+                        fluid_limit_termination_reason
                     )
                 )
-            if action is not None:
+            if (
+                fluid_enabled
+                and not done
+                and fluid_rotation_handoff_requested(task_controller)
+            ):
+                fluid_loop.mark_pour_started()
+            if controlled_contact_mode and done and action is not None:
+                fluid_loop.queue_controlled_prephysics_failure(
+                    stage="proposal_validation",
+                    error=RuntimeError(
+                        "controlled_contact_terminal_action_forbidden"
+                    ),
+                    application_outcome="not_invoked",
+                )
+                continue
+            if controlled_contact_mode and not done:
+                if action is None:
+                    fluid_loop.queue_controlled_prephysics_failure(
+                        stage="proposal_validation",
+                        error=RuntimeError(
+                            "controlled_contact_nonterminal_action_missing"
+                        ),
+                        application_outcome="not_invoked",
+                    )
+                    continue
+                controlled_transaction = (
+                    execute_controlled_action_transaction(
+                        fluid_loop=fluid_loop,
+                        action=action,
+                        read_action_context=lambda: (
+                            task_controller.controlled_contact_action_context()
+                        ),
+                        apply_action=lambda value: (
+                            robot.get_articulation_controller().apply_action(
+                                value
+                            )
+                        ),
+                        log_action=(
+                            None
+                            if ebench_action_logger is None
+                            else lambda value: ebench_action_logger.log_action(
+                                value,
+                                current_joint_positions=state[
+                                    "joint_positions"
+                                ],
+                                labutopia_step_index=getattr(
+                                    task, "frame_idx", None
+                                ),
+                            )
+                        ),
+                    )
+                )
+                if controlled_transaction is None:
+                    continue
+                controlled_action_precommitted = True
+            if action is not None and not controlled_action_precommitted:
                 if ebench_action_logger is not None:
                     ebench_action_logger.log_action(
                         action,
@@ -459,8 +862,23 @@ def main():
                     fluid_episode_wall_seconds = (
                         time.perf_counter() - fluid_episode_wall_start
                     )
+                    acceptance_mode = str(
+                        getattr(
+                            cfg.online_fluid,
+                            "execution_mode",
+                            "production_pour_v1",
+                        )
+                    )
+                    control_evidence = (
+                        task_controller.online_fluid_control_evidence()
+                    )
+                    terminal_phase = task_controller.current_phase.name
                     combined = fluid_loop.finalize_episode(
-                        controller_completed=bool(is_success)
+                        controller_completed=bool(is_success),
+                        acceptance_mode=acceptance_mode,
+                        controller_evidence=control_evidence,
+                        terminal_phase=terminal_phase,
+                        terminal_action=action,
                     )
                     record = fluid_observation["record"]
                     score = fluid_observation["score"]
@@ -473,7 +891,7 @@ def main():
                         "camera_contract": dict(
                             fluid_loop.camera_contract
                         ),
-                        "control": task_controller.online_fluid_control_evidence(),
+                        "control": control_evidence,
                         "termination": {
                             "max_observations_per_episode_reached": bool(
                                 fluid_episode_limit_hit
@@ -481,6 +899,18 @@ def main():
                             "max_fluid_observations_reached": bool(
                                 fluid_global_limit_hit
                             ),
+                            "observation_limit_boundary": {
+                                "reached": (
+                                    fluid_limit_boundary_reason is not None
+                                ),
+                                "reason": fluid_limit_boundary_reason,
+                            },
+                            "observation_limit_termination": {
+                                "terminated": (
+                                    fluid_limit_termination_reason is not None
+                                ),
+                                "reason": fluid_limit_termination_reason,
+                            },
                             "observation_count": int(
                                 fluid_episode_observation_count
                             ),
@@ -544,7 +974,11 @@ def main():
                             final_joint_positions=state["joint_positions"][:-1],
                             evaluation=evaluation,
                         )
-                    is_success = combined["success"]
+                    is_success = (
+                        combined["expert_episode_accepted"]
+                        if acceptance_mode == "production_pour_v1"
+                        else combined["success"]
+                    )
                     if presentation_video_recorder is not None:
                         presentation_video_recorder.close_attempt(
                             status="accepted" if is_success else "rejected"
@@ -567,10 +1001,35 @@ def main():
                     simulation_app.close()
                     cv2.destroyAllWindows()
                     break
+                if fluid_enabled and controlled_contact_mode:
+                    if online_fluid_run_complete(
+                        mode=str(cfg.mode),
+                        completed_attempts=fluid_attempt_count,
+                        accepted_episodes=task_controller.episode_num(),
+                        maximum_episodes=int(cfg.max_episodes),
+                        maximum_attempts=int(cfg.online_fluid.max_attempts),
+                    ):
+                        task_controller.close()
+                        simulation_app.close()
+                        cv2.destroyAllWindows()
+                        break
+                    reset_task_then_controller(task, task_controller)
+                    fluid_loop = build_isaac_fluid_evaluation_loop(
+                        cfg=cfg,
+                        world=world,
+                        task=task,
+                        stage=stage,
+                    )
+                    fluid_loop.reset_episode(
+                        f"episode-{fluid_attempt_count:04d}"
+                    )
+                    fluid_episode_observation_count = 0
+                    fluid_episode_wall_start = time.perf_counter()
                 continue
             if fluid_enabled:
-                fluid_loop.maybe_attach(task_controller, state)
-                fluid_loop.commit_action(action)
+                if not controlled_action_precommitted:
+                    fluid_loop.maybe_attach(task_controller, state)
+                    fluid_loop.commit_action(action)
 
             if (save_video or show_video) and not fluid_enabled:
                 camera_images = []

@@ -7,6 +7,7 @@ from controllers.robot_controllers.trajectory_controller import FrankaTrajectory
 from factories.collector_factory import create_collector
 from utils.object_utils import ObjectUtils
 from robots.franka.rmpflow_controller import RMPFlowController as FrankaRMPFlowController
+from utils.fluid_evaluation_loop import fluid_control_dt
 
 class BaseController(ABC):
     """Base class for all controllers in the chemistry lab simulator.
@@ -36,10 +37,22 @@ class BaseController(ABC):
         self.check_success_counter = 0
         self.rmp_controller = None
         self._last_failure_reason = ""
+        online_fluid = getattr(cfg, "online_fluid", None)
+        if online_fluid and getattr(online_fluid, "enabled", False):
+            self.control_dt = fluid_control_dt(
+                physics_dt=float(online_fluid.physics_dt),
+                physics_substeps_per_observation=int(
+                    online_fluid.physics_substeps_per_observation
+                ),
+                rendering_dt=float(online_fluid.rendering_dt),
+            )
+        else:
+            self.control_dt = 1.0 / 60.0
         
         self.rmp_controller = FrankaRMPFlowController(
             name="target_follower_controller",
             robot_articulation=robot,
+            physics_dt=self.control_dt,
             use_default_config=use_default_config
         )
 

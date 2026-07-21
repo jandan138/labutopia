@@ -10,6 +10,7 @@ max_episodes: 1
 
 online_fluid:
   enabled: true
+  expert_control_profile: "stabilized_online_fluid_v1"
   expert_pour_height_offsets_m: [0.4, 0.14]
   expert_pour_target_offset_m: [0.0, 0.05, 0.0]
   expert_pour_entry_orientation_required: true

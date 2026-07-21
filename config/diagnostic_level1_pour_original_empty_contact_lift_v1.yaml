@@ -1,0 +1,158 @@
+name: Diagnostic_level1_pour_original_empty_contact_lift_v1
+
+task_type: "pickpour"
+controller_type: "pour"
+
+mode: "collect"
+
+usd_path: "assets/chemistry_lab/lab_001/lab_001.usd"
+target_path: "/World/beaker1"
+
+max_episodes: 1
+
+diagnostic:
+  schema_version: 1
+  protocol_id: "original_empty_beaker_contact_lift_v1"
+  treatments: ["control", "instrumented_original", "zero_friction_ablation"]
+  numpy_seed: 20260717
+  physics_dt: 0.016666666666666666
+  physics_dt_tolerance_s: 1.0e-12
+  gravity_world_m_s2: [0.0, 0.0, -9.81]
+  gravity_tolerance_m_s2: 1.0e-6
+  stage_units_in_meters: 1.0
+  physics_context_path: "/physicsScene"
+  physics_scene_paths_in_traversal_order: ["/physicsScene", "/World/PhysicsScene"]
+  maximum_production_steps: 1500
+  child_timeout_seconds: 240
+  retention_steps: 60
+  source_reset_root_path: "/World/beaker2"
+  source_body_path: "/World/beaker2/mesh"
+  source_collider_path: "/World/beaker2/mesh"
+  source_mass_kg: 0.019999999552965164
+  source_mass_tolerance_kg: 1.0e-9
+  support_collider_path: "/World/Cube"
+  left_finger_body_path: "/World/Franka/panda_leftfinger"
+  right_finger_body_path: "/World/Franka/panda_rightfinger"
+  hand_body_path: "/World/Franka/panda_hand"
+  tool_path: "/World/Franka/panda_hand/tool_center"
+  native_finger_joint_target_m: 0.028
+  native_lift_target_m: 0.5
+  rise_threshold_m: 0.12
+  maximum_pre_lift_rise_m: 0.002
+  maximum_ablation_rise_m: 0.02
+  minimum_friction_anchor_norm_n_s: 1.0e-5
+  maximum_zero_friction_anchor_norm_n_s: 1.0e-8
+  maximum_source_tool_drift_translation_m: 0.005
+  maximum_source_tool_drift_rotation_degrees: 5.0
+  maximum_terminal_source_speed_m_s: 0.02
+  maximum_terminal_source_angular_speed_degrees_s: 5.0
+  settled_window_steps: 10
+  settled_source_linear_speed_m_s: 0.001
+  settled_source_angular_speed_degrees_s: 0.1
+  settled_source_com_displacement_m: 0.0001
+  maximum_finger_aperture_rate_m_s: 0.01
+  geometry:
+    normalized_height_range: [0.20, 0.80]
+    finger_pad_edge_clearance_m: 0.001
+    minimum_source_side_half_width_fraction: 0.25
+    minimum_inward_normal_cosine: 0.8
+    maximum_opposing_normal_dot: -0.8
+    maximum_vertical_normal_cosine: 0.25
+    minimum_vessel_axis_antigravity_cosine: 0.95
+    minimum_inner_face_alignment_cosine: 0.8
+  comparison_tolerances:
+    joint_position_rad: 1.0e-6
+    joint_velocity_rad_s: 1.0e-5
+    pose_position_m: 0.0001
+    pose_rotation_degrees: 0.1
+    linear_velocity_m_s: 0.001
+    angular_velocity_degrees_s: 0.1
+    contact_point_distance_m: 0.001
+    contact_normal_angle_degrees: 0.1
+    separation_m: 0.0001
+    impulse_n_s: 1.0e-5
+  contact_orientation_calibration:
+    required: true
+    impulse_actor: "runtime_calibration_required"
+    normal_direction: "runtime_calibration_required"
+  material_combine_priority: ["average", "min", "multiply", "max"]
+  zero_friction_material_path: "/World/OriginalEmptyContactLiftProbe/ZeroFrictionMaterial"
+  required_runtime_authority:
+    live_solver_pair_materials: true
+    contact_cache_and_warm_start: true
+    collision_eligible_pair_matrix: true
+    actor_order_orientation_calibration: true
+  required_implementation_files:
+    - "factories/robot_factory.py"
+    - "factories/task_factory.py"
+    - "factories/controller_factory.py"
+    - "tasks/base_task.py"
+    - "tasks/pickpour_task.py"
+    - "controllers/base_controller.py"
+    - "controllers/pour_controller.py"
+    - "controllers/atomic_actions/pick_controller.py"
+    - "robots/franka/franka.py"
+    - "robots/franka/rmpflow_controller.py"
+    - "utils/object_utils.py"
+
+infer:
+  type: "local"
+  obs_names: {"camera_1_rgb": "camera_1_rgb", "camera_2_rgb": "camera_2_rgb"}
+  policy_model_path: ""
+  policy_config_path: ""
+  normalizer_path: ""
+  host: "127.0.0.1"
+  port: 8000
+  n_obs_steps: 1
+  timeout: 30
+  max_retries: 3
+
+task:
+  max_steps: 1500
+  left_pos:
+    x: [0.18, 0.33]
+    y: [-0.32, -0.17]
+    z: [0.87, 0.87]
+  obj_paths:
+    - path: "/World/beaker2"
+      position_range:
+        x: [0.22, 0.37]
+        y: [0.0, 0.15]
+        z: [0.87, 0.87]
+
+cameras:
+  - prim_path: "/World/Camera1"
+    name: "camera_1"
+    translation: [2, -0.1, 2]
+    resolution: [256, 256]
+    focal_length: 5
+    orientation: [0.61237, 0.35355, 0.35355, 0.61237]
+    image_type: "rgb"
+
+  - prim_path: "/World/Camera2"
+    name: "camera_2"
+    translation: [0.1, -0.1, 3]
+    resolution: [256, 256]
+    focal_length: 5
+    orientation: [0.70711, 0, 0, -0.70711]
+    image_type: "rgb"
+
+  - prim_path: "/World/Franka/panda_hand/arm_camera"
+    name: "camera_3"
+    resolution: [256, 256]
+    image_type: "rgb"
+
+robot:
+  type: "franka"
+  position: [-0.4, 0, 0.71]
+
+collector:
+  type: "default"
+  compression: gzip
+
+hydra:
+  run:
+    dir: hydra
+
+multi_run:
+  run_dir: collector

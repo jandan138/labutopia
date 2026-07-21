@@ -1,0 +1,42 @@
+[package]
+title = "LabUtopia Isaac 4.1 G0 Property Query Experimental"
+description = "Read-only PhysX cooked-collider query profile; not a motion or clearance profile."
+version = "4.1.0"
+keywords = ["experience", "app", "usd", "physx"]
+
+[dependencies]
+"omni.usd" = { version = "1.11.2+106", exact = true }
+"omni.timeline" = { version = "1.0.10", exact = true }
+"omni.kit.usd.layers" = { version = "2.1.31", exact = true }
+"omni.kit.loop-isaac" = { version = "1.2.0", exact = true }
+"omni.physx" = { version = "106.0.20", exact = true }
+"omni.physx.stageupdate" = { version = "106.0.20", exact = true }
+
+[settings]
+app.name = "LabUtopia-G0-Property-Query"
+app.fastShutdown = true
+app.asyncRendering = false
+app.asyncRenderingLowLatency = false
+app.content.emptyStageOnStart = false
+physics.updateToUsd = false
+physics.updateParticlesToUsd = false
+physics.updateVelocitiesToUsd = false
+
+[settings.app.extensions]
+registryEnabled = false
+
+[settings.app.exts]
+folders = [
+    "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/isaacsim/exts",
+    "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/isaacsim/extscache",
+    "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/isaacsim/extsPhysics",
+    "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/isaacsim/extsUser",
+    "/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/lib/python3.10/site-packages/isaacsim/kit/exts",
+]
+
+[settings.app.window]
+hideUi = true
+
+[settings.app.python]
+interceptSysStdOutput = false
+logSysStdOutput = false

@@ -36,6 +36,9 @@ class PickController(BaseController):
         super().__init__(name=name)
         self._event = 0
         self._t = 0
+        self._last_emitted_event = None
+        self._close_command_emitted = False
+        self._lift_command_emitted = False
 
         if events_dt is None:
             self._events_dt = [0.004, 0.002, 0.005, 0.02, 0.05, 0.004, 0.006]
@@ -112,6 +115,7 @@ class PickController(BaseController):
         self.after_offset_z = after_offset_z
         self.pre_offset_x = pre_offset_x
         
+        emitted_event = self._event
         target_joint_positions = self._execute_phase(
             picking_position,
             end_effector_orientation,
@@ -121,6 +125,8 @@ class PickController(BaseController):
             gripper_position,
             gripper_distances
         )
+        if 0 <= emitted_event < len(self._events_dt):
+            self._last_emitted_event = emitted_event
 
         if self._event < len(self._events_dt):
             self._t += self._events_dt[self._event]
@@ -211,6 +217,7 @@ class PickController(BaseController):
             target_joint_positions[7] = gripper_distances
             target_joint_positions[8] = gripper_distances
             target_joint_positions = ArticulationAction(joint_positions=target_joint_positions)
+            self._close_command_emitted = True
             self.target_position = picking_position
             self.target_position[2] += self.after_offset_z / get_stage_units()
             if "glass" in object_name:
@@ -218,6 +225,7 @@ class PickController(BaseController):
             return target_joint_positions
 
         elif self._event == 5:
+            self._lift_command_emitted = True
             target_joint_positions = self._cspace_controller.forward(
                 target_end_effector_position=self.target_position,
                 target_end_effector_orientation=end_effector_orientation
@@ -247,6 +255,9 @@ class PickController(BaseController):
         self._cspace_controller.reset()
         self._event = 0
         self._t = 0
+        self._last_emitted_event = None
+        self._close_command_emitted = False
+        self._lift_command_emitted = False
 
         if events_dt is not None:
             self._events_dt = events_dt
@@ -268,6 +279,23 @@ class PickController(BaseController):
             bool: True if the final phase is reached, False otherwise.
         """
         return self._event >= len(self._events_dt)
+
+    def grasp_contact_requested(self) -> bool:
+        return self._close_command_emitted
+
+    def lift_command_emitted(self) -> bool:
+        return self._lift_command_emitted
+
+    def lift_is_next_action(self) -> bool:
+        return self._event == 5 and not self._lift_command_emitted
+
+    def control_evidence(self) -> dict:
+        return {
+            "event": self._event,
+            "last_emitted_event": self._last_emitted_event,
+            "close_command_emitted": self._close_command_emitted,
+            "lift_command_emitted": self._lift_command_emitted,
+        }
 
     def get_gripper_distance(self, item_name):
         """Determines the gripper opening distance for the specified object.

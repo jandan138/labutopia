@@ -33,7 +33,13 @@ def _mesh(tag: str = "a", *, topology: int = 0) -> dict:
         "faces": faces,
         "normals": normals,
         "geometry_sha256": hashlib.sha256(tag.encode("ascii")).hexdigest(),
-        "diagnostics": {"component_count": 1},
+        "diagnostics": {
+            "component_count": 1,
+            "normal_provenance": {
+                "policy": "test_normal_policy",
+                "fallback_vertex_count": 0,
+            },
+        },
     }
 
 
@@ -238,6 +244,10 @@ def test_reset_observation_and_action_transition_have_exact_online_order():
         "centroid": pytest.approx(_positions().mean(axis=0).tolist()),
     }
     assert action_record["render"]["physics_and_timeline_unchanged"] is True
+    assert action_record["surface"]["normal_provenance"] == {
+        "policy": "test_normal_policy",
+        "fallback_vertex_count": 0,
+    }
     assert sorted(action_record["cameras"]) == ["camera_1_rgb", "camera_2_rgb"]
     assert all(len(item["sha256"]) == 64 for item in action_record["cameras"].values())
     assert set(action_record["latency_seconds"]) == {

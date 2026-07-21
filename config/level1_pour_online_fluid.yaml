@@ -10,6 +10,7 @@ max_episodes: 2
 
 online_fluid:
   enabled: true
+  expert_control_profile: "stabilized_online_fluid_v1"
   expert_pour_height_offsets_m: [0.4, 0.2]
   expert_pour_target_offset_m: [0.0, 0.05, 0.0]
   attachment_matrix_policy: "captured_translation_then_recaptured_full_at_scripted_pour"

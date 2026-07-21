@@ -146,11 +146,13 @@ class ViewportPresentationFrameProvider:
         *,
         viewport: Any,
         world: Any,
+        timeline: Any | None = None,
         schedule_capture: Callable[[Any, Callable[..., None]], Any],
         decode_buffer: Callable[..., np.ndarray] = _decode_viewport_buffer,
     ):
         self._viewport = viewport
         self._world = world
+        self._timeline = timeline
         self._schedule_capture = schedule_capture
         self._decode_buffer = decode_buffer
 
@@ -163,6 +165,27 @@ class ViewportPresentationFrameProvider:
         original_resolution_scale = self._viewport.resolution_scale
         time_before = float(self._world.current_time)
         step_before = int(self._world.current_time_step_index)
+        timeline_time_before = (
+            None
+            if self._timeline is None
+            else float(self._timeline.get_current_time())
+        )
+        timeline_playing_before = (
+            None if self._timeline is None else bool(self._timeline.is_playing())
+        )
+        timeline_auto_update_before = None
+        timeline_auto_update_disabled_for_capture = False
+        if self._timeline is not None:
+            get_auto_update = getattr(self._timeline, "is_auto_updating", None)
+            set_auto_update = getattr(self._timeline, "set_auto_update", None)
+            commit_silently = getattr(self._timeline, "commit_silently", None)
+            if (
+                not callable(get_auto_update)
+                or not callable(set_auto_update)
+                or not callable(commit_silently)
+            ):
+                raise RuntimeError("presentation_viewport_timeline_auto_update_api_missing")
+            timeline_auto_update_before = bool(get_auto_update())
         render_count = 0
         frames = {}
 
@@ -177,8 +200,22 @@ class ViewportPresentationFrameProvider:
                 raise RuntimeError(
                     "presentation_viewport_render_advanced_physics"
                 )
+            if self._timeline is not None and (
+                float(self._timeline.get_current_time()) != timeline_time_before
+                or bool(self._timeline.is_playing()) != timeline_playing_before
+            ):
+                raise RuntimeError("presentation_viewport_render_advanced_timeline")
 
         try:
+            if self._timeline is not None and timeline_auto_update_before:
+                # Freeze Kit's auto tick for the extra renders without stepping World.
+                self._timeline.set_auto_update(False)
+                self._timeline.commit_silently()
+                if bool(self._timeline.is_auto_updating()):
+                    raise RuntimeError(
+                        "presentation_viewport_timeline_auto_update_disable_failed"
+                    )
+                timeline_auto_update_disabled_for_capture = True
             for spec in specs:
                 self._viewport.camera_path = spec.prim_path
                 self._viewport.resolution = spec.resolution
@@ -235,16 +272,57 @@ class ViewportPresentationFrameProvider:
                 }
                 del capture_request
         finally:
+            if self._timeline is not None and timeline_auto_update_disabled_for_capture:
+                self._timeline.set_auto_update(True)
+                self._timeline.commit_silently()
             self._viewport.camera_path = original_camera_path
             self._viewport.resolution = original_resolution
             self._viewport.resolution_scale = original_resolution_scale
 
+        timeline_time_after = (
+            None
+            if self._timeline is None
+            else float(self._timeline.get_current_time())
+        )
+        timeline_playing_after = (
+            None if self._timeline is None else bool(self._timeline.is_playing())
+        )
+        timeline_auto_update_after = (
+            None
+            if self._timeline is None
+            else bool(self._timeline.is_auto_updating())
+        )
+        if self._timeline is not None and (
+            timeline_time_after != timeline_time_before
+            or timeline_playing_after != timeline_playing_before
+            or timeline_auto_update_after != timeline_auto_update_before
+        ):
+            raise RuntimeError("presentation_viewport_timeline_restore_invalid")
+
         return frames, {
             "physics_and_timeline_unchanged": True,
+            "world_physics_unchanged": True,
             "time_before": time_before,
             "time_after": float(self._world.current_time),
             "step_before": step_before,
             "step_after": int(self._world.current_time_step_index),
+            "timeline_time_before": timeline_time_before,
+            "timeline_time_after": timeline_time_after,
+            "timeline_playing_before": timeline_playing_before,
+            "timeline_playing_after": timeline_playing_after,
+            "timeline_auto_update_before": timeline_auto_update_before,
+            "timeline_auto_update_after": timeline_auto_update_after,
+            "timeline_auto_update_disabled_for_capture": (
+                timeline_auto_update_disabled_for_capture
+            ),
+            "omni_timeline_unchanged": (
+                None
+                if self._timeline is None
+                else (
+                    timeline_time_before == timeline_time_after
+                    and timeline_playing_before == timeline_playing_after
+                )
+            ),
             "render_count": render_count,
         }
 
@@ -511,11 +589,13 @@ def build_isaac_presentation_video_recorder(
     world: Any,
     presentation_config: Any,
     output_dir: str | os.PathLike[str],
+    viewport: Any | None = None,
 ) -> PresentationVideoRecorder:
     specs = resolve_presentation_camera_specs(
         model_camera_configs,
         presentation_config,
     )
+    import omni.timeline
     import omni.usd
     from omni.kit.viewport.utility import (
         capture_viewport_to_buffer,
@@ -526,12 +606,13 @@ def build_isaac_presentation_video_recorder(
         omni.usd.get_context().get_stage(),
         specs,
     )
-    viewport = get_active_viewport()
+    viewport = get_active_viewport() if viewport is None else viewport
     if viewport is None:
         raise RuntimeError("presentation_active_viewport_required")
     frame_provider = ViewportPresentationFrameProvider(
         viewport=viewport,
         world=world,
+        timeline=omni.timeline.get_timeline_interface(),
         schedule_capture=capture_viewport_to_buffer,
     )
 

@@ -407,6 +407,16 @@ class OnlineFluidSurfaceRuntime:
             mesh = self.reconstruct(current_positions)
             reconstruction_seconds = time.perf_counter() - stage_start
             vertices, faces, _normals, geometry_hash = self._validate_mesh(mesh)
+            diagnostics = mesh.get("diagnostics")
+            normal_provenance = (
+                diagnostics.get("normal_provenance")
+                if isinstance(diagnostics, Mapping)
+                else None
+            )
+            if normal_provenance is not None and not isinstance(
+                normal_provenance, Mapping
+            ):
+                raise ValueError("surface_normal_provenance_invalid")
             identity = _frame_identity(
                 transition,
                 particle_count=len(current_positions),
@@ -461,6 +471,11 @@ class OnlineFluidSurfaceRuntime:
                     "geometry_sha256": geometry_hash,
                     "vertex_count": int(len(vertices)),
                     "face_count": int(len(faces)),
+                    "normal_provenance": (
+                        None
+                        if normal_provenance is None
+                        else dict(normal_provenance)
+                    ),
                     "authoring": authoring,
                 },
                 "render": render,
