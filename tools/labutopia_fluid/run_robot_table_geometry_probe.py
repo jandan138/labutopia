@@ -321,6 +321,95 @@ def _effective_offsets_for_bodies(
     return body_offsets
 
 
+def _swept_approach_clearance(
+    stage: Any,
+    queries: Mapping[str, Any],
+) -> dict[str, Any]:
+    import numpy as np
+    from omni.physx import get_physx_scene_query_interface, get_physx_simulation_interface
+    from pxr import Usd, UsdGeom, UsdUtils
+
+    si = get_physx_simulation_interface()
+    sq = get_physx_scene_query_interface()
+    stage_id = UsdUtils.StageCache.Get().Insert(stage).ToLongInt()
+    attached = si.attach_stage(stage_id)
+    if attached is not True:
+        return {"status": "FAILED", "reason": f"physx_stage_attach_unexpected:{attached}"}
+
+    from pxr import UsdGeom
+
+    from pxr import UsdGeom
+    beaker_prim = stage.GetPrimAtPath("/World/beaker2")
+    if not beaker_prim or not beaker_prim.IsValid():
+        return {"status": "FAILED", "reason": "beaker_missing"}
+    cache = UsdGeom.XformCache(Usd.TimeCode.Default())
+    beaker_world = cache.GetLocalToWorldTransform(beaker_prim)
+    beaker_pos = np.array(beaker_world.ExtractTranslation(), dtype=np.float64)
+
+    approach_dir = np.array([0.0, 0.0, -1.0], dtype=np.float64)
+    pregrasp_distance_m = 0.120
+    margin_m = 0.025
+
+    grasp_pos = beaker_pos.copy()
+    pregrasp_pos = grasp_pos + approach_dir * (-pregrasp_distance_m)
+
+    probe_origin = pregrasp_pos.astype(np.float32).tolist()
+    probe_dir = approach_dir.astype(np.float32).tolist()
+    probe_dist = float(pregrasp_distance_m + 0.05)
+
+    closest = sq.raycast_closest(
+        origin=probe_origin, dir=probe_dir, distance=probe_dist,
+    )
+    ray_hit = bool(closest)
+    hit_path = ""
+    if ray_hit:
+        try:
+            from pxr import PhysicsSchemaTools
+            hit_path = str(PhysicsSchemaTools.intToSdfPath(
+                closest.get("collision", 0)
+            ))
+        except Exception:
+            hit_path = str(closest)
+    clear_to_beaker = bool(ray_hit and "/World/beaker2" in hit_path)
+
+    hand_query = queries.get("hand", {})
+    hand_half = np.array([0.06, 0.06, 0.06], dtype=np.float64)
+    if hand_query.get("status") == "COMPLETE" and hand_query.get("colliders"):
+        c = hand_query["colliders"][0]
+        hand_half = np.abs(
+            np.array(c["aabb_local_max_m"]) - np.array(c["aabb_local_min_m"])
+        ) / 2.0 + margin_m
+    identity_q = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32)
+
+    pregrasp_overlap = sq.overlap_box_any(
+        halfExtent=hand_half.astype(np.float32).tolist(),
+        pos=pregrasp_pos.astype(np.float32).tolist(),
+        rot=identity_q.tolist(),
+    )
+
+    return {
+        "status": "COMPLETE",
+        "beaker_position_world_m": beaker_pos.tolist(),
+        "grasp_position_world_m": grasp_pos.tolist(),
+        "pregrasp_position_world_m": pregrasp_pos.tolist(),
+        "approach_direction_world": approach_dir.tolist(),
+        "pregrasp_distance_m": pregrasp_distance_m,
+        "margin_m": margin_m,
+        "hand_half_extent_m": hand_half.tolist(),
+        "vertical_raycast": {
+            "origin_m": probe_origin,
+            "direction": probe_dir,
+            "distance_m": probe_dist,
+            "hit_detected": ray_hit,
+            "first_hit_path": hit_path,
+            "clear_to_beaker": clear_to_beaker,
+        },
+        "pregrasp_overlap_detected": bool(pregrasp_overlap),
+        "swept_clearance_passed": clear_to_beaker,
+        "method": "raycast_vertical_clearance_v1",
+    }
+
+
 def _runtime_receipt(experience_path: Path) -> dict[str, Any]:
     import importlib.metadata
 
@@ -437,6 +526,7 @@ def run_probe(
 
         extension_closure = _runtime_extension_closure(app)
         effective_offsets = _effective_offsets_for_bodies(stage, queries)
+        swept_clearance = _swept_approach_clearance(stage, queries)
 
         report = {
             "authority": "robot_table_geometry_evidence_v1",
@@ -453,6 +543,7 @@ def run_probe(
             },
             "queries": queries,
             "effective_offsets": effective_offsets,
+            "swept_clearance": swept_clearance,
             "extension_closure": extension_closure,
             "checks": {
                 "table_cooked_geometry_complete": table_complete,
