@@ -1104,6 +1104,7 @@ def _run_child(
             {"session_layer": stage.GetSessionLayer().ExportToString()}
         )
         particle_count = 0
+        particle_width_m = None
         particle_prim = stage.GetPrimAtPath(PARTICLE_PATH)
         if particle_prim and particle_prim.IsValid():
             attr = particle_prim.GetAttribute("physxParticle:simulationPoints")
@@ -1111,8 +1112,27 @@ def _run_child(
                 values = attr.Get()
                 if values is not None:
                     particle_count = len(values)
+            width_attr = particle_prim.GetAttribute("widths")
+            if width_attr:
+                widths = width_attr.Get()
+                if widths is not None and len(widths) > 0:
+                    particle_width_m = float(widths[0])
         expected_particle_count = 3600
         particle_ids_available = particle_count == expected_particle_count
+
+        water_density_kg_m3 = 1000.0
+        particle_mass_kg = 0.0
+        effective_filled_mass_kg = 0.0
+        if particle_width_m is not None and particle_width_m > 0:
+            particle_radius_m = particle_width_m / 2.0
+            particle_volume_m3 = (4.0 / 3.0) * math.pi * (particle_radius_m ** 3)
+            particle_mass_kg = particle_volume_m3 * water_density_kg_m3
+            effective_filled_mass_kg = particle_mass_kg * particle_count
+        filled_load_available = (
+            particle_ids_available
+            and particle_width_m is not None
+            and particle_width_m > 0
+        )
 
         snapshot = {
             "authority": "real_pbd_g0_runtime_capability_snapshot_v2",
@@ -1171,6 +1191,11 @@ def _run_child(
                     else None
                 ),
                 "particle_ids_available": particle_ids_available,
+                "filled_load_available": filled_load_available,
+                "particle_width_m": particle_width_m,
+                "water_density_kg_m3": water_density_kg_m3,
+                "particle_mass_kg": particle_mass_kg,
+                "effective_filled_mass_kg": effective_filled_mass_kg,
             },
             "capability_status": {
                 "robot_table_cooked_geometry": "UNAVAILABLE",
@@ -1179,7 +1204,9 @@ def _run_child(
                 "stable_particle_ids": (
                     "AVAILABLE" if particle_ids_available else "UNAVAILABLE"
                 ),
-                "filled_load_authority": "UNAVAILABLE",
+                "filled_load_authority": (
+                    "AVAILABLE" if filled_load_available else "UNAVAILABLE"
+                ),
             },
         }
         _write_child_snapshot(snapshot_path, snapshot)
