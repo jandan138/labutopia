@@ -47,7 +47,7 @@ online_fluid:
   minimum_task_target_fraction: 0.5
   minimum_expert_target_fraction: 0.9
   max_attempts: 1
-  max_observations_per_episode: 2400
+  max_observations_per_episode: 9600
   fixed_layout: true
   physics_scene_path: "/World/PhysicsScene"
   physics_dt: 0.0016666666666666668

@@ -2380,6 +2380,8 @@ class ContactFrictionDynamicVessel:
 
     def maybe_attach(self, controller: Any, state: Mapping[str, Any]) -> bool:
         del state
+        if self._allow_preclose_contact:
+            return False
         if self._monitoring or self._failure_reason is not None:
             return False
         readiness = self._contact_sensor_readiness_record()

@@ -469,7 +469,7 @@ class PourTaskController(BaseController):
         return PickController(
             name="pick_controller",
             cspace_controller=self.rmp_controller,
-            events_dt=[0.002, 0.002, 0.005, 0.02, 0.05, 0.01, 0.02],
+            events_dt=[0.002, 0.002, 0.005, 0.02, 0.05, 0.02, 0.9],
         )
 
     def reset(self):
