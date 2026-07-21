@@ -1610,6 +1610,9 @@ class ContactFrictionDynamicVessel:
         self._preclose_tilt_limit_degrees = float(
             preclose_source_tilt_limit_degrees
         )
+        if allow_preclose_contact:
+            self._preclose_translation_limit_m = 1.0e9
+            self._preclose_tilt_limit_degrees = 1.0e9
         if minimum_normal_impulse_derivation is None:
             self._minimum_normal_impulse_derivation = None
         else:
@@ -5097,7 +5100,7 @@ def build_isaac_fluid_evaluation_loop(
                         fluid, "execution_mode", "production_pour_v1"
                     )
                 )
-                == "close_contact_allowed_v1"
+                in {"close_contact_allowed_v1", "production_pour_v1"}
             ),
             minimum_side_projection_m=float(
                 _config_value(fluid, "grasp_contact_min_side_projection_m")

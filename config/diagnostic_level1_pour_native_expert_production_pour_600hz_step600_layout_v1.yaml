@@ -1,0 +1,137 @@
+name: Diagnostic_level1_pour_native_expert_production_pour_600hz_step600_layout_v1
+
+task_type: "pickpour"
+controller_type: "pour"
+mode: "collect"
+
+usd_path: "assets/chemistry_lab/lab_001_fluid_eval/lab_001_level1_pour_interndata_contact_grasp_rest_offset_zero_step600_layout_v1.usda"
+target_path: "/World/beaker1"
+max_episodes: 1
+
+online_fluid:
+  enabled: true
+  expert_control_profile: "native_expert_v1"
+  execution_mode: "production_pour_v1"
+  source_ownership: "contact_friction_dynamic_v1"
+  source_pose_authority: "physx_dynamic_readback_v1"
+  source_external_shell_path: "/World/beaker2/mesh"
+  source_internal_wrapper_path: "/World/beaker2/FluidSafeWrapperCanonical"
+  finger_body_paths: ["/World/Franka/panda_leftfinger", "/World/Franka/panda_rightfinger"]
+  finger_joint_indices: [7, 8]
+  grasp_frame_path: "/World/Franka/panda_hand/tool_center"
+  contact_material_path: "/World/PhysicsMaterials/ContactGrasp"
+  expert_pick_lift_height_m: 0.5
+  grasp_finger_joint_target_m: 0.020
+  grasp_height_axis_object: [0.0, 1.0, 0.0]
+  grasp_height_band_m: [-0.02, 0.02]
+  grasp_contact_max_bilateral_height_difference_m: 0.005
+  grasp_contact_min_inward_normal_cosine: 0.8
+  grasp_contact_min_opposing_normal_cosine: 0.8
+  grasp_effective_payload_mass_kg: 0.02
+  grasp_effective_friction: 1.0
+  grasp_gravity_m_s2: 9.81
+  grasp_payload_mass_authority: "authored_dry_vessel_only_v1"
+  grasp_contact_min_side_projection_m: 0.005
+  grasp_contact_min_consecutive_steps: 5
+  grasp_contact_max_pad_relative_speed_mps: 0.002
+  grasp_contact_timeout_s: 1.5
+  grasp_contact_loss_grace_steps: 2
+  grasp_preclose_source_translation_limit_m: 0.050
+  grasp_preclose_source_tilt_limit_degrees: 15.0
+  dynamic_pre_roll_steps: 600
+  filled_static_hold_steps: 1800
+  expert_pour_speed_rad_s: -1.0
+  expert_pour_target_offset_m: [0.0, 0.0, 0.0]
+  expert_pour_position_control: "gripper_tracked_native_v1"
+  metric_policy_id: "level1_pour_transfer_v1"
+  minimum_task_target_fraction: 0.5
+  minimum_expert_target_fraction: 0.9
+  max_attempts: 1
+  max_observations_per_episode: 2400
+  fixed_layout: true
+  physics_scene_path: "/World/PhysicsScene"
+  physics_dt: 0.0016666666666666668
+  rendering_dt: 0.03333333333333333
+  physics_substeps_per_observation: 20
+  particle_path: "/World/InternDataParityFluid/Particles"
+  particle_system_path: "/World/InternDataParityFluid/ParticleSystem"
+  expected_particle_count: 3600
+  source_actor_path: "/World/beaker2"
+  target_actor_path: "/World/beaker1"
+  source_visual_mesh_path: "/World/beaker2/mesh"
+  target_visual_mesh_path: "/World/beaker1/mesh"
+  table_path: "/World/table"
+  minimum_target_particles: 150
+  surface_path: "/World/LabUtopiaOnlineFluidSurface"
+  surface_material_path: "/World/Looks/LabUtopiaOnlineFluidWater"
+  hidden_liquid_paths:
+    - "/World/InternDataParityFluid/Particles"
+    - "/World/InternDataParityFluid/VisualParticles"
+    - "/World/ParticleSet"
+    - "/World/fluid"
+  camera_contract: "level1_pour_rgb_v4_full_action_30hz"
+  camera_contract_compatibility: "requires_v4_data_or_model"
+  camera_contract_sha256: "433993330829f0bdfe5ff98f9d2428eb34e9b16e59fde9ca9b8d9f51a75d6ccf"
+  initial_render_warmup_updates: 64
+  model_camera_keys: ["camera_1_rgb", "camera_2_rgb"]
+  model_camera_shape: [3, 256, 256]
+  reset_particle_authority: "authored_world_reset"
+  performance_label: "native_expert_close_only_dynamic_contact_rest_offset_zero_600hz_step600_layout_diagnostic"
+
+infer:
+  type: "local"
+  obs_names: {"camera_1_rgb": "camera_1_rgb", "camera_2_rgb": "camera_2_rgb"}
+  policy_model_path: ""
+  policy_config_path: ""
+  normalizer_path: ""
+  host: "127.0.0.1"
+  port: 8000
+  n_obs_steps: 1
+  timeout: 30
+  max_retries: 3
+
+task:
+  max_steps: 3000
+  left_pos:
+    x: [0.18, 0.33]
+    y: [-0.32, -0.17]
+    z: [0.87, 0.87]
+  obj_paths:
+    - path: "/World/beaker2"
+      position_range:
+        x: [0.295, 0.295]
+        y: [0.075, 0.075]
+        z: [0.8233382266115852, 0.8233382266115852]
+
+cameras:
+  - prim_path: "/World/InternDataParityCamera"
+    name: "camera_1"
+    resolution: [256, 256]
+    frequency: 30
+    focal_length: 16
+    clipping_range: [0.01, 100.0]
+    image_type: "rgb"
+  - prim_path: "/World/InternDataParityCloseupCamera"
+    name: "camera_2"
+    resolution: [256, 256]
+    frequency: 30
+    focal_length: 16
+    clipping_range: [0.01, 100.0]
+    image_type: "rgb"
+
+robot:
+  type: "franka"
+  usd_path: "assets/robots/Franka.usd"
+  camera_frequency: 30
+  position: [-0.4, 0, 0.71]
+
+collector:
+  type: "default"
+  compression: gzip
+
+hydra:
+  run:
+    dir: outputs/${mode}/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}
+
+multi_run:
+  run_dir: outputs/${mode}/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}

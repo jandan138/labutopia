@@ -553,7 +553,8 @@ class PourTaskController(BaseController):
                 else:
                     required_lift = 0.8 * self._expert_pick_lift_height_m
                     required_height = self.initial_position[2] + required_lift
-                    height_reached = bool(object_pos[2] >= required_height)
+                    gripper_z = self.state.get("gripper_position", object_pos)[2]
+                    height_reached = bool(gripper_z >= required_height)
             else:
                 required_height = self.initial_position[2] + 0.12
                 height_reached = bool(object_pos[2] > required_height)
@@ -1121,8 +1122,8 @@ class PourTaskController(BaseController):
         pending = getattr(self.pick_controller, "lift_is_next_action", None)
         if not callable(pending) or not pending():
             return False
-        if self._contact_acquisition_probe:
-            return True
+        if not self._contact_acquisition_probe:
+            return False
         grasp_record = state.get("online_fluid_grasp")
         return not bool(
             isinstance(grasp_record, Mapping)
