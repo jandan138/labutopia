@@ -352,7 +352,7 @@ class PickController(BaseController):
             "beaker_04": 0.0,
             "beaker_05": 0.0,
             "beaker_03": 0.0,
-            "beaker2": 0.0,
+            "beaker2": 0.05,
             "beaker_2": 0.0,
             "beaker_l": 0.02,
             "graduated_cylinder_01": 0.0,

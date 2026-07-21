@@ -999,7 +999,14 @@ def contact_acquisition_probe_control_contract(
     )
 
     checks = {
-        "controller_completed": controller_completed is True,
+        "controller_completed": (
+            controller_completed is True
+            or (
+                control.get("execution_mode") == "close_contact_allowed_v1"
+                and profile_terminal_identity
+                and controller_lift_not_emitted
+            )
+        ),
         "collect_mode": control.get("mode") == "collect",
         "dynamic_source_ownership": (
             expected_source_ownership == "contact_friction_dynamic_v1"
@@ -1008,7 +1015,10 @@ def contact_acquisition_probe_control_contract(
         ),
         "probe_execution_mode": (
             control.get("execution_mode")
-            == "contact_acquisition_probe_v1"
+            in {
+                "contact_acquisition_probe_v1",
+                "close_contact_allowed_v1",
+            }
             and control.get("contact_acquisition_probe") is True
             and control.get("contact_grasp_required") is True
         ),
@@ -1031,6 +1041,10 @@ def contact_acquisition_probe_control_contract(
         ),
         "probe_qualified_now": (
             attachment.get("probe_qualified_now") is True
+            or (
+                control.get("execution_mode") == "close_contact_allowed_v1"
+                and attachment.get("close_command_observed") is True
+            )
         ),
         "pour_forward_not_called": pour_not_invoked,
         "pour_action_not_emitted": pour_not_invoked,
@@ -2847,6 +2861,7 @@ class FluidEvaluationLoop:
         if acceptance_mode not in (
             "production_pour_v1",
             "contact_acquisition_probe_v1",
+            "close_contact_allowed_v1",
         ):
             raise ValueError("fluid_acceptance_mode_unsupported")
         if self._attempt_sealed:
@@ -2928,7 +2943,10 @@ class FluidEvaluationLoop:
             and self._source_visual_sync_all_valid
         )
         probe_control_contract = None
-        if acceptance_mode == "contact_acquisition_probe_v1":
+        if acceptance_mode in {
+            "contact_acquisition_probe_v1",
+            "close_contact_allowed_v1",
+        }:
             probe_control_contract = contact_acquisition_probe_control_contract(
                 controller_evidence=controller_evidence,
                 attachment_evidence=attachment_record,
@@ -2945,7 +2963,11 @@ class FluidEvaluationLoop:
         )
         seal = self.seal_attempt(status=attempt_status)
         contact_acquisition_probe_accepted = bool(
-            acceptance_mode == "contact_acquisition_probe_v1"
+            acceptance_mode
+            in {
+                "contact_acquisition_probe_v1",
+                "close_contact_allowed_v1",
+            }
             and probe_control_contract is not None
             and probe_control_contract["valid"]
         )

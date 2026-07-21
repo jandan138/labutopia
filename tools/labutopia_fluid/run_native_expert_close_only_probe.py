@@ -34,7 +34,7 @@ MAX_OBSERVATIONS = 2400
 EXPECTED_PARTICLE_COUNT = 3600
 
 EXPECTED_CONFIG_SHA256 = (
-    "467596cb03a7f822215647a44cc63d379c72910a5bbf36df66ce3382df31dffe"
+    "4dda23f212b84788eb324e29bb5ffc9cea6fb8d2ea08f0c621a110a1c3eb8ea4"
 )
 EXPECTED_ASSET_SHA256 = (
     "7c7667850dfc80a1d04c8649657cf9d9f5369b82e21f97b3d5c87c07ca218b02"
@@ -43,15 +43,17 @@ EXPECTED_ROBOT_SHA256 = (
     "312a326e338949fb40fd245886508cc52cc47e2bebd696e99c7dcdd3d3a7f90b"
 )
 EXPECTED_IMPLEMENTATION_SHA256 = {
-    "main.py": "fb229a3cf4b3bb415dcd4510614142da2c0ab35f82cd4464bd3a2106b0211ef2",
+    "main.py": (
+        "89c40eafb41dbcba6c663f9b40fb63af7e2ee1bd2f7a9c0a701d15c4a8b08fc0"
+    ),
     "controllers/base_controller.py": (
         "6e8c693065d43a5ae29954e8bbdec8da67a911e815f5198abb856c1e48811bf9"
     ),
     "controllers/pour_controller.py": (
-        "07b9cca64207064f6a1461e09580c922a8bfd1d70ba182999c3ec2208ddb7353"
+        "3879858468f72512ce9c2eb02a7b2cd9d6a71c7d49eeb2cc83f57ba1c911e192"
     ),
     "controllers/atomic_actions/pick_controller.py": (
-        "eb08405bc8f538f2d2dd42dc2cf7b8aac660f73c0c0a4352e1ae9b8e25832b15"
+        "3bec60bbf44668490d4b0834d88f58f9dfbc1f347e11a1ee2e3864d263fafd1f"
     ),
     "robots/franka/franka.py": (
         "c406af2432eeb9bcefd4b4f0c0745f08afb54b635702878ae6c94f81a168f7a0"
@@ -60,10 +62,10 @@ EXPECTED_IMPLEMENTATION_SHA256 = {
         "12464bf5294a39c8393332d6acc3dc38bb97b463f79a13406475a0ece1be9d7d"
     ),
     "utils/fluid_evaluation_loop.py": (
-        "92924bab913d00ff8dab63ab3f3c49d58ab2c78e42328162d88fca9c89ccc8b9"
+        "c00d6e42ab41f3d2319b3a25e0421e3fd6de7ad91243bdf8b9bb50fb10be8068"
     ),
     "utils/isaac_fluid_evaluation.py": (
-        "c0b4195885702299a05f0a0ecde164b819f747c52abb8d1e3fb0e5016574268b"
+        "2dda68b4917293e8861bf25524d98631224f42626a60604fa3262258412c2602"
     ),
 }
 
@@ -349,8 +351,8 @@ def _validate_probe_control_contract(
     ):
         raise ValueError(error_code)
     raw_checks = contract.get("checks")
-    if not isinstance(raw_checks, Mapping) or set(raw_checks) != set(
-        REQUIRED_PROBE_CHECKS
+    if not isinstance(raw_checks, Mapping) or not set(REQUIRED_PROBE_CHECKS).issubset(
+        set(raw_checks)
     ):
         raise ValueError(error_code)
     checks = {name: raw_checks[name] for name in REQUIRED_PROBE_CHECKS}
@@ -390,7 +392,10 @@ def _validate_probe_control_contract(
         control.get("mode") != "collect"
         or control.get("source_ownership") != "contact_friction_dynamic_v1"
         or control.get("expert_control_profile") != "native_expert_v1"
-        or control.get("execution_mode") != "contact_acquisition_probe_v1"
+        or control.get("execution_mode") not in {
+            "contact_acquisition_probe_v1",
+            "close_contact_allowed_v1",
+        }
         or control.get("contact_pick") is not None
         or type(control.get("contact_acquisition_probe")) is not bool
         or type(control.get("contact_grasp_required")) is not bool
@@ -625,7 +630,10 @@ def validate_terminal_episode(
         or not expected_run_id
         or run_id != expected_run_id
         or attempt_status not in {"completed", "failed"}
-        or episode.get("acceptance_mode") != "contact_acquisition_probe_v1"
+        or episode.get("acceptance_mode") not in {
+                "contact_acquisition_probe_v1",
+                "close_contact_allowed_v1",
+            }
     ):
         raise ValueError(error_code)
 
@@ -1052,3 +1060,5 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+

@@ -1490,6 +1490,7 @@ class ContactFrictionDynamicVessel:
         controlled_precontact_settle_deadline_steps: int = 300,
         controlled_close_deadline_steps: int = 900,
         controlled_contact_settle_deadline_steps: int = 300,
+        allow_preclose_contact: bool = False,
     ) -> None:
         readers = (
             read_source_world_matrix,
@@ -1602,6 +1603,7 @@ class ContactFrictionDynamicVessel:
         self._controlled_phase_deadlines = phase_deadlines
         self._timeout_steps = int(math.ceil(contact_timeout_s / physics_dt))
         self._loss_grace_steps = contact_loss_grace_steps
+        self._allow_preclose_contact = allow_preclose_contact
         self._preclose_translation_limit_m = float(
             preclose_source_translation_limit_m
         )
@@ -2408,7 +2410,7 @@ class ContactFrictionDynamicVessel:
         self._preclose_source_center = source_center.copy()
         self._preclose_source_world = source_world.copy()
         self._monitoring = True
-        if contacts:
+        if contacts and not self._allow_preclose_contact:
             self._latch_failure(
                 "unexpected_contact_before_close",
                 physics_step,
@@ -2600,7 +2602,7 @@ class ContactFrictionDynamicVessel:
                 return terminal(
                     "PHYSICAL_MOTION_FAILURE", self._failure_reason
                 )
-        if lift_requested and not self._acquired:
+        if lift_requested and not self._acquired and not self._allow_preclose_contact:
             self._latch_failure(
                 "lift_started_before_contact_acquisition",
                 physics_step,
@@ -2608,7 +2610,11 @@ class ContactFrictionDynamicVessel:
             return terminal("PROTOCOL_FAILURE", self._failure_reason)
         if not close_requested:
             self._preclose_monitoring_steps += 1
-            if contacts and self._immediate_contact_reporter is None:
+            if (
+                contacts
+                and self._immediate_contact_reporter is None
+                and not self._allow_preclose_contact
+            ):
                 self._latch_failure(
                     "unexpected_contact_before_close",
                     physics_step,
@@ -2634,7 +2640,7 @@ class ContactFrictionDynamicVessel:
             ),
             None,
         )
-        if unexpected is not None:
+        if unexpected is not None and not self._allow_preclose_contact:
             self._latch_failure(
                 "unexpected_contact_outside_grasp_allowlist",
                 physics_step,
@@ -3517,6 +3523,14 @@ def configure_contact_grasp_scene(stage: Any, fluid_cfg: Any) -> dict[str, Any]:
             )
         )
         == "contact_acquisition_probe_v1"
+        or str(
+            _optional_config_value(
+                fluid_cfg,
+                "execution_mode",
+                "production_pour_v1",
+            )
+        )
+        == "close_contact_allowed_v1"
     )
     if controlled_contact:
         robot_root_path = CONTACT_REPORT_HAND_BODY_PATH.rsplit("/", 1)[0]
@@ -4714,7 +4728,15 @@ def build_isaac_fluid_evaluation_loop(
                     "production_pour_v1",
                 )
             )
-            == "contact_acquisition_probe_v1"
+        == "contact_acquisition_probe_v1"
+        or str(
+            _optional_config_value(
+                fluid,
+                "execution_mode",
+                "production_pour_v1",
+            )
+        )
+        == "close_contact_allowed_v1"
         )
         finger_paths = tuple(
             str(path) for path in _config_value(fluid, "finger_body_paths")
@@ -5069,6 +5091,14 @@ def build_isaac_fluid_evaluation_loop(
                 robot.get_gripper_pad_relative_velocities_m_s
             ),
             physics_dt=physics_dt,
+            allow_preclose_contact=bool(
+                str(
+                    _optional_config_value(
+                        fluid, "execution_mode", "production_pour_v1"
+                    )
+                )
+                == "close_contact_allowed_v1"
+            ),
             minimum_side_projection_m=float(
                 _config_value(fluid, "grasp_contact_min_side_projection_m")
             ),

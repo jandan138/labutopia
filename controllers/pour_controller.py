@@ -130,10 +130,12 @@ class PourTaskController(BaseController):
         if self._execution_mode not in (
             "production_pour_v1",
             "contact_acquisition_probe_v1",
+            "close_contact_allowed_v1",
         ):
             raise ValueError("online_fluid_execution_mode_unsupported")
         self._contact_acquisition_probe = (
-            self._execution_mode == "contact_acquisition_probe_v1"
+            self._execution_mode
+            in {"contact_acquisition_probe_v1", "close_contact_allowed_v1"}
         )
         if self._contact_acquisition_probe and not self._contact_grasp_required:
             raise ValueError("contact_acquisition_probe_requires_contact_ownership")

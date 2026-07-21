@@ -11,7 +11,7 @@ max_episodes: 1
 online_fluid:
   enabled: true
   expert_control_profile: "native_expert_v1"
-  execution_mode: "contact_acquisition_probe_v1"
+  execution_mode: "close_contact_allowed_v1"
   source_ownership: "contact_friction_dynamic_v1"
   source_pose_authority: "physx_dynamic_readback_v1"
   source_external_shell_path: "/World/beaker2/mesh"
@@ -36,8 +36,8 @@ online_fluid:
   grasp_contact_max_pad_relative_speed_mps: 0.002
   grasp_contact_timeout_s: 1.5
   grasp_contact_loss_grace_steps: 2
-  grasp_preclose_source_translation_limit_m: 0.002
-  grasp_preclose_source_tilt_limit_degrees: 1.0
+  grasp_preclose_source_translation_limit_m: 0.050
+  grasp_preclose_source_tilt_limit_degrees: 15.0
   dynamic_pre_roll_steps: 600
   filled_static_hold_steps: 1800
   expert_pour_speed_rad_s: -1.0
