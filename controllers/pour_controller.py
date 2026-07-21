@@ -551,18 +551,16 @@ class PourTaskController(BaseController):
                     required_height = self.initial_position[2]
                     height_reached = True
                 else:
-                    controller_done = True
-                    height_reached = True
+                    required_lift = 0.8 * self._expert_pick_lift_height_m
+                    required_height = self.initial_position[2] + required_lift
+                    height_reached = bool(object_pos[2] >= required_height)
             else:
                 required_height = self.initial_position[2] + 0.12
                 height_reached = bool(object_pos[2] > required_height)
             grasp_qualified = True
             controller_done = True
             grasp_failure_reason = None
-            if self._contact_grasp_required and not (
-                self._native_expert_profile
-                and not self._contact_acquisition_probe
-            ):
+            if self._contact_grasp_required:
                 grasp_record = self.state.get("online_fluid_grasp")
                 qualification_field = (
                     "probe_qualified_now"
@@ -582,6 +580,13 @@ class PourTaskController(BaseController):
                         "terminal_failure_reason",
                         None,
                     )
+                if (
+                    self._native_expert_profile
+                    and not self._contact_acquisition_probe
+                ):
+                    controller_done = self.pick_controller.is_done()
+                    if controller_done:
+                        grasp_qualified = True
             success = height_reached and grasp_qualified and controller_done
             if not success:
                 self.last_error_info = {
