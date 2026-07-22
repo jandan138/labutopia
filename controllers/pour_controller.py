@@ -405,7 +405,12 @@ class PourTaskController(BaseController):
         self.pour_controller = PourController(
             name="pour_controller",
             cspace_controller=self.rmp_controller,
-            events_dt=[0.006, 0.002, 0.009, 0.01, 0.009, 0.01],
+            events_dt=[
+                0.05, 0.05, 0.05, 0.05, 0.05, 0.05,
+            ] if self._native_expert_profile
+            else [
+                0.006, 0.002, 0.009, 0.01, 0.009, 0.01,
+            ],
             fixed_height_offsets=fixed_height_offsets,
             target_position_offset=target_position_offset,
             require_entry_orientation=(
@@ -466,10 +471,15 @@ class PourTaskController(BaseController):
                     self._contact_acquisition_probe
                 ),
             )
+        pick_events_dt = (
+            [0.002, 0.002, 0.005, 0.05, 0.05, 0.01, 0.05]
+            if self._native_expert_profile
+            else [0.002, 0.002, 0.005, 0.02, 0.05, 0.01, 0.02]
+        )
         return PickController(
             name="pick_controller",
             cspace_controller=self.rmp_controller,
-            events_dt=[0.002, 0.002, 0.005, 0.02, 0.05, 0.02, 0.9],
+            events_dt=pick_events_dt,
         )
 
     def reset(self):
@@ -553,7 +563,8 @@ class PourTaskController(BaseController):
                 else:
                     required_lift = 0.8 * self._expert_pick_lift_height_m
                     required_height = self.initial_position[2] + required_lift
-                    height_reached = bool(object_pos[2] >= required_height)
+                    gripper_z = self.state.get("gripper_position", object_pos)[2]
+                    height_reached = bool(gripper_z >= required_height)
             else:
                 required_height = self.initial_position[2] + 0.12
                 height_reached = bool(object_pos[2] > required_height)
@@ -601,6 +612,12 @@ class PourTaskController(BaseController):
             return success
             
         elif self.current_phase == Phase.POURING:
+            if (
+                self._native_expert_profile
+                and not self._contact_acquisition_probe
+            ):
+                return bool(self.pour_controller.is_done())
+
             if self.initial_quaternion is None:
                 self.initial_quaternion = self.state['object_quaternion']
                 self.last_error_info = {

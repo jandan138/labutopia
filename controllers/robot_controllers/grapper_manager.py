@@ -16,9 +16,9 @@ class Gripper:
         self.grasped_object_path = object_path
         self.gripper_frame_path = gripper_frame_path
                 
-        transform_prim = get_prim_at_path("/World/glass_rod")
+        transform_prim = get_prim_at_path(object_path)
         if not transform_prim.IsValid():
-            raise ValueError(f"Object at path is not valid.")   
+            raise ValueError(f"Object at path {object_path} is not valid.")   
 
         self.inverse_transform_matrix = UsdGeom.Xformable(transform_prim).ComputeLocalToWorldTransform(0).GetInverse()
 

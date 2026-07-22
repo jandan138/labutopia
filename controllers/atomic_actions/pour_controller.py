@@ -35,9 +35,11 @@ class PourController(BaseController):
         entry_orientation_threshold_degrees: float = 5.0,
         control_to_end_effector_matrix_m: typing.Optional[np.ndarray] = None,
         direct_control_frame_targets: bool = False,
+        start_event: int = 0,
     ) -> None:
         BaseController.__init__(self, name=name)
-        self._event = 0
+        self._start_event = start_event
+        self._event = start_event
         self._t = 0
         self._last_emitted_event = None
         self._events_dt = events_dt
@@ -278,7 +280,7 @@ class PourController(BaseController):
         """
         BaseController.reset(self)
         self._cspace_controller.reset()
-        self._event = 0
+        self._event = getattr(self, '_start_event', 0)
         self._t = 0
         self._last_emitted_event = None
         self._pour_forward_call_index = 0
