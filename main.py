@@ -250,6 +250,10 @@ def main():
                     source_body_path=str(cfg.online_fluid.source_actor_path),
                     robot_root_path=str(collision_filter_root),
                 )
+            source_prim = stage.GetPrimAtPath(
+                str(cfg.online_fluid.source_actor_path)
+            )
+            source_prim.GetAttribute("physics:kinematicEnabled").Set(True)
         elif source_ownership == "contact_friction_dynamic_v1":
             configure_contact_grasp_scene(stage, cfg.online_fluid)
         else:
@@ -311,12 +315,31 @@ def main():
                 )
             )
             presentation_video_recorder.initialize()
+        _visual_mesh_collision_disabled = False
+        if (
+            fluid_enabled
+            and str(cfg.online_fluid.source_ownership)
+            == "gripper_attached_kinematic_vessel"
+        ):
+            visual_mesh = stage.GetPrimAtPath(
+                str(cfg.online_fluid.source_visual_mesh_path)
+            )
+            if visual_mesh and visual_mesh.IsValid():
+                collision_attr = visual_mesh.GetAttribute("physics:collisionEnabled")
+                if collision_attr and collision_attr.Get() is True:
+                    collision_attr.Set(False)
+                    _visual_mesh_collision_disabled = True
         fluid_loop = build_isaac_fluid_evaluation_loop(
             cfg=cfg,
             world=world,
             task=task,
             stage=stage,
         )
+        if _visual_mesh_collision_disabled:
+            visual_mesh = stage.GetPrimAtPath(
+                str(cfg.online_fluid.source_visual_mesh_path)
+            )
+            visual_mesh.GetAttribute("physics:collisionEnabled").Set(True)
         fluid_loop.reset_episode(f"episode-{fluid_attempt_count:04d}")
         fluid_episode_wall_start = time.perf_counter()
 

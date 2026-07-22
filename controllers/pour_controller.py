@@ -1074,7 +1074,7 @@ class PourTaskController(BaseController):
         if self._contact_grasp_required:
             return False
         event = getattr(self.pick_controller, "_event", -1)
-        return isinstance(event, int) and event >= 5
+        return isinstance(event, int) and event >= 4
 
     def online_fluid_grasp_contact_requested(self) -> bool:
         if not self._online_fluid_enabled or not self._contact_grasp_required:
