@@ -80,7 +80,7 @@ def _full_report_header(event_name, *, contact_count=1):
     )
 
 
-def _full_report_contact():
+def _full_report_contact(*, material0=8, material1=9):
     return SimpleNamespace(
         position=(0.1, 0.2, 0.3),
         normal=(1.0, 0.0, 0.0),
@@ -88,8 +88,8 @@ def _full_report_contact():
         separation=-0.0001,
         face_index0=5,
         face_index1=6,
-        material0=8,
-        material1=9,
+        material0=material0,
+        material1=material1,
     )
 
 
@@ -161,6 +161,24 @@ def test_immediate_full_contact_report_normalizes_and_reads_exactly_once():
         0.00001,
         0.0,
     ]
+
+
+def test_immediate_full_contact_report_preserves_zero_material_identifier():
+    reporter = isaac_fluid.ImmediatePhysxContactReporter(
+        get_full_contact_report=lambda: (
+            [_full_report_header("CONTACT_FOUND")],
+            [_full_report_contact(material0=0)],
+            [_full_report_friction()],
+        ),
+        resolve_path=_report_paths,
+        expected_stage_id=7,
+    )
+
+    report = reporter.sample(physics_index=0)
+
+    assert report["occurrences"][0]["contact_data"][0]["material0"] == (
+        "__physx_material_identifier_zero__"
+    )
 
 
 def test_immediate_full_contact_report_rejects_malformed_api_tuple():
@@ -599,14 +617,26 @@ def _sensor_contact_frames(physics_step, *, contacts=True):
     return {
         "left": {
             "physics_step": float(physics_step),
+            "time": float(physics_step) / 120.0,
+            "in_contact": bool(contacts),
+            "force": 0.0,
+            "number_of_contacts": 1 if contacts else 0,
             "contacts": [left_contact] if contacts else [],
         },
         "right": {
             "physics_step": float(physics_step),
+            "time": float(physics_step) / 120.0,
+            "in_contact": bool(contacts),
+            "force": 0.0,
+            "number_of_contacts": 1 if contacts else 0,
             "contacts": [right_contact] if contacts else [],
         },
         "hand": {
             "physics_step": float(physics_step),
+            "time": float(physics_step) / 120.0,
+            "in_contact": False,
+            "force": 0.0,
+            "number_of_contacts": 0,
             "contacts": [],
         },
     }
@@ -698,6 +728,49 @@ def test_contact_sensor_frames_reject_stale_or_missing_raw_data():
         )
 
 
+def test_contact_sensor_metadata_preserves_runtime_provenance():
+    frames = _sensor_contact_frames(12)
+    frames["left"]["_labutopia_sensor_runtime"] = {
+        "prim_path": "/World/Franka/panda_leftfinger/geometry/panda_leftfinger/contact_sensor",
+        "parent_path": "/World/Franka/panda_leftfinger/geometry/panda_leftfinger",
+        "prim_valid": True,
+        "parent_collision_api": True,
+        "parent_collision_enabled": True,
+        "enabled": True,
+        "period_s": 1 / 600,
+        "radius_m": 0.1,
+        "minimum_threshold_n": 0.0,
+        "maximum_threshold_n": 10000000.0,
+    }
+
+    metadata = isaac_fluid.contact_sensor_raw_frame_metadata(frames)
+
+    assert metadata["left"]["sensor_runtime"] == frames["left"][
+        "_labutopia_sensor_runtime"
+    ]
+    assert metadata["right"]["sensor_runtime"] is None
+
+
+class _ControlledImmediateReporterFixture:
+    def __init__(self, reporter):
+        self._reporter = reporter
+        self._read_count = 0
+
+    def reset(self):
+        self._read_count = 0
+        return self._reporter.reset()
+
+    def sample(self, **kwargs):
+        result = dict(self._reporter.sample(**kwargs))
+        result.setdefault(
+            "authority", "physx_immediate_full_contact_report_v1"
+        )
+        result.setdefault("immediate_read_index", self._read_count)
+        self._read_count += 1
+        result.setdefault("immediate_read_count", self._read_count)
+        return result
+
+
 def _dynamic_contact_vessel(
     *,
     timeout_s=1.5,
@@ -710,6 +783,7 @@ def _dynamic_contact_vessel(
     read_controlled_body_states=None,
     controlled_contact_baseline_collider_pairs=None,
     controlled_certificate_kwargs=None,
+    allow_preclose_contact=False,
 ):
     state = {
         "physics_step": 0,
@@ -760,6 +834,7 @@ def _dynamic_contact_vessel(
         contact_loss_grace_steps=loss_grace_steps,
         preclose_source_translation_limit_m=0.002,
         preclose_source_tilt_limit_degrees=1.0,
+        allow_preclose_contact=allow_preclose_contact,
         resolve_body_path=lambda path: {
             _SOURCE_COLLIDER: _SOURCE_BODY,
             _LEFT_FINGER_COLLIDER: _LEFT_FINGER_BODY,
@@ -772,11 +847,15 @@ def _dynamic_contact_vessel(
             require_complete_writer_audit=require_complete_writer_audit,
         )
     if immediate_contact_reporter is not None or controlled_contact_classifier is not None:
+        if immediate_contact_reporter is not None:
+            immediate_contact_reporter = _ControlledImmediateReporterFixture(
+                immediate_contact_reporter
+            )
         vessel_kwargs.update(
             immediate_contact_reporter=immediate_contact_reporter,
             controlled_contact_classifier=controlled_contact_classifier,
             read_controlled_body_states=(
-                read_controlled_body_states or (lambda: {})
+                read_controlled_body_states or _controlled_body_state_sample
             ),
         )
     if controlled_contact_baseline_collider_pairs is not None:
@@ -800,13 +879,35 @@ def _mutable_contact_request_controller(request):
     )
 
 
+def _controlled_body_state_sample(*, sample_step=0):
+    def rigid_state(position):
+        return {
+            "com_position_m": list(position),
+            "orientation_wxyz": [1.0, 0.0, 0.0, 0.0],
+            "linear_velocity_m_s": [0.0, 0.0, 0.0],
+            "angular_velocity_rad_s": [0.0, 0.0, 0.0],
+        }
+
+    return {
+        _SOURCE_BODY: rigid_state(_SOURCE_CENTER_WORLD_M),
+        _LEFT_FINGER_BODY: rigid_state((0.3, 0.09, 0.9)),
+        _RIGHT_FINGER_BODY: rigid_state((0.3, 0.11, 0.9)),
+        "/World/Franka/panda_hand": rigid_state((0.3, 0.1, 1.0)),
+        "sample_step": sample_step,
+    }
+
+
 def _reset_and_pre_roll_contact_frames(vessel, state, *, steps=20):
     vessel.reset()
     state["contacts"] = False
     state["frame_transform"] = None
     for step in range(steps):
         state["physics_step"] = step
-        vessel.update_after_substep()
+        vessel.update_before_substep()
+        state["physics_step"] = step + 1
+        decision = vessel.update_after_substep()
+        if decision is not None and decision.get("kind") == "TERMINAL":
+            break
 
 
 def test_dynamic_contact_vessel_requires_twenty_current_pre_roll_frames():
@@ -873,6 +974,7 @@ def test_dynamic_contact_vessel_returns_immediate_precontact_decision_and_delega
                 "authority": "physx_immediate_full_contact_report_v1",
                 "physics_index": physics_index,
                 "occurrences": occurrences,
+                "current_pairs": [],
             }
 
     reporter = Reporter()
@@ -935,7 +1037,9 @@ def test_dynamic_contact_vessel_classifies_immediate_reports_during_pre_roll():
             del allow_provisional_persist_bootstrap
             return {
                 "physics_index": physics_index,
-                "occurrences": [{"pair": "finger-source"}],
+                "occurrences": (
+                    [] if physics_index == 1 else [{"pair": "finger-source"}]
+                ),
                 "current_pairs": [],
             }
 
@@ -956,12 +1060,393 @@ def test_dynamic_contact_vessel_classifies_immediate_reports_during_pre_roll():
     vessel.reset()
     state["physics_step"] = 0
     vessel.update_before_substep()
+    state["physics_step"] = 1
+    assert vessel.update_after_substep() == {"kind": "CONTINUE"}
+    state["physics_step"] = 1
+    vessel.update_before_substep()
+    state["physics_step"] = 2
 
     decision = vessel.update_after_substep()
 
     assert phases == ["PRE_ROLL"]
     assert decision["kind"] == "TERMINAL"
     assert decision["terminal_kind"] == "PHYSICAL_CONTACT_FAILURE"
+
+
+def test_controlled_dynamic_vessel_bootstraps_com_only_after_real_step():
+    class Reporter:
+        def reset(self):
+            return None
+
+        def sample(self, *, physics_index, allow_provisional_persist_bootstrap=False):
+            return {
+                "physics_index": physics_index,
+                "occurrences": [],
+                "current_pairs": [],
+                "bootstrap": allow_provisional_persist_bootstrap,
+            }
+
+    body_read_steps = []
+    classifications = []
+
+    def read_body_states():
+        body_read_steps.append(state["physics_step"])
+        if state["physics_step"] == 0:
+            raise RuntimeError("controlled_contact_com_invalid:/World/beaker2")
+        return _controlled_body_state_sample(
+            sample_step=state["physics_step"]
+        )
+
+    def classify(*, pre_body_states, post_body_states, **_kwargs):
+        classifications.append((pre_body_states, post_body_states))
+        return {
+            "terminal_kind": None,
+            "precontact_latch": None,
+            "records": [],
+            "evidence_sha256": "d" * 64,
+        }
+
+    vessel, state = _dynamic_contact_vessel(
+        immediate_contact_reporter=Reporter(),
+        controlled_contact_classifier=classify,
+        read_controlled_body_states=read_body_states,
+    )
+    vessel.reset()
+
+    state["physics_step"] = 0
+    vessel.update_before_substep()
+    assert body_read_steps == []
+    state["physics_step"] = 1
+    assert vessel.update_after_substep() == {"kind": "CONTINUE"}
+    assert body_read_steps == [1]
+    assert classifications == []
+    bootstrap = vessel.record()["controlled_body_state_bootstrap"]
+    assert bootstrap["required"] is True
+    assert bootstrap["ready"] is True
+    assert bootstrap["physics_step"] == 1
+    assert bootstrap["classifier_skipped"] is True
+    assert all(
+        certificate["consecutive_steps"] == 0
+        for certificate in vessel.state_record()[
+            "controlled_phase_certificates"
+        ].values()
+    )
+
+    vessel.update_before_substep()
+    state["physics_step"] = 2
+    assert vessel.update_after_substep() == {"kind": "CONTINUE"}
+    assert body_read_steps == [1, 1, 2]
+    assert len(classifications) == 1
+    assert classifications[0][0]["sample_step"] == 1
+    assert classifications[0][1]["sample_step"] == 2
+
+
+def test_controlled_dynamic_vessel_bootstraps_initial_baseline_persist():
+    baseline_pair = (_SOURCE_COLLIDER, "/World/table/surface/mesh")
+    paths = {
+        1: _SOURCE_BODY,
+        2: "/World/table",
+        3: _SOURCE_COLLIDER,
+        4: baseline_pair[1],
+        8: "/World/material0",
+        9: "/World/material1",
+    }
+    reporter = isaac_fluid.ImmediatePhysxContactReporter(
+        get_full_contact_report=lambda: (
+            [_full_report_header("CONTACT_PERSIST")],
+            [_full_report_contact(material0=0)],
+            [_full_report_friction()],
+        ),
+        resolve_path=lambda identifier: paths[identifier],
+        expected_stage_id=7,
+        provisional_background_pairs=(baseline_pair,),
+    )
+    vessel, state = _dynamic_contact_vessel(
+        immediate_contact_reporter=reporter,
+        controlled_contact_classifier=lambda **_kwargs: pytest.fail(
+            "bootstrap must not invoke the classifier"
+        ),
+        controlled_contact_baseline_collider_pairs=(baseline_pair,),
+    )
+    vessel.reset()
+
+    state["physics_step"] = 0
+    vessel.update_before_substep()
+    state["physics_step"] = 1
+    assert vessel.update_after_substep() == {"kind": "CONTINUE"}
+
+    record = vessel.record()
+    assert record["controlled_body_state_bootstrap"]["ready"] is True
+    assert record["immediate_contact_report_sample_count"] == 1
+    assert record["last_immediate_contact_report"]["immediate_read_index"] == 0
+    assert record["last_immediate_contact_report"]["raw_contact_data"][0][
+        "material0"
+    ] == "__physx_material_identifier_zero__"
+
+
+def test_controlled_dynamic_vessel_rejects_nonbaseline_bootstrap_contact():
+    class Reporter:
+        def reset(self):
+            return None
+
+        def sample(self, *, physics_index, allow_provisional_persist_bootstrap=False):
+            del allow_provisional_persist_bootstrap
+            return {
+                "physics_index": physics_index,
+                "occurrences": [
+                    {
+                        "fragments": [
+                            {
+                                "header": {
+                                    "collider0": _LEFT_FINGER_COLLIDER,
+                                    "collider1": _SOURCE_COLLIDER,
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "current_pairs": [
+                    [
+                        {
+                            "collider_path": _LEFT_FINGER_COLLIDER,
+                            "proto_index": 0xFFFFFFFF,
+                        },
+                        {
+                            "collider_path": _SOURCE_COLLIDER,
+                            "proto_index": 0xFFFFFFFF,
+                        },
+                    ]
+                ],
+            }
+
+    body_reads = []
+    classifications = []
+
+    def read_body_states():
+        body_reads.append(state["physics_step"])
+        raise AssertionError("bootstrap must reject the report before reading COM")
+
+    vessel, state = _dynamic_contact_vessel(
+        immediate_contact_reporter=Reporter(),
+        controlled_contact_classifier=lambda **_kwargs: (
+            classifications.append("called")
+            or {
+                "terminal_kind": None,
+                "precontact_latch": None,
+                "records": [],
+                "evidence_sha256": "d" * 64,
+            }
+        ),
+        read_controlled_body_states=read_body_states,
+    )
+    vessel.reset()
+
+    state["physics_step"] = 0
+    vessel.update_before_substep()
+    state["physics_step"] = 1
+    decision = vessel.update_after_substep()
+
+    assert decision["kind"] == "TERMINAL"
+    assert decision["terminal_kind"] == "PHYSICAL_CONTACT_FAILURE"
+    assert body_reads == []
+    assert classifications == []
+    record = vessel.record()
+    assert record["failure_reason"] == "controlled_contact_bootstrap_unexpected_contact"
+    assert record["controlled_body_state_bootstrap"]["ready"] is False
+
+
+def test_controlled_dynamic_vessel_rejects_noninitial_bootstrap_report():
+    class Reporter:
+        def reset(self):
+            return None
+
+        def sample(self, *, physics_index, allow_provisional_persist_bootstrap=False):
+            del allow_provisional_persist_bootstrap
+            return {
+                "authority": "physx_immediate_full_contact_report_v1",
+                "physics_index": physics_index,
+                "occurrences": [],
+                "current_pairs": [],
+                "immediate_read_index": 1,
+                "immediate_read_count": 2,
+            }
+
+    body_reads = []
+    vessel, state = _dynamic_contact_vessel(
+        immediate_contact_reporter=Reporter(),
+        controlled_contact_classifier=lambda **_kwargs: pytest.fail(
+            "classifier must not run for a stale bootstrap report"
+        ),
+        read_controlled_body_states=lambda: body_reads.append(
+            state["physics_step"]
+        )
+        or _controlled_body_state_sample(),
+    )
+    vessel.reset()
+
+    state["physics_step"] = 0
+    vessel.update_before_substep()
+    state["physics_step"] = 1
+    decision = vessel.update_after_substep()
+
+    assert decision == {
+        "kind": "TERMINAL",
+        "terminal_kind": "PROTOCOL_FAILURE",
+        "failure_reason": "controlled_contact_bootstrap_report_invalid",
+        "classification": {
+            "authority": "controlled_contact_body_state_bootstrap_v1",
+            "physics_step": 1,
+            "classifier_skipped": True,
+            "terminal_kind": "PROTOCOL_FAILURE",
+            "failure_reason": "controlled_contact_bootstrap_report_invalid",
+        },
+    }
+    assert body_reads == []
+
+
+def test_controlled_dynamic_vessel_terminalizes_bootstrap_report_read_failure():
+    class Reporter:
+        def reset(self):
+            return None
+
+        def sample(self, **_kwargs):
+            raise ValueError("full_contact_report_tuple_invalid")
+
+    vessel, state = _dynamic_contact_vessel(
+        immediate_contact_reporter=Reporter(),
+        controlled_contact_classifier=lambda **_kwargs: pytest.fail(
+            "classifier must not run after a report read failure"
+        ),
+        read_controlled_body_states=lambda: pytest.fail(
+            "COM must not be read after a report read failure"
+        ),
+    )
+    vessel.reset()
+
+    state["physics_step"] = 0
+    vessel.update_before_substep()
+    state["physics_step"] = 1
+    decision = vessel.update_after_substep()
+
+    assert decision["kind"] == "TERMINAL"
+    assert decision["terminal_kind"] == "PROTOCOL_FAILURE"
+    assert decision["failure_reason"] == (
+        "controlled_contact_bootstrap_report_read_failed:"
+        "ValueError:full_contact_report_tuple_invalid"
+    )
+    assert vessel.record()["controlled_body_state_bootstrap"]["ready"] is False
+
+
+def test_controlled_dynamic_vessel_fails_if_com_is_invalid_after_bootstrap_step():
+    class Reporter:
+        def reset(self):
+            return None
+
+        def sample(self, *, physics_index, allow_provisional_persist_bootstrap=False):
+            del allow_provisional_persist_bootstrap
+            return {
+                "physics_index": physics_index,
+                "occurrences": [],
+                "current_pairs": [],
+            }
+
+    body_read_steps = []
+
+    def read_body_states():
+        body_read_steps.append(state["physics_step"])
+        raise RuntimeError("controlled_contact_com_invalid:/World/beaker2")
+
+    vessel, state = _dynamic_contact_vessel(
+        immediate_contact_reporter=Reporter(),
+        controlled_contact_classifier=lambda **_kwargs: pytest.fail(
+            "classifier must not run without a real COM snapshot"
+        ),
+        read_controlled_body_states=read_body_states,
+    )
+    vessel.reset()
+
+    state["physics_step"] = 0
+    vessel.update_before_substep()
+    assert body_read_steps == []
+    state["physics_step"] = 1
+    decision = vessel.update_after_substep()
+
+    assert decision["kind"] == "TERMINAL"
+    assert decision["terminal_kind"] == "PROTOCOL_FAILURE"
+    assert "controlled_contact_com_invalid" in decision["failure_reason"]
+    assert body_read_steps == [1]
+    bootstrap = vessel.record()["controlled_body_state_bootstrap"]
+    assert bootstrap["ready"] is False
+    assert bootstrap["physics_step"] == 1
+    assert "controlled_contact_com_invalid" in bootstrap["failure_reason"]
+    assert "controlled_contact_com_invalid" in vessel.record()["failure_reason"]
+
+
+def test_controlled_dynamic_vessel_rejects_incomplete_bootstrap_snapshot():
+    class Reporter:
+        def reset(self):
+            return None
+
+        def sample(self, *, physics_index, allow_provisional_persist_bootstrap=False):
+            del allow_provisional_persist_bootstrap
+            return {
+                "physics_index": physics_index,
+                "occurrences": [],
+                "current_pairs": [],
+            }
+
+    vessel, state = _dynamic_contact_vessel(
+        immediate_contact_reporter=Reporter(),
+        controlled_contact_classifier=lambda **_kwargs: pytest.fail(
+            "classifier must not run without a complete COM snapshot"
+        ),
+        read_controlled_body_states=lambda: {"sample_step": 1},
+    )
+    vessel.reset()
+
+    state["physics_step"] = 0
+    vessel.update_before_substep()
+    state["physics_step"] = 1
+    decision = vessel.update_after_substep()
+
+    assert decision["kind"] == "TERMINAL"
+    assert decision["terminal_kind"] == "PROTOCOL_FAILURE"
+    assert "controlled_contact_body_state_missing:/World/beaker2" in decision[
+        "failure_reason"
+    ]
+    assert vessel.record()["controlled_body_state_bootstrap"]["ready"] is False
+
+
+def test_controlled_dynamic_vessel_rejects_preaction_without_bootstrap_step():
+    class Reporter:
+        def reset(self):
+            return None
+
+        def sample(self, *, physics_index, allow_provisional_persist_bootstrap=False):
+            del allow_provisional_persist_bootstrap
+            return {
+                "physics_index": physics_index,
+                "occurrences": [],
+                "current_pairs": [],
+            }
+
+    vessel, state = _dynamic_contact_vessel(
+        immediate_contact_reporter=Reporter(),
+        controlled_contact_classifier=lambda **_kwargs: pytest.fail(
+            "classifier must not run before bootstrap"
+        ),
+        read_controlled_body_states=lambda: pytest.fail(
+            "COM must not be read before a real physics step"
+        ),
+    )
+    vessel.reset()
+    state["physics_step"] = 0
+
+    assert vessel.validate_controlled_preaction_authority() == {
+        "kind": "TERMINAL",
+        "terminal_kind": "PROTOCOL_FAILURE",
+        "failure_reason": "controlled_contact_body_state_bootstrap_not_ready",
+    }
 
 
 def test_dynamic_contact_vessel_rejects_sensor_contact_missing_from_immediate_report():
@@ -1029,6 +1514,7 @@ def test_controlled_dynamic_vessel_enforces_source_motion_during_pre_roll():
     state["source"][3, 0] += 0.00201
     state["physics_step"] = 0
     vessel.update_before_substep()
+    state["physics_step"] = 1
 
     decision = vessel.update_after_substep()
 
@@ -1545,7 +2031,64 @@ def test_dynamic_contact_vessel_readiness_rejects_stale_and_missing_hand_frames(
     missing = vessel.record()["contact_sensor_readiness"]
     assert missing["ready"] is False
     assert missing["consecutive_current_steps"] == 0
-    assert "contact_sensor_frame_set_mismatch" in missing["last_failure_reason"]
+    assert "contact_sensor_native_frame_invalid" in missing["last_failure_reason"]
+
+
+def test_dynamic_contact_vessel_readiness_records_unvalidated_raw_sensor_frames():
+    vessel, state = _dynamic_contact_vessel()
+    vessel.reset()
+
+    def initial_hand_frame(frames):
+        frames["hand"] = {
+            "physics_step": 0.0,
+            "time": 0.0,
+            "contacts": [],
+        }
+        return frames
+
+    state["frame_transform"] = initial_hand_frame
+    state["physics_step"] = 141
+    vessel.update_after_substep()
+
+    readiness = vessel.record()["contact_sensor_readiness"]
+    assert readiness["ready"] is False
+    assert readiness["last_attempted_physics_step"] == 141
+    assert readiness["raw_frame_metadata"]["hand"] == {
+        "frame_mapping": True,
+        "native_reading_valid": False,
+        "physics_step": 0.0,
+        "time_s": 0.0,
+        "raw_contact_count": 0,
+        "sensor_runtime": None,
+    }
+    assert "contact_sensor_native_frame_invalid" in readiness["last_failure_reason"]
+
+
+@pytest.mark.parametrize("invalid_sensor", ("left", "right", "hand"))
+def test_dynamic_contact_vessel_readiness_requires_native_frames_for_every_role(
+    invalid_sensor,
+):
+    vessel, state = _dynamic_contact_vessel()
+    vessel.reset()
+
+    def invalid_native_frame(frames):
+        del frames[invalid_sensor]["force"]
+        return frames
+
+    state["frame_transform"] = invalid_native_frame
+    state["physics_step"] = 141
+    vessel.update_after_substep()
+
+    readiness = vessel.record()["contact_sensor_readiness"]
+    assert readiness["ready"] is False
+    assert readiness["consecutive_current_steps"] == 0
+    assert readiness["raw_frame_metadata"][invalid_sensor][
+        "native_reading_valid"
+    ] is False
+    assert readiness["last_failure_reason"] == (
+        "ValueError:contact_sensor_native_frame_invalid:"
+        f"sensor={invalid_sensor}:reason=required_fields"
+    )
 
 
 def test_dynamic_contact_vessel_hand_only_contacts_cannot_qualify_finger_roles():
@@ -1561,6 +2104,7 @@ def test_dynamic_contact_vessel_hand_only_contacts_cannot_qualify_finger_roles()
             *bilateral["left"]["contacts"],
             *bilateral["right"]["contacts"],
         ]
+        frames["hand"]["number_of_contacts"] = len(frames["hand"]["contacts"])
         return frames
 
     state["frame_transform"] = hand_only
@@ -1667,6 +2211,32 @@ def test_dynamic_contact_vessel_preclose_steps_do_not_seed_gate_or_timeout():
         vessel.update_after_substep()
 
     assert vessel.record()["qualified"] is True
+
+
+def test_dynamic_contact_vessel_monitors_when_preclose_contact_is_allowed():
+    vessel, state = _dynamic_contact_vessel(allow_preclose_contact=True)
+    request = {"close": False}
+    _reset_and_pre_roll_contact_frames(vessel, state)
+
+    assert vessel.maybe_attach(_mutable_contact_request_controller(request), {}) is True
+    assert vessel.record()["monitoring"] is True
+
+    state["contacts"] = True
+    for step in range(1, 5):
+        state["physics_step"] = step
+        vessel.update_after_substep()
+    assert vessel.record()["failure_reason"] is None
+    assert vessel.record()["contact_acquisition_steps"] == 0
+
+    request["close"] = True
+    for step in range(5, 10):
+        state["physics_step"] = step
+        vessel.update_after_substep()
+
+    record = vessel.record()
+    assert record["close_command_observed"] is True
+    assert record["qualified"] is True
+    assert record["source_pose_write_count_after_play"] == 0
 
 
 def test_dynamic_contact_vessel_latches_contact_before_close():
@@ -1855,6 +2425,79 @@ def test_rigid_body_com_state_uses_world_space_com_and_twist():
     }
 
 
+def test_rigid_body_com_state_uses_authored_local_com_without_get_com():
+    calls = []
+    body = SimpleNamespace(
+        get_world_pose=lambda: calls.append("world_pose")
+        or (
+            np.asarray([2.0, 3.0, 4.0]),
+            np.asarray([np.sqrt(0.5), 0.0, 0.0, np.sqrt(0.5)]),
+        ),
+        get_linear_velocity=lambda: calls.append("linear_velocity")
+        or np.asarray([0.4, 0.5, 0.6]),
+        get_angular_velocity=lambda: calls.append("angular_velocity")
+        or np.asarray([0.7, 0.8, 0.9]),
+    )
+
+    state = isaac_fluid.read_rigid_body_com_state(
+        body,
+        body_path=_SOURCE_BODY,
+        local_com_position_m=np.asarray([0.5, 0.0, 0.0]),
+    )
+
+    assert state["com_position_m"] == pytest.approx([2.0, 3.5, 4.0])
+    assert calls == ["world_pose", "linear_velocity", "angular_velocity"]
+
+
+@pytest.mark.parametrize(
+    "local_com_position_m",
+    [np.asarray([0.0, 0.0]), np.asarray([np.nan, 0.0, 0.0])],
+)
+def test_rigid_body_com_state_rejects_invalid_authored_local_com(
+    local_com_position_m,
+):
+    body = SimpleNamespace(
+        get_world_pose=lambda: (
+            np.asarray([0.0, 0.0, 0.0]),
+            np.asarray([1.0, 0.0, 0.0, 0.0]),
+        ),
+        get_linear_velocity=lambda: np.zeros(3),
+        get_angular_velocity=lambda: np.zeros(3),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="controlled_contact_local_com_position_invalid:/World/beaker2",
+    ):
+        isaac_fluid.read_rigid_body_com_state(
+            body,
+            body_path=_SOURCE_BODY,
+            local_com_position_m=local_com_position_m,
+        )
+
+
+def test_refresh_rigid_body_handles_initializes_each_existing_handle_once():
+    calls = []
+
+    class Body:
+        def __init__(self, name):
+            self.name = name
+
+        def initialize(self):
+            calls.append(self.name)
+
+    isaac_fluid.refresh_rigid_body_handles(
+        {
+            _SOURCE_BODY: Body("source"),
+            _LEFT_FINGER_BODY: Body("left"),
+            _RIGHT_FINGER_BODY: Body("right"),
+            "/World/Franka/panda_hand": Body("hand"),
+        }
+    )
+
+    assert calls == ["source", "left", "right", "hand"]
+
+
 def test_contact_grasp_scene_preauthorizes_contact_reports_on_fingers_and_hand(
     monkeypatch,
 ):
@@ -1909,9 +2552,15 @@ def test_contact_grasp_scene_preauthorizes_contact_reports_on_fingers_and_hand(
 
     assert record["contact_report_body_paths"] == list(body_paths)
     assert record["contact_report_api_preauthorized"] is True
+    sensor_parent_paths = sorted(f"{path}/collision" for path in body_paths)
+    assert record["contact_sensor_parent_report_paths"] == sensor_parent_paths
     assert second["contact_report_body_paths"] == list(body_paths)
-    assert FakeContactReportAPI.applied_paths == set(body_paths)
-    assert FakeContactReportAPI.apply_calls == list(body_paths)
+    expected_report_paths = [
+        *body_paths,
+        *(f"{path}/collision" for path in body_paths),
+    ]
+    assert FakeContactReportAPI.applied_paths == set(expected_report_paths)
+    assert FakeContactReportAPI.apply_calls == expected_report_paths
 
     stage.RemovePrim("/World/Franka/panda_hand")
     with pytest.raises(
@@ -2014,7 +2663,13 @@ def test_controlled_contact_scene_reports_every_robot_body_and_source_at_zero(
     assert record["contact_report_body_paths"] == expected
     assert record["contact_report_threshold_n_s"] == 0.0
     assert record["contact_report_pairs_empty"] is True
-    assert FakeContactReportAPI.applied_paths == set(expected)
+    sensor_parent_paths = sorted(
+        f"{path}/collision" for path in (_LEFT_FINGER_BODY, _RIGHT_FINGER_BODY)
+    )
+    assert record["contact_sensor_parent_report_paths"] == sensor_parent_paths
+    assert FakeContactReportAPI.applied_paths == set(
+        (*expected, *sensor_parent_paths)
+    )
     assert FakeContactReportAPI.thresholds == {
         path: 0.0 for path in expected
     }
@@ -2122,6 +2777,24 @@ def test_attachment_requests_can_come_from_collect_or_infer_controllers():
     assert isaac_fluid.fluid_rotation_handoff_requested(infer) is True
 
 
+def test_source_translation_limit_request_is_optional_and_requires_bool():
+    assert not isaac_fluid.fluid_source_translation_limit_active(
+        SimpleNamespace()
+    )
+    assert isaac_fluid.fluid_source_translation_limit_active(
+        SimpleNamespace(online_fluid_source_translation_limit_active=lambda: True)
+    )
+    with pytest.raises(
+        TypeError,
+        match="online_fluid_source_translation_limit_active_must_return_bool",
+    ):
+        isaac_fluid.fluid_source_translation_limit_active(
+            SimpleNamespace(
+                online_fluid_source_translation_limit_active=lambda: 1
+            )
+        )
+
+
 def test_attachment_preserves_source_to_gripper_relative_transform():
     source = _translation(0.3, 0.1, 0.8)
     gripper_at_attach = _translation(0.28, 0.1, 0.92)
@@ -2171,6 +2844,62 @@ def test_staged_attachment_transport_is_pure_translation_and_holds_rotation():
     assert attachment.record()["rotation_handoff_count"] == 0
     assert attachment.record()["expert_attachment_valid"] is False
     assert attachment.record()["kinematic_target_update_count"] == 1
+
+
+def test_staged_attachment_records_actual_source_motion_after_each_substep():
+    source_matrix = _translation(0.3, 0.1, 0.8)
+    gripper_matrix = _translation(0.28, 0.1, 0.92)
+    attachment = isaac_fluid.GripperAttachedKinematicVessel(
+        read_source_world_matrix=lambda: source_matrix.copy(),
+        read_gripper_world_matrix=lambda: gripper_matrix.copy(),
+        write_source_world_matrix=lambda _matrix: None,
+    )
+
+    assert attachment.maybe_attach(_controller(5), {}) is True
+    source_matrix[3, :3] += [0.003, 0.0, 0.0]
+    attachment.update_after_substep()
+    source_matrix[3, :3] += [0.0, 0.004, 0.0]
+    attachment.update_after_substep()
+
+    record = attachment.record()
+    assert record["source_motion_observation_policy"] == (
+        "post_physics_substep_source_pose_delta_v1"
+    )
+    assert record["observed_source_substep_sample_count"] == 2
+    assert record["maximum_observed_source_translation_step_m"] == pytest.approx(
+        0.004
+    )
+
+
+def test_staged_attachment_records_limiter_active_control_boundary_motion():
+    source_matrix = _translation(0.3, 0.1, 0.8)
+    gripper_matrix = _translation(0.28, 0.1, 0.92)
+    attachment = isaac_fluid.GripperAttachedKinematicVessel(
+        read_source_world_matrix=lambda: source_matrix.copy(),
+        read_gripper_world_matrix=lambda: gripper_matrix.copy(),
+        write_source_world_matrix=lambda _matrix: None,
+    )
+    controller = SimpleNamespace(
+        online_fluid_grasp_attachment_requested=lambda: True,
+        online_fluid_source_translation_limit_active=lambda: True,
+    )
+
+    assert attachment.maybe_attach(controller, {}) is True
+    source_matrix[3, :3] += [0.003, 0.004, 0.0]
+    attachment.update_after_observation()
+
+    record = attachment.record()
+    assert record["source_control_boundary_motion_observation_policy"] == (
+        "post_control_interval_source_pose_delta_v1"
+    )
+    assert record["observed_source_control_boundary_sample_count"] == 1
+    assert record["source_translation_limit_active"] is True
+    assert record[
+        "last_observed_source_control_boundary_translation_step_m"
+    ] == pytest.approx(0.005)
+    assert record[
+        "maximum_observed_limited_source_control_boundary_translation_step_m"
+    ] == pytest.approx(0.005)
 
 
 def test_staged_attachment_is_expert_valid_after_one_zero_jump_pour_handoff():
@@ -2563,6 +3292,37 @@ def test_synthetic_attachment_filters_only_source_to_robot_rigid_collisions():
         robot_root_path="/World/Franka",
     ) == record
     assert len(filtered_pairs.GetFilteredPairsRel().GetTargets()) == 3
+
+
+def test_synthetic_attachment_bootstrap_enables_kinematic_before_filtering():
+    pytest.importorskip("pxr")
+    from pxr import Usd, UsdGeom, UsdPhysics
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.Xform.Define(stage, "/World")
+    source = UsdGeom.Xform.Define(stage, "/World/beaker2").GetPrim()
+    UsdPhysics.RigidBodyAPI.Apply(source)
+    source.CreateAttribute(
+        "physics:kinematicEnabled",
+        pytest.importorskip("pxr.Sdf").ValueTypeNames.Bool,
+    ).Set(False)
+
+    robot = UsdGeom.Xform.Define(stage, "/World/Franka").GetPrim()
+    link = UsdGeom.Xform.Define(stage, "/World/Franka/panda_link0").GetPrim()
+    UsdPhysics.RigidBodyAPI.Apply(link)
+
+    record = isaac_fluid.configure_synthetic_attachment_source(
+        stage,
+        source_body_path="/World/beaker2",
+        collision_filter_root_path=str(robot.GetPath()),
+    )
+
+    assert source.GetAttribute("physics:kinematicEnabled").Get() is True
+    assert record == {
+        "source_body_path": "/World/beaker2",
+        "robot_root_path": "/World/Franka",
+        "robot_rigid_body_paths": ["/World/Franka/panda_link0"],
+    }
 
 
 def test_single_rigid_wrapper_disables_xform_reset_when_constructor_supports_it():

@@ -28,6 +28,7 @@ TABLETOP_SPILL_BAND_M = 0.02
 CONTACT_SENSOR_NAMES = ("left", "right", "hand")
 CONTACT_SENSOR_MINIMUM_READY_STEPS = 20
 CONTACT_REPORT_HAND_BODY_PATH = "/World/Franka/panda_hand"
+CONTACT_MATERIAL_IDENTIFIER_ZERO = "__physx_material_identifier_zero__"
 
 
 class ImmediatePhysxContactReporter:
@@ -72,6 +73,15 @@ class ImmediatePhysxContactReporter:
         if not path:
             raise ValueError("full_contact_report_path_resolution_failed")
         return path
+
+    def _material_path(self, value: Any) -> str:
+        if (
+            not isinstance(value, bool)
+            and isinstance(value, (int, np.integer))
+            and int(value) == 0
+        ):
+            return CONTACT_MATERIAL_IDENTIFIER_ZERO
+        return self._path(value)
 
     @classmethod
     def _event_name(cls, value: Any) -> str:
@@ -127,8 +137,8 @@ class ImmediatePhysxContactReporter:
                 "separation": float(value.separation),
                 "face_index0": int(value.face_index0),
                 "face_index1": int(value.face_index1),
-                "material0": self._path(value.material0),
-                "material1": self._path(value.material1),
+                "material0": self._material_path(value.material0),
+                "material1": self._material_path(value.material1),
             }
         except AttributeError as exc:
             raise ValueError("full_contact_report_contact_invalid") from exc
@@ -443,6 +453,13 @@ def fluid_rotation_handoff_requested(controller: Any) -> bool:
         if requested is None
         else requested
     )
+
+
+def fluid_source_translation_limit_active(controller: Any) -> bool:
+    requested = _controller_request(
+        controller, "online_fluid_source_translation_limit_active"
+    )
+    return False if requested is None else requested
 
 
 def _affine_matrix(value: Any, *, name: str) -> np.ndarray:
@@ -1052,6 +1069,118 @@ class BilateralContactGraspGate:
 
     def record(self) -> dict[str, Any]:
         return dict(self.last_record)
+
+
+def contact_sensor_raw_frame_metadata(
+    frames: Any,
+) -> dict[str, dict[str, Any]]:
+    """Capture JSON-safe native sensor provenance before strict normalization."""
+    result: dict[str, dict[str, Any]] = {}
+    for sensor_name in CONTACT_SENSOR_NAMES:
+        frame = frames.get(sensor_name) if isinstance(frames, Mapping) else None
+        if not isinstance(frame, Mapping):
+            result[sensor_name] = {
+                "frame_mapping": False,
+                "native_reading_valid": False,
+                "physics_step": None,
+                "time_s": None,
+                "raw_contact_count": None,
+                "sensor_runtime": None,
+            }
+            continue
+        raw_step = frame.get("physics_step")
+        raw_time = frame.get("time")
+        raw_contacts = frame.get("contacts")
+        result[sensor_name] = {
+            "frame_mapping": True,
+            "native_reading_valid": all(
+                field in frame
+                for field in ("in_contact", "force", "number_of_contacts")
+            ),
+            "physics_step": (
+                float(raw_step)
+                if not isinstance(raw_step, bool)
+                and isinstance(raw_step, (int, float, np.number))
+                and math.isfinite(float(raw_step))
+                else None
+            ),
+            "time_s": (
+                float(raw_time)
+                if not isinstance(raw_time, bool)
+                and isinstance(raw_time, (int, float, np.number))
+                and math.isfinite(float(raw_time))
+                else None
+            ),
+            "raw_contact_count": (
+                len(raw_contacts)
+                if isinstance(raw_contacts, Sequence)
+                and not isinstance(raw_contacts, (str, bytes, bytearray))
+                else None
+            ),
+            "sensor_runtime": (
+                dict(frame["_labutopia_sensor_runtime"])
+                if isinstance(frame.get("_labutopia_sensor_runtime"), Mapping)
+                else None
+            ),
+        }
+    return result
+
+
+def validate_contact_sensor_native_frames(
+    frames: Any,
+    *,
+    metadata: Mapping[str, Mapping[str, Any]],
+) -> None:
+    """Reject wrapper defaults before they can count as a current frame."""
+    for sensor_name in CONTACT_SENSOR_NAMES:
+        frame = frames.get(sensor_name) if isinstance(frames, Mapping) else None
+        frame_metadata = metadata.get(sensor_name)
+        if not isinstance(frame_metadata, Mapping) or not frame_metadata.get(
+            "frame_mapping"
+        ):
+            raise ValueError(
+                "contact_sensor_native_frame_invalid:"
+                f"sensor={sensor_name}:reason=frame_mapping"
+            )
+        if frame_metadata.get("native_reading_valid") is not True:
+            raise ValueError(
+                "contact_sensor_native_frame_invalid:"
+                f"sensor={sensor_name}:reason=required_fields"
+            )
+        if type(frame.get("in_contact")) is not bool:
+            raise ValueError(
+                "contact_sensor_native_frame_invalid:"
+                f"sensor={sensor_name}:reason=in_contact"
+            )
+        force = frame.get("force")
+        if (
+            isinstance(force, bool)
+            or not isinstance(force, (int, float, np.number))
+            or not math.isfinite(float(force))
+        ):
+            raise ValueError(
+                "contact_sensor_native_frame_invalid:"
+                f"sensor={sensor_name}:reason=force"
+            )
+        count = frame.get("number_of_contacts")
+        raw_contacts = frame.get("contacts")
+        if (
+            isinstance(count, bool)
+            or not isinstance(count, (int, np.integer))
+            or int(count) < 0
+            or not isinstance(raw_contacts, Sequence)
+            or isinstance(raw_contacts, (str, bytes, bytearray))
+            or int(count) != len(raw_contacts)
+        ):
+            raise ValueError(
+                "contact_sensor_native_frame_invalid:"
+                f"sensor={sensor_name}:reason=contact_count"
+            )
+        if frame_metadata.get("time_s") is None:
+            raise ValueError(
+                "contact_sensor_native_frame_invalid:"
+                f"sensor={sensor_name}:reason=time"
+            )
 
 
 def normalize_contact_sensor_frames(
@@ -1709,8 +1838,12 @@ class ContactFrictionDynamicVessel:
         self._last_sampled_physics_step: int | None = None
         self._contact_sensor_consecutive_current_steps = 0
         self._contact_sensor_last_validated_physics_step: int | None = None
+        self._contact_sensor_last_attempted_physics_step: int | None = None
         self._contact_sensor_last_sampled_physics_step: int | None = None
         self._contact_sensor_last_failure_reason: str | None = None
+        self._contact_sensor_last_raw_frame_metadata: (
+            dict[str, dict[str, Any]] | None
+        ) = None
         self._last_raw_contact_counts: dict[str, int | None] = {
             name: None for name in CONTACT_SENSOR_NAMES
         }
@@ -1720,6 +1853,19 @@ class ContactFrictionDynamicVessel:
         self._last_immediate_report: dict[str, Any] | None = None
         self._last_controlled_classification: dict[str, Any] | None = None
         self._controlled_pre_body_states: dict[str, Any] | None = None
+        self._controlled_body_state_bootstrap_required = bool(
+            self._read_controlled_body_states is not None
+        )
+        self._controlled_body_state_bootstrap_ready = not bool(
+            self._controlled_body_state_bootstrap_required
+        )
+        self._controlled_body_state_bootstrap_pre_physics_step: int | None = None
+        self._controlled_body_state_bootstrap_physics_step: int | None = None
+        self._controlled_body_state_bootstrap_state_sha256: str | None = None
+        self._controlled_body_state_bootstrap_report_sha256: str | None = None
+        self._controlled_body_state_bootstrap_report_read_index: int | None = None
+        self._controlled_body_state_bootstrap_classifier_skipped = False
+        self._controlled_body_state_bootstrap_failure_reason: str | None = None
         self._controlled_effective_phase: str | None = None
         self._controlled_certificate_streaks = {
             phase: 0 for phase in self._controlled_certificate_requirements
@@ -1733,19 +1879,237 @@ class ContactFrictionDynamicVessel:
         self._sensor_immediate_agreement_valid: bool | None = None
         self._last_sensor_immediate_missing_pairs: list[list[str]] = []
 
+    def _controlled_body_state_bootstrap_record(self) -> dict[str, Any]:
+        return {
+            "required": self._controlled_body_state_bootstrap_required,
+            "ready": self._controlled_body_state_bootstrap_ready,
+            "pre_physics_step": (
+                self._controlled_body_state_bootstrap_pre_physics_step
+            ),
+            "physics_step": self._controlled_body_state_bootstrap_physics_step,
+            "state_sha256": self._controlled_body_state_bootstrap_state_sha256,
+            "immediate_report_sha256": (
+                self._controlled_body_state_bootstrap_report_sha256
+            ),
+            "immediate_report_read_index": (
+                self._controlled_body_state_bootstrap_report_read_index
+            ),
+            "classifier_skipped": (
+                self._controlled_body_state_bootstrap_classifier_skipped
+            ),
+            "failure_reason": self._controlled_body_state_bootstrap_failure_reason,
+        }
+
+    def _controlled_body_state_bootstrap_failure(self) -> str | None:
+        if not self._controlled_body_state_bootstrap_required:
+            return None
+        if self._controlled_body_state_bootstrap_ready:
+            return None
+        return (
+            self._controlled_body_state_bootstrap_failure_reason
+            or "controlled_contact_body_state_bootstrap_not_ready"
+        )
+
+    def _validated_controlled_body_states(
+        self,
+        value: Any,
+    ) -> dict[str, Any]:
+        if not isinstance(value, Mapping):
+            raise TypeError("dynamic_contact_body_states_mapping_required")
+        result = dict(value)
+        required_paths = (
+            self._gate.source_body_path,
+            self._gate.left_finger_body_path,
+            self._gate.right_finger_body_path,
+            CONTACT_REPORT_HAND_BODY_PATH,
+        )
+        fields = {
+            "com_position_m": 3,
+            "orientation_wxyz": 4,
+            "linear_velocity_m_s": 3,
+            "angular_velocity_rad_s": 3,
+        }
+        for path in required_paths:
+            body_state = result.get(path)
+            if not isinstance(body_state, Mapping):
+                raise RuntimeError(f"controlled_contact_body_state_missing:{path}")
+            for field, length in fields.items():
+                try:
+                    vector = np.asarray(body_state.get(field), dtype=np.float64)
+                except (TypeError, ValueError):
+                    vector = np.asarray((), dtype=np.float64)
+                if (
+                    vector.shape != (length,)
+                    or not np.isfinite(vector).all()
+                ):
+                    raise RuntimeError(
+                        f"controlled_contact_body_state_invalid:{path}:{field}"
+                    )
+            if float(np.linalg.norm(body_state["orientation_wxyz"])) <= 1.0e-12:
+                raise RuntimeError(
+                    f"controlled_contact_body_state_invalid:{path}:orientation_wxyz"
+                )
+        return result
+
+    def _controlled_bootstrap_report_failure(self, physics_step: int) -> str | None:
+        report = self._last_immediate_report
+        if (
+            not isinstance(report, Mapping)
+            or report.get("authority")
+            != "physx_immediate_full_contact_report_v1"
+            or report.get("physics_index") != physics_step
+            or report.get("immediate_read_index") != 0
+            or report.get("immediate_read_count") != 1
+            or self._immediate_report_sample_count != 1
+        ):
+            return "controlled_contact_bootstrap_report_invalid"
+        baseline_failure = self._controlled_contact_baseline_failure(physics_step)
+        if baseline_failure is not None:
+            return baseline_failure
+        current_pairs = report.get("current_pairs")
+        if (
+            not isinstance(current_pairs, Sequence)
+            or isinstance(current_pairs, (str, bytes, bytearray))
+        ):
+            return "controlled_contact_bootstrap_report_invalid"
+        if not self._controlled_contact_baseline_pairs and current_pairs:
+            return "controlled_contact_bootstrap_unexpected_contact"
+        occurrences = report.get("occurrences")
+        if (
+            not isinstance(occurrences, Sequence)
+            or isinstance(occurrences, (str, bytes, bytearray))
+        ):
+            return "controlled_contact_bootstrap_report_invalid"
+        for occurrence in occurrences:
+            if not isinstance(occurrence, Mapping):
+                return "controlled_contact_bootstrap_report_invalid"
+            fragments = occurrence.get("fragments")
+            if (
+                not isinstance(fragments, Sequence)
+                or isinstance(fragments, (str, bytes, bytearray))
+                or not fragments
+            ):
+                return "controlled_contact_bootstrap_report_invalid"
+            for fragment in fragments:
+                header = (
+                    fragment.get("header") if isinstance(fragment, Mapping) else None
+                )
+                if not isinstance(header, Mapping):
+                    return "controlled_contact_bootstrap_report_invalid"
+                pair = (header.get("collider0"), header.get("collider1"))
+                if (
+                    any(not isinstance(path, str) or not path for path in pair)
+                    or pair[0] == pair[1]
+                ):
+                    return "controlled_contact_bootstrap_report_invalid"
+                if tuple(sorted(pair)) not in self._controlled_contact_baseline_pairs:
+                    return "controlled_contact_bootstrap_unexpected_contact"
+        return None
+
+    def _controlled_bootstrap_terminal(
+        self,
+        *,
+        physics_step: int,
+        reason: str,
+    ) -> dict[str, Any]:
+        if self._controlled_body_state_bootstrap_failure_reason is None:
+            self._controlled_body_state_bootstrap_failure_reason = reason
+        reason = self._controlled_body_state_bootstrap_failure_reason
+        self._latch_failure(reason, physics_step)
+        terminal_kind = self._controlled_failure_terminal_kind(reason)
+        classification = {
+            "authority": "controlled_contact_body_state_bootstrap_v1",
+            "physics_step": physics_step,
+            "classifier_skipped": True,
+            "terminal_kind": terminal_kind,
+            "failure_reason": reason,
+        }
+        self._last_controlled_classification = classification
+        return {
+            "kind": "TERMINAL",
+            "terminal_kind": terminal_kind,
+            "failure_reason": reason,
+            "classification": classification,
+        }
+
     def _controlled_step_decision(self, physics_step: int) -> dict[str, Any] | None:
         if self._immediate_contact_reporter is None:
             return None
-        report = self._immediate_contact_reporter.sample(
-            physics_index=physics_step,
-            allow_provisional_persist_bootstrap=(
-                self._immediate_report_sample_count == 0
-            ),
+        bootstrap_pending = bool(
+            self._controlled_body_state_bootstrap_required
+            and not self._controlled_body_state_bootstrap_ready
         )
+        if bootstrap_pending:
+            self._controlled_body_state_bootstrap_physics_step = physics_step
+        try:
+            report = self._immediate_contact_reporter.sample(
+                physics_index=physics_step,
+                allow_provisional_persist_bootstrap=(
+                    self._immediate_report_sample_count == 0
+                ),
+            )
+        except Exception as exc:
+            if bootstrap_pending:
+                return self._controlled_bootstrap_terminal(
+                    physics_step=physics_step,
+                    reason=(
+                        "controlled_contact_bootstrap_report_read_failed:"
+                        f"{type(exc).__name__}:{exc}"
+                    ),
+                )
+            raise
         self._immediate_report_sample_count += 1
         if not isinstance(report, Mapping):
+            if bootstrap_pending:
+                return self._controlled_bootstrap_terminal(
+                    physics_step=physics_step,
+                    reason="controlled_contact_bootstrap_report_invalid",
+                )
             raise TypeError("dynamic_contact_immediate_report_mapping_required")
         self._last_immediate_report = dict(report)
+        if bootstrap_pending:
+            read_index = self._last_immediate_report.get("immediate_read_index")
+            self._controlled_body_state_bootstrap_report_read_index = (
+                read_index if type(read_index) is int else None
+            )
+            if (
+                self._controlled_body_state_bootstrap_pre_physics_step is None
+                or physics_step
+                != self._controlled_body_state_bootstrap_pre_physics_step + 1
+            ):
+                return self._controlled_bootstrap_terminal(
+                    physics_step=physics_step,
+                    reason="controlled_contact_body_state_bootstrap_step_invalid",
+                )
+            bootstrap_failure = self._controlled_bootstrap_report_failure(
+                physics_step
+            )
+            if bootstrap_failure is not None:
+                return self._controlled_bootstrap_terminal(
+                    physics_step=physics_step,
+                    reason=bootstrap_failure,
+                )
+            try:
+                report_sha256 = canonical_json_sha256(
+                    self._last_immediate_report
+                )
+                post_body_states = self._validated_controlled_body_states(
+                    self._read_controlled_body_states()
+                )
+                state_sha256 = canonical_json_sha256(post_body_states)
+            except Exception as exc:
+                return self._controlled_bootstrap_terminal(
+                    physics_step=physics_step,
+                    reason=(
+                        "controlled_contact_body_state_bootstrap_read_failed:"
+                        f"{type(exc).__name__}:{exc}"
+                    ),
+                )
+            self._controlled_body_state_bootstrap_ready = True
+            self._controlled_body_state_bootstrap_state_sha256 = state_sha256
+            self._controlled_body_state_bootstrap_report_sha256 = report_sha256
+            self._controlled_body_state_bootstrap_classifier_skipped = True
+            return {"kind": "CONTINUE"}
         if not self._monitoring:
             phase = "PRE_ROLL"
             controller_phase = phase
@@ -1765,7 +2129,9 @@ class ContactFrictionDynamicVessel:
             report=report,
             phase=phase,
             pre_body_states=self._controlled_pre_body_states,
-            post_body_states=self._read_controlled_body_states(),
+            post_body_states=self._validated_controlled_body_states(
+                self._read_controlled_body_states()
+            ),
         )
         if not isinstance(classification, Mapping):
             raise TypeError("dynamic_contact_classification_mapping_required")
@@ -2012,6 +2378,13 @@ class ContactFrictionDynamicVessel:
         physics_step: int,
     ) -> list[dict[str, Any]]:
         frames = self._read_contact_frames()
+        self._contact_sensor_last_raw_frame_metadata = (
+            contact_sensor_raw_frame_metadata(frames)
+        )
+        validate_contact_sensor_native_frames(
+            frames,
+            metadata=self._contact_sensor_last_raw_frame_metadata,
+        )
         contacts = normalize_contact_sensor_frames(
             frames,
             expected_physics_step=physics_step,
@@ -2156,6 +2529,7 @@ class ContactFrictionDynamicVessel:
             raise ValueError("dynamic_contact_grasp_source_center_invalid")
         contacts = self._read_normalized_contact_sample(physics_step)
         qualifying_contacts = self._finger_role_contacts(contacts)
+        self._contact_sensor_last_attempted_physics_step = physics_step
         self._contact_sensor_last_sampled_physics_step = physics_step
         self._record_valid_contact_sensor_step(physics_step)
         self._last_sampled_physics_step = physics_step
@@ -2170,6 +2544,7 @@ class ContactFrictionDynamicVessel:
     def _update_contact_sensor_readiness(self) -> None:
         try:
             physics_step = self._validated_physics_step()
+            self._contact_sensor_last_attempted_physics_step = physics_step
             self._contact_sensor_last_sampled_physics_step = physics_step
             contacts = self._read_normalized_contact_sample(physics_step)
             self._finger_role_contacts(contacts)
@@ -2223,8 +2598,19 @@ class ContactFrictionDynamicVessel:
             "last_sampled_physics_step": (
                 self._contact_sensor_last_sampled_physics_step
             ),
+            "last_attempted_physics_step": (
+                self._contact_sensor_last_attempted_physics_step
+            ),
             "last_validated_physics_step": (
                 self._contact_sensor_last_validated_physics_step
+            ),
+            "raw_frame_metadata": (
+                None
+                if self._contact_sensor_last_raw_frame_metadata is None
+                else {
+                    name: dict(metadata)
+                    for name, metadata in self._contact_sensor_last_raw_frame_metadata.items()
+                }
             ),
             "current_physics_step": current_physics_step,
             "expected_sensor_names": list(CONTACT_SENSOR_NAMES),
@@ -2331,7 +2717,10 @@ class ContactFrictionDynamicVessel:
         physics_step = self._validated_physics_step()
         readiness = self._contact_sensor_readiness_record()
         failure = None
-        if readiness["ready"] is not True:
+        bootstrap_failure = self._controlled_body_state_bootstrap_failure()
+        if bootstrap_failure is not None:
+            failure = bootstrap_failure
+        if failure is None and readiness["ready"] is not True:
             failure = "contact_sensor_pre_roll_not_ready"
         if failure is None:
             failure = self._source_writer_authority_failure()
@@ -2360,6 +2749,7 @@ class ContactFrictionDynamicVessel:
             "unexpected_contact_before_close",
             "unexpected_contact_outside_grasp_allowlist",
             "grasp_lost",
+            "controlled_contact_bootstrap_unexpected_contact",
         }:
             return "PHYSICAL_CONTACT_FAILURE"
         return "PROTOCOL_FAILURE"
@@ -2380,12 +2770,17 @@ class ContactFrictionDynamicVessel:
 
     def maybe_attach(self, controller: Any, state: Mapping[str, Any]) -> bool:
         del state
-        if self._allow_preclose_contact:
-            return False
         if self._monitoring or self._failure_reason is not None:
             return False
         readiness = self._contact_sensor_readiness_record()
         physics_step = readiness["current_physics_step"]
+        bootstrap_failure = self._controlled_body_state_bootstrap_failure()
+        if bootstrap_failure is not None:
+            self._latch_failure(
+                bootstrap_failure,
+                0 if physics_step is None else physics_step,
+            )
+            return False
         if readiness["ready"] is not True:
             self._latch_failure(
                 "contact_sensor_pre_roll_not_ready",
@@ -2432,10 +2827,16 @@ class ContactFrictionDynamicVessel:
 
     def update_before_substep(self) -> None:
         if self._read_controlled_body_states is not None:
-            value = self._read_controlled_body_states()
-            if not isinstance(value, Mapping):
-                raise TypeError("dynamic_contact_body_states_mapping_required")
-            self._controlled_pre_body_states = dict(value)
+            if not self._controlled_body_state_bootstrap_ready:
+                self._controlled_body_state_bootstrap_pre_physics_step = (
+                    self._validated_physics_step()
+                )
+                return None
+            self._controlled_pre_body_states = (
+                self._validated_controlled_body_states(
+                    self._read_controlled_body_states()
+                )
+            )
         return None
 
     def _update_preclose_motion(
@@ -2738,6 +3139,7 @@ class ContactFrictionDynamicVessel:
         return bool(
             self._acquired
             and self._failure_reason is None
+            and self._controlled_body_state_bootstrap_failure() is None
             and self._loss_steps == 0
             and gate.get("valid_this_step") is True
             and gate.get("stale") is False
@@ -2755,6 +3157,9 @@ class ContactFrictionDynamicVessel:
             "contact_sensor_ready": readiness["ready"],
             "contact_sensor_readiness": readiness,
             "failure_reason": self._failure_reason,
+            "controlled_body_state_bootstrap": (
+                self._controlled_body_state_bootstrap_record()
+            ),
             "controlled_phase_certificates": (
                 self._controlled_phase_certificates()
             ),
@@ -2775,6 +3180,7 @@ class ContactFrictionDynamicVessel:
         expert_grasp_valid = bool(
             self._acquired
             and self._failure_reason is None
+            and self._controlled_body_state_bootstrap_failure() is None
             and writer_authority_valid
         )
         return {
@@ -2809,6 +3215,9 @@ class ContactFrictionDynamicVessel:
                 None
                 if self._last_controlled_classification is None
                 else dict(self._last_controlled_classification)
+            ),
+            "controlled_body_state_bootstrap": (
+                self._controlled_body_state_bootstrap_record()
             ),
             "sensor_immediate_agreement_valid": (
                 self._sensor_immediate_agreement_valid
@@ -2969,6 +3378,24 @@ class GripperAttachedKinematicVessel:
         self._attachment_count = 0
         self._rotation_handoff_count = 0
         self._target_update_count = 0
+        self._last_observed_source: np.ndarray | None = None
+        self._last_observed_source_control_boundary: np.ndarray | None = None
+        self._observed_source_substep_sample_count = 0
+        self._maximum_observed_source_translation_step_m = 0.0
+        self._maximum_observed_source_rotation_step_degrees = 0.0
+        self._observed_source_control_boundary_sample_count = 0
+        self._observed_limited_source_control_boundary_sample_count = 0
+        self._last_observed_source_control_boundary_translation_step_m = None
+        self._last_observed_source_control_boundary_rotation_step_degrees = None
+        self._maximum_observed_source_control_boundary_translation_step_m = 0.0
+        self._maximum_observed_source_control_boundary_rotation_step_degrees = 0.0
+        self._maximum_observed_limited_source_control_boundary_translation_step_m = (
+            0.0
+        )
+        self._maximum_observed_limited_source_control_boundary_rotation_step_degrees = (
+            0.0
+        )
+        self._source_translation_limit_active = False
 
     def reset(self) -> None:
         self._attach_source = None
@@ -2986,6 +3413,24 @@ class GripperAttachedKinematicVessel:
         self._attachment_count = 0
         self._rotation_handoff_count = 0
         self._target_update_count = 0
+        self._last_observed_source = None
+        self._last_observed_source_control_boundary = None
+        self._observed_source_substep_sample_count = 0
+        self._maximum_observed_source_translation_step_m = 0.0
+        self._maximum_observed_source_rotation_step_degrees = 0.0
+        self._observed_source_control_boundary_sample_count = 0
+        self._observed_limited_source_control_boundary_sample_count = 0
+        self._last_observed_source_control_boundary_translation_step_m = None
+        self._last_observed_source_control_boundary_rotation_step_degrees = None
+        self._maximum_observed_source_control_boundary_translation_step_m = 0.0
+        self._maximum_observed_source_control_boundary_rotation_step_degrees = 0.0
+        self._maximum_observed_limited_source_control_boundary_translation_step_m = (
+            0.0
+        )
+        self._maximum_observed_limited_source_control_boundary_rotation_step_degrees = (
+            0.0
+        )
+        self._source_translation_limit_active = False
         self._write_source(self._initial_source.copy())
 
     def _upright_transport_target(self, gripper: Any) -> np.ndarray:
@@ -3002,6 +3447,9 @@ class GripperAttachedKinematicVessel:
 
     def maybe_attach(self, controller: Any, state: Mapping[str, Any]) -> bool:
         del state
+        self._source_translation_limit_active = (
+            fluid_source_translation_limit_active(controller)
+        )
         if self._attach_source is None:
             if not fluid_grasp_attachment_requested(controller):
                 return False
@@ -3016,6 +3464,8 @@ class GripperAttachedKinematicVessel:
             self._observed_relative = relative_source_to_gripper_matrix(
                 source, gripper
             )
+            self._last_observed_source = source.copy()
+            self._last_observed_source_control_boundary = source.copy()
             self._pre_attach_source = source.copy()
             self._first_attachment_target = self._upright_transport_target(gripper)
             (
@@ -3059,6 +3509,63 @@ class GripperAttachedKinematicVessel:
         self._write_source(target)
         self._target_update_count += 1
 
+    def update_after_substep(self) -> None:
+        if self._attach_source is None:
+            return
+        source = _rigid_affine_matrix(
+            self._read_source(), name="post_substep_source_world"
+        )
+        if self._last_observed_source is not None:
+            translation, rotation = _pose_jump(self._last_observed_source, source)
+            self._maximum_observed_source_translation_step_m = max(
+                self._maximum_observed_source_translation_step_m,
+                translation,
+            )
+            self._maximum_observed_source_rotation_step_degrees = max(
+                self._maximum_observed_source_rotation_step_degrees,
+                rotation,
+            )
+            self._observed_source_substep_sample_count += 1
+        self._last_observed_source = source.copy()
+
+    def update_after_observation(self) -> None:
+        if self._attach_source is None:
+            return
+        source = _rigid_affine_matrix(
+            self._read_source(), name="post_control_interval_source_world"
+        )
+        if self._last_observed_source_control_boundary is not None:
+            translation, rotation = _pose_jump(
+                self._last_observed_source_control_boundary,
+                source,
+            )
+            self._observed_source_control_boundary_sample_count += 1
+            self._last_observed_source_control_boundary_translation_step_m = (
+                translation
+            )
+            self._last_observed_source_control_boundary_rotation_step_degrees = (
+                rotation
+            )
+            self._maximum_observed_source_control_boundary_translation_step_m = max(
+                self._maximum_observed_source_control_boundary_translation_step_m,
+                translation,
+            )
+            self._maximum_observed_source_control_boundary_rotation_step_degrees = max(
+                self._maximum_observed_source_control_boundary_rotation_step_degrees,
+                rotation,
+            )
+            if self._source_translation_limit_active:
+                self._observed_limited_source_control_boundary_sample_count += 1
+                self._maximum_observed_limited_source_control_boundary_translation_step_m = max(
+                    self._maximum_observed_limited_source_control_boundary_translation_step_m,
+                    translation,
+                )
+                self._maximum_observed_limited_source_control_boundary_rotation_step_degrees = max(
+                    self._maximum_observed_limited_source_control_boundary_rotation_step_degrees,
+                    rotation,
+                )
+        self._last_observed_source_control_boundary = source.copy()
+
     def record(self) -> dict[str, Any]:
         attached = self._attach_source is not None
         handoff_complete = self._active_relative is not None
@@ -3094,6 +3601,48 @@ class GripperAttachedKinematicVessel:
                 else "upright_translation"
             ),
             "kinematic_target_update_count": self._target_update_count,
+            "source_motion_observation_policy": (
+                "post_physics_substep_source_pose_delta_v1"
+            ),
+            "observed_source_substep_sample_count": (
+                self._observed_source_substep_sample_count
+            ),
+            "maximum_observed_source_translation_step_m": (
+                self._maximum_observed_source_translation_step_m
+            ),
+            "maximum_observed_source_rotation_step_degrees": (
+                self._maximum_observed_source_rotation_step_degrees
+            ),
+            "source_control_boundary_motion_observation_policy": (
+                "post_control_interval_source_pose_delta_v1"
+            ),
+            "source_translation_limit_active": (
+                self._source_translation_limit_active
+            ),
+            "observed_source_control_boundary_sample_count": (
+                self._observed_source_control_boundary_sample_count
+            ),
+            "observed_limited_source_control_boundary_sample_count": (
+                self._observed_limited_source_control_boundary_sample_count
+            ),
+            "last_observed_source_control_boundary_translation_step_m": (
+                self._last_observed_source_control_boundary_translation_step_m
+            ),
+            "last_observed_source_control_boundary_rotation_step_degrees": (
+                self._last_observed_source_control_boundary_rotation_step_degrees
+            ),
+            "maximum_observed_source_control_boundary_translation_step_m": (
+                self._maximum_observed_source_control_boundary_translation_step_m
+            ),
+            "maximum_observed_source_control_boundary_rotation_step_degrees": (
+                self._maximum_observed_source_control_boundary_rotation_step_degrees
+            ),
+            "maximum_observed_limited_source_control_boundary_translation_step_m": (
+                self._maximum_observed_limited_source_control_boundary_translation_step_m
+            ),
+            "maximum_observed_limited_source_control_boundary_rotation_step_degrees": (
+                self._maximum_observed_limited_source_control_boundary_rotation_step_degrees
+            ),
             "attachment_matrix_policy": (
                 "captured_translation_then_recaptured_full_at_scripted_pour"
             ),
@@ -3448,6 +3997,31 @@ def configure_particle_usd_readback() -> dict[str, Any]:
     return applied
 
 
+def configure_synthetic_attachment_source(
+    stage: Any,
+    *,
+    source_body_path: str,
+    collision_filter_root_path: str | None,
+) -> dict[str, Any] | None:
+    """Enable the kinematic source before optionally filtering its carrier."""
+    source = stage.GetPrimAtPath(source_body_path)
+    if not source or not source.IsValid():
+        raise RuntimeError(f"synthetic_attachment_source_missing:{source_body_path}")
+    kinematic = source.GetAttribute("physics:kinematicEnabled")
+    if not kinematic:
+        raise RuntimeError("synthetic_attachment_source_kinematic_attribute_required")
+    kinematic.Set(True)
+    if collision_filter_root_path is None:
+        return None
+    if not isinstance(collision_filter_root_path, str) or not collision_filter_root_path:
+        raise ValueError("synthetic_attachment_collision_filter_root_path_invalid")
+    return author_synthetic_attachment_collision_filter(
+        stage,
+        source_body_path=source_body_path,
+        robot_root_path=collision_filter_root_path,
+    )
+
+
 def author_synthetic_attachment_collision_filter(
     stage: Any,
     *,
@@ -3560,6 +4134,24 @@ def configure_contact_grasp_scene(stage: Any, fluid_cfg: Any) -> dict[str, Any]:
         raise ValueError("contact_grasp_contact_report_body_paths_invalid")
     if not contact_report_paths:
         raise ValueError("contact_grasp_contact_report_body_paths_invalid")
+    contact_report_type = PhysxSchema.PhysxContactReportAPI
+
+    def has_contact_report_api(prim: Any) -> bool:
+        try:
+            return bool(prim.HasAPI(contact_report_type))
+        except (TypeError, RuntimeError):
+            return bool(contact_report_type(prim))
+
+    def preauthorize_contact_report(prim: Any, *, path: str) -> Any:
+        report_api = contact_report_type(prim)
+        if not has_contact_report_api(prim):
+            report_api = contact_report_type.Apply(prim)
+        if not has_contact_report_api(prim):
+            raise RuntimeError(
+                f"contact_grasp_contact_report_api_invalid:{path}"
+            )
+        return report_api
+
     for path in contact_report_paths:
         prim = stage.GetPrimAtPath(path)
         if not prim or not prim.IsValid():
@@ -3575,21 +4167,7 @@ def configure_contact_grasp_scene(stage: Any, fluid_cfg: Any) -> dict[str, Any]:
             raise RuntimeError(
                 f"contact_grasp_contact_report_body_disabled:{path}"
             )
-        contact_report_type = PhysxSchema.PhysxContactReportAPI
-
-        def has_contact_report_api() -> bool:
-            try:
-                return bool(prim.HasAPI(contact_report_type))
-            except (TypeError, RuntimeError):
-                return bool(contact_report_type(prim))
-
-        report_api = contact_report_type(prim)
-        if not has_contact_report_api():
-            report_api = contact_report_type.Apply(prim)
-        if not has_contact_report_api():
-            raise RuntimeError(
-                f"contact_grasp_contact_report_api_invalid:{path}"
-            )
+        report_api = preauthorize_contact_report(prim, path=path)
         if controlled_contact:
             threshold = report_api.CreateThresholdAttr()
             if threshold.Set(0.0) is False:
@@ -3624,6 +4202,20 @@ def configure_contact_grasp_scene(stage: Any, fluid_cfg: Any) -> dict[str, Any]:
                     f"contact_grasp_contact_report_pairs_not_empty:{path}"
                 )
 
+    sensor_parent_report_paths = []
+    for body_path in (*finger_paths, CONTACT_REPORT_HAND_BODY_PATH):
+        body = stage.GetPrimAtPath(body_path)
+        for candidate in Usd.PrimRange(body):
+            if not candidate.HasAPI(UsdPhysics.CollisionAPI):
+                continue
+            enabled = candidate.GetAttribute("physics:collisionEnabled")
+            if enabled and enabled.Get() is False:
+                continue
+            path = str(candidate.GetPath())
+            preauthorize_contact_report(candidate, path=path)
+            sensor_parent_report_paths.append(path)
+    sensor_parent_report_paths = sorted(set(sensor_parent_report_paths))
+
     bound: dict[str, list[str]] = {}
     for path, prim in finger_prims.items():
         colliders = []
@@ -3648,6 +4240,7 @@ def configure_contact_grasp_scene(stage: Any, fluid_cfg: Any) -> dict[str, Any]:
         "contact_report_body_paths": list(contact_report_paths),
         "contact_report_api_body_paths": list(contact_report_paths),
         "physx_contact_report_api_paths": list(contact_report_paths),
+        "contact_sensor_parent_report_paths": sensor_parent_report_paths,
         "contact_report_api_preauthorized": True,
         "contact_report_runtime_auto_add_required": False,
         "external_shell_to_finger_collision_filtered": False,
@@ -4086,15 +4679,18 @@ def read_rigid_body_com_state(
     rigid_body: Any,
     *,
     body_path: str,
+    local_com_position_m: Any | None = None,
 ) -> dict[str, list[float]]:
     if not isinstance(body_path, str) or not body_path:
         raise ValueError("controlled_contact_body_path_invalid")
-    for method_name in (
+    required_methods = [
         "get_world_pose",
-        "get_com",
         "get_linear_velocity",
         "get_angular_velocity",
-    ):
+    ]
+    if local_com_position_m is None:
+        required_methods.append("get_com")
+    for method_name in required_methods:
         if not callable(getattr(rigid_body, method_name, None)):
             raise TypeError(
                 f"controlled_contact_body_reader_required:{body_path}:{method_name}"
@@ -4110,12 +4706,19 @@ def read_rigid_body_com_state(
     if first_nonzero < 0.0:
         orientation = -orientation
     orientation[orientation == 0.0] = 0.0
-    com = rigid_body.get_com()
-    if not isinstance(com, tuple) or len(com) != 2:
-        raise RuntimeError(f"controlled_contact_com_unavailable:{body_path}")
-    local_com = np.asarray(com[0], dtype=np.float64)
-    if local_com.shape != (3,) or not np.isfinite(local_com).all():
-        raise RuntimeError(f"controlled_contact_com_invalid:{body_path}")
+    if local_com_position_m is None:
+        com = rigid_body.get_com()
+        if not isinstance(com, tuple) or len(com) != 2:
+            raise RuntimeError(f"controlled_contact_com_unavailable:{body_path}")
+        local_com = np.asarray(com[0], dtype=np.float64)
+        if local_com.shape != (3,) or not np.isfinite(local_com).all():
+            raise RuntimeError(f"controlled_contact_com_invalid:{body_path}")
+    else:
+        local_com = np.asarray(local_com_position_m, dtype=np.float64)
+        if local_com.shape != (3,) or not np.isfinite(local_com).all():
+            raise ValueError(
+                f"controlled_contact_local_com_position_invalid:{body_path}"
+            )
     world_com = (np.concatenate((local_com, [1.0])) @ world_matrix)[:3]
     linear = np.asarray(rigid_body.get_linear_velocity(), dtype=np.float64)
     angular = np.asarray(rigid_body.get_angular_velocity(), dtype=np.float64)
@@ -4132,6 +4735,18 @@ def read_rigid_body_com_state(
         "linear_velocity_m_s": linear.tolist(),
         "angular_velocity_rad_s": angular.tolist(),
     }
+
+
+def refresh_rigid_body_handles(rigid_bodies: Mapping[str, Any]) -> None:
+    if not isinstance(rigid_bodies, Mapping):
+        raise TypeError("controlled_contact_rigid_bodies_mapping_required")
+    for body_path, rigid_body in rigid_bodies.items():
+        initializer = getattr(rigid_body, "initialize", None)
+        if not callable(initializer):
+            raise TypeError(
+                f"controlled_contact_body_initializer_required:{body_path}"
+            )
+        initializer()
 
 
 def _tracked_child_world_matrix(
@@ -4622,6 +5237,7 @@ def build_isaac_fluid_evaluation_loop(
     validate_fluid_stage_contract(stage, fluid)
     source_ownership = str(_config_value(fluid, "source_ownership"))
     controlled_contact_interlock = controlled_contact_interlock_requested(fluid)
+    controlled_timeline = None
     source_path = str(_config_value(fluid, "source_actor_path"))
     gripper_path = str(
         _config_value(
@@ -4769,12 +5385,43 @@ def build_isaac_fluid_evaluation_loop(
         controlled_classifier = None
         read_controlled_body_states = None
         if controlled_contact_interlock:
+            import omni.timeline
             from omni.physx import get_physx_simulation_interface
             from omni.physx.scripts.physicsUtils import PhysicsSchemaTools
-            from pxr import Usd, UsdPhysics, UsdUtils
+            from pxr import Usd, UsdGeom, UsdPhysics, UsdUtils
 
             cache = UsdUtils.StageCache.Get()
+            controlled_timeline = omni.timeline.get_timeline_interface()
             stage_id = cache.GetId(stage).ToLongInt()
+            if not math.isclose(
+                float(UsdGeom.GetStageMetersPerUnit(stage)),
+                1.0,
+                rel_tol=0.0,
+                abs_tol=1.0e-12,
+            ):
+                raise RuntimeError("controlled_contact_stage_units_invalid")
+            authored_local_com_by_body = {}
+            for body_path in (
+                source_path,
+                *finger_paths,
+                CONTACT_REPORT_HAND_BODY_PATH,
+            ):
+                body_prim = stage.GetPrimAtPath(body_path)
+                com_attr = body_prim.GetAttribute("physics:centerOfMass")
+                if (
+                    not body_prim.HasAPI(UsdPhysics.MassAPI)
+                    or not com_attr
+                    or not com_attr.HasAuthoredValueOpinion()
+                ):
+                    raise RuntimeError(
+                        f"controlled_contact_authored_com_missing:{body_path}"
+                    )
+                local_com = np.asarray(com_attr.Get(), dtype=np.float64)
+                if local_com.shape != (3,) or not np.isfinite(local_com).all():
+                    raise RuntimeError(
+                        f"controlled_contact_authored_com_invalid:{body_path}"
+                    )
+                authored_local_com_by_body[body_path] = local_com
             baseline_pairs = tuple(
                 tuple(str(path) for path in pair)
                 for pair in _config_value(
@@ -4864,10 +5511,19 @@ def build_isaac_fluid_evaluation_loop(
             )
             hand_body.initialize()
             rigid_bodies[CONTACT_REPORT_HAND_BODY_PATH] = hand_body
+            body_state_handles_refreshed = False
 
             def read_body_states() -> dict[str, Any]:
+                nonlocal body_state_handles_refreshed
+                if not body_state_handles_refreshed:
+                    refresh_rigid_body_handles(rigid_bodies)
+                    body_state_handles_refreshed = True
                 states = {
-                    path: read_rigid_body_com_state(body, body_path=path)
+                    path: read_rigid_body_com_state(
+                        body,
+                        body_path=path,
+                        local_com_position_m=authored_local_com_by_body[path],
+                    )
                     for path, body in rigid_bodies.items()
                 }
                 tool_position = _prim_world_matrix(stage, gripper_path)[3, :3]
@@ -5068,6 +5724,8 @@ def build_isaac_fluid_evaluation_loop(
                 return result
 
             def reset_immediate_classifier() -> None:
+                nonlocal body_state_handles_refreshed
+                body_state_handles_refreshed = False
                 episode_impulses.update(normal=0.0, total=0.0)
                 postcontact_source_motion.reset()
                 postcontact_tool_motion.reset()
@@ -5322,4 +5980,5 @@ def build_isaac_fluid_evaluation_loop(
         sample_containment_after_substep=sample_containment_after_substep,
         expected_source_ownership=source_ownership,
         controlled_contact_interlock=controlled_contact_interlock,
+        controlled_timeline=controlled_timeline,
     )

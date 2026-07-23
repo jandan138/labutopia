@@ -107,8 +107,8 @@ from utils.ebench_replay_action_source import EbenchReplayActionLogger
 from factories.task_factory import create_task
 from factories.controller_factory import create_controller
 from utils.isaac_fluid_evaluation import (
-    author_synthetic_attachment_collision_filter,
     build_isaac_fluid_evaluation_loop,
+    configure_synthetic_attachment_source,
     configure_contact_grasp_scene,
     configure_particle_usd_readback,
     fluid_rotation_handoff_requested,
@@ -244,16 +244,13 @@ def main():
                 "synthetic_attachment_collision_filter_root_path",
                 None,
             )
-            if collision_filter_root is not None:
-                author_synthetic_attachment_collision_filter(
-                    stage,
-                    source_body_path=str(cfg.online_fluid.source_actor_path),
-                    robot_root_path=str(collision_filter_root),
-                )
-            source_prim = stage.GetPrimAtPath(
-                str(cfg.online_fluid.source_actor_path)
+            configure_synthetic_attachment_source(
+                stage,
+                source_body_path=str(cfg.online_fluid.source_actor_path),
+                collision_filter_root_path=(
+                    None if collision_filter_root is None else str(collision_filter_root)
+                ),
             )
-            source_prim.GetAttribute("physics:kinematicEnabled").Set(True)
         elif source_ownership == "contact_friction_dynamic_v1":
             configure_contact_grasp_scene(stage, cfg.online_fluid)
         else:

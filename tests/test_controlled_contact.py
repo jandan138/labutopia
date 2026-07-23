@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
 
 import numpy as np
 import pytest
@@ -315,6 +316,40 @@ def test_full_contact_report_bootstraps_only_provisional_persist_and_transient()
             contact_data=[_contact(0.0)],
             friction_anchors=[],
         )
+
+
+def test_full_contact_report_lifecycle_error_identifies_pair_and_event():
+    invalid = FullContactReportAccumulator(expected_stage_id=7)
+    header = _header(
+        "PERSIST",
+        collider0="/World/z/collider",
+        collider1="/World/a/collider",
+        contact_count=1,
+    )
+    header["proto_index0"] = 17
+    header["proto_index1"] = 3
+
+    with pytest.raises(ValueError, match="contact_report_lifecycle_invalid") as error:
+        invalid.consume(
+            physics_index=12,
+            headers=[header],
+            contact_data=[_contact(0.0)],
+            friction_anchors=[],
+            allow_provisional_persist_bootstrap=True,
+        )
+
+    prefix, separator, diagnostic = str(error.value).partition(":")
+    assert prefix == "contact_report_lifecycle_invalid"
+    assert separator == ":"
+    assert json.loads(diagnostic) == {
+        "allow_provisional_persist_bootstrap": True,
+        "canonical_pair": [
+            {"collider_path": "/World/a/collider", "proto_index": 3},
+            {"collider_path": "/World/z/collider", "proto_index": 17},
+        ],
+        "event_sequence": "PERSIST",
+        "physics_index": 12,
+    }
 
 
 def _rigid_state(*, linear=(0.0, 0.0, 0.0)) -> dict:

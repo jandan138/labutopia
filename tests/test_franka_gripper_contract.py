@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from utils.franka_gripper_contract import (
+    franka_contact_sensor_prim_paths,
     gripper_aperture_rate_m_s,
     gripper_pad_relative_velocities_m_s,
 )
@@ -44,3 +45,23 @@ def test_gripper_qdot_contract_fails_closed(field, replacement, message):
 
     with pytest.raises(ValueError, match=message):
         gripper_pad_relative_velocities_m_s(**kwargs)
+
+
+def test_contact_sensors_are_parented_under_collision_geometry():
+    assert franka_contact_sensor_prim_paths("/World/Franka") == {
+        "left": (
+            "/World/Franka/panda_leftfinger/geometry/panda_leftfinger/"
+            "contact_sensor"
+        ),
+        "right": (
+            "/World/Franka/panda_rightfinger/geometry/panda_rightfinger/"
+            "contact_sensor"
+        ),
+        "hand": "/World/Franka/panda_hand/geometry/panda_hand/contact_sensor",
+    }
+
+
+@pytest.mark.parametrize("robot_prim_path", ("World/Franka", "/", "/World/Franka/"))
+def test_contact_sensor_paths_reject_invalid_robot_root(robot_prim_path):
+    with pytest.raises(ValueError, match="franka_contact_sensor_robot_path_invalid"):
+        franka_contact_sensor_prim_paths(robot_prim_path)

@@ -36,6 +36,7 @@ class PourController(BaseController):
         control_to_end_effector_matrix_m: typing.Optional[np.ndarray] = None,
         direct_control_frame_targets: bool = False,
         start_event: int = 0,
+        maximum_source_translation_step_m: typing.Optional[float] = None,
     ) -> None:
         BaseController.__init__(self, name=name)
         self._start_event = start_event
@@ -58,6 +59,21 @@ class PourController(BaseController):
         if type(direct_control_frame_targets) is not bool:
             raise TypeError("direct_control_frame_targets_must_be_bool")
         self._direct_control_frame_targets = direct_control_frame_targets
+        if maximum_source_translation_step_m is None:
+            self._maximum_source_translation_step_m = None
+        elif (
+            isinstance(maximum_source_translation_step_m, bool)
+            or not isinstance(
+                maximum_source_translation_step_m, (int, float, np.number)
+            )
+            or not np.isfinite(maximum_source_translation_step_m)
+            or float(maximum_source_translation_step_m) <= 0.0
+        ):
+            raise ValueError("maximum_source_translation_step_m_invalid")
+        else:
+            self._maximum_source_translation_step_m = float(
+                maximum_source_translation_step_m
+            )
 
         self._pour_default_speed = - 120.0 / 180.0 * np.pi
         self._position_threshold = position_threshold
@@ -78,7 +94,9 @@ class PourController(BaseController):
             entry_orientation_threshold_degrees
         )
         self._pour_forward_call_index = 0
+        self._source_translation_limit_active = False
         self._reset_orientation_evidence()
+        self._reset_source_translation_limit_evidence()
 
         self._height_range_1 = (0.3, 0.4)
         self._height_range_2 = (0.1, 0.2)
@@ -135,6 +153,7 @@ class PourController(BaseController):
 
         pour_forward_call_index = self._pour_forward_call_index
         self._pour_forward_call_index += 1
+        self._source_translation_limit_active = False
         self.object_size = source_size
         target_position = finite_position(target_position, "target_position").copy()
         gripper_position = finite_position(gripper_position, "gripper_position")
@@ -152,6 +171,66 @@ class PourController(BaseController):
                 return desired_source_position
             live_offset = source_position_value - gripper_position
             return desired_source_position - live_offset
+
+        def limited_source_target(desired_source_position):
+            requested = finite_position(
+                desired_source_position, "desired_source_position"
+            )
+            limit_enabled = self._maximum_source_translation_step_m is not None
+            tracked_source = source_position_value is not None
+            if not limit_enabled or not tracked_source:
+                self._source_translation_limit_evidence = {
+                    "enabled": limit_enabled,
+                    "active": False,
+                    "maximum_source_translation_step_m": (
+                        self._maximum_source_translation_step_m
+                    ),
+                    "tracked_source": tracked_source,
+                    "limited": False,
+                    "application_count": (
+                        self._source_translation_limit_application_count
+                    ),
+                    "requested_source_position_m": (
+                        requested.tolist() if tracked_source else None
+                    ),
+                    "commanded_source_position_m": (
+                        requested.tolist() if tracked_source else None
+                    ),
+                    "commanded_translation_m": None,
+                    "target_reached": None,
+                }
+                return requested, False
+            delta = requested - source_position_value
+            requested_translation = float(np.linalg.norm(delta))
+            limited = requested_translation > self._maximum_source_translation_step_m
+            target_reached = not limited
+            self._source_translation_limit_active = True
+            if limited:
+                commanded = source_position_value + (
+                    delta
+                    * self._maximum_source_translation_step_m
+                    / requested_translation
+                )
+                self._source_translation_limit_application_count += 1
+            else:
+                commanded = requested.copy()
+            self._source_translation_limit_evidence = {
+                "enabled": True,
+                "active": True,
+                "maximum_source_translation_step_m": (
+                    self._maximum_source_translation_step_m
+                ),
+                "tracked_source": True,
+                "limited": limited,
+                "application_count": self._source_translation_limit_application_count,
+                "requested_source_position_m": requested.tolist(),
+                "commanded_source_position_m": commanded.tolist(),
+                "commanded_translation_m": float(
+                    np.linalg.norm(commanded - source_position_value)
+                ),
+                "target_reached": target_reached,
+            }
+            return commanded, target_reached
 
         def control_target_for(desired_end_effector_position):
             if self._direct_control_frame_targets:
@@ -181,7 +260,10 @@ class PourController(BaseController):
         
         if self._event == 0:
             target_position[2] += self._random_height_1
-            gripper_target = gripper_target_for(target_position)
+            source_target, source_target_reached = limited_source_target(
+                target_position
+            )
+            gripper_target = gripper_target_for(source_target)
             control_position, control_orientation = control_target_for(
                 gripper_target
             )
@@ -192,15 +274,26 @@ class PourController(BaseController):
             xy_distance = np.linalg.norm(
                 tracked_position[:2] - target_position[:2]
             )
-            if xy_distance < 0.08:
+            source_limit_active = (
+                self._maximum_source_translation_step_m is not None
+                and source_position_value is not None
+            )
+            if xy_distance < 0.08 and (
+                not source_limit_active or source_target_reached
+            ):
                 self._event += 1
                 self._t = 0
                 return target_joints
-                
+            if source_limit_active:
+                return target_joints
+
         elif self._event == 1:
             target_position[2] += self._random_height_2 + self.object_size[2] / 2 + self.get_pickz_offset(source_name)
             target_position[1] -= self.object_size[2] / 2 - self.get_pickz_offset(source_name)
-            gripper_target = gripper_target_for(target_position)
+            source_target, source_target_reached = limited_source_target(
+                target_position
+            )
+            gripper_target = gripper_target_for(source_target)
             control_position, control_orientation = control_target_for(
                 gripper_target
             )
@@ -233,11 +326,19 @@ class PourController(BaseController):
                         pour_forward_call_index if orientation_passed else None
                     ),
                 }
-            if xy_distance < self._position_threshold and orientation_passed:
+            source_limit_active = (
+                self._maximum_source_translation_step_m is not None
+                and source_position_value is not None
+            )
+            if (
+                xy_distance < self._position_threshold
+                and orientation_passed
+                and (not source_limit_active or source_target_reached)
+            ):
                 self._event += 1
                 self._t = 0
                 return target_joints
-            if self._require_entry_orientation:
+            if self._require_entry_orientation or source_limit_active:
                 return target_joints
         elif self._event == 2:
             articulation_controller.switch_dof_control_mode(dof_index=6, mode="velocity")
@@ -284,7 +385,9 @@ class PourController(BaseController):
         self._t = 0
         self._last_emitted_event = None
         self._pour_forward_call_index = 0
+        self._source_translation_limit_active = False
         self._reset_orientation_evidence()
+        self._reset_source_translation_limit_evidence()
         self._start = True
         self.object_size = None
         if events_dt is not None:
@@ -331,9 +434,41 @@ class PourController(BaseController):
             "pour_forward_call_index": None,
         }
 
+    def _reset_source_translation_limit_evidence(self) -> None:
+        self._source_translation_limit_application_count = 0
+        self._source_translation_limit_evidence = {
+            "enabled": self._maximum_source_translation_step_m is not None,
+            "active": False,
+            "maximum_source_translation_step_m": (
+                self._maximum_source_translation_step_m
+            ),
+            "tracked_source": False,
+            "limited": False,
+            "application_count": 0,
+            "requested_source_position_m": None,
+            "commanded_source_position_m": None,
+            "commanded_translation_m": None,
+            "target_reached": None,
+        }
+
     @property
     def pour_entry_orientation_evidence(self) -> dict:
         return dict(self._pour_entry_orientation_evidence)
+
+    @property
+    def source_translation_limit_evidence(self) -> dict:
+        return {
+            key: (
+                list(value)
+                if isinstance(value, list)
+                else value
+            )
+            for key, value in self._source_translation_limit_evidence.items()
+        }
+
+    @property
+    def source_translation_limit_active(self) -> bool:
+        return self._source_translation_limit_active
 
     def _sample_height_offsets(self) -> None:
         if self._fixed_height_offsets is not None:

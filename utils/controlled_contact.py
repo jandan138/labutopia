@@ -614,6 +614,7 @@ class FullContactReportAccumulator:
         for pair in sorted(grouped):
             group = grouped[pair]
             events = tuple(group["event_types"])
+            sequence = ",".join(events)
             prior_active = pair in self._active_pairs
             bootstrap = bool(
                 not prior_active
@@ -647,13 +648,25 @@ class FullContactReportAccumulator:
                 current = False
                 transient = True
             else:
-                raise ValueError("contact_report_lifecycle_invalid")
+                diagnostic = json.dumps(
+                    {
+                        "allow_provisional_persist_bootstrap": (
+                            allow_provisional_persist_bootstrap
+                        ),
+                        "canonical_pair": self._pair_record(pair),
+                        "event_sequence": sequence,
+                        "physics_index": index,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    allow_nan=False,
+                )
+                raise ValueError(f"contact_report_lifecycle_invalid:{diagnostic}")
 
             if current:
                 next_active.add(pair)
             else:
                 next_active.discard(pair)
-            sequence = ",".join(events)
             event_sequences.append(sequence)
             if occurrence:
                 occurrences.append(

@@ -101,17 +101,53 @@ class _ControlledWorld(_World):
     def __init__(self, events):
         super().__init__(events)
         self.playing = False
+        self.stopped = False
+        self._timeline = _ControlledTimeline(self)
 
     def play(self):
-        self.events.append("world.play")
-        self.playing = True
+        raise AssertionError("controlled stepping must not call World.play")
 
     def pause(self):
-        self.events.append("world.pause")
-        self.playing = False
+        raise AssertionError("controlled stepping must not call World.pause")
 
     def is_playing(self):
         return self.playing
+
+    def is_stopped(self):
+        return self.stopped
+
+
+class _ControlledTimeline:
+    def __init__(self, world):
+        self.world = world
+        self._pending_state = None
+
+    def play(self):
+        self.world.events.append("timeline.play")
+        self._pending_state = "playing"
+
+    def pause(self):
+        self.world.events.append("timeline.pause")
+        self._pending_state = "paused"
+
+    def commit(self):
+        self.world.events.append("timeline.commit")
+        if self._pending_state == "playing":
+            self.world.playing = True
+            self.world.stopped = False
+        elif self._pending_state == "paused":
+            self.world.playing = False
+            self.world.stopped = False
+        self._pending_state = None
+
+    def is_playing(self):
+        return self.world.playing
+
+    def is_stopped(self):
+        return self.world.stopped
+
+    def get_director(self):
+        return None
 
 
 class _Task:
@@ -401,6 +437,9 @@ def _make_loop(
         reset_pre_roll_substeps=reset_pre_roll_substeps,
         expected_source_ownership=expected_source_ownership,
         controlled_contact_interlock=controlled_contact_interlock,
+        controlled_timeline=(
+            world._timeline if controlled_contact_interlock else None
+        ),
         **(
             {"sample_containment_after_substep": sample_containment_after_substep}
             if sample_containment_after_substep is not None
@@ -468,6 +507,28 @@ def test_reset_then_action_observation_has_exact_model_facing_order():
     )
 
 
+def test_attachment_observation_boundary_hook_runs_after_all_physics_substeps():
+    events: list[str] = []
+
+    class BoundaryAttachment(_Attachment):
+        def update_after_observation(self):
+            self.events.append("attachment.control_boundary")
+
+    loop, _, _, _, _, _ = _make_loop(
+        events,
+        attachment=BoundaryAttachment(events),
+    )
+    loop.reset_episode("episode-boundary")
+    initial = loop.observe()
+    loop.commit_action({"joint_positions": np.asarray([0.1, 0.2])})
+    assert loop.maybe_attach("pouring", initial["state"])
+    loop.observe()
+
+    boundary_index = events.index("attachment.control_boundary")
+    assert events[boundary_index - 1] == "world.step:False"
+    assert events[boundary_index + 1] == "read_particles"
+
+
 def test_monitor_start_is_distinct_from_mechanical_attachment_use():
     events: list[str] = []
 
@@ -505,40 +566,65 @@ def test_controlled_reset_pauses_active_timeline_before_pre_roll():
 
     loop.reset_episode("episode-controlled-pause")
 
-    assert events.index("world.pause") < events.index("controlled.before")
+    assert events.index("timeline.pause") < events.index("controlled.before")
     assert world.current_time_step_index == 41
     assert world.is_playing() is False
 
 
-@pytest.mark.parametrize("failure_mode", ["advance", "raise"])
-def test_controlled_play_failure_still_pauses_before_propagating(failure_mode):
+def test_controlled_timeline_play_advance_is_rejected_and_paused():
     events: list[str] = []
 
-    class FailingPlayWorld(_ControlledWorld):
-        def play(self):
-            super().play()
-            if failure_mode == "advance":
-                self.current_time_step_index += 1
-                self.current_time += 1 / 120.0
-            else:
-                raise RuntimeError("play_failed")
+    class AdvancingTimeline(_ControlledTimeline):
+        def commit(self):
+            advancing_play = self._pending_state == "playing"
+            super().commit()
+            if advancing_play:
+                self.world.current_time_step_index += 1
+                self.world.current_time += 1 / 120.0
 
-    world = FailingPlayWorld(events)
+    world = _ControlledWorld(events)
+    world._timeline = AdvancingTimeline(world)
     loop, _, _, _, _, _ = _make_loop(
         events,
         world=world,
         attachment=_ControlledAttachment(events, contact_slot=100),
+        reset_pre_roll_substeps=1,
         controlled_contact_interlock=True,
     )
-    loop.reset_episode("episode-play-failure")
-    loop.observe()
-    _commit_controlled_test_action(loop, [])
 
-    with pytest.raises(RuntimeError):
-        loop.observe()
+    with pytest.raises(
+        RuntimeError,
+        match="controlled_contact_timeline_commit_advanced_physics",
+    ):
+        loop.reset_episode("episode-play-advance")
 
     assert world.is_playing() is False
-    assert events[-1] == "world.pause"
+    assert "world.step:False" not in events
+    assert events[-2:] == ["timeline.pause", "timeline.commit"]
+
+
+def test_controlled_timeline_uses_one_explicit_step_per_pre_roll_slot():
+    events: list[str] = []
+    world = _ControlledWorld(events)
+    loop, _, _, _, _, _ = _make_loop(
+        events,
+        world=world,
+        attachment=_ControlledAttachment(events, contact_slot=100),
+        reset_pre_roll_substeps=1,
+        controlled_contact_interlock=True,
+    )
+
+    loop.reset_episode("episode-play-internal-step")
+
+    assert world.current_time_step_index == 41
+    assert world.is_playing() is False
+    assert events.count("world.step:False") == 1
+    assert "world.play" not in events
+    assert "world.pause" not in events
+    assert events.index("timeline.play") < events.index("timeline.commit")
+    assert events.index("timeline.commit") < events.index("world.step:False")
+    assert events.index("world.step:False") < events.index("timeline.pause")
+    assert events[events.index("timeline.pause") + 1] == "timeline.commit"
 
 
 def test_dynamic_pre_roll_and_contact_sampling_are_owned_by_the_fluid_loop():
@@ -1040,20 +1126,25 @@ def test_controlled_substeps_play_step_pause_and_latch_without_reapply():
 
     observation = loop.observe()
 
-    assert events[:13] == [
+    assert events[:18] == [
         "controlled.before",
-        "world.play",
+        "timeline.play",
+        "timeline.commit",
         "world.step:False",
-        "world.pause",
+        "timeline.pause",
+        "timeline.commit",
         "controlled.after:1",
         "controlled.before",
-        "world.play",
+        "timeline.play",
+        "timeline.commit",
         "world.step:False",
-        "world.pause",
+        "timeline.pause",
+        "timeline.commit",
         "controlled.after:2",
         "controlled.latch",
         "controlled.before",
-        "world.play",
+        "timeline.play",
+        "timeline.commit",
     ]
     assert world.is_playing() is False
     assert applied == [_action]
@@ -1068,6 +1159,35 @@ def test_controlled_substeps_play_step_pause_and_latch_without_reapply():
         "PRECONTACT_SETTLE",
         "PRECONTACT_SETTLE",
     ]
+    receipt = interlock["substeps"][0]["timeline_step_receipt"]
+    assert receipt["authority"] == "controlled_contact_timeline_step_receipt_v1"
+    assert receipt["driver"] == "omni_timeline_interface_v1"
+    assert receipt["before"] == {
+        "physics_step": 40,
+        "simulation_time": pytest.approx(40 / 120.0),
+        "timeline_playing": False,
+        "timeline_stopped": False,
+    }
+    assert receipt["after_play_request"] == receipt["before"]
+    assert receipt["after_play"] == {
+        "physics_step": 40,
+        "simulation_time": pytest.approx(40 / 120.0),
+        "timeline_playing": True,
+        "timeline_stopped": False,
+    }
+    assert receipt["after_step"] == {
+        "physics_step": 41,
+        "simulation_time": pytest.approx(41 / 120.0),
+        "timeline_playing": True,
+        "timeline_stopped": False,
+    }
+    assert receipt["after_pause_request"] == receipt["after_step"]
+    assert receipt["after_pause"] == {
+        "physics_step": 41,
+        "simulation_time": pytest.approx(41 / 120.0),
+        "timeline_playing": False,
+        "timeline_stopped": False,
+    }
 
 
 def test_controlled_terminal_returns_partial_interval_without_render_or_padding():

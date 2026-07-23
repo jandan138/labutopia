@@ -1,0 +1,9 @@
+defaults:
+  - diagnostic_level1_pour_native_expert_contact_acquisition_600hz_step600_layout_v1
+  - _self_
+
+name: Diagnostic_level1_pour_native_expert_contact_acquisition_fast_preroll1_sensor_cadence_v1
+
+online_fluid:
+  dynamic_pre_roll_steps: 1
+  performance_label: "native_expert_contact_acquisition_sensor_cadence_diagnostic"

@@ -25,9 +25,11 @@ from isaacsim.robot.manipulators.grippers.parallel_gripper import ParallelGrippe
 from isaacsim.storage.native import get_assets_root_path
 from isaacsim.sensors.physics import ContactSensor
 from isaacsim.sensors.camera import Camera
+from pxr import PhysxSchema, UsdPhysics
 
 from utils.object_utils import ObjectUtils
 from utils.franka_gripper_contract import (
+    franka_contact_sensor_prim_paths,
     gripper_pad_relative_velocities_m_s,
 )
 
@@ -113,24 +115,23 @@ class Franka(Robot):
                 joint_closed_positions=gripper_closed_position,
                 action_deltas=deltas,
             )
-        
+        contact_sensor_paths = franka_contact_sensor_prim_paths(prim_path)
         self.left_contact_sensor = ContactSensor(
-            prim_path=prim_path + "/panda_leftfinger" + "/contact_sensor",
+            prim_path=contact_sensor_paths["left"],
             name="contact_sensor_{}".format(1),
             min_threshold=0,
             max_threshold=10000000,
             radius=0.1,
         )
-        
         self.right_contact_sensor = ContactSensor(
-            prim_path=prim_path + "/panda_rightfinger" + "/contact_sensor",
+            prim_path=contact_sensor_paths["right"],
             name="contact_sensor_{}".format(0),
             min_threshold=0,
             max_threshold=10000000,
             radius=0.1,
         )
         self.hand_contact_sensor = ContactSensor(
-            prim_path=prim_path + "/panda_hand/contact_sensor",
+            prim_path=contact_sensor_paths["hand"],
             name="contact_sensor_hand",
             min_threshold=0,
             max_threshold=10000000,
@@ -170,10 +171,61 @@ class Franka(Robot):
 
     def read_contact_sensor_frames(self) -> dict:
         left, right, hand = self.get_contact_sensor()
+
+        def read(sensor):
+            frame = dict(sensor.get_current_frame())
+            try:
+                sensor_prim = sensor.prim
+                parent = sensor_prim.GetParent()
+                parent_valid = bool(parent and parent.IsValid())
+                collision_enabled = (
+                    parent.GetAttribute("physics:collisionEnabled").Get()
+                    if parent_valid
+                    else None
+                )
+                if parent_valid:
+                    try:
+                        parent_contact_report_api = bool(
+                            parent.HasAPI(PhysxSchema.PhysxContactReportAPI)
+                        )
+                    except (TypeError, RuntimeError):
+                        parent_contact_report_api = bool(
+                            PhysxSchema.PhysxContactReportAPI(parent)
+                        )
+                else:
+                    parent_contact_report_api = None
+                frame["_labutopia_sensor_runtime"] = {
+                    "prim_path": str(sensor.prim_path),
+                    "parent_path": (
+                        str(parent.GetPath()) if parent_valid else None
+                    ),
+                    "prim_valid": bool(sensor_prim and sensor_prim.IsValid()),
+                    "parent_collision_api": bool(
+                        parent_valid and parent.HasAPI(UsdPhysics.CollisionAPI)
+                    ),
+                    "parent_collision_enabled": (
+                        bool(collision_enabled)
+                        if isinstance(collision_enabled, bool)
+                        else None
+                    ),
+                    "parent_contact_report_api": parent_contact_report_api,
+                    "enabled": not bool(sensor.is_paused()),
+                    "period_s": float(sensor.get_dt()),
+                    "radius_m": float(sensor.get_radius()),
+                    "minimum_threshold_n": float(sensor.get_min_threshold()),
+                    "maximum_threshold_n": float(sensor.get_max_threshold()),
+                }
+            except Exception as exc:
+                frame["_labutopia_sensor_runtime"] = {
+                    "prim_path": str(sensor.prim_path),
+                    "metadata_error": f"{type(exc).__name__}:{exc}",
+                }
+            return frame
+
         return {
-            "left": dict(left.get_current_frame()),
-            "right": dict(right.get_current_frame()),
-            "hand": dict(hand.get_current_frame()),
+            "left": read(left),
+            "right": read(right),
+            "hand": read(hand),
         }
 
     def get_gripper_pad_relative_velocities_m_s(self) -> np.ndarray:

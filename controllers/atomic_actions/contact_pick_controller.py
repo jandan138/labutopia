@@ -398,8 +398,7 @@ class ContactPickController(BaseController):
             - approach_direction * (self._insert_distance_m / units)
         )
         self._insert_waypoint = self._align_position.copy()
-        self._insert_target = self._align_position.copy()
-        self._insert_target[2] = self._grasp_position[2]
+        self._insert_target = self._grasp_position.copy()
         self._lift_waypoint = self._grasp_position.copy()
         self._lift_height_m = float(lift_height)
         self._lift_target = self._grasp_position + np.asarray(
@@ -502,7 +501,13 @@ class ContactPickController(BaseController):
     ) -> np.ndarray:
         delta = target - current
         distance = float(np.linalg.norm(delta))
-        if distance <= maximum_step:
+        roundoff = 64.0 * np.finfo(np.float64).eps * max(
+            1.0,
+            float(np.linalg.norm(current)),
+            float(np.linalg.norm(target)),
+            abs(float(maximum_step)),
+        )
+        if distance <= maximum_step + roundoff:
             return target.copy()
         return current + delta * (maximum_step / distance)
 
@@ -836,7 +841,7 @@ class ContactPickController(BaseController):
                 * self._control_dt
                 / self._stage_units()
             )
-            self._insert_waypoint = self._step_world_z(
+            self._insert_waypoint = self._step_toward(
                 self._insert_waypoint,
                 self._insert_target,
                 maximum_step,

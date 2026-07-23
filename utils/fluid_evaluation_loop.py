@@ -1226,6 +1226,7 @@ class FluidEvaluationLoop:
         ) = None,
         expected_source_ownership: str | None = None,
         controlled_contact_interlock: bool = False,
+        controlled_timeline: Any | None = None,
         run_id: str | None = None,
     ) -> None:
         if type(expected_particle_count) is not int or expected_particle_count <= 0:
@@ -1278,12 +1279,26 @@ class FluidEvaluationLoop:
             raise ValueError("run_id_invalid")
         if type(controlled_contact_interlock) is not bool:
             raise TypeError("controlled_contact_interlock_bool_required")
-        if controlled_contact_interlock and (
-            not callable(getattr(world, "play", None))
-            or not callable(getattr(world, "pause", None))
-            or not callable(getattr(world, "is_playing", None))
-        ):
-            raise TypeError("controlled_contact_world_timeline_api_required")
+        if controlled_contact_interlock:
+            if not all(
+                callable(getattr(world, name, None))
+                for name in ("is_playing", "is_stopped")
+            ):
+                raise TypeError("controlled_contact_world_timeline_state_api_required")
+            if not all(
+                callable(getattr(controlled_timeline, name, None))
+                for name in (
+                    "play",
+                    "pause",
+                    "commit",
+                    "is_playing",
+                    "is_stopped",
+                    "get_director",
+                )
+            ):
+                raise TypeError("controlled_contact_timeline_api_required")
+        elif controlled_timeline is not None:
+            raise ValueError("controlled_contact_timeline_requires_interlock")
         if expected_source_ownership is not None and expected_source_ownership not in (
             "gripper_attached_kinematic_vessel",
             "contact_friction_dynamic_v1",
@@ -1312,6 +1327,7 @@ class FluidEvaluationLoop:
         self.sample_containment_after_substep = sample_containment_after_substep
         self.expected_source_ownership = expected_source_ownership
         self.controlled_contact_interlock = controlled_contact_interlock
+        self.controlled_timeline = controlled_timeline
         self.run_id = run_id or current_fluid_run_id()
 
         self._episode_id: str | None = None
@@ -1334,6 +1350,7 @@ class FluidEvaluationLoop:
         self._pending_controlled_terminal_variant: str | None = None
         self._authority_origin: tuple[int, float] | None = None
         self._last_authority: tuple[int, float] | None = None
+        self._last_controlled_step_receipt: dict[str, Any] | None = None
         self._last_state: Mapping[str, Any] | None = None
         self._last_score: dict[str, Any] | None = None
         self._last_source_visual_sync: dict[str, Any] | None = None
@@ -1372,52 +1389,175 @@ class FluidEvaluationLoop:
             raise RuntimeError("world_authority_invalid")
         return result
 
-    def _controlled_world_step(self) -> None:
-        before = self._authority_snapshot()
-        if self.world.is_playing():
-            raise RuntimeError("controlled_contact_world_not_paused_before_step")
-        try:
-            self.world.play()
-            after_play = self._authority_snapshot()
-            if after_play != before or not self.world.is_playing():
-                raise RuntimeError("controlled_contact_play_advanced_physics")
-            self.world.step(render=False)
-        finally:
-            pause_error = None
-            try:
-                self.world.pause()
-            except Exception as exc:
-                pause_error = exc
-                if self.world.is_playing():
-                    try:
-                        self.world.pause()
-                    except Exception:
-                        pass
-            if self.world.is_playing():
-                raise RuntimeError("controlled_contact_pause_failed") from pause_error
-            if pause_error is not None:
-                raise RuntimeError("controlled_contact_pause_failed") from pause_error
-        after_pause = self._authority_snapshot()
-        expected = (before[0] + 1, before[1] + self.physics_substep_dt)
-        if (
-            after_pause[0] != expected[0]
-            or not math.isclose(
-                after_pause[1], expected[1], rel_tol=0.0, abs_tol=1.0e-8
+    def _controlled_timeline_state(self) -> dict[str, bool]:
+        if not self.controlled_contact_interlock:
+            raise RuntimeError("controlled_contact_timeline_not_enabled")
+        timeline_playing = self.controlled_timeline.is_playing()
+        timeline_stopped = self.controlled_timeline.is_stopped()
+        world_playing = self.world.is_playing()
+        world_stopped = self.world.is_stopped()
+        if any(
+            type(value) is not bool
+            for value in (
+                timeline_playing,
+                timeline_stopped,
+                world_playing,
+                world_stopped,
             )
         ):
-            raise RuntimeError("controlled_contact_step_delta_invalid")
+            raise RuntimeError("controlled_contact_timeline_state_invalid")
+        if (
+            timeline_playing != world_playing
+            or timeline_stopped != world_stopped
+            or (timeline_playing and timeline_stopped)
+        ):
+            raise RuntimeError("controlled_contact_timeline_world_state_mismatch")
+        if self.controlled_timeline.get_director() is not None:
+            raise RuntimeError("controlled_contact_timeline_director_active")
+        return {
+            "timeline_playing": timeline_playing,
+            "timeline_stopped": timeline_stopped,
+        }
 
-    def _pause_controlled_timeline(self) -> None:
+    def _controlled_timeline_is_playing(self) -> bool:
+        return self._controlled_timeline_state()["timeline_playing"]
+
+    def _controlled_timeline_snapshot(self) -> dict[str, Any]:
+        physics_step, simulation_time = self._authority_snapshot()
+        return {
+            "physics_step": physics_step,
+            "simulation_time": simulation_time,
+            **self._controlled_timeline_state(),
+        }
+
+    @staticmethod
+    def _controlled_snapshot_authority(
+        snapshot: Mapping[str, Any],
+    ) -> tuple[int, float]:
+        return (int(snapshot["physics_step"]), float(snapshot["simulation_time"]))
+
+    def _commit_controlled_timeline(
+        self,
+        *,
+        before_authority: tuple[int, float],
+    ) -> dict[str, Any]:
+        self.controlled_timeline.commit()
+        after = self._controlled_timeline_snapshot()
+        if self._controlled_snapshot_authority(after) != before_authority:
+            raise RuntimeError("controlled_contact_timeline_commit_advanced_physics")
+        return after
+
+    def _controlled_world_step(self) -> None:
+        before = self._controlled_timeline_snapshot()
+        before_authority = self._controlled_snapshot_authority(before)
+        expected = (
+            before_authority[0] + 1,
+            before_authority[1] + self.physics_substep_dt,
+        )
+        if before["timeline_playing"]:
+            self._pause_controlled_timeline()
+            raise RuntimeError("controlled_contact_world_not_paused_before_step")
+        after_play_request: dict[str, Any] | None = None
+        after_play: dict[str, Any] | None = None
+        after_step: dict[str, Any] | None = None
+        after_pause: dict[str, Any] | None = None
+        after_pause_request: dict[str, Any] | None = None
+        primary_error: Exception | None = None
+        try:
+            self.controlled_timeline.play()
+            after_play_request = self._controlled_timeline_snapshot()
+            if (
+                self._controlled_snapshot_authority(after_play_request)
+                != before_authority
+            ):
+                raise RuntimeError("controlled_contact_play_advanced_physics")
+            after_play = self._commit_controlled_timeline(
+                before_authority=before_authority
+            )
+            if not after_play["timeline_playing"]:
+                raise RuntimeError("controlled_contact_play_failed")
+            if self._controlled_snapshot_authority(after_play) != before_authority:
+                raise RuntimeError("controlled_contact_play_advanced_physics")
+            self.world.step(render=False)
+            after_step = self._controlled_timeline_snapshot()
+            after_step_authority = self._controlled_snapshot_authority(after_step)
+            if (
+                after_step_authority[0] != expected[0]
+                or not math.isclose(
+                    after_step_authority[1],
+                    expected[1],
+                    rel_tol=0.0,
+                    abs_tol=1.0e-8,
+                )
+            ):
+                raise RuntimeError("controlled_contact_step_delta_invalid")
+            if not after_step["timeline_playing"]:
+                raise RuntimeError("controlled_contact_step_stopped_timeline")
+        except Exception as exc:
+            primary_error = exc
+            raise
+        finally:
+            try:
+                pause_receipt = self._pause_controlled_timeline(
+                    require_paused=True
+                )
+                after_pause_request = pause_receipt["after_pause_request"]
+                after_pause = pause_receipt["after_pause"]
+            except Exception as exc:
+                if primary_error is not None:
+                    raise RuntimeError("controlled_contact_pause_failed") from primary_error
+                raise RuntimeError("controlled_contact_pause_failed") from exc
+        if (
+            after_play_request is None
+            or after_play is None
+            or after_step is None
+            or after_pause_request is None
+            or after_pause is None
+        ):
+            raise RuntimeError("controlled_contact_step_receipt_missing")
+        self._last_controlled_step_receipt = {
+            "authority": "controlled_contact_timeline_step_receipt_v1",
+            "driver": "omni_timeline_interface_v1",
+            "before": before,
+            "after_play_request": after_play_request,
+            "after_play": after_play,
+            "after_step": after_step,
+            "after_pause_request": after_pause_request,
+            "after_pause": after_pause,
+        }
+
+    def _pause_controlled_timeline(
+        self,
+        *,
+        require_paused: bool = False,
+    ) -> dict[str, Any] | None:
         if not self.controlled_contact_interlock:
-            return
-        before = self._authority_snapshot()
-        if self.world.is_playing():
-            self.world.pause()
-        after = self._authority_snapshot()
-        if after != before:
-            raise RuntimeError("controlled_contact_pause_advanced_physics")
-        if self.world.is_playing():
+            return None
+        before = self._controlled_timeline_snapshot()
+        before_authority = self._controlled_snapshot_authority(before)
+        after_pause_request = before
+        if before["timeline_playing"]:
+            self.controlled_timeline.pause()
+            after_pause_request = self._controlled_timeline_snapshot()
+            if (
+                self._controlled_snapshot_authority(after_pause_request)
+                != before_authority
+            ):
+                raise RuntimeError("controlled_contact_pause_advanced_physics")
+            after = self._commit_controlled_timeline(
+                before_authority=before_authority
+            )
+        else:
+            after = before
+        if after["timeline_playing"]:
             raise RuntimeError("controlled_contact_pause_failed")
+        if require_paused and after["timeline_stopped"]:
+            raise RuntimeError("controlled_contact_pause_stopped")
+        return {
+            "before": before,
+            "after_pause_request": after_pause_request,
+            "after_pause": after,
+        }
 
     @property
     def attempt_id(self) -> str | None:
@@ -1721,6 +1861,7 @@ class FluidEvaluationLoop:
             not isinstance(attempt_id, str) or not attempt_id
         ):
             raise ValueError("attempt_id_invalid")
+        self._pause_controlled_timeline()
         if self._episode_id is not None and not self._attempt_sealed:
             previous_status = "failed" if self._failed else "interrupted"
             previous_reason = (
@@ -1753,6 +1894,7 @@ class FluidEvaluationLoop:
         self._pending_controlled_terminal_variant = None
         self._authority_origin = None
         self._last_authority = None
+        self._last_controlled_step_receipt = None
         self._last_state = None
         self._last_score = None
         self._last_source_visual_sync = None
@@ -1763,7 +1905,6 @@ class FluidEvaluationLoop:
         self._expected_substep_samples = 0
         self._cumulative_containment = self._empty_containment_summary()
 
-        self._pause_controlled_timeline()
         self.attachment.reset()
         self._surface_runtime.reset_episode(episode_id)
         update_after_substep = getattr(
@@ -2322,7 +2463,10 @@ class FluidEvaluationLoop:
         if terminal_kind not in _CONTROLLED_TERMINAL_KINDS:
             raise RuntimeError("controlled_contact_terminal_kind_invalid")
         after = self._authority_snapshot()
-        if after != self._last_authority or self.world.is_playing():
+        if (
+            after != self._last_authority
+            or self._controlled_timeline_is_playing()
+        ):
             raise RuntimeError("controlled_no_action_terminal_world_changed")
         transaction = decision.get("transaction")
         proposal = None
@@ -2721,6 +2865,9 @@ class FluidEvaluationLoop:
                                 "phase_deadline_exit_grace": copy.deepcopy(
                                     decision.get("phase_deadline_exit_grace")
                                 ),
+                                "timeline_step_receipt": copy.deepcopy(
+                                    self._last_controlled_step_receipt
+                                ),
                             }
                         )
                         if terminal_decision is not None:
@@ -2784,6 +2931,16 @@ class FluidEvaluationLoop:
         )
 
         try:
+            if not is_reset:
+                update_after_observation = getattr(
+                    self.attachment, "update_after_observation", None
+                )
+                if update_after_observation is not None:
+                    if not callable(update_after_observation):
+                        raise RuntimeError(
+                            "attachment_update_after_observation_not_callable"
+                        )
+                    update_after_observation()
             source_visual_sync = self._sync_source_visual_state()
             self._last_source_visual_sync = source_visual_sync
             if source_visual_sync is not None:

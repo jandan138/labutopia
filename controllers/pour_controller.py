@@ -28,6 +28,8 @@ class PourTaskController(BaseController):
         self._expert_pour_target_orientation_wxyz = None
         self._expert_pour_entry_orientation_required = False
         self._expert_pour_entry_orientation_threshold_degrees = 5.0
+        self._expert_pour_position_control = None
+        self._kinematic_pour_max_source_translation_step_m = None
         self._expert_pick_gripper_offset_object = np.zeros(3, dtype=np.float64)
         self._expert_pick_target_orientation_wxyz = None
         self._source_ownership = None
@@ -124,6 +126,60 @@ class PourTaskController(BaseController):
             and self._contact_grasp_required
         ):
             raise ValueError("stabilized_profile_requires_kinematic_ownership")
+        configured_pour_position_control = getattr(
+            online_fluid, "expert_pour_position_control", None
+        )
+        if configured_pour_position_control is not None and not isinstance(
+            configured_pour_position_control, str
+        ):
+            raise ValueError("kinematic_pour_position_control_mode_invalid")
+        self._expert_pour_position_control = configured_pour_position_control
+        configured_kinematic_pour_step = getattr(
+            online_fluid,
+            "kinematic_pour_max_source_translation_step_m",
+            None,
+        )
+        if configured_kinematic_pour_step is not None:
+            if self._source_ownership != "gripper_attached_kinematic_vessel":
+                raise ValueError(
+                    "kinematic_pour_max_source_translation_step_m_"
+                    "requires_kinematic_ownership"
+                )
+            if configured_pour_position_control != (
+                "source_center_live_offset_slew_limited_v1"
+            ):
+                raise ValueError("kinematic_pour_position_control_mode_invalid")
+            if (
+                isinstance(configured_kinematic_pour_step, bool)
+                or not isinstance(
+                    configured_kinematic_pour_step,
+                    (int, float, np.number),
+                )
+                or not np.isfinite(configured_kinematic_pour_step)
+                or float(configured_kinematic_pour_step) <= 0.0
+            ):
+                raise ValueError(
+                    "kinematic_pour_max_source_translation_step_m_invalid"
+                )
+            self._kinematic_pour_max_source_translation_step_m = float(
+                configured_kinematic_pour_step
+            )
+        elif self._source_ownership == "gripper_attached_kinematic_vessel":
+            if configured_pour_position_control == (
+                "source_center_live_offset_slew_limited_v1"
+            ):
+                raise ValueError(
+                    "kinematic_pour_max_source_translation_step_m_required"
+                )
+            if configured_pour_position_control not in {
+                None,
+                "source_center_live_offset_v1",
+            }:
+                raise ValueError("kinematic_pour_position_control_mode_invalid")
+        elif configured_pour_position_control == (
+            "source_center_live_offset_slew_limited_v1"
+        ):
+            raise ValueError("kinematic_pour_position_control_mode_invalid")
         self._execution_mode = str(
             getattr(online_fluid, "execution_mode", "production_pour_v1")
         )
@@ -425,6 +481,9 @@ class PourTaskController(BaseController):
             direct_control_frame_targets=(
                 not self._online_fluid_enabled or self._native_expert_profile
             ),
+            maximum_source_translation_step_m=(
+                self._kinematic_pour_max_source_translation_step_m
+            ),
         )
         self.active_controller = self.pick_controller
 
@@ -596,8 +655,6 @@ class PourTaskController(BaseController):
                     and not self._contact_acquisition_probe
                 ):
                     controller_done = self.pick_controller.is_done()
-                    if controller_done:
-                        grasp_qualified = True
             success = height_reached and grasp_qualified and controller_done
             if not success:
                 self.last_error_info = {
@@ -1015,6 +1072,7 @@ class PourTaskController(BaseController):
         pour_controller = getattr(self, "pour_controller", None)
         contact_pick_evidence = None
         native_pick_evidence = None
+        source_translation_limit = None
         if self._use_contact_pick_controller:
             evidence = getattr(self.pick_controller, "control_evidence", None)
             if callable(evidence):
@@ -1023,6 +1081,16 @@ class PourTaskController(BaseController):
             evidence = getattr(self.pick_controller, "control_evidence", None)
             if callable(evidence):
                 native_pick_evidence = evidence()
+        if pour_controller is not None:
+            source_translation_limit = getattr(
+                pour_controller, "source_translation_limit_evidence", None
+            )
+            if callable(source_translation_limit):
+                source_translation_limit = source_translation_limit()
+            if source_translation_limit is not None and not isinstance(
+                source_translation_limit, Mapping
+            ):
+                raise TypeError("source_translation_limit_evidence_mapping_required")
         return {
             "mode": str(self.mode),
             "pick_gripper_offset_object_m": (
@@ -1030,6 +1098,7 @@ class PourTaskController(BaseController):
             ),
             "source_ownership": self._source_ownership,
             "expert_control_profile": self._expert_control_profile,
+            "expert_pour_position_control": self._expert_pour_position_control,
             "execution_mode": self._execution_mode,
             "contact_acquisition_probe": self._contact_acquisition_probe,
             "pour_forward_invocation_count": (
@@ -1038,6 +1107,14 @@ class PourTaskController(BaseController):
             "contact_grasp_required": self._contact_grasp_required,
             "pick_lift_height_m": self._expert_pick_lift_height_m,
             "pour_speed_rad_s": self._expert_pour_speed_rad_s,
+            "kinematic_pour_max_source_translation_step_m": (
+                self._kinematic_pour_max_source_translation_step_m
+            ),
+            "source_translation_limit": (
+                None
+                if source_translation_limit is None
+                else dict(source_translation_limit)
+            ),
             "control_dt_s": self.control_dt,
             "control_frequency_hz": 1.0 / self.control_dt,
             "end_effector_target_frame": self._end_effector_target_frame,
@@ -1075,6 +1152,21 @@ class PourTaskController(BaseController):
             return False
         event = getattr(self.pick_controller, "_event", -1)
         return isinstance(event, int) and event >= 5
+
+    def online_fluid_source_translation_limit_active(self) -> bool:
+        if (
+            not self._online_fluid_enabled
+            or self._source_ownership != "gripper_attached_kinematic_vessel"
+            or self._kinematic_pour_max_source_translation_step_m is None
+        ):
+            return False
+        pour_controller = getattr(self, "pour_controller", None)
+        active = getattr(pour_controller, "source_translation_limit_active", False)
+        if callable(active):
+            active = active()
+        if type(active) is not bool:
+            raise TypeError("source_translation_limit_active_bool_required")
+        return active
 
     def online_fluid_grasp_contact_requested(self) -> bool:
         if not self._online_fluid_enabled or not self._contact_grasp_required:
@@ -1145,12 +1237,13 @@ class PourTaskController(BaseController):
         pending = getattr(self.pick_controller, "lift_is_next_action", None)
         if not callable(pending) or not pending():
             return False
-        if not self._contact_acquisition_probe:
-            return False
         grasp_record = state.get("online_fluid_grasp")
         return not bool(
             isinstance(grasp_record, Mapping)
             and grasp_record.get("qualified", False)
+            and grasp_record.get("probe_qualified_now", False)
+            and "failure_reason" in grasp_record
+            and grasp_record["failure_reason"] is None
         )
 
     def _step_infer(self, state):

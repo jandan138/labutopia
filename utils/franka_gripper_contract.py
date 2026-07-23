@@ -7,6 +7,29 @@ from typing import Any
 import numpy as np
 
 
+def franka_contact_sensor_prim_paths(robot_prim_path: str) -> dict[str, str]:
+    if (
+        not isinstance(robot_prim_path, str)
+        or not robot_prim_path.startswith("/")
+        or robot_prim_path == "/"
+        or robot_prim_path.endswith("/")
+    ):
+        raise ValueError("franka_contact_sensor_robot_path_invalid")
+    return {
+        "left": (
+            f"{robot_prim_path}/panda_leftfinger/geometry/panda_leftfinger/"
+            "contact_sensor"
+        ),
+        "right": (
+            f"{robot_prim_path}/panda_rightfinger/geometry/panda_rightfinger/"
+            "contact_sensor"
+        ),
+        "hand": (
+            f"{robot_prim_path}/panda_hand/geometry/panda_hand/contact_sensor"
+        ),
+    }
+
+
 def _translation_dof(value: Any) -> bool:
     name = getattr(value, "name", None)
     text = str(name if name is not None else value).rsplit(".", 1)[-1]

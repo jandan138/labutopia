@@ -289,6 +289,169 @@ def test_online_pour_compensates_live_source_to_gripper_offset_each_frame(
     )
 
 
+@pytest.mark.parametrize(
+    "event,desired_source",
+    [
+        (0, [0.3, -0.15, 1.2]),
+        (1, [0.3, -0.23, 1.12]),
+    ],
+)
+def test_online_pour_limits_tracked_source_translation_before_offset_compensation(
+    monkeypatch,
+    event,
+    desired_source,
+):
+    module = _load_atomic_pour_controller(monkeypatch)
+    cspace = _StubCspaceController()
+    controller = module.PourController(
+        name="pour",
+        cspace_controller=cspace,
+        events_dt=[0.01] * 6,
+        fixed_height_offsets=(0.4, 0.2),
+        target_position_offset=(0.0, 0.05, 0.0),
+        maximum_source_translation_step_m=0.005,
+    )
+    controller._event = event
+    target = np.asarray([0.3, -0.2, 0.8], dtype=np.float64)
+    source = np.asarray([0.1, 0.2, 0.9], dtype=np.float64)
+    gripper = np.asarray([0.0, 0.1, 1.0], dtype=np.float64)
+    source_before = source.copy()
+    gripper_before = gripper.copy()
+    desired = np.asarray(desired_source, dtype=np.float64)
+    requested_delta = desired - source
+    commanded_source = source + requested_delta / np.linalg.norm(requested_delta) * 0.005
+
+    _forward(
+        controller,
+        target,
+        source_position=source,
+        gripper_position=gripper,
+    )
+
+    np.testing.assert_allclose(
+        cspace.calls[-1]["target_end_effector_position"],
+        commanded_source - (source - gripper),
+    )
+    np.testing.assert_array_equal(source, source_before)
+    np.testing.assert_array_equal(gripper, gripper_before)
+    evidence = controller.source_translation_limit_evidence
+    assert evidence["enabled"] is True
+    assert evidence["limited"] is True
+    assert evidence["application_count"] == 1
+    assert evidence["requested_source_position_m"] == pytest.approx(desired)
+    assert evidence["commanded_source_position_m"] == pytest.approx(
+        commanded_source
+    )
+    assert evidence["commanded_translation_m"] == pytest.approx(0.005)
+
+
+def test_limited_pour_entry_waits_for_full_source_target_before_rotation(
+    monkeypatch,
+):
+    module = _load_atomic_pour_controller(monkeypatch)
+    controller = module.PourController(
+        name="pour",
+        cspace_controller=_StubCspaceController(),
+        events_dt=[1.0] * 6,
+        fixed_height_offsets=(0.4, 0.2),
+        target_position_offset=(0.0, 0.05, 0.0),
+        maximum_source_translation_step_m=0.005,
+    )
+    controller._event = 1
+    target = np.asarray([0.3, -0.2, 0.8], dtype=np.float64)
+    entry_source = np.asarray([0.3, -0.23, 1.12], dtype=np.float64)
+    source = entry_source.copy()
+    source[2] -= 0.2
+
+    _forward(
+        controller,
+        target,
+        source_position=source,
+        gripper_position=np.asarray([0.2, -0.1, 1.0]),
+    )
+    assert controller._event == 1
+    assert controller.source_translation_limit_evidence["target_reached"] is False
+
+    _forward(
+        controller,
+        target,
+        source_position=entry_source,
+        gripper_position=np.asarray([0.2, -0.1, 1.0]),
+    )
+    assert controller._event == 2
+    assert controller.source_translation_limit_evidence["target_reached"] is True
+
+
+def test_limited_pour_entry_does_not_advance_inside_position_threshold(
+    monkeypatch,
+):
+    module = _load_atomic_pour_controller(monkeypatch)
+    controller = module.PourController(
+        name="pour",
+        cspace_controller=_StubCspaceController(),
+        events_dt=[1.0] * 6,
+        fixed_height_offsets=(0.4, 0.2),
+        target_position_offset=(0.0, 0.05, 0.0),
+        maximum_source_translation_step_m=0.005,
+    )
+    controller._event = 1
+    target = np.asarray([0.3, -0.2, 0.8], dtype=np.float64)
+    entry_source = np.asarray([0.3, -0.23, 1.12], dtype=np.float64)
+    source = entry_source.copy()
+    source[2] -= 0.0055
+
+    _forward(
+        controller,
+        target,
+        source_position=source,
+        gripper_position=np.asarray([0.2, -0.1, 1.0]),
+    )
+
+    assert controller._event == 1
+    assert controller.source_translation_limit_evidence["limited"] is True
+    assert controller.source_translation_limit_evidence["target_reached"] is False
+
+
+@pytest.mark.parametrize("limit", [True, 0.0, -0.005, np.nan, np.inf])
+def test_source_translation_limit_rejects_invalid_values(monkeypatch, limit):
+    module = _load_atomic_pour_controller(monkeypatch)
+
+    with pytest.raises(ValueError, match="maximum_source_translation_step_m_invalid"):
+        module.PourController(
+            name="pour",
+            cspace_controller=_StubCspaceController(),
+            maximum_source_translation_step_m=limit,
+        )
+
+
+def test_source_translation_limit_is_inactive_without_tracked_source(monkeypatch):
+    module = _load_atomic_pour_controller(monkeypatch)
+    cspace = _StubCspaceController()
+    controller = module.PourController(
+        name="pour",
+        cspace_controller=cspace,
+        events_dt=[0.01] * 6,
+        fixed_height_offsets=(0.4, 0.2),
+        target_position_offset=(0.0, 0.05, 0.0),
+        maximum_source_translation_step_m=0.005,
+    )
+    target = np.asarray([0.3, -0.2, 0.8], dtype=np.float64)
+
+    _forward(
+        controller,
+        target,
+        gripper_position=np.asarray([0.1, 0.2, 0.9]),
+    )
+
+    np.testing.assert_allclose(
+        cspace.calls[-1]["target_end_effector_position"],
+        [0.3, -0.15, 1.2],
+    )
+    assert controller.source_translation_limit_evidence["enabled"] is True
+    assert controller.source_translation_limit_evidence["tracked_source"] is False
+    assert controller.source_translation_limit_evidence["limited"] is False
+
+
 def test_atomic_pour_maps_tool_center_target_to_rmp_control_frame(monkeypatch):
     module = _load_atomic_pour_controller(monkeypatch)
     cspace = _StubCspaceController()
@@ -376,7 +539,7 @@ def test_legacy_pick_latches_actual_close_and_lift_actions(monkeypatch):
     )
 
     assert controller._event == 5
-    assert close_action.kwargs["joint_positions"][7:9] == [0.028, 0.028]
+    assert close_action.kwargs["joint_positions"][7:9] == [0.012, 0.012]
     assert controller.grasp_contact_requested() is True
     assert controller.lift_command_emitted() is False
     assert controller.lift_is_next_action() is True
@@ -646,12 +809,18 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
                 "passed": True,
                 "pour_forward_call_index": 19,
             }
+            self.source_translation_limit_evidence = {
+                "enabled": True,
+                "maximum_source_translation_step_m": 0.005,
+            }
+            self.source_translation_limit_active = False
 
         def is_done(self):
             return False
 
         def forward(self, **kwargs):
             forward_calls.append(kwargs)
+            self.source_translation_limit_active = True
             return _StubArticulationAction(**kwargs)
 
         def reset(self):
@@ -711,8 +880,13 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
         online_fluid=SimpleNamespace(
             enabled=True,
             expert_control_profile="stabilized_online_fluid_v1",
-            expert_pour_height_offsets_m=[0.4, 0.14],
-            expert_pour_target_offset_m=[0.0, 0.05, 0.0],
+            source_ownership="gripper_attached_kinematic_vessel",
+                expert_pour_height_offsets_m=[0.4, 0.14],
+                expert_pour_target_offset_m=[0.0, 0.05, 0.0],
+                expert_pour_position_control=(
+                    "source_center_live_offset_slew_limited_v1"
+                ),
+                kinematic_pour_max_source_translation_step_m=0.005,
             expert_pour_entry_orientation_required=True,
             expert_pour_entry_orientation_threshold_degrees=5.0,
             expert_pour_target_orientation_wxyz=[
@@ -738,10 +912,14 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
     robot = StubRobot()
     controller = module.PourTaskController(cfg, robot=robot)
 
+    assert controller.online_fluid_source_translation_limit_active() is False
     assert captured[0]["fixed_height_offsets"] == (0.4, 0.14)
     assert captured[0]["target_position_offset"] == (0.0, 0.05, 0.0)
     assert captured[0]["require_entry_orientation"] is True
     assert captured[0]["entry_orientation_threshold_degrees"] == 5.0
+    assert captured[0]["maximum_source_translation_step_m"] == pytest.approx(
+        0.005
+    )
 
     object_position = np.asarray([0.3118024, 0.0918024, 0.8251943])
     object_quaternion = np.asarray(
@@ -822,6 +1000,12 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
     infer_controller.current_phase = module.Phase.POURING
     assert infer_controller.online_fluid_rotation_handoff_requested() is True
     assert infer_controller.online_fluid_control_evidence()["mode"] == "infer"
+    assert infer_controller.online_fluid_control_evidence()[
+        "kinematic_pour_max_source_translation_step_m"
+    ] == pytest.approx(0.005)
+    assert infer_controller.online_fluid_control_evidence()[
+        "source_translation_limit"
+    ] is None
     assert (
         infer_controller.online_fluid_control_evidence()[
             "pour_entry_orientation"
@@ -863,6 +1047,7 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
 
     assert infer_controller._check_phase_success() is False
 
+
     controller._check_phase_success = lambda: False
     controller.current_phase = module.Phase.POURING
     controller.active_controller = controller.pour_controller
@@ -873,6 +1058,7 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
         "gripper_position": np.asarray([0.1, -0.1, 1.0]),
     }
     controller._step_collect(online_state)
+    assert controller.online_fluid_source_translation_limit_active() is True
     np.testing.assert_array_equal(
         forward_calls[-1]["source_position"], online_state["object_position"]
     )
@@ -889,6 +1075,13 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
         [0.5, 0.5, 0.5, 0.5],
     )
     control_evidence = controller.online_fluid_control_evidence()
+    assert control_evidence["expert_pour_position_control"] == (
+        "source_center_live_offset_slew_limited_v1"
+    )
+    assert control_evidence["source_translation_limit"] == {
+        "enabled": True,
+        "maximum_source_translation_step_m": 0.005,
+    }
     np.testing.assert_allclose(
         control_evidence["pick_gripper_offset_object_m"], local_offset
     )
@@ -912,6 +1105,51 @@ def test_active_pour_task_controller_receives_online_fixed_offsets(monkeypatch):
     legacy._step_collect(online_state)
     assert forward_calls[-1]["source_position"] is None
     assert "current_end_effector_orientation" not in forward_calls[-1]
+
+
+def test_dynamic_source_ownership_rejects_kinematic_pour_limit(monkeypatch):
+    module, _calls = _load_contact_pour_task_controller(monkeypatch)
+    cfg = _contact_pour_cfg()
+    cfg.online_fluid.kinematic_pour_max_source_translation_step_m = 0.005
+
+    with pytest.raises(
+        ValueError,
+        match="kinematic_pour_max_source_translation_step_m_requires_kinematic_ownership",
+    ):
+        module.PourTaskController(cfg, robot=object())
+
+
+@pytest.mark.parametrize(
+    "position_control,limit,error",
+    [
+        (
+            "source_center_live_offset_v1",
+            0.005,
+            "kinematic_pour_position_control_mode_invalid",
+        ),
+        (
+            "source_center_live_offset_slew_limited_v1",
+            None,
+            "kinematic_pour_max_source_translation_step_m_required",
+        ),
+    ],
+)
+def test_kinematic_slew_limit_requires_matching_control_mode(
+    monkeypatch,
+    position_control,
+    limit,
+    error,
+):
+    module, _calls = _load_contact_pour_task_controller(monkeypatch)
+    cfg = _contact_pour_cfg()
+    cfg.online_fluid.source_ownership = "gripper_attached_kinematic_vessel"
+    cfg.online_fluid.expert_control_profile = "stabilized_online_fluid_v1"
+    cfg.online_fluid.expert_pour_position_control = position_control
+    if limit is not None:
+        cfg.online_fluid.kinematic_pour_max_source_translation_step_m = limit
+
+    with pytest.raises(ValueError, match=error):
+        module.PourTaskController(cfg, robot=object())
 
 
 def test_online_fluid_collection_commits_only_after_combined_expert_acceptance(
@@ -2113,6 +2351,91 @@ def test_contact_pick_insert_starts_at_frozen_align_and_moves_world_z_only(
     np.testing.assert_array_equal(evidence["insert_waypoint"], source)
 
 
+def test_contact_pick_insert_follows_lateral_approach_without_perpendicular_drift(
+    monkeypatch,
+):
+    module = _load_contact_pick_controller(monkeypatch)
+    controller = _contact_pick_controller(
+        module,
+        position_threshold=0.001,
+        insert_distance=0.00045,
+        approach_speed=0.006,
+    )
+    source = np.asarray([0.30, 0.10, 0.84], dtype=np.float64)
+    approach = np.asarray([1.0, 0.0, 0.0], dtype=np.float64)
+    offset = np.asarray([0.0, 0.02, 0.0], dtype=np.float64)
+    grasp = source + offset
+    pregrasp = grasp - 0.10 * approach
+    align = grasp - 0.00045 * approach
+    orientation = np.asarray([1.0, 0.0, 0.0, 0.0])
+
+    _forward_contact_pick(
+        controller,
+        source_position=source,
+        gripper_position=source,
+        approach_direction=approach,
+        grasp_offset=offset,
+    )
+    _forward_contact_pick(
+        controller,
+        source_position=source,
+        gripper_position=source,
+        current_joint_positions=_contact_pick_open_joints(controller),
+        current_end_effector_orientation=orientation,
+        approach_direction=approach,
+        grasp_offset=offset,
+    )
+    _forward_contact_pick(
+        controller,
+        source_position=source,
+        gripper_position=pregrasp,
+        current_joint_positions=_contact_pick_open_joints(controller),
+        current_end_effector_orientation=orientation,
+        approach_direction=approach,
+        grasp_offset=offset,
+    )
+    _forward_contact_pick(
+        controller,
+        source_position=source,
+        gripper_position=align,
+        current_end_effector_orientation=orientation,
+        approach_direction=approach,
+        grasp_offset=offset,
+    )
+    assert controller.current_event == module.ContactPickEvent.INSERT
+    controller._cspace_controller.calls.clear()
+
+    for _ in range(3):
+        if controller.current_event != module.ContactPickEvent.INSERT:
+            break
+        _forward_contact_pick(
+            controller,
+            source_position=source,
+            gripper_position=grasp,
+            current_end_effector_orientation=orientation,
+            approach_direction=approach,
+            grasp_offset=offset,
+        )
+
+    targets = np.asarray(
+        [
+            call["target_end_effector_position"]
+            for call in controller._cspace_controller.calls
+        ]
+    )
+    expected_x = np.asarray(
+        [align[0] + 0.0002, align[0] + 0.0004, grasp[0]]
+    )
+    assert controller.current_event == module.ContactPickEvent.SETTLE
+    assert len(targets) == 3
+    np.testing.assert_allclose(targets[:, 0], expected_x, atol=1.0e-15)
+    np.testing.assert_array_equal(targets[:, 1:], np.tile(grasp[1:], (3, 1)))
+    steps = np.linalg.norm(
+        np.diff(np.vstack((align, targets)), axis=0), axis=1
+    )
+    assert np.all(steps <= 0.006 / 30.0 + 1.0e-15)
+
+
 def test_contact_pick_sixty_millimeter_insert_emits_exactly_300_arm_commands(
     monkeypatch,
 ):
@@ -3143,12 +3466,17 @@ def test_native_probe_aborts_if_lift_was_applied_or_observed(
     assert calls.pour_forward == []
 
 
-def test_native_probe_never_applies_pending_lift_after_stale_qualification(
+@pytest.mark.parametrize(
+    "execution_mode",
+    ["contact_acquisition_probe_v1", "production_pour_v1"],
+)
+def test_native_mode_never_applies_pending_lift_after_stale_qualification(
     monkeypatch,
+    execution_mode,
 ):
     module, calls = _load_contact_pour_task_controller(monkeypatch)
     controller = module.PourTaskController(
-        _native_pour_cfg(execution_mode="contact_acquisition_probe_v1"),
+        _native_pour_cfg(execution_mode=execution_mode),
         robot=object(),
     )
     controller.pick_controller._event = 5
@@ -3169,6 +3497,7 @@ def test_only_exact_contact_ownership_selects_contact_pick_sibling(monkeypatch):
     cfg = _contact_pour_cfg()
     cfg.online_fluid.source_ownership = "gripper_attached_kinematic_vessel"
     cfg.online_fluid.expert_control_profile = "stabilized_online_fluid_v1"
+    cfg.online_fluid.expert_pour_position_control = "source_center_live_offset_v1"
 
     controller = module.PourTaskController(cfg, robot=object())
     controller._check_phase_success = lambda: False
@@ -3250,7 +3579,9 @@ def test_native_expert_pour_omits_online_pose_overrides(monkeypatch):
     )
 
 
-def test_production_native_mode_still_emits_pending_lift(monkeypatch):
+def test_production_native_mode_emits_pending_lift_after_current_qualification(
+    monkeypatch,
+):
     module, calls = _load_contact_pour_task_controller(monkeypatch)
     controller = module.PourTaskController(_native_pour_cfg(), robot=object())
     controller.pick_controller._event = 5
@@ -3259,6 +3590,7 @@ def test_production_native_mode_still_emits_pending_lift(monkeypatch):
     state = _contact_pour_state()
     state["online_fluid_grasp"] = {
         "qualified": True,
+        "probe_qualified_now": True,
         "failure_reason": None,
     }
 
@@ -3269,6 +3601,26 @@ def test_production_native_mode_still_emits_pending_lift(monkeypatch):
     assert len(calls.legacy_pick_forward) == 1
     assert controller.pick_controller._last_emitted_event == 5
     assert controller.pick_controller.lift_emitted is True
+
+
+def test_production_native_success_requires_qualified_grasp(monkeypatch):
+    module, _calls = _load_contact_pour_task_controller(monkeypatch)
+    controller = module.PourTaskController(_native_pour_cfg(), robot=object())
+    state = _contact_pour_state()
+    controller.initial_position = state["object_position"].copy()
+    state["gripper_position"] = controller.initial_position + np.asarray(
+        [0.0, 0.0, 0.8 * controller._expert_pick_lift_height_m],
+        dtype=np.float64,
+    )
+    state["online_fluid_grasp"] = {
+        "qualified": False,
+        "probe_qualified_now": False,
+        "failure_reason": None,
+    }
+    controller.pick_controller.is_done = lambda: True
+    controller.state = state
+
+    assert controller._check_phase_success() is False
 
 
 def test_native_expert_rejects_lift_before_bilateral_acquisition(monkeypatch):
@@ -3330,6 +3682,10 @@ def test_contact_pick_success_requires_qualified_completed_physical_grasp(
 
     controller.pick_controller.is_done = lambda: True
     controller.state["object_position"][2] = (
+        controller.initial_position[2]
+        + 0.8 * controller._expert_pick_lift_height_m
+    )
+    controller.state["gripper_position"][2] = (
         controller.initial_position[2]
         + 0.8 * controller._expert_pick_lift_height_m
     )

@@ -9,6 +9,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = REPO_ROOT / "config/level1_pour_online_fluid.yaml"
 V2_CONFIG_PATH = REPO_ROOT / "config/level1_pour_online_fluid_v2.yaml"
+VISUAL_CONFIG_PATH = REPO_ROOT / "config/level1_pour_contact_grasp_visual_v1.yaml"
 CONTACT_PICK_CONFIG_PATH = (
     REPO_ROOT / "config/level1_pour_online_fluid_contact_grasp_v1.yaml"
 )
@@ -253,3 +254,28 @@ def test_v2_final_online_contract_is_separate_and_explicit():
     assert [camera["focal_length"] for camera in cfg["cameras"]] == [16, 16]
     assert all(camera["clipping_range"] == [0.01, 100.0] for camera in cfg["cameras"])
     assert all(camera["frequency"] == 30 for camera in cfg["cameras"])
+
+
+def test_visual_kinematic_pour_config_filters_the_carrier_robot():
+    cfg = yaml.safe_load(VISUAL_CONFIG_PATH.read_text(encoding="utf-8"))
+    fluid = cfg["online_fluid"]
+
+    assert fluid["source_ownership"] == "gripper_attached_kinematic_vessel"
+    assert fluid["physics_dt"] == 1 / 600
+    assert fluid["physics_substeps_per_observation"] == 20
+    assert fluid["synthetic_attachment_collision_filter_root_path"] == "/World/Franka"
+    assert fluid["expert_pour_position_control"] == (
+        "source_center_live_offset_slew_limited_v1"
+    )
+    assert fluid["kinematic_pour_max_source_translation_step_m"] == 0.005
+
+
+def test_kinematic_pour_translation_limit_is_not_configured_for_other_paths():
+    for path in (
+        CONFIG_PATH,
+        V2_CONFIG_PATH,
+        CONTACT_PICK_CONFIG_PATH,
+        NATIVE_EXPERT_CONFIG_PATH,
+    ):
+        fluid = yaml.safe_load(path.read_text(encoding="utf-8"))["online_fluid"]
+        assert "kinematic_pour_max_source_translation_step_m" not in fluid
