@@ -8,9 +8,16 @@ produces physics, runtime, acceptance, or delivery evidence.
 
 - The only formal simulator baseline is:
   `/cpfs/shared/simulation/zhuzihou/dev/conda-managed/envs/embodied-eval-os-sim-isaacsim41-genmanip-py310/bin/python`.
-- The expected baseline tuple is Python 3.10.20, `isaacsim==4.1.0.0`,
-  `numpy==1.26.4`, and USD 0.22.11. A reviewed replacement must pin and
-  attest the complete tuple, not just Isaac's major version.
+- The reviewed effective-runtime v2 baseline is Python 3.10.20,
+  `isaacsim==4.1.0.0`, Kit-loaded `numpy==1.26.0`, and USD 0.22.11 after
+  `SimulationApp` bootstrap. The launcher Conda distribution remains
+  `numpy==1.26.4`; it is not the effective NumPy identity for formal runtime
+  claims. New formal evidence must use
+  `tools/labutopia_fluid/attest_isaac41_effective_runtime.py` and bind its
+  matched v2 receipt/manifest, including the exact Kit NumPy Python/native
+  origins and hashes. Historical v1 `numpy==1.26.4` records are legacy and
+  non-comparable; never relabel them as v2 evidence. A reviewed replacement
+  must pin and attest the complete tuple, not just Isaac's major version.
 - Invoke the absolute `bin/python` path. Do not resolve `python` through
   `PATH`, use the environment's `isaacsim` console script, or fall back to
   `sys.executable`.
@@ -56,6 +63,9 @@ produces physics, runtime, acceptance, or delivery evidence.
   GPU/driver, sanitized environment hash, command, source revision and dirty
   state, task configuration, input USD/assets and closure hashes, run ID,
   stdout/stderr hashes, exit or signal status, and produced artifact hashes.
+- For a new formal physics or acceptance run, the matched effective-runtime v2
+  receipt/manifest must be produced by the same sealed child before task
+  execution and its receipt hash must be bound into that run's evidence.
 - Import success or exit code alone is not a pass. Runtime identity, preflight,
   logs, artifacts, and task-specific acceptance fields must agree.
 - Runtime/preflight failure is blocked infrastructure evidence, not an asset,

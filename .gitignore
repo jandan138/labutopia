@@ -216,6 +216,9 @@ docs/tmp/
 # Local generated recordings
 artifacts/videos/
 
+# Run-scoped Isaac evidence is retained in the workspace but not committed.
+artifacts/runs/
+
 # Local git worktrees
 .worktrees/
 
