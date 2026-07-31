@@ -8,13 +8,17 @@ acceptance result and terminates before an arm-lift action can be applied.
 from __future__ import annotations
 
 import argparse
+import ast
 import gzip
 import hashlib
 import json
 import math
 import os
+import secrets
+import subprocess
 import sys
 import traceback
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -34,7 +38,26 @@ APPROVED_LIBRARY_PATHS = (
     FORMAL_ISAAC41_PREFIX / "lib/python3.10/site-packages/torch/lib",
 )
 APPROVED_LD_LIBRARY_PATH = ":".join(str(path) for path in APPROVED_LIBRARY_PATHS)
-DEFAULT_CONFIG = REPO_ROOT / "config/level1_pour_online_fluid_contact_grasp_v1.yaml"
+DEFAULT_CONFIG = (
+    REPO_ROOT
+    / "config/diagnostic_level1_pour_contact_pick_top_down_"
+    "g2_600hz_step600_layout_v1.yaml"
+)
+HIDDEN_CUBE_OVERLAY = (
+    REPO_ROOT
+    / "assets/chemistry_lab/lab_001_fluid_eval/"
+    "lab_001_g0_disable_hidden_cube_collision_v1.usda"
+)
+FINITE_TARGET_OFFSET_OVERLAY = (
+    REPO_ROOT
+    / "assets/chemistry_lab/lab_001_fluid_eval/"
+    "lab_001_g0_finite_target_offsets_calibration_v2.usda"
+)
+_OFFSET_TARGETS = (
+    ("left_finger", "/World/Franka/panda_leftfinger/geometry/panda_leftfinger"),
+    ("right_finger", "/World/Franka/panda_rightfinger/geometry/panda_rightfinger"),
+    ("table", "/World/table/surface/mesh"),
+)
 REQUIRED_ENVIRONMENT = {
     "PYTHONNOUSERSITE": "1",
     "ACCEPT_EULA": "Y",
@@ -60,18 +83,237 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def resolve_treatment_profile(profile_id: str) -> dict[str, Any]:
+    """Return the optional authored-offset session stack for one direct probe."""
+    stacks = {
+        "none": (),
+        "cube_only_baseline_v1": (("hidden_cube_collision_disable", HIDDEN_CUBE_OVERLAY),),
+        "finite_target_offsets_calibration_v2": (
+            ("finite_target_offsets_calibration_v2", FINITE_TARGET_OFFSET_OVERLAY),
+            ("hidden_cube_collision_disable", HIDDEN_CUBE_OVERLAY),
+        ),
+    }
+    entries = stacks.get(profile_id)
+    if entries is None:
+        raise ValueError("nonformal_probe_treatment_profile_invalid")
+    overlay_stack = []
+    for identifier, raw_path in entries:
+        path = Path(raw_path).resolve()
+        if path.is_symlink() or not path.is_file():
+            raise FileNotFoundError(f"nonformal_probe_treatment_overlay_missing:{path}")
+        overlay_stack.append(
+            {"id": identifier, "path": str(path), "sha256": _sha256_file(path)}
+        )
+    return {
+        "authority": "nonformal_pbd_direct_contact_treatment_profile_v1",
+        "id": profile_id,
+        "overlay_stack": overlay_stack,
+    }
+
+
+def _source_regular(path: Path) -> Path:
+    candidate = Path(path)
+    if candidate.is_symlink() or not candidate.is_file() or not candidate.is_relative_to(REPO_ROOT):
+        raise ValueError("nonformal_probe_source_closure_invalid")
+    return candidate.resolve()
+
+
+def _internal_module_path(module: str) -> Path | None:
+    if module.split(".", 1)[0] not in {
+        "controllers",
+        "factories",
+        "isaacsim_compat",
+        "robots",
+        "tasks",
+        "tools",
+        "utils",
+    }:
+        return None
+    base = REPO_ROOT.joinpath(*module.split("."))
+    candidate = base.with_suffix(".py")
+    if candidate.is_file():
+        return candidate
+    package = base / "__init__.py"
+    return package if package.is_file() else None
+
+
+def _python_import_closure(seed_paths: tuple[Path, ...]) -> set[Path]:
+    queue = list(seed_paths)
+    visited: set[Path] = set()
+    while queue:
+        path = _source_regular(queue.pop())
+        if path in visited:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        visited.add(path)
+        package = path.relative_to(REPO_ROOT).with_suffix("").parts[:-1]
+        for node in ast.walk(tree):
+            modules: list[str] = []
+            if isinstance(node, ast.Import):
+                modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                if node.level:
+                    prefix = package[: max(0, len(package) - node.level + 1)]
+                    suffix = tuple(node.module.split(".")) if node.module else ()
+                    base = ".".join((*prefix, *suffix))
+                else:
+                    base = node.module or ""
+                if base:
+                    modules.append(base)
+                    modules.extend(f"{base}.{alias.name}" for alias in node.names)
+            for module in modules:
+                candidate = _internal_module_path(module)
+                if candidate is not None:
+                    queue.append(candidate)
+    return visited
+
+
+def _runtime_source_paths(config_path: Path, treatment_profile: str) -> tuple[Path, ...]:
+    attestation = _attestation_module()
+    cfg, config_closure = load_composed_config(config_path)
+    asset_path = (REPO_ROOT / str(cfg.usd_path)).resolve()
+    robot_asset_path = (REPO_ROOT / str(cfg.robot.usd_path)).resolve()
+    profile = resolve_treatment_profile(treatment_profile)
+    paths = {
+        *_python_import_closure((Path(__file__), Path(attestation.__file__))),
+        Path(attestation.__file__),
+        Path(config_path),
+        *(Path(path) for path in config_closure),
+        asset_path,
+        robot_asset_path,
+        *(Path(item["path"]) for item in profile["overlay_stack"]),
+    }
+    return tuple(sorted(_source_regular(path) for path in paths))
+
+
+def _isolated_mode() -> bool:
+    return bool(sys.flags.isolated)
+
+
+def _stable_file_bytes(path: Path) -> tuple[bytes, str]:
+    before = _sha256_file(path)
+    payload = path.read_bytes()
+    after = _sha256_file(path)
+    if before != after or hashlib.sha256(payload).hexdigest() != before:
+        raise RuntimeError("nonformal_probe_input_changed_while_loading")
+    return payload, before
+
+
+def _ensure_robot_reference(
+    stage: Any,
+    *,
+    robot_asset_path: Path,
+    add_reference_to_stage: Any,
+) -> None:
+    """Load the robot before overlays can author a valid-looking prim over."""
+    robot_path = "/World/Franka"
+    robot_prim = stage.GetPrimAtPath(robot_path)
+    if not robot_prim or not robot_prim.IsValid():
+        add_reference_to_stage(usd_path=str(robot_asset_path.resolve()), prim_path=robot_path)
+    robot_prim = stage.GetPrimAtPath(robot_path)
+    if not robot_prim or not robot_prim.IsValid():
+        raise RuntimeError("nonformal_probe_robot_reference_missing")
+
+
+def _default_config_path(config_path: Path, entry: Any) -> Path | None:
+    if entry == "_self_":
+        return None
+    if isinstance(entry, str):
+        name = entry
+    elif isinstance(entry, dict) and len(entry) == 1:
+        group, name = next(iter(entry.items()))
+        if name is None:
+            return None
+        if not isinstance(group, str) or not isinstance(name, str):
+            raise ValueError("nonformal_probe_config_default_invalid")
+        name = f"{group}/{name}"
+    else:
+        raise ValueError("nonformal_probe_config_default_invalid")
+    relative = Path(name)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError("nonformal_probe_config_default_invalid")
+    if relative.suffix not in {"", ".yaml", ".yml"}:
+        raise ValueError("nonformal_probe_config_default_invalid")
+    if not relative.suffix:
+        relative = relative.with_suffix(".yaml")
+    return (config_path.parent / relative).resolve()
+
+
+def load_composed_config(config_path: Path) -> tuple[Any, dict[str, str]]:
+    """Compose the small diagnostic YAML default chain and seal every input."""
+    from omegaconf import OmegaConf
+    import yaml
+
+    closure: dict[str, str] = {}
+    active: set[Path] = set()
+
+    def load(path: Path) -> Any:
+        path = path.resolve()
+        if path in active:
+            raise RuntimeError("nonformal_probe_config_default_cycle")
+        if not path.is_file():
+            raise FileNotFoundError(f"nonformal_probe_config_missing:{path}")
+        payload, digest = _stable_file_bytes(path)
+        try:
+            raw = yaml.safe_load(payload)
+        except yaml.YAMLError as exc:
+            raise ValueError("nonformal_probe_config_yaml_invalid") from exc
+        if not isinstance(raw, dict):
+            raise ValueError("nonformal_probe_config_mapping_required")
+        closure[str(path)] = digest
+        active.add(path)
+        try:
+            defaults = raw.pop("defaults", [])
+            if not isinstance(defaults, list):
+                raise ValueError("nonformal_probe_config_defaults_invalid")
+            current = OmegaConf.create(raw)
+            composed = OmegaConf.create()
+            self_merged = False
+            for entry in defaults:
+                default_path = _default_config_path(path, entry)
+                if default_path is None:
+                    composed = OmegaConf.merge(composed, current)
+                    self_merged = True
+                else:
+                    composed = OmegaConf.merge(composed, load(default_path))
+            if not self_merged:
+                composed = OmegaConf.merge(composed, current)
+            return composed
+        finally:
+            active.remove(path)
+
+    return load(config_path), dict(sorted(closure.items()))
+
+
 def _require_unchanged_input_hashes(
     *,
-    config_path: Path,
-    config_sha256: str,
-    asset_path: Path,
-    asset_sha256: str,
+    input_closure: Mapping[str, str],
 ) -> None:
-    if (
-        _sha256_file(config_path) != config_sha256
-        or _sha256_file(asset_path) != asset_sha256
+    if not input_closure or any(
+        not isinstance(path, str) or not _is_sha256(digest)
+        for path, digest in input_closure.items()
     ):
-        raise RuntimeError("nonformal_probe_input_changed_during_run")
+        raise ValueError("nonformal_probe_input_closure_invalid")
+    for raw_path, digest in input_closure.items():
+        path = Path(raw_path)
+        if not path.is_file() or _sha256_file(path) != digest:
+            raise RuntimeError("nonformal_probe_input_changed_during_run")
+
+
+def _is_sha256(value: Any) -> bool:
+    return bool(
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _canonical_json_sha256(value: Mapping[str, Any]) -> str:
+    return hashlib.sha256(
+        (json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n").encode(
+            "utf-8"
+        )
+    ).hexdigest()
 
 
 def _json_native(value: Any) -> Any:
@@ -112,9 +354,13 @@ def _write_create_only(path: Path, value: dict[str, Any]) -> None:
                 os.close(directory)
 
 
-def _runtime_preflight(receipt_path: Path) -> dict[str, Any]:
+def runtime_process_preflight(execution_request: Mapping[str, Any]) -> dict[str, Any]:
     if Path(sys.executable).resolve() != FORMAL_ISAAC41_PYTHON.resolve():
         raise RuntimeError("nonformal_probe_interpreter_mismatch")
+    if Path(sys.prefix).resolve() != FORMAL_ISAAC41_PREFIX.resolve():
+        raise RuntimeError("nonformal_probe_prefix_mismatch")
+    if not _isolated_mode():
+        raise RuntimeError("nonformal_probe_isolated_mode_required")
     for name, expected in REQUIRED_ENVIRONMENT.items():
         if os.environ.get(name) != expected:
             raise RuntimeError(f"nonformal_probe_environment_missing:{name}")
@@ -125,20 +371,13 @@ def _runtime_preflight(receipt_path: Path) -> dict[str, Any]:
         )
     if os.environ.get("LD_LIBRARY_PATH") != APPROVED_LD_LIBRARY_PATH:
         raise RuntimeError("nonformal_probe_library_path_invalid")
-    if str(REPO_ROOT) not in sys.path:
-        sys.path.insert(0, str(REPO_ROOT))
-    from tools.labutopia_fluid import attest_isaac41_effective_runtime as attestation
-
-    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    try:
-        attestation.require_matched_runtime_receipt(receipt)
-    except (TypeError, ValueError) as exc:
-        raise RuntimeError("nonformal_probe_runtime_receipt_invalid") from exc
+    if not isinstance(execution_request, Mapping):
+        raise RuntimeError("nonformal_probe_execution_request_invalid")
     return {
         "executable": str(FORMAL_ISAAC41_PYTHON),
-        "receipt_path": str(receipt_path),
-        "receipt_sha256": _sha256_file(receipt_path),
-        "receipt_binding": "separate_nonformal_preflight_only",
+        "prefix": str(FORMAL_ISAAC41_PREFIX),
+        "child_pid": os.getpid(),
+        "execution_binding": "same_process_runtime_receipt_v1",
         "library_path": APPROVED_LD_LIBRARY_PATH,
         "library_path_sha256": hashlib.sha256(
             APPROVED_LD_LIBRARY_PATH.encode("utf-8")
@@ -177,11 +416,13 @@ def _event_name(value: Any) -> str:
         raise RuntimeError("direct_report_event_invalid") from exc
 
 
-def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[str, Any]:
-    # Keep all Isaac imports after SimulationApp has bootstrapped Kit.
-    from isaacsim import SimulationApp
-
-    app = SimulationApp({"headless": True, "width": 64, "height": 64})
+def _runtime_probe(
+    args: argparse.Namespace,
+    runtime: dict[str, Any],
+    *,
+    app: Any,
+) -> dict[str, Any]:
+    # The sealed child has already bootstrapped and attested this exact app.
     trace_path = args.out_dir / "direct_physx_reports.jsonl.gz"
     trace_stream = None
     trace_digest = hashlib.sha256()
@@ -198,7 +439,6 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
         from isaacsim.core.api import World
         from isaacsim.core.prims import SingleRigidPrim
         from isaacsim.core.utils.stage import add_reference_to_stage
-        from omegaconf import OmegaConf
         from omni.physx import get_physx_simulation_interface
         from pxr import PhysxSchema, PhysicsSchemaTools, Sdf, Usd, UsdPhysics, UsdShade, UsdUtils
 
@@ -222,25 +462,107 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
         )
         from utils.object_utils import ObjectUtils
         from utils.controlled_contact import FullContactReportAccumulator
+        from utils import nonformal_usd_dependency_resolution as dependency_resolution
 
-        cfg = OmegaConf.load(str(args.config))
+        if args.seed is not None:
+            import random
+
+            random.seed(args.seed)
+            np.random.seed(args.seed)
+            try:
+                import torch
+
+                torch.manual_seed(args.seed)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed_all(args.seed)
+                torch_seeded = True
+            except (ImportError, RuntimeError):
+                torch_seeded = False
+        else:
+            torch_seeded = False
+        seed_record = {
+            "requested_seed": args.seed,
+            "numpy_seeded": args.seed is not None,
+            "python_random_seeded": args.seed is not None,
+            "torch_seeded": torch_seeded,
+            "deterministic_physics_claimed": False,
+        }
+        cfg, config_closure = load_composed_config(args.config)
         fluid = cfg.online_fluid
         if (
             fluid.enabled is not True
             or str(fluid.source_ownership) != "contact_friction_dynamic_v1"
             or str(fluid.expert_control_profile) != "contact_pick_v1"
+            or str(fluid.execution_mode) != "contact_acquisition_probe_v1"
             or str(cfg.task_type) != "pickpour"
         ):
             raise RuntimeError("nonformal_probe_config_contract_invalid")
         asset_path = (REPO_ROOT / str(cfg.usd_path)).resolve()
         if not asset_path.is_file():
             raise FileNotFoundError(f"nonformal_probe_asset_missing:{asset_path}")
-        config_sha256_before = _sha256_file(args.config)
-        asset_sha256_before = _sha256_file(asset_path)
+        robot_asset_path = (REPO_ROOT / str(cfg.robot.usd_path)).resolve()
+        if not robot_asset_path.is_file():
+            raise FileNotFoundError(
+                f"nonformal_probe_robot_asset_missing:{robot_asset_path}"
+            )
+        treatment_profile = resolve_treatment_profile(args.treatment_profile)
+        dependency_entries = [
+            {
+                "id": "fixture_asset",
+                "path": str(asset_path),
+                "sha256": _stable_file_bytes(asset_path)[1],
+            },
+            {
+                "id": "robot_asset",
+                "path": str(robot_asset_path),
+                "sha256": _stable_file_bytes(robot_asset_path)[1],
+            },
+            *(
+                {"id": item["id"], "path": item["path"], "sha256": item["sha256"]}
+                for item in treatment_profile["overlay_stack"]
+            ),
+        ]
+        resolved_dependency_closure_before_world = dependency_resolution.discover(
+            dependency_entries,
+            repo_root=REPO_ROOT,
+            UsdUtils=UsdUtils,
+        )
+        if resolved_dependency_closure_before_world["unresolved"]:
+            raise RuntimeError("nonformal_probe_usd_dependency_unresolved")
+        input_closure = {
+            **config_closure,
+            **{
+                item["path"]: item["sha256"]
+                for item in resolved_dependency_closure_before_world["files"]
+            },
+        }
+        input_closure = dict(sorted(input_closure.items()))
+        input_closure_sha256 = _canonical_json_sha256(input_closure)
 
         configure_particle_usd_readback()
         stage = omni.usd.get_context().get_stage()
         add_reference_to_stage(usd_path=str(asset_path), prim_path="/World")
+        # The finite treatment uses `over /World/Franka`; load the actual robot
+        # first so that the overlay cannot mask a missing reference.
+        _ensure_robot_reference(
+            stage,
+            robot_asset_path=robot_asset_path,
+            add_reference_to_stage=add_reference_to_stage,
+        )
+        treatment_session = stage.GetSessionLayer()
+        if treatment_session is None:
+            raise RuntimeError("nonformal_probe_treatment_session_layer_missing")
+        prior_treatment_sublayers = list(treatment_session.subLayerPaths)
+        if prior_treatment_sublayers:
+            raise RuntimeError("nonformal_probe_treatment_session_layer_not_empty")
+        treatment_sublayers = [item["path"] for item in treatment_profile["overlay_stack"]]
+        for treatment_sublayer in treatment_sublayers:
+            treatment_session.subLayerPaths.append(treatment_sublayer)
+        if list(treatment_session.subLayerPaths) != [
+            *prior_treatment_sublayers,
+            *treatment_sublayers,
+        ]:
+            raise RuntimeError("nonformal_probe_treatment_sublayer_order_invalid")
         if (
             not stage.GetPrimAtPath(str(fluid.particle_path)).IsValid()
             or not stage.GetPrimAtPath(str(fluid.particle_system_path)).IsValid()
@@ -267,9 +589,122 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
         robot = create_robot(
             str(cfg.robot.type),
             position=np.asarray(cfg.robot.position, dtype=np.float64),
-            usd_path=str((REPO_ROOT / str(cfg.robot.usd_path)).resolve()),
+            usd_path=str(robot_asset_path),
             camera_frequency=int(cfg.robot.camera_frequency),
         )
+
+        def target_offset_snapshot() -> dict[str, Any]:
+            def finite_scalar(attribute: Any) -> float | None:
+                if not attribute or not attribute.IsValid():
+                    return None
+                try:
+                    value = float(attribute.Get())
+                except (TypeError, ValueError):
+                    return None
+                return value if math.isfinite(value) else None
+
+            records = []
+            for identifier, path in _OFFSET_TARGETS:
+                prim = stage.GetPrimAtPath(path)
+                if not prim or not prim.IsValid():
+                    records.append(
+                        {
+                            "id": identifier,
+                            "path": path,
+                            "prim_type": "",
+                            "usd_collision_api_applied": False,
+                            "physx_collision_api_applied": False,
+                            "contact_offset_authored": False,
+                            "rest_offset_authored": False,
+                            "contact_offset_m": None,
+                            "rest_offset_m": None,
+                            "contact_offset_strongest_layer": None,
+                            "rest_offset_strongest_layer": None,
+                            "contact_offset_anonymous_opinion": False,
+                            "rest_offset_anonymous_opinion": False,
+                        }
+                    )
+                    continue
+                api = PhysxSchema.PhysxCollisionAPI(prim)
+
+                def strongest_layer(attribute: Any) -> str | None:
+                    if not attribute or not attribute.IsValid():
+                        return None
+                    stack = attribute.GetPropertyStack(Usd.TimeCode.Default())
+                    if not stack:
+                        return None
+                    layer = stack[0].layer
+                    raw_path = getattr(layer, "realPath", "")
+                    return str(Path(raw_path).resolve()) if raw_path else str(layer.identifier)
+
+                def has_anonymous_opinion(attribute: Any) -> bool:
+                    if not attribute or not attribute.IsValid():
+                        return False
+                    return any(
+                        bool(getattr(spec.layer, "anonymous", False))
+                        for spec in attribute.GetPropertyStack(Usd.TimeCode.Default())
+                    )
+
+                contact = api.GetContactOffsetAttr()
+                rest = api.GetRestOffsetAttr()
+                records.append(
+                    {
+                        "id": identifier,
+                        "path": path,
+                        "prim_type": str(prim.GetTypeName()),
+                        "usd_collision_api_applied": bool(prim.HasAPI(UsdPhysics.CollisionAPI)),
+                        "physx_collision_api_applied": bool(
+                            prim.HasAPI(PhysxSchema.PhysxCollisionAPI)
+                        ),
+                        "contact_offset_authored": bool(
+                            contact and contact.HasAuthoredValueOpinion()
+                        ),
+                        "rest_offset_authored": bool(rest and rest.HasAuthoredValueOpinion()),
+                        "contact_offset_m": finite_scalar(contact),
+                        "rest_offset_m": finite_scalar(rest),
+                        "contact_offset_strongest_layer": strongest_layer(contact),
+                        "rest_offset_strongest_layer": strongest_layer(rest),
+                        "contact_offset_anonymous_opinion": has_anonymous_opinion(contact),
+                        "rest_offset_anonymous_opinion": has_anonymous_opinion(rest),
+                    }
+                )
+            payload = {"records": records}
+            return {**payload, "sha256": _canonical_json_sha256(payload)}
+
+        def composed_usd_closure() -> dict[str, Any]:
+            layers_by_path: dict[str, dict[str, str]] = {}
+            for usd_layer in stage.GetUsedLayers():
+                if bool(getattr(usd_layer, "anonymous", False)):
+                    continue
+                raw_path = getattr(usd_layer, "realPath", "")
+                candidate = Path(raw_path) if isinstance(raw_path, str) else None
+                if candidate is None or not raw_path or candidate.is_symlink() or not candidate.is_file():
+                    raise RuntimeError("nonformal_probe_usd_closure_layer_invalid")
+                path = candidate.resolve()
+                record = {
+                    "identifier": str(usd_layer.identifier),
+                    "real_path": str(path),
+                    "sha256": _sha256_file(path),
+                }
+                existing = layers_by_path.get(record["real_path"])
+                if existing is not None and existing != record:
+                    raise RuntimeError("nonformal_probe_usd_closure_layer_ambiguous")
+                layers_by_path[record["real_path"]] = record
+            layers = [layers_by_path[path] for path in sorted(layers_by_path)]
+            expected_paths = {
+                str(asset_path),
+                str(robot_asset_path),
+                *(item["path"] for item in treatment_profile["overlay_stack"]),
+            }
+            if not expected_paths <= {item["real_path"] for item in layers}:
+                raise RuntimeError("nonformal_probe_usd_closure_direct_input_missing")
+            payload = {"layers": layers}
+            return {**payload, "sha256": _canonical_json_sha256(payload)}
+
+        def cube_collision_disabled() -> bool:
+            cube = stage.GetPrimAtPath("/World/Cube")
+            attribute = cube.GetAttribute("physics:collisionEnabled") if cube and cube.IsValid() else None
+            return bool(attribute and attribute.IsValid() and attribute.Get() is False)
 
         session = stage.GetSessionLayer()
         if session is None:
@@ -284,10 +719,24 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
             stage.SetEditTarget(Usd.EditTarget(layer))
             # This is the declared physical treatment: finger friction binding.
             configure_contact_grasp_scene(stage, fluid)
-            report_paths = (
-                str(fluid.source_actor_path),
-                *tuple(str(path) for path in fluid.finger_body_paths),
-                "/World/Franka/panda_hand",
+            robot_root_path = "/World/Franka"
+            robot_root = stage.GetPrimAtPath(robot_root_path)
+            if not robot_root or not robot_root.IsValid():
+                raise RuntimeError("nonformal_probe_robot_root_missing")
+            robot_rigid_body_paths = sorted(
+                str(prim.GetPath())
+                for prim in Usd.PrimRange(robot_root)
+                if prim.HasAPI(UsdPhysics.RigidBodyAPI)
+            )
+            if not robot_rigid_body_paths:
+                raise RuntimeError("nonformal_probe_robot_rigid_bodies_missing")
+            report_paths = tuple(
+                sorted(
+                    {
+                        str(fluid.source_actor_path),
+                        *robot_rigid_body_paths,
+                    }
+                )
             )
             for path in report_paths:
                 prim = stage.GetPrimAtPath(path)
@@ -311,6 +760,18 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
         ObjectUtils.get_instance(stage)
         task = create_task(str(cfg.task_type), cfg=cfg, world=world, stage=stage, robot=robot)
         task.reset()
+        report_layer_usda_after_reset = layer.ExportToString()
+        report_layer_sha256_after_reset = hashlib.sha256(
+            report_layer_usda_after_reset.encode("utf-8")
+        ).hexdigest()
+        offset_snapshot_after_reset = target_offset_snapshot()
+        usd_closure_after_reset = composed_usd_closure()
+        resolved_dependency_closure_after_reset = dependency_resolution.discover(
+            dependency_entries,
+            repo_root=REPO_ROOT,
+            UsdUtils=UsdUtils,
+        )
+        cube_collision_disabled_after_reset = cube_collision_disabled()
 
         def controller_state() -> dict[str, Any] | None:
             # This direct-contact diagnostic has no perception consumer. Avoid
@@ -405,22 +866,40 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
         left_colliders = enabled_colliders(str(fluid.finger_body_paths[0]))
         right_colliders = enabled_colliders(str(fluid.finger_body_paths[1]))
         hand_colliders = enabled_colliders("/World/Franka/panda_hand")
+        robot_colliders = enabled_colliders(robot_root_path)
         support_colliders = set(enabled_colliders(str(fluid.table_path)))
         cube = stage.GetPrimAtPath("/World/Cube")
         if cube and cube.IsValid():
             support_colliders.update(enabled_colliders("/World/Cube"))
-        all_colliders = enabled_colliders("/World")
         named = set(source_colliders + left_colliders + right_colliders + hand_colliders)
+        other_robot_colliders = sorted(set(robot_colliders) - named)
         support_colliders.difference_update(named)
-        other_colliders = sorted(set(all_colliders) - named - support_colliders)
+        support_colliders.difference_update(other_robot_colliders)
+        all_colliders = enabled_colliders("/World")
+        other_colliders = sorted(
+            set(all_colliders)
+            - named
+            - set(other_robot_colliders)
+            - support_colliders
+        )
         known = set(source_colliders + left_colliders + right_colliders + hand_colliders)
+        known.update(other_robot_colliders)
         known.update(support_colliders)
         known.update(other_colliders)
+        robot_collider_owners = {
+            collider: owner(collider) for collider in robot_colliders
+        }
+        if any(
+            body_path not in robot_rigid_body_paths
+            for body_path in robot_collider_owners.values()
+        ):
+            raise RuntimeError("nonformal_probe_robot_collider_owner_invalid")
         identities = {
             "source_colliders": source_colliders,
             "left_colliders": left_colliders,
             "right_colliders": right_colliders,
             "hand_colliders": hand_colliders,
+            "other_robot_colliders": other_robot_colliders,
             "support_colliders": sorted(support_colliders),
             "other_colliders": other_colliders,
             "collider_owners": {path: owner(path) for path in sorted(known)},
@@ -430,6 +909,7 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
 
         stage_cache_id = UsdUtils.StageCache.Get().GetId(stage)
         stage_id = int(stage_cache_id.ToLongInt())
+        identities["stage_id"] = stage_id
         accumulator = FullContactReportAccumulator(
             expected_stage_id=stage_id,
             provisional_background_pairs=[
@@ -511,13 +991,19 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
                     }
                 )
             reads += 1
-            return accumulator.consume(
+            report = accumulator.consume(
                 physics_index=physics_index,
                 headers=headers,
                 contact_data=points,
                 friction_anchors=anchors,
                 allow_provisional_persist_bootstrap=bootstrap,
             )
+            report["raw_evidence"] = {
+                "headers": headers,
+                "contact_data": points,
+                "friction_anchors": anchors,
+            }
+            return report
 
         def record_direct_report(report: dict[str, Any]) -> dict[str, Any]:
             nonlocal trace_records
@@ -571,9 +1057,9 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
             end_effector_frame=str(fluid.grasp_target_frame_name),
             control_frame=str(fluid.rmpflow_control_frame_name),
             finger_joint_indices=tuple(int(index) for index in fluid.finger_joint_indices),
-            source_translation_limit=float(fluid.grasp_preclose_source_translation_limit_m),
-            source_tilt_limit_degrees=float(fluid.grasp_preclose_source_tilt_limit_degrees),
-            terminate_after_contact_settle=True,
+            source_translation_limit=999.0,
+            source_tilt_limit_degrees=999.0,
+            terminate_after_contact_settle=False,
             require_external_phase_certificates=False,
         )
 
@@ -678,25 +1164,6 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
             elif latest["decision"] == "AUDIT_NO_GO":
                 terminal = "AUDIT_NO_GO"
                 terminal_reason = "direct_report_audit_no_go"
-            elif any(
-                failure in latest["failures"]
-                for failure in (
-                    "hand_source_contact",
-                    "unexpected_source_contact",
-                    "robot_environment_contact",
-                )
-            ):
-                terminal = "PHYSICAL_FAIL"
-                terminal_reason = next(
-                    failure
-                    for failure in latest["failures"]
-                    if failure
-                    in {
-                        "hand_source_contact",
-                        "unexpected_source_contact",
-                        "robot_environment_contact",
-                    }
-                )
             history.append(
                 {
                     "phase": phase,
@@ -725,6 +1192,13 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
             if terminal is not None:
                 break
 
+        stop_after_pre_roll = getattr(fluid, "stop_after_pre_roll", False)
+        if type(stop_after_pre_roll) is not bool:
+            raise RuntimeError("nonformal_probe_stop_after_pre_roll_invalid")
+        if terminal is None and stop_after_pre_roll:
+            terminal = "PRE_ROLL_ONLY_COMPLETE"
+            terminal_reason = "configured_stop_after_pre_roll"
+
         control_index = 0
         while terminal is None and control_index < args.max_control_steps:
             state = controller_state()
@@ -733,10 +1207,6 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
                 terminal_reason = "task_state_invalid"
                 break
             state = source_state(state)
-            if pick.current_event == ContactPickEvent.LIFT or pick.lift_command_emitted():
-                terminal = "AUDIT_NO_GO"
-                terminal_reason = "lift_phase_reached_before_action"
-                break
             action = pick.forward(
                 source_position=state["object_position"],
                 source_orientation_xyzw=state["object_quaternion"],
@@ -758,19 +1228,6 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
                 contact_qualified=bool(latest and latest["decision"] == "OBSERVED"),
             )
             evidence = pick.control_evidence()
-            if evidence["lift_command_emitted"] or evidence["phase"] == "LIFT":
-                terminal = "AUDIT_NO_GO"
-                terminal_reason = "lift_action_attempted"
-                action_ledger.append(
-                    {
-                        "control_index": control_index,
-                        "evidence": evidence,
-                        "action": action_record(action),
-                        "applied": False,
-                        "denial_reason": terminal_reason,
-                    }
-                )
-                break
             action_ledger.append(
                 {
                     "control_index": control_index,
@@ -805,16 +1262,41 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
             terminal_reason = "max_control_steps_exhausted"
         final_source = source_snapshot()
         final_writer_audit = source_writer_audit.record()
+        report_layer_usda_after_run = layer.ExportToString()
+        report_layer_sha256_after_run = hashlib.sha256(
+            report_layer_usda_after_run.encode("utf-8")
+        ).hexdigest()
+        offset_snapshot_after_run = target_offset_snapshot()
+        usd_closure_after_run = composed_usd_closure()
+        resolved_dependency_closure_after_run = dependency_resolution.discover(
+            dependency_entries,
+            repo_root=REPO_ROOT,
+            UsdUtils=UsdUtils,
+        )
+        cube_collision_disabled_after_run = cube_collision_disabled()
+        if usd_closure_after_reset != usd_closure_after_run:
+            terminal = "AUDIT_NO_GO"
+            terminal_reason = "usd_dependency_closure_changed_after_reset"
+        elif (
+            resolved_dependency_closure_before_world
+            != resolved_dependency_closure_after_reset
+            or resolved_dependency_closure_after_reset != resolved_dependency_closure_after_run
+            or resolved_dependency_closure_after_run["unresolved"]
+        ):
+            terminal = "AUDIT_NO_GO"
+            terminal_reason = "resolved_usd_dependency_closure_changed_or_unresolved"
+        elif treatment_profile["id"] != "none" and (
+            not cube_collision_disabled_after_reset or not cube_collision_disabled_after_run
+        ):
+            terminal = "AUDIT_NO_GO"
+            terminal_reason = "hidden_cube_collision_treatment_invalid"
         if terminal == "OBSERVED" and (
             not source_contract_valid(final_source) or final_writer_audit["valid"] is not True
         ):
             terminal = "AUDIT_NO_GO"
             terminal_reason = "final_source_audit_invalid"
         _require_unchanged_input_hashes(
-            config_path=args.config,
-            config_sha256=config_sha256_before,
-            asset_path=asset_path,
-            asset_sha256=asset_sha256_before,
+            input_closure=input_closure,
         )
         if trace_stream is None:
             raise RuntimeError("nonformal_probe_direct_trace_missing")
@@ -838,20 +1320,44 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
             "runtime": runtime,
             "config": {
                 "path": str(args.config),
-                "sha256": config_sha256_before,
+                "input_closure": input_closure,
+                "input_closure_sha256": input_closure_sha256,
                 "asset_path": str(asset_path),
-                "asset_sha256": asset_sha256_before,
+                "robot_asset_path": str(robot_asset_path),
             },
             "treatment": {
                 "source_ownership": str(fluid.source_ownership),
                 "source_dynamic": True,
+                "offset_treatment_profile": treatment_profile,
+                "seed": seed_record,
                 "finger_friction_binding": "session_layer_intentional_treatment",
                 "report_layer_identifier": layer.identifier,
                 "report_layer_usda": report_layer_usda,
                 "report_layer_sha256": report_layer_sha256,
+                "report_layer_sha256_after_reset": report_layer_sha256_after_reset,
+                "report_layer_sha256_after_run": report_layer_sha256_after_run,
+                "report_layer_unchanged_post_reset": (
+                    report_layer_usda == report_layer_usda_after_reset == report_layer_usda_after_run
+                ),
+                "offset_target_snapshot_after_reset": offset_snapshot_after_reset,
+                "offset_target_snapshot_after_run": offset_snapshot_after_run,
+                "usd_dependency_closure_after_reset": usd_closure_after_reset,
+                "usd_dependency_closure_after_run": usd_closure_after_run,
+                "resolved_usd_dependency_closure_before_world": resolved_dependency_closure_before_world,
+                "resolved_usd_dependency_closure_after_reset": resolved_dependency_closure_after_reset,
+                "resolved_usd_dependency_closure_after_run": resolved_dependency_closure_after_run,
+                "cube_collision_disabled_after_reset": cube_collision_disabled_after_reset,
+                "cube_collision_disabled_after_run": cube_collision_disabled_after_run,
                 "source_stage_contract": source_stage_contract,
                 "no_source_pose_write_claim": "instrumented_known_surfaces_only",
+                "robot_report_inventory": {
+                    "robot_root_path": robot_root_path,
+                    "rigid_body_paths": robot_rigid_body_paths,
+                    "collider_paths": robot_colliders,
+                    "collider_owners": robot_collider_owners,
+                },
                 "camera_observation": "not_requested_by_contact_only_diagnostic",
+                "contact_identities": identities,
                 "lift_action_applied": any(
                     item["applied"] and item["evidence"]["lift_command_emitted"]
                     for item in action_ledger
@@ -874,7 +1380,7 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
             "history": history,
         }
         report["generated_at_utc"] = datetime.now(timezone.utc).isoformat()
-        _write_create_only(args.out_dir / "report.json", report)
+        _write_create_only(args.child_report_path, report)
         return report
     except BaseException as exc:
         if trace_stream is not None:
@@ -903,62 +1409,280 @@ def _runtime_probe(args: argparse.Namespace, runtime: dict[str, Any]) -> dict[st
             },
             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         }
-        _write_create_only(args.out_dir / "report.json", report)
+        _write_create_only(args.child_report_path, report)
         return report
     finally:
-        app.close()
+        # The sealed-child owner closes the attested SimulationApp.
+        pass
+
+
+def _attestation_module() -> Any:
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from tools.labutopia_fluid import attest_isaac41_effective_runtime
+
+    return attest_isaac41_effective_runtime
+
+
+def _blocked_report(runtime: dict[str, Any] | None, exc: BaseException) -> dict[str, Any]:
+    return {
+        "schema_version": 2,
+        "manifest_type": "nonformal_pbd_direct_contact_probe_v2",
+        "classification": "NON_FORMAL_DIAGNOSTIC_ONLY",
+        "decision": "RUNTIME_BLOCKED",
+        "runtime": runtime,
+        "fatal_error": {
+            "type": type(exc).__name__,
+            "message": str(exc),
+            "traceback": traceback.format_exc(),
+        },
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def _run_child(args: argparse.Namespace) -> int:
+    app = None
+    runtime = None
+    try:
+        attestation = _attestation_module()
+        source_paths = _runtime_source_paths(args.config, args.treatment_profile)
+        request = attestation._read_canonical_json(args.execution_request)
+        request = attestation.verify_execution_request(
+            request,
+            source_paths=source_paths,
+        )
+        runtime = runtime_process_preflight(request)
+        receipt, app = attestation.bootstrap_effective_runtime(
+            execution_request=request,
+            source_paths=source_paths,
+        )
+        attestation.write_canonical_json(args.runtime_receipt_path, receipt)
+        binding = attestation.execution_binding_for_request(
+            request,
+            child_pid=os.getpid(),
+        )
+        attestation.require_matched_runtime_receipt(
+            receipt,
+            expected_execution_binding=binding,
+        )
+        runtime.update(
+            {
+                "receipt_path": str(args.runtime_receipt_path),
+                "receipt_sha256": attestation.canonical_json_sha256(receipt),
+                "execution_binding": binding,
+                "execution_request_sha256": attestation.canonical_json_sha256(
+                    request
+                ),
+            }
+        )
+        report = _runtime_probe(args, runtime, app=app)
+    except BaseException as exc:
+        report = _blocked_report(runtime, exc)
+    finally:
+        if app is not None:
+            app.close()
+    if not args.child_report_path.exists():
+        _write_create_only(args.child_report_path, report)
+    return 2 if report["decision"] == "RUNTIME_BLOCKED" else 0
+
+
+def _run_parent(args: argparse.Namespace) -> int:
+    args.out_dir.mkdir(parents=True, mode=0o700)
+    attestation = _attestation_module()
+    source_paths = _runtime_source_paths(args.config, args.treatment_profile)
+    source_before = attestation.capture_source_identity(source_paths)
+    request = attestation.create_execution_request(
+        run_id=secrets.token_hex(16),
+        parent_nonce_sha256=hashlib.sha256(secrets.token_bytes(32)).hexdigest(),
+        parent_pid=os.getpid(),
+        source=source_before,
+    )
+    request_path = args.out_dir / "execution_request.json"
+    attestation.write_canonical_json(request_path, request)
+    environment = attestation.sealed_child_environment(args.out_dir / "runtime")
+    command = [
+        str(FORMAL_ISAAC41_PYTHON),
+        "-I",
+        "-B",
+        str(Path(__file__).resolve()),
+        "--child",
+        "--config",
+        str(args.config),
+        "--out-dir",
+        str(args.out_dir),
+        "--max-control-steps",
+        str(args.max_control_steps),
+        "--treatment-profile",
+        str(args.treatment_profile),
+        "--execution-request",
+        str(request_path),
+    ]
+    if args.seed is not None:
+        command.extend(("--seed", str(args.seed)))
+    stdout_path = args.out_dir / "child.stdout.log"
+    stderr_path = args.out_dir / "child.stderr.log"
+    child_pid = None
+    child_returncode = None
+    verification_failure = None
+    child_report = None
+    receipt = None
+    try:
+        with stdout_path.open("xb") as stdout, stderr_path.open("xb") as stderr:
+            process = subprocess.Popen(
+                command,
+                cwd=REPO_ROOT,
+                env=environment,
+                stdout=stdout,
+                stderr=stderr,
+                start_new_session=True,
+            )
+            child_pid = process.pid
+            try:
+                child_returncode = process.wait(timeout=args.timeout_s)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                child_returncode = process.wait()
+                raise RuntimeError("nonformal_probe_child_timeout")
+        child_report = json.loads(args.child_report_path.read_text(encoding="utf-8"))
+        if not isinstance(child_report, Mapping):
+            raise RuntimeError("nonformal_probe_child_report_invalid")
+        receipt = attestation._read_canonical_json(args.runtime_receipt_path)
+        expected_binding = attestation.execution_binding_for_request(
+            request,
+            child_pid=child_pid,
+        )
+        attestation.require_matched_runtime_receipt(
+            receipt,
+            expected_execution_binding=expected_binding,
+        )
+        child_runtime = child_report.get("runtime")
+        if (
+            not isinstance(child_runtime, Mapping)
+            or child_runtime.get("receipt_sha256")
+            != attestation.canonical_json_sha256(receipt)
+            or child_runtime.get("execution_binding") != expected_binding
+        ):
+            raise RuntimeError("nonformal_probe_child_runtime_binding_invalid")
+        if child_returncode != (2 if child_report.get("decision") == "RUNTIME_BLOCKED" else 0):
+            raise RuntimeError("nonformal_probe_child_exit_status_invalid")
+        report = dict(child_report)
+        report["parent_verification"] = {
+            "execution_request_sha256": attestation.canonical_json_sha256(request),
+            "child_pid": child_pid,
+            "child_returncode": child_returncode,
+            "child_report_path": str(args.child_report_path),
+            "child_report_sha256": _sha256_file(args.child_report_path),
+            "runtime_receipt_sha256": attestation.canonical_json_sha256(receipt),
+            "stdout_sha256": _sha256_file(stdout_path),
+            "stderr_sha256": _sha256_file(stderr_path),
+            "verified": True,
+        }
+    except BaseException as exc:
+        verification_failure = {
+            "type": type(exc).__name__,
+            "message": str(exc),
+            "traceback": traceback.format_exc(),
+        }
+        report = _blocked_report(None, exc)
+        report["parent_verification"] = {
+            "execution_request_sha256": attestation.canonical_json_sha256(request),
+            "child_pid": child_pid,
+            "child_returncode": child_returncode,
+            "child_report_path": str(args.child_report_path),
+            "child_report_sha256": (
+                _sha256_file(args.child_report_path)
+                if args.child_report_path.is_file()
+                else None
+            ),
+            "runtime_receipt_sha256": (
+                attestation.canonical_json_sha256(receipt)
+                if isinstance(receipt, Mapping)
+                else None
+            ),
+            "stdout_sha256": _sha256_file(stdout_path) if stdout_path.is_file() else None,
+            "stderr_sha256": _sha256_file(stderr_path) if stderr_path.is_file() else None,
+            "verified": False,
+        }
+    finally:
+        source_after = attestation.capture_source_identity(source_paths)
+        manifest = {
+            "schema_version": 1,
+            "manifest_type": "nonformal_pbd_direct_contact_parent_manifest_v1",
+            "classification": "NON_FORMAL_DIAGNOSTIC_ONLY",
+            "command": command,
+            "execution_request_sha256": attestation.canonical_json_sha256(request),
+            "source_before": source_before,
+            "source_after": source_after,
+            "sanitized_environment_sha256": attestation.canonical_json_sha256(
+                dict(sorted(environment.items()))
+            ),
+            "child_pid": child_pid,
+            "child_returncode": child_returncode,
+            "stdout_sha256": _sha256_file(stdout_path) if stdout_path.is_file() else None,
+            "stderr_sha256": _sha256_file(stderr_path) if stderr_path.is_file() else None,
+            "runtime_receipt_sha256": (
+                attestation.canonical_json_sha256(receipt)
+                if isinstance(receipt, Mapping)
+                else None
+            ),
+            "child_report_sha256": (
+                _sha256_file(args.child_report_path)
+                if args.child_report_path.is_file()
+                else None
+            ),
+            "verification_failure": verification_failure,
+        }
+        attestation.write_canonical_json(args.out_dir / "run_manifest.json", manifest)
+    _write_create_only(args.out_dir / "report.json", report)
+    print(
+        f"nonformal pbd direct contact decision={report['decision']} out={args.out_dir / 'report.json'}",
+        flush=True,
+    )
+    return 2 if report["decision"] == "RUNTIME_BLOCKED" else 0
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
-    parser.add_argument("--runtime-receipt", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--max-control-steps", type=int, default=600)
+    parser.add_argument("--timeout-s", type=float, default=1800.0)
+    parser.add_argument("--treatment-profile", type=str, default="none")
+    parser.add_argument("--seed", type=int)
+    parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--execution-request", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     args.config = args.config.resolve()
-    args.runtime_receipt = args.runtime_receipt.resolve()
     args.out_dir = args.out_dir.resolve()
-    if not args.config.is_file() or not args.runtime_receipt.is_file():
-        parser.error("config and runtime receipt must exist")
-    if args.out_dir.exists():
-        parser.error("out-dir must not exist")
-    if args.max_control_steps <= 0:
-        parser.error("max-control-steps must be positive")
+    if not args.config.is_file():
+        parser.error("config must exist")
+    if args.max_control_steps <= 0 or not math.isfinite(args.timeout_s) or args.timeout_s <= 0.0:
+        parser.error("max-control-steps and timeout-s must be positive")
+    if args.seed is not None and args.seed < 0:
+        parser.error("seed must be nonnegative")
+    try:
+        resolve_treatment_profile(args.treatment_profile)
+    except (ValueError, FileNotFoundError) as exc:
+        parser.error(str(exc))
+    if args.child:
+        if args.execution_request is None:
+            parser.error("--child requires --execution-request")
+        args.execution_request = args.execution_request.resolve()
+        if not args.execution_request.is_file() or not args.out_dir.is_dir():
+            parser.error("child execution request and out-dir must exist")
+    else:
+        if args.execution_request is not None:
+            parser.error("--execution-request is child-only")
+        if args.out_dir.exists():
+            parser.error("out-dir must not exist")
+    args.child_report_path = args.out_dir / "child_report.json"
+    args.runtime_receipt_path = args.out_dir / "runtime_receipt.json"
     return args
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    args.out_dir.mkdir(parents=True, mode=0o700)
-    runtime = None
-    try:
-        runtime = _runtime_preflight(args.runtime_receipt)
-        report = _runtime_probe(args, runtime)
-        code = 2 if report["decision"] == "RUNTIME_BLOCKED" else 0
-    except BaseException as exc:
-        report = {
-            "schema_version": 1,
-            "manifest_type": "nonformal_pbd_direct_contact_probe_v1",
-            "classification": "NON_FORMAL_DIAGNOSTIC_ONLY",
-            "decision": "RUNTIME_BLOCKED",
-            "runtime": runtime,
-            "fatal_error": {
-                "type": type(exc).__name__,
-                "message": str(exc),
-                "traceback": traceback.format_exc(),
-            },
-        }
-        code = 2
-    report_path = args.out_dir / "report.json"
-    if not report_path.exists():
-        report["generated_at_utc"] = datetime.now(timezone.utc).isoformat()
-        _write_create_only(report_path, report)
-    print(
-        f"nonformal pbd direct contact decision={report['decision']} out={report_path}",
-        flush=True,
-    )
-    return code
+    return _run_child(args) if args.child else _run_parent(args)
 
 
 if __name__ == "__main__":

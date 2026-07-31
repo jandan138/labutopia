@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+import math
 from typing import Any
 
 
@@ -85,6 +86,7 @@ def _contact_identities(value: Any) -> tuple[dict[str, set[str]], dict[str, str]
         "left_colliders",
         "right_colliders",
         "hand_colliders",
+        "other_robot_colliders",
         "support_colliders",
         "other_colliders",
     )
@@ -102,13 +104,16 @@ def _contact_identities(value: Any) -> tuple[dict[str, set[str]], dict[str, str]
         groups[name] = path_set
         known.update(path_set)
     owners = value.get("collider_owners")
+    stage_id = value.get("stage_id")
     if (
         not isinstance(owners, Mapping)
         or set(owners) != known
         or any(not isinstance(owner, str) or not owner for owner in owners.values())
+        or type(stage_id) is not int
+        or stage_id < 0
     ):
         return None
-    return groups, dict(owners)
+    return groups, dict(owners), stage_id
 
 
 def _canonical_pair_paths(value: Any) -> tuple[tuple[str, int], tuple[str, int]] | None:
@@ -155,6 +160,7 @@ def _classification(
         groups["left_colliders"]
         | groups["right_colliders"]
         | groups["hand_colliders"]
+        | groups["other_robot_colliders"]
     )
     if pair_set.intersection(robot) and pair_set - robot:
         return "ROBOT_ENVIRONMENT"
@@ -166,6 +172,7 @@ def _header_matches_pair(
     *,
     pair: tuple[tuple[str, int], tuple[str, int]],
     owners: Mapping[str, str],
+    stage_id: int,
 ) -> str | None:
     if not isinstance(header, Mapping):
         return "fragment_identity_invalid"
@@ -175,6 +182,8 @@ def _header_matches_pair(
     actor1 = header.get("actor1")
     prototype0 = header.get("proto_index0")
     prototype1 = header.get("proto_index1")
+    event_type = header.get("type")
+    report_stage_id = header.get("stage_id")
     if (
         not isinstance(collider0, str)
         or not isinstance(collider1, str)
@@ -183,6 +192,8 @@ def _header_matches_pair(
         or collider0 == collider1
     ):
         return "fragment_identity_invalid"
+    if event_type not in {"FOUND", "PERSIST", "LOST"} or report_stage_id != stage_id:
+        return "fragment_lifecycle_invalid"
     if (
         type(prototype0) is not int
         or type(prototype1) is not int
@@ -201,7 +212,78 @@ def _header_matches_pair(
         )
     if actor0 != owners[collider0] or actor1 != owners[collider1]:
         return "fragment_actor_owner_mismatch"
+    for offset, count in (
+        ("contact_data_offset", "num_contact_data"),
+        ("friction_anchors_offset", "num_friction_anchors_data"),
+    ):
+        if (
+            type(header.get(offset)) is not int
+            or type(header.get(count)) is not int
+            or header[offset] < 0
+            or header[count] < 0
+        ):
+            return "fragment_range_invalid"
     return None
+
+
+def _finite_vector(value: Any) -> bool:
+    if not _sequence(value) or len(value) != 3:
+        return False
+    return all(
+        not isinstance(component, bool)
+        and isinstance(component, (int, float))
+        and math.isfinite(float(component))
+        for component in value
+    )
+
+
+def _valid_contact_point(value: Any) -> bool:
+    if not isinstance(value, Mapping):
+        return False
+    if not all(
+        _finite_vector(value.get(field)) for field in ("position", "normal", "impulse")
+    ):
+        return False
+    if (
+        isinstance(value.get("separation"), bool)
+        or not isinstance(value.get("separation"), (int, float))
+        or not math.isfinite(float(value["separation"]))
+    ):
+        return False
+    return all(
+        type(value.get(field)) is int and value[field] >= 0
+        for field in ("face_index0", "face_index1")
+    ) and all(
+        isinstance(value.get(field), str) and value[field]
+        for field in ("material0", "material1")
+    )
+
+
+def _valid_friction_anchor(value: Any) -> bool:
+    return isinstance(value, Mapping) and all(
+        _finite_vector(value.get(field)) for field in ("position", "impulse")
+    )
+
+
+def _lifecycle_valid(
+    *,
+    event_sequence: Any,
+    current: bool,
+    transient: bool,
+    bootstrap: Any,
+) -> bool:
+    if type(bootstrap) is not bool or not isinstance(event_sequence, str):
+        return False
+    events = tuple(event_sequence.split(","))
+    if not events or any(event not in {"FOUND", "PERSIST", "LOST"} for event in events):
+        return False
+    if bootstrap:
+        return events == ("PERSIST",) and current and not transient
+    if current:
+        return events in {("FOUND",), ("PERSIST",)} and not transient
+    if transient:
+        return events in {("FOUND", "LOST"), ("PERSIST", "LOST")}
+    return events == ("LOST",)
 
 
 def _sample_from_full_report(
@@ -212,7 +294,7 @@ def _sample_from_full_report(
     resolved = _contact_identities(identities)
     if resolved is None:
         return None, ["direct_contact_identities_invalid"]
-    groups, owners = resolved
+    groups, owners, stage_id = resolved
     if not isinstance(report, Mapping):
         return None, ["full_contact_report_invalid"]
     physics_index = report.get("physics_index")
@@ -223,10 +305,20 @@ def _sample_from_full_report(
         or type(physics_index) is not int
         or physics_index < 0
         or not _sequence(occurrences)
+        or type(report.get("header_count")) is not int
+        or type(report.get("contact_data_count")) is not int
+        or type(report.get("friction_anchor_count")) is not int
+        or type(report.get("occurrence_count")) is not int
+        or not _sequence(report.get("event_sequences"))
     ):
         return None, ["full_contact_report_invalid"]
     pairs = []
     failures: list[str] = []
+    seen_pairs: set[tuple[tuple[str, int], tuple[str, int]]] = set()
+    header_count = 0
+    contact_data_count = 0
+    friction_anchor_count = 0
+    event_sequences: list[str] = []
     for occurrence in occurrences:
         if not isinstance(occurrence, Mapping):
             failures.append("full_contact_occurrence_invalid")
@@ -236,7 +328,10 @@ def _sample_from_full_report(
         transient = occurrence.get("transient")
         headers = occurrence.get("headers")
         points = occurrence.get("contact_data")
+        anchors = occurrence.get("friction_anchors")
         fragments = occurrence.get("fragments")
+        event_sequence = occurrence.get("event_sequence")
+        bootstrap = occurrence.get("bootstrap")
         if (
             pair is None
             or pair[0][0] not in owners
@@ -245,24 +340,83 @@ def _sample_from_full_report(
             or type(transient) is not bool
             or not _sequence(headers)
             or not _sequence(points)
+            or not _sequence(anchors)
             or not _sequence(fragments)
             or not fragments
+            or not _lifecycle_valid(
+                event_sequence=event_sequence,
+                current=current,
+                transient=transient,
+                bootstrap=bootstrap,
+            )
         ):
             failures.append("full_contact_occurrence_invalid")
             continue
+        if pair in seen_pairs:
+            failures.append("full_contact_occurrence_duplicate")
+            continue
+        seen_pairs.add(pair)
+        header_count += len(headers)
+        contact_data_count += len(points)
+        friction_anchor_count += len(anchors)
+        event_sequences.append(event_sequence)
         for header in headers:
-            failure = _header_matches_pair(header, pair=pair, owners=owners)
-            if failure is not None:
-                failures.append(failure)
-        for fragment in fragments:
-            if not isinstance(fragment, Mapping):
-                failures.append("fragment_identity_invalid")
-                continue
             failure = _header_matches_pair(
-                fragment.get("header"), pair=pair, owners=owners
+                header,
+                pair=pair,
+                owners=owners,
+                stage_id=stage_id,
             )
             if failure is not None:
                 failures.append(failure)
+        if any(not _valid_contact_point(point) for point in points):
+            failures.append("full_contact_point_invalid")
+        if any(not _valid_friction_anchor(anchor) for anchor in anchors):
+            failures.append("full_contact_anchor_invalid")
+        if len(fragments) != len(headers):
+            failures.append("fragment_payload_mismatch")
+        fragment_points: list[Any] = []
+        fragment_anchors: list[Any] = []
+        fragment_payload_valid = len(fragments) == len(headers)
+        for index, fragment in enumerate(fragments):
+            if not isinstance(fragment, Mapping):
+                failures.append("fragment_identity_invalid")
+                fragment_payload_valid = False
+                continue
+            failure = _header_matches_pair(
+                fragment.get("header"),
+                pair=pair,
+                owners=owners,
+                stage_id=stage_id,
+            )
+            if failure is not None:
+                failures.append(failure)
+                fragment_payload_valid = False
+                continue
+            if index >= len(headers) or fragment["header"] != headers[index]:
+                failures.append("fragment_payload_mismatch")
+                fragment_payload_valid = False
+                continue
+            fragment_contact_data = fragment.get("contact_data")
+            fragment_friction_anchors = fragment.get("friction_anchors")
+            if (
+                not _sequence(fragment_contact_data)
+                or not _sequence(fragment_friction_anchors)
+                or any(not _valid_contact_point(point) for point in fragment_contact_data)
+                or any(
+                    not _valid_friction_anchor(anchor)
+                    for anchor in fragment_friction_anchors
+                )
+            ):
+                failures.append("fragment_payload_mismatch")
+                fragment_payload_valid = False
+                continue
+            fragment_points.extend(fragment_contact_data)
+            fragment_anchors.extend(fragment_friction_anchors)
+        if fragment_payload_valid and (
+            fragment_points != list(points) or fragment_anchors != list(anchors)
+        ):
+            failures.append("fragment_payload_mismatch")
         pairs.append(
             {
                 "classification": _classification(pair, groups=groups),
