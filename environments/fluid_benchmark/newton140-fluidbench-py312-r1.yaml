@@ -1,0 +1,22 @@
+name: labutopia-sim-newton140-fluidbench-py312-r1
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12.13
+  - pip=26.2
+  - setuptools
+  - wheel
+  - pip:
+      - numpy==2.5.1
+      - newton[sim,importers]==1.4.0
+      - newton-usd-schemas==0.2.0
+      - warp-lang==1.15.0
+      - usd-core==26.3
+      - pyglet==2.1.15
+      - PyOpenGL==3.1.10
+      - glfw==2.10.2
+      - mujoco==3.10.0
+      - mujoco-warp==3.10.0.3
+      - scipy==1.17.0
+      - scikit-image==0.26.0
+      - psutil==7.2.2
