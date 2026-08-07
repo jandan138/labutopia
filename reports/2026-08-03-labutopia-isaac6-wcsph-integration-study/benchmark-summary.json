@@ -1,0 +1,238 @@
+{
+  "accepted_experimental_run_count": 24,
+  "headline": {
+    "fast_particles_fps": 12.07187974490142,
+    "fast_surface_fps": 11.082516119462952,
+    "formal_isaac41_particles_fps": 3.7409360969581535,
+    "formal_isaac41_surface_fps": 3.626795560691618,
+    "strict_particles_fps": 10.017684611910093,
+    "strict_surface_fps": 9.466075838204986
+  },
+  "historical_product_context": [
+    {
+      "chain_ms": 51.5,
+      "comparability": "unmatched_historical",
+      "fps": 19.41747572815534,
+      "headless": "\u5386\u53f2\u4ea7\u54c1\u53e3\u5f84",
+      "route": "Isaac 4.1 \u65e0\u6db2\u4f53"
+    },
+    {
+      "chain_ms": 163.8,
+      "comparability": "unmatched_historical",
+      "fps": 6.105006105006105,
+      "headless": "\u5386\u53f2\u4ea7\u54c1\u53e3\u5f84",
+      "route": "Isaac 4.1 PBD \u7c92\u5b50"
+    },
+    {
+      "chain_ms": 233.3,
+      "comparability": "unmatched_historical",
+      "fps": 4.286326618088298,
+      "headless": "\u5386\u53f2\u4ea7\u54c1\u53e3\u5f84",
+      "route": "Isaac 4.1 PBD \u8fde\u7eed\u6db2\u9762"
+    }
+  ],
+  "matched_full_chain_table": [
+    {
+      "isaac41": {
+        "fps": 3.7409360969581535,
+        "ms": 267.31277254725745
+      },
+      "isaac6_cuda_cpu": {
+        "fps": 9.666550710713024,
+        "ms": 103.44951678490062
+      },
+      "isaac6_cuda_gpu": {
+        "fps": 9.915731664537459,
+        "ms": 100.84984485576508
+      },
+      "isaac6_external_strict": {
+        "fps": 9.927017943840614,
+        "ms": 100.73518610092438
+      },
+      "isaac6_minimal_cpu": {
+        "fps": 12.07187974490142,
+        "ms": 82.83714062197744
+      },
+      "isaac6_minimal_gpu": {
+        "fps": 12.46064868933645,
+        "ms": 80.25264373722197
+      },
+      "isaac6_same_strict": {
+        "fps": 10.017684611910093,
+        "ms": 99.82346607429557
+      },
+      "minimal_speedup_vs_isaac41": 3.2269676444666775,
+      "representation": "\u7c92\u5b50",
+      "resolution": "2\u00d7256",
+      "strict_speedup_vs_isaac41": 2.677855048113684
+    },
+    {
+      "isaac41": {
+        "fps": 3.626795560691618,
+        "ms": 275.72549465934145
+      },
+      "isaac6_cuda_cpu": {
+        "fps": 9.118478137210136,
+        "ms": 109.66742311079963
+      },
+      "isaac6_cuda_gpu": {
+        "fps": 9.33983725657049,
+        "ms": 107.06824675092803
+      },
+      "isaac6_external_strict": {
+        "fps": 9.562754229021314,
+        "ms": 104.57238323297821
+      },
+      "isaac6_minimal_cpu": {
+        "fps": 11.082516119462952,
+        "ms": 90.23221705437584
+      },
+      "isaac6_minimal_gpu": {
+        "fps": 11.410049882439445,
+        "ms": 87.64203577576315
+      },
+      "isaac6_same_strict": {
+        "fps": 9.466075838204986,
+        "ms": 105.6403959879563
+      },
+      "minimal_speedup_vs_isaac41": 3.0557322391090476,
+      "representation": "\u8fde\u7eed\u6db2\u9762",
+      "resolution": "2\u00d7256",
+      "strict_speedup_vs_isaac41": 2.61003844297191
+    },
+    {
+      "isaac41": {
+        "fps": 2.950795509528953,
+        "ms": 338.89166388206746
+      },
+      "isaac6_cuda_cpu": {
+        "fps": 6.523883377541918,
+        "ms": 153.28293627112353
+      },
+      "isaac6_cuda_gpu": {
+        "fps": 8.303750817131297,
+        "ms": 120.42750583711167
+      },
+      "isaac6_external_strict": {
+        "fps": 7.4030148606187405,
+        "ms": 135.0801016650155
+      },
+      "isaac6_minimal_cpu": {
+        "fps": 8.343809386517227,
+        "ms": 119.84933424005364
+      },
+      "isaac6_minimal_gpu": {
+        "fps": 11.484564268208532,
+        "ms": 87.073394919143
+      },
+      "isaac6_same_strict": {
+        "fps": 7.327334619135429,
+        "ms": 136.47527402235556
+      },
+      "minimal_speedup_vs_isaac41": 2.827647446111636,
+      "representation": "\u7c92\u5b50",
+      "resolution": "2\u00d71280\u00d7720",
+      "strict_speedup_vs_isaac41": 2.4831726208994804
+    },
+    {
+      "isaac41": {
+        "fps": 2.8241301168774937,
+        "ms": 354.09133383190306
+      },
+      "isaac6_cuda_cpu": {
+        "fps": 6.3602731850879595,
+        "ms": 157.2259509771624
+      },
+      "isaac6_cuda_gpu": {
+        "fps": 8.035474800763703,
+        "ms": 124.44815331944773
+      },
+      "isaac6_external_strict": {
+        "fps": 7.152069701461016,
+        "ms": 139.81966643805515
+      },
+      "isaac6_minimal_cpu": {
+        "fps": 7.73984257240258,
+        "ms": 129.20159430188292
+      },
+      "isaac6_minimal_gpu": {
+        "fps": 10.381301292978605,
+        "ms": 96.32703760137953
+      },
+      "isaac6_same_strict": {
+        "fps": 7.0257908093407755,
+        "ms": 142.3327319496194
+      },
+      "minimal_speedup_vs_isaac41": 2.740611180110977,
+      "representation": "\u8fde\u7eed\u6db2\u9762",
+      "resolution": "2\u00d71280\u00d7720",
+      "strict_speedup_vs_isaac41": 2.487771638903401
+    }
+  ],
+  "media": {
+    "frames_per_video": 953,
+    "url": "https://aicarrier.feishuapp.com/app/app_17bfvjuffs9/",
+    "videos": 4,
+    "visual_review": "self_review_passed_not_independent"
+  },
+  "quality": {
+    "below_table": 0,
+    "nonfinite": 0,
+    "particle_content_identical_across_isaac41_external_and_same_process": true,
+    "particle_content_sha256": "07254618a1b42c1303c4dea1c9555b66106056f80d57997dd7b1df4ff7c2ea7a",
+    "tabletop_spill_fraction": 0.002777777777777778,
+    "target_fraction": 0.9880555555555556
+  },
+  "runtime_boundary": {
+    "driver": "570.153.02",
+    "driver_override": "--/rtx/verifyDriverVersion/enabled=false",
+    "formal_baseline": "sealed Isaac 4.1 effective-runtime v2",
+    "formal_evidence_eligible": false,
+    "isaac601": "experimental 6.0.1 / Python 3.12.13 / Newton 1.2.1 / Warp 1.13",
+    "renderer_comparability": "Isaac 6 RTX Real-Time 2.0 is not renderer-identical to Isaac 4.1 RayTracedLighting"
+  },
+  "schema": "labutopia.pm_weekly_isaac601_full_chain.v1",
+  "sources": {
+    "external_strict": {
+      "content_sha256": "ca4703bab3ab31337b6546b973aec61c8a1d23c99b4748d92651ddbd1d3db5d0",
+      "file_sha256": "735726a1cdc6a709a1725c38f15982d12b16c2c4d20fa659a1f9698832d33905",
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_external_strict_full_r1/matrix.json",
+      "performance_valid": true,
+      "run_count": 8,
+      "status": "passed"
+    },
+    "isaac41": {
+      "content_sha256": "f6d40be6c5cb3aa3d1c09fdf5c5ea6bfbcbcc8bfedaa10bc8fd47c71570f6831",
+      "file_sha256": "94214eb763e6ba4408d218aef01bffc0613dd3f4c829be6520f0200883babd79",
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_wcsph_isaac41_rgb_matrix_r1/matrix.json",
+      "performance_valid": true,
+      "run_count": 8,
+      "status": "passed"
+    },
+    "same_cuda": {
+      "content_sha256": "a6eb71905670b8c8f259c2f5603255bedd57085a9643dae696233c1dcb2b2fee",
+      "file_sha256": "1baf8e1eccaffc029f0fc1a25d91ee88138670078fac952ad28d36b9eb06a649",
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_cuda_full_r1/matrix.json",
+      "performance_valid": true,
+      "run_count": 4,
+      "status": "passed"
+    },
+    "same_minimal": {
+      "content_sha256": "07fc38f928de914e6641104dff74d977c424640b482d350503cd90267785a6a0",
+      "file_sha256": "6efc0b958387596baa9056e511646ec019afbd38559cf20def6817e59df7e068",
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_minimal_full_r2/matrix.json",
+      "performance_valid": true,
+      "run_count": 4,
+      "status": "passed"
+    },
+    "same_strict": {
+      "content_sha256": "5b8a73424a2d361a420c8be49bde6761277ef152d11ac6dd1d056d44b6f3d955",
+      "file_sha256": "aa08cc72a24e6e8337c9d71b053f54768177b7cad8f491ea118e23b93ad287f8",
+      "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_strict_full_r1/matrix.json",
+      "performance_valid": true,
+      "run_count": 8,
+      "status": "passed"
+    }
+  },
+  "status": "passed_experimental_unvalidated_driver"
+}

@@ -1,0 +1,110 @@
+{
+  "alignment": {
+    "fps": 30,
+    "frame_count": 953,
+    "policy": "same_observation_index_no_frame_dropping_no_time_stretch"
+  },
+  "left": "Isaac 6 RTX Real-Time 2.0 strict profile",
+  "performance_evidence_eligible": false,
+  "right": "Isaac 6 MinimalRendering shading mode 2",
+  "schema": "labutopia.isaac601_strict_minimal_comparison_media.v1",
+  "status": "passed",
+  "videos": [
+    {
+      "camera": "camera_1",
+      "minimal_sequence": {
+        "directory": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_minimal_media_r2/runs/256/particles/repeat_00/isaac_artifacts/rgb_sequences/camera_1",
+        "first_frame_sha256": "7868a4e2608b7155af3e24dd50edb672e4d74eca8fdf8d88c783628d49c1c6e4",
+        "frame_count": 953,
+        "last_frame_sha256": "739fbba25f43fb085fa66426bd9882e3f2cacbe42a2318af828437b7ff2da222"
+      },
+      "output": {
+        "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/reports/2026-08-03-labutopia-isaac6-wcsph-integration-study/media/isaac6_strict_vs_minimal_v2/particles_overview.mp4",
+        "probe": {
+          "duration": "31.767000",
+          "size": "255772"
+        },
+        "sha256": "3f54f647b1df93414e7e652a3499377147702c0ac6b751edc37f171405f09a2e"
+      },
+      "representation": "particles",
+      "strict_sequence": {
+        "directory": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_strict_media_r1/runs/256/particles/repeat_00/isaac_artifacts/rgb_sequences/camera_1",
+        "first_frame_sha256": "dc05931046dfbd3b0dd0b07fe25a3d4f57456134e92500263c7ecef493d5bedb",
+        "frame_count": 953,
+        "last_frame_sha256": "54be5ef5b7668d0cd063aee3aa26f74c57118e6ad23faaefced64fde5a2d9d63"
+      }
+    },
+    {
+      "camera": "camera_2",
+      "minimal_sequence": {
+        "directory": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_minimal_media_r2/runs/256/particles/repeat_00/isaac_artifacts/rgb_sequences/camera_2",
+        "first_frame_sha256": "0febf69cecc4151745f2d20252a1f1e2ae9730d15bc006867c7cd9a3e50a0b41",
+        "frame_count": 953,
+        "last_frame_sha256": "472670ebbf9a0693332a83f5ec951f7b0c269fe1fbe03334fcc93d44f11f6174"
+      },
+      "output": {
+        "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/reports/2026-08-03-labutopia-isaac6-wcsph-integration-study/media/isaac6_strict_vs_minimal_v2/particles_closeup.mp4",
+        "probe": {
+          "duration": "31.767000",
+          "size": "254288"
+        },
+        "sha256": "5ed82048f74eadcd50d2952e0754c9be705c8a632e3af63fab507a7fceabbe0a"
+      },
+      "representation": "particles",
+      "strict_sequence": {
+        "directory": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_strict_media_r1/runs/256/particles/repeat_00/isaac_artifacts/rgb_sequences/camera_2",
+        "first_frame_sha256": "2460c2bdda026536c07abef0a5746aa07eb5a360af18e933e15988de6a3baf58",
+        "frame_count": 953,
+        "last_frame_sha256": "6116834b0225110f6e1a4bf970283c44e5a782d245007b602fce36977003782a"
+      }
+    },
+    {
+      "camera": "camera_1",
+      "minimal_sequence": {
+        "directory": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_minimal_media_r2/runs/256/surface_gpu/repeat_00/isaac_artifacts/rgb_sequences/camera_1",
+        "first_frame_sha256": "b91b27f205cda9072bcd779815388edf940eff181e80e2b148e427f955bafe44",
+        "frame_count": 953,
+        "last_frame_sha256": "075f5dec501587ea6837693623734ccbfc26aee34d85e12398de4a12ae48bd82"
+      },
+      "output": {
+        "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/reports/2026-08-03-labutopia-isaac6-wcsph-integration-study/media/isaac6_strict_vs_minimal_v2/surface_overview.mp4",
+        "probe": {
+          "duration": "31.767000",
+          "size": "250684"
+        },
+        "sha256": "7329e4e5eedb0b703b8705f92b2ca6260cad86e135a54c4bfeb2d3ba2a0839e3"
+      },
+      "representation": "surface_gpu",
+      "strict_sequence": {
+        "directory": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_strict_media_r1/runs/256/surface_gpu/repeat_00/isaac_artifacts/rgb_sequences/camera_1",
+        "first_frame_sha256": "0c9b591ac65a5904838e8be83109eb197f84f13b5fa3c22bcca2a3bbd7064afa",
+        "frame_count": 953,
+        "last_frame_sha256": "afd7dcfa2b10d04d8920cffb74078ac7168024d61754cfa56e204aadf5b4d623"
+      }
+    },
+    {
+      "camera": "camera_2",
+      "minimal_sequence": {
+        "directory": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_minimal_media_r2/runs/256/surface_gpu/repeat_00/isaac_artifacts/rgb_sequences/camera_2",
+        "first_frame_sha256": "0dd981ebd3e311cb0f60117ef4ecb35f603e1c6850d96eff02551693b061b774",
+        "frame_count": 953,
+        "last_frame_sha256": "ee122ec8900f8b5e1e25e89eccccc9760143b576e33ea766dac89328988c43e8"
+      },
+      "output": {
+        "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/reports/2026-08-03-labutopia-isaac6-wcsph-integration-study/media/isaac6_strict_vs_minimal_v2/surface_closeup.mp4",
+        "probe": {
+          "duration": "31.767000",
+          "size": "250068"
+        },
+        "sha256": "82c9176aabee2a3385ce8bb673a790feef1e214b3fcff5fb0f116725ef6b04a2"
+      },
+      "representation": "surface_gpu",
+      "strict_sequence": {
+        "directory": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/wcsph_quality_repair/2026-08-04_isaac601_same_process_strict_media_r1/runs/256/surface_gpu/repeat_00/isaac_artifacts/rgb_sequences/camera_2",
+        "first_frame_sha256": "475f244478d4fd386eba243d095e0caf073d9dba465b1fca1e113536f1e4a664",
+        "frame_count": 953,
+        "last_frame_sha256": "ba9a78aefeb3d4a637365da323f0ac6455ce0ff146703ad76860a9011d7f5624"
+      }
+    }
+  ]
+}

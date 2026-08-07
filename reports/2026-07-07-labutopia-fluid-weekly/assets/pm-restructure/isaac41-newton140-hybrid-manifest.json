@@ -1,0 +1,43 @@
+{
+  "schema": "labutopia.isaac41_newton140_hybrid_delivery.v1",
+  "status": "completed",
+  "claim_boundary": "Strict speedups use exact recorded trajectory only; retarget rows are quality candidates and are not strict speedups.",
+  "run_id": "matched-full-953-005",
+  "matrix": {
+    "path": "outputs/fluid_benchmark_isaac41_newton140/runs/matched-full-953-005/matrix.json",
+    "sha256": "ffa297fb6c75e669b4989831d3e1b3549e3b12f38c3fdeda35fdb6e99ad11a60",
+    "performance_valid": true
+  },
+  "contract": {
+    "particle_count": 3600,
+    "observation_count": 953,
+    "substeps_per_observation": 4,
+    "integration_dt_s": 0.008333333333333333,
+    "headless": true,
+    "rendered_resolution": "2x256x256"
+  },
+  "results": {
+    "pbd_exact": {"physics_only_fps":31.55024149354351,"rendered_fps":2.248032164522174,"numeric_passed":true},
+    "newton_exact": {"physics_only_fps":20.664509908531652,"rendered_fps":2.778772533329826,"numeric_passed":false},
+    "newton_retarget": {"physics_only_fps":19.106434371102274,"rendered_fps":2.7124971805108293,"numeric_passed":true,"target_fraction":0.9986111111111111,"tabletop_spill_fraction":0.001388888888888889}
+  },
+  "strict_exact_trace_speedup": {
+    "physics_only": 0.6549715289108158,
+    "rendered_2x256": 1.2360910921043082,
+    "quality_eligible": false,
+    "promotion_eligible": false
+  },
+  "runtime_receipts": [
+    {"lane":"pbd_exact_physics","attestation_status":"MATCH","sha256":"bcec73e9a0cdb403511d629445b7d68ce51f3b2618394e406c78c676a0833051"},
+    {"lane":"pbd_exact_rendered","attestation_status":"MATCH","sha256":"e2babf7bfbb8d20ac4bea2049febb5a6d9cd16805c37682932f1d8d7f3a7faf4"},
+    {"lane":"newton_exact_rendered","attestation_status":"MATCH","sha256":"ac4e4db1d523271a6eec3c87bb1255ddfba8e607def97b94aecd38df2731c0de"},
+    {"lane":"newton_retarget_rendered","attestation_status":"MATCH","sha256":"e949288e1b71b3ff0a6ce7829420ebf21f7c520da60a02dfbc65c0a4d1888358"}
+  ],
+  "newton_attestation": {"status":"passed","sha256":"fd84181c768ef7f3b070a78947425e3c78b9bbae35b21332337ea06bd03a6ab2"},
+  "visual_review": {
+    "path": "outputs/fluid_benchmark_isaac41_newton140/runs/matched-full-953-005/visual_review.json",
+    "sha256": "d65ae2c789204b0acd4fcb21fd9ee92066a20eb2267ee181360afcc574ab586c",
+    "independent": false,
+    "overall_verdict": "WARN"
+  }
+}

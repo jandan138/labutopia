@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="LabUtopia 在线液体性能周报，面向产品经理。">
+  <title>LabUtopia｜液体性能周报</title>
+  <style>
+    :root {
+      --ink: #143044;
+      --muted: #61737d;
+      --line: #cfe0e1;
+      --paper: #f6fbfa;
+      --white: #ffffff;
+      --navy: #0d3a52;
+      --water: #147b99;
+      --aqua: #13aea5;
+      --foam: #dff4f1;
+      --sun: #f3ba52;
+      --orange: #df7549;
+      --rose: #c85e52;
+      --shadow: 0 16px 40px rgba(20, 48, 68, .08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.62;
+    }
+    a { color: var(--water); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { color: var(--navy); }
+    .shell { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .topline { height: 8px; background: linear-gradient(90deg, var(--navy) 0 29%, var(--water) 29% 54%, var(--aqua) 54% 76%, var(--sun) 76%); }
+    .masthead { padding: 26px 0 16px; border-bottom: 1px solid var(--line); }
+    .masthead-inner { display: flex; justify-content: space-between; gap: 20px; align-items: end; }
+    .kicker, .eyebrow {
+      margin: 0;
+      color: var(--water);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .74rem;
+      font-weight: 700;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    .issue { margin: 0; color: var(--muted); font-size: .85rem; white-space: nowrap; }
+
+    .hero { padding: 55px 0 38px; }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr); gap: 56px; align-items: center; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      margin: 11px 0 18px;
+      max-width: 720px;
+      color: var(--navy);
+      font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+      font-size: clamp(2.45rem, 5.2vw, 4.7rem);
+      font-weight: 700;
+      letter-spacing: -.055em;
+      line-height: 1.08;
+    }
+    .lede { max-width: 680px; color: #365366; font-size: 1.15rem; }
+    .decision {
+      display: inline-flex; gap: 9px; align-items: center;
+      margin-top: 7px; padding: 8px 13px;
+      border: 1px solid #b7ded9; border-radius: 999px;
+      background: var(--foam); color: #1d5b60; font-size: .9rem; font-weight: 650;
+    }
+    .dot { width: 8px; height: 8px; background: var(--aqua); border-radius: 50%; box-shadow: 0 0 0 4px rgba(19,174,165,.14); }
+
+    /* The page's signature: a beaker-like frame-time ledger. */
+    .time-vessel {
+      position: relative; overflow: hidden;
+      padding: 25px 25px 21px; border: 1px solid #bcd9d8;
+      border-radius: 28px 28px 42px 42px; background: var(--white); box-shadow: var(--shadow);
+    }
+    .time-vessel::before {
+      content: ""; position: absolute; inset: 11px 12px auto; height: 1px;
+      background: repeating-linear-gradient(90deg, transparent 0 12px, #d9e9e8 12px 13px);
+    }
+    .vessel-title { margin: 2px 0 4px; color: var(--navy); font-size: 1.03rem; font-weight: 750; }
+    .vessel-note { margin-bottom: 19px; color: var(--muted); font-size: .82rem; }
+    .vessel-row { display: grid; grid-template-columns: 72px 1fr 57px; gap: 10px; align-items: center; margin: 11px 0; }
+    .vessel-label { font-size: .78rem; font-weight: 650; color: #496171; }
+    .vessel-value { text-align: right; color: var(--navy); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82rem; font-weight: 700; }
+    .tube { height: 18px; overflow: hidden; border: 1px solid #d5e5e5; border-radius: 99px; background: #edf4f3; }
+    .fill { height: 100%; border-radius: inherit; }
+    .fill.dry { width: 16%; background: var(--aqua); }
+    .fill.particles { width: 50%; background: var(--water); }
+    .fill.surface { width: 71%; background: var(--sun); }
+    .fill.pour { width: 100%; background: var(--orange); }
+    .vessel-bottom { margin: 17px 0 0; padding-top: 13px; border-top: 1px solid var(--line); color: var(--muted); font-size: .78rem; }
+
+    .rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
+    .section { padding: 50px 0; }
+    .section-heading { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 28px; align-items: start; margin-bottom: 24px; }
+    .section-heading h2 { margin: -6px 0 0; color: var(--navy); font-family: Georgia, "Noto Serif SC", "Songti SC", serif; font-size: clamp(1.7rem, 3vw, 2.6rem); letter-spacing: -.035em; line-height: 1.18; }
+    .section-heading .intro { max-width: 680px; margin: 3px 0 0; color: #4d6573; }
+
+    .outcome-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .outcome {
+      min-height: 190px; padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--white);
+    }
+    .outcome.accent { background: var(--navy); border-color: var(--navy); color: #eef9fb; }
+    .outcome .number { display: block; margin-bottom: 5px; color: var(--water); font-family: Georgia, "Noto Serif SC", serif; font-size: 2.55rem; font-weight: 700; line-height: 1; letter-spacing: -.055em; }
+    .outcome.accent .number { color: #79e6d7; }
+    .outcome h3 { margin: 12px 0 8px; font-size: 1rem; }
+    .outcome p { margin: 0; color: var(--muted); font-size: .91rem; }
+    .outcome.accent p { color: #c7dde1; }
+
+    .comparison { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--white); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 15px 17px; text-align: left; vertical-align: top; border-bottom: 1px solid #dde9e9; }
+    th { color: #57707d; background: #f0f7f6; font-size: .78rem; letter-spacing: .04em; }
+    td { font-size: .92rem; }
+    tr:last-child td { border-bottom: 0; }
+    .metric { color: var(--navy); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.05rem; font-weight: 750; white-space: nowrap; }
+    .tag { display: inline-block; padding: 3px 7px; border-radius: 6px; font-size: .73rem; font-weight: 700; line-height: 1.35; }
+    .tag.pass { background: #dff4f1; color: #17645f; }
+    .tag.warn { background: #fff0d3; color: #8b5c08; }
+    .tag.stop { background: #fae4df; color: #954237; }
+    .small { color: var(--muted); font-size: .82rem; }
+
+    .ledger { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 36px; align-items: start; }
+    .ledger-list { display: grid; gap: 12px; }
+    .ledger-row { display: grid; grid-template-columns: 155px minmax(0, 1fr) 92px; gap: 15px; align-items: center; }
+    .ledger-row strong { color: var(--navy); font-size: .92rem; }
+    .ledger-row .bar { height: 30px; overflow: hidden; border-radius: 6px; background: #e6efef; }
+    .ledger-row .segment { display: flex; align-items: center; height: 100%; padding-left: 10px; color: white; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .76rem; font-weight: 750; }
+    .ledger-row .a { width: 34%; background: var(--water); }
+    .ledger-row .b { width: 55%; background: var(--sun); }
+    .ledger-row .c { width: 92%; background: var(--orange); }
+    .ledger-row .d { width: 100%; background: var(--rose); }
+    .ledger-row em { color: var(--muted); font-size: .8rem; font-style: normal; }
+    .callout { padding: 24px; border-left: 5px solid var(--aqua); background: var(--foam); }
+    .callout h3 { margin: 0 0 8px; color: var(--navy); font-size: 1.05rem; }
+    .callout p:last-child { margin-bottom: 0; color: #365d62; }
+
+    .facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .fact { padding: 22px 22px 18px; border-top: 3px solid var(--water); background: var(--white); box-shadow: 0 5px 17px rgba(20,48,68,.045); }
+    .fact:nth-child(2) { border-color: var(--sun); }
+    .fact:nth-child(3) { border-color: var(--aqua); }
+    .fact:nth-child(4) { border-color: var(--orange); }
+    .fact h3 { margin: 0 0 8px; color: var(--navy); font-size: 1rem; }
+    .fact p { margin: 0; color: #536976; font-size: .92rem; }
+
+    .route-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 20px; }
+    .route, .guardrail { padding: 27px; border-radius: 18px; }
+    .route { background: var(--navy); color: #eef8fa; }
+    .route .eyebrow { color: #78ddd2; }
+    .route h2 { margin: 8px 0 16px; font-family: Georgia, "Noto Serif SC", serif; font-size: 2rem; line-height: 1.16; letter-spacing: -.035em; }
+    .route ul { margin: 0; padding-left: 1.1em; color: #cae0e4; }
+    .route li + li { margin-top: 9px; }
+    .guardrail { border: 1px solid #e5c9a2; background: #fff8ed; }
+    .guardrail h3 { margin: 0 0 10px; color: #69491c; }
+    .guardrail p { margin: 0 0 12px; color: #705c3d; font-size: .92rem; }
+    .guardrail p:last-child { margin-bottom: 0; }
+
+    .footnotes { color: var(--muted); font-size: .82rem; }
+    .footnotes li + li { margin-top: 8px; }
+    footer { padding: 26px 0 40px; color: var(--muted); font-size: .8rem; }
+    .footer-line { display: flex; justify-content: space-between; gap: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+
+    @media (max-width: 800px) {
+      .shell { width: min(100% - 28px, 640px); }
+      .masthead-inner, .footer-line { display: block; }
+      .issue { margin-top: 6px; white-space: normal; }
+      .hero { padding-top: 37px; }
+      .hero-grid, .ledger, .route-grid { grid-template-columns: 1fr; gap: 27px; }
+      .section-heading { grid-template-columns: 1fr; gap: 8px; }
+      .outcome-grid, .facts { grid-template-columns: 1fr; }
+      .comparison { overflow: visible; border: 0; background: transparent; }
+      .comparison table { min-width: 0; }
+      .comparison thead { display: none; }
+      .comparison tbody { display: grid; gap: 10px; }
+      .comparison tr { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--white); }
+      .comparison td { min-width: 0; padding: 10px 11px; border-bottom: 1px solid #dde9e9; font-size: .8rem; }
+      .comparison td:first-child { grid-column: 1 / -1; background: #f0f7f6; }
+      .comparison td:nth-child(2)::before { content: "画面"; }
+      .comparison td:nth-child(3)::before { content: "速度"; }
+      .comparison td:nth-child(4)::before { content: "含义"; }
+      .comparison td:nth-child(4) { grid-column: 1 / -1; }
+      .comparison td:nth-child(n+2)::before { display: block; margin-bottom: 2px; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .04em; }
+      .comparison tr:last-child td { border-bottom: 1px solid #dde9e9; }
+      .comparison tr:last-child td:nth-child(3), .comparison tr:last-child td:nth-child(4) { border-bottom: 0; }
+      .ledger-row { grid-template-columns: 115px minmax(0, 1fr) 65px; gap: 8px; }
+      .ledger-row .segment { padding-left: 6px; }
+      h1 { font-size: clamp(2.45rem, 13vw, 3.45rem); }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .time-vessel { animation: settle .8s ease-out both; }
+      @keyframes settle { from { transform: translateY(12px); opacity: .01; } to { transform: none; opacity: 1; } }
+    }
+  </style>
+</head>
+<body>
+  <div class="topline"></div>
+  <header class="masthead">
+    <div class="shell masthead-inner">
+      <p class="kicker">LabUtopia / 产品性能周报</p>
+      <p class="issue">2026-08-01 · 真实烧杯倒液 · PM 版</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">本周一句话</p>
+          <h1>液体已经跑通，<br>但还不是实时。</h1>
+          <p class="lede">在同类机械臂拿烧杯、双相机观察的任务里，基础 Isaac Sim 4.1 无液体约为 19 FPS；加入真实液体后，完整链路约为 3–4 FPS。问题不是“有没有窗口”，而是液体物理、液面生成和两台相机一起消耗了每一帧的时间。</p>
+          <div class="decision"><span class="dot"></span>当前适合：正确性验证、离线评测、演示复核；不适合 30 FPS 实时交互</div>
+        </div>
+        <aside class="time-vessel" aria-label="不同模式的每帧用时对比">
+          <p class="vessel-title">一帧的时间，像一只正在装满的烧杯</p>
+          <p class="vessel-note">条越长，一帧越慢；均为双 256×256 相机的端到端量级参考。</p>
+          <div class="vessel-row"><span class="vessel-label">无液体</span><div class="tube"><div class="fill dry"></div></div><span class="vessel-value">51 ms</span></div>
+          <div class="vessel-row"><span class="vessel-label">有粒子</span><div class="tube"><div class="fill particles"></div></div><span class="vessel-value">164 ms</span></div>
+          <div class="vessel-row"><span class="vessel-label">有液面</span><div class="tube"><div class="fill surface"></div></div><span class="vessel-value">233 ms</span></div>
+          <div class="vessel-row"><span class="vessel-label">实际倒液</span><div class="tube"><div class="fill pour"></div></div><span class="vessel-value">~330 ms</span></div>
+          <p class="vessel-bottom">要到 5 FPS，一帧必须低于 200 ms；要到 30 FPS，必须低于 33 ms。</p>
+        </aside>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">产品结论</p>
+          <div><h2>现在能做什么，不能做什么</h2><p class="intro">这不是“液体方案失败”，而是性能目标需要分层：当前已验证物理正确性和模型相机输入；下一阶段要为交互性单独优化显示与相机预算。</p></div>
+        </div>
+        <div class="outcome-grid">
+          <article class="outcome accent"><span class="number">3–4</span><h3>FPS：完整液体链路</h3><p>可以稳定产出含液体的观察帧，适合离线评测、回归验证和可复核演示，但用户不会感到“实时”。</p></article>
+          <article class="outcome"><span class="number">19.4</span><h3>FPS：无液体参考</h3><p>机器人、烧杯、桌面和双相机都在，唯独不计算液体。这说明场景本体不是主要问题。</p></article>
+          <article class="outcome"><span class="number">5</span><h3>FPS：下一产品门槛</h3><p>从可见粒子版的 3.24 FPS 到 5 FPS，仍需每帧再省约 110 ms；重点应放在 RTX 相机而非数据传递。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="background:#edf6f5;">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">同类任务对比</p>
+          <div><h2>液体到底让场景慢了多少？</h2><p class="intro">把“液体”拆成三件事看：算粒子、把粒子变成连续水面、再给两台模型相机渲染。这样才能知道该优化哪里。</p></div>
+        </div>
+        <div class="comparison">
+          <table>
+            <thead><tr><th>方案</th><th>相机里看到什么</th><th>端到端速度</th><th>产品含义</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Isaac 4.1 / 无液体</strong><br><span class="small">机器人、杯子、桌面、双相机</span></td><td>没有水</td><td class="metric">19.4 FPS</td><td><span class="tag pass">参考基线</span><br><span class="small">场景本体运行正常</span></td></tr>
+              <tr><td><strong>Isaac 4.1 / PhysX PBD</strong><br><span class="small">有液体，不重建水面</span></td><td>液体仍被计算；不生成连续水面网格</td><td class="metric">6.1 FPS</td><td><span class="tag pass">物理已保留</span><br><span class="small">相对无液体约慢 3.2×</span></td></tr>
+              <tr><td><strong>Isaac 4.1 / PhysX PBD</strong><br><span class="small">完整在线液面</span></td><td>连续水面、双相机</td><td class="metric">4.3 FPS</td><td><span class="tag pass">Pick 阶段</span><br><span class="small">加水面后再慢约 30%</span></td></tr>
+              <tr><td><strong>Isaac 4.1 / PhysX PBD</strong><br><span class="small">完整倒液 episode</span></td><td>水柱、落点、连续水面、双相机</td><td class="metric">3.03 FPS</td><td><span class="tag pass">当前可交付链路</span><br><span class="small">倒液时重建更重</span></td></tr>
+              <tr><td><strong>Newton 解液体 + Isaac 4.1 渲染</strong><br><span class="small">直接显示粒子，不重建水面</span></td><td>可见青色粒子、双相机</td><td class="metric">3.24 FPS</td><td><span class="tag warn">展示候选</span><br><span class="small">比 Newton 水面版快 22.1%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small" style="margin:14px 2px 0;">这里的“无液体 19.4 FPS”与液体 A/B 使用同一机器、Isaac Sim 4.1 和相机量级，但 USD/相机配置并非逐字节一致，且液体 A/B 测的是 pick 阶段。因此它是可靠的量级和方向参考，不是严格逐帧 A/B。</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">性能账本</p>
+          <div><h2>慢，不是只慢在“水面”</h2><p class="intro">先加液体粒子，帧时间就从 51.5 ms 增加到 163.8 ms；再生成连续水面，才增加第二段成本。倒液时，水柱和散开的粒子让这段成本继续扩大。</p></div>
+        </div>
+        <div class="ledger">
+          <div class="ledger-list" aria-label="每帧耗时构成">
+            <div class="ledger-row"><strong>无液体</strong><div class="bar"><div class="segment a">51.5 ms</div></div><em>19.4 FPS</em></div>
+            <div class="ledger-row"><strong>+ 液体物理</strong><div class="bar"><div class="segment b">163.8 ms</div></div><em>6.1 FPS</em></div>
+            <div class="ledger-row"><strong>+ 连续水面</strong><div class="bar"><div class="segment c">233.3 ms</div></div><em>4.3 FPS</em></div>
+            <div class="ledger-row"><strong>+ 实际倒液</strong><div class="bar"><div class="segment d">~330 ms</div></div><em>3.03 FPS</em></div>
+          </div>
+          <aside class="callout"><h3>最通俗的解释</h3><p>“水”不是一张贴图。系统每一帧都要算 3,600 个粒子怎么流、有没有进目标杯、再把点状粒子重新做成一张能被相机看懂的水面。前两步已经很贵，第三步在倒液时还会变贵。</p></aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">已经排除的猜测</p>
+          <div><h2>不是共享内存，也不是简单调一调迭代就能解决</h2><p class="intro">我们针对“Newton 为什么没有更快”做了 solver 扫描、步长测试、GPU 位姿更新和渲染拆解。结果把优化方向收敛得很清楚。</p></div>
+        </div>
+        <div class="facts">
+          <article class="fact"><h3>CPU/GPU 传输不是主因</h3><p>Newton 到 Isaac 4.1 的共享内存写入只有约 <strong>0.05 ms</strong>；不是这条桥把系统拖慢。</p></article>
+          <article class="fact"><h3>去掉水面也不会瞬间变快</h3><p>直接显示粒子后，重建从 61 ms 降为 0，但 RTX 双相机仍占约 <strong>253 ms</strong>。</p></article>
+          <article class="fact"><h3>Newton 当前没有替代 PBD</h3><p>严格原轨迹的 physics-only：PBD 为 <strong>31.06 FPS</strong>，Newton 为 <strong>22.89 FPS</strong>，且 Newton 把液体倒到了桌面。</p></article>
+          <article class="fact"><h3>大步长不能当作提速</h3><p>Newton 用更大步长可跑到 40–80 FPS，但目标杯为 0%、液体全部洒出；这是错误结果，不是可用性能。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">路线判断</p>
+          <div><h2>产品侧建议：保留正确链路，把优化火力放在“看见液体”</h2><p class="intro">现阶段不要为了追 FPS 替换掉已通过的 PhysX PBD 基线，也不要把 Newton 的非严格候选宣传成已经更快。若目标是让产品可用性向 5 FPS 靠近，主要要压低相机渲染预算。</p></div>
+        </div>
+        <div class="route-grid">
+          <article class="route"><p class="eyebrow">建议执行</p><h2>把“正确的液体”保住，先把画面做轻。</h2><ul><li>以 Isaac 4.1 PBD 的完整液体链路作为正确性与回归基线。</li><li>若演示允许点状视觉，粒子直显可替代连续液面，当前得到 3.24 FPS；它是展示优化，不等同于逼真的水面。</li><li>为 5 FPS 优先评估：减少相机数量、降低分辨率、简化玻璃/材质/光照和粒子显示方式。</li><li>把 30 FPS 视为架构级目标：当前粒子直显每帧约 309 ms，离 33 ms 仍有数量级差距。</li></ul></article>
+          <aside class="guardrail"><h3>本周不建议对外说什么</h3><p><strong>不要说：</strong>“Newton 已比 Isaac PBD 更快。”严格同轨迹下它更慢，且质量失败。</p><p><strong>不要说：</strong>“headless 就是不渲染。”这里 headless 仍在为两台模型相机做 RTX 离屏渲染。</p><p><strong>可以说：</strong>“我们已经有可复核的真实液体闭环，当前重点是从约 3 FPS 提升到产品可用帧率。”</p></aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:34px;">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">数据边界</p>
+          <div><h2>哪些结论最可靠</h2><p class="intro">为了避免把不同阶段、不同配置的实验混成一个“加速比”，这里把结论范围写清楚。</p></div>
+        </div>
+        <ul class="footnotes">
+          <li><strong>最严格的 Newton/PBD 对照：</strong>同一原轨迹、physics-only。PBD 31.06 FPS，Newton 22.89 FPS；但 Newton 质量失败，因此不能作为方案替换依据。</li>
+          <li><strong>最可靠的液面成本 A/B：</strong>同一液体 pick 阶段，无重建 6.1 FPS、完整水面 4.3 FPS；帧时间差 69.4 ms，和实测重建 70.3 ms 一致。</li>
+          <li><strong>完整倒液 3.03 FPS：</strong>是当前 PBD 在线闭环的真实 episode 吞吐。倒液期间粒子分散，液面重建平均可达约 131 ms。</li>
+          <li><strong>Newton 粒子直显 3.24 FPS：</strong>数值通过的 retarget 候选；它不等于同轨迹 PBD 的严格加速，也不等价于连续液面视觉。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-line">
+      <span>LabUtopia 液体专项 · 面向产品经理的性能说明</span>
+      <span>内部证据索引：reports/2026-07-07-labutopia-fluid-weekly/</span>
+    </div>
+  </footer>
+</body>
+</html>

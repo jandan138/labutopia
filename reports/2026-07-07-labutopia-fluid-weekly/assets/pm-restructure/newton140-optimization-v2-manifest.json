@@ -1,0 +1,88 @@
+{
+  "schema": "labutopia.newton140_optimization_delivery.v2",
+  "status": "completed_with_declared_negative_results",
+  "updated_utc": "2026-08-01",
+  "claim_boundary": "Newton 1.4 MPM remains experimental; strict speedup uses exact 4x1/120 trace only; retarget and particle-display rows are candidates and are not promotion evidence.",
+  "strict_physics_ab": {
+    "matrix_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/fluid_benchmark_isaac41_newton140/runs/optimized-strict-physics-v2-20260801-001/matrix.json",
+    "file_sha256": "15e05e63978bc5f8f345b41f4709f0952def70563a83fae3d0b5d8363560249c",
+    "content_sha256": "0d36c2e093a5fa181cf66361cb0859c6046d8ba5789453b399d4c504ea294000",
+    "performance_valid": true,
+    "pbd_exact_physics_fps": 31.063067459270332,
+    "newton_exact_physics_fps": 22.889288341279936,
+    "newton_over_pbd": 0.7368650366320778,
+    "quality_eligible": false,
+    "newton_final_target_fraction": 0.0,
+    "newton_final_tabletop_spill_fraction": 1.0
+  },
+  "solver_sweep": {
+    "path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/fluid_benchmark_isaac41_newton140/solver_sweeps/optimization-v2-20260801-001/sweep.json",
+    "file_sha256": "4fe22f11fe2b13015db6ef5a103407a61e3abb27f7f7caee144bc20fe7ef26e2",
+    "content_sha256": "fbe463999158538df2739bc6eb59dab5aca80dd049db1ee535279060d2191b91",
+    "aggregate_status": "partial_only_because_fixed_outer_graph_failed_as_measured",
+    "best_quality_passing_candidate": "gs_i15_t5e4",
+    "best_physics_fps": 21.78021088491287,
+    "repeat_fps": [21.288013829487493, 21.23825558579166],
+    "repeat_relative_range": 0.002340117973195947,
+    "iteration_diagnostic": {
+      "substep_count": 80,
+      "actual_iteration_histogram": {"10": 1, "15": 79}
+    },
+    "rejected_candidates": {
+      "gs_5": "1.11% target, 98.89% tabletop spill",
+      "two_by_1_over_60": "40.21 FPS but 100% tabletop spill",
+      "one_by_1_over_30": "79.51 FPS but 100% tabletop spill",
+      "fixed_outer_graph": "Warp CUDA 906 during fixed-grid host read inside capture"
+    },
+    "fixed_outer_graph_stderr_sha256": "820129688f82148e8e084c97ce8d170fba9b2f0cb80c2da816bfbdd2eafc2ac1"
+  },
+  "fixed_grid_followups": [
+    {
+      "matrix_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/fluid_benchmark_isaac41_newton140/runs/fixed-no-outer-graph-v2-20260801-001/matrix.json",
+      "file_sha256": "bfd6eb7c42187c89f87fdf6098cdccbccf9b36084d7be71e39f553283516d661",
+      "content_sha256": "6f492b36a19ebf532ec01e4c046279970b10a72ec6496db07adb642c953771e0",
+      "physics_fps": 20.497336965607676,
+      "quality_passed": false
+    },
+    {
+      "matrix_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/fluid_benchmark_isaac41_newton140/runs/fixed-grid-warmstart-v2-20260801-001/matrix.json",
+      "file_sha256": "326316625e6df03bf1211e8bbec1ee34bafc249cc38e26af1a6d4c8fde4e1488",
+      "content_sha256": "e05b7f3f4712133a5a9d4710637cd3165cdd74ad8601d7d8985d3a3b2f16075c",
+      "physics_fps": 20.77153969526383,
+      "quality_passed": false
+    }
+  ],
+  "render_ablation": {
+    "aggregate_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/fluid_benchmark_isaac41_newton140/render_ablations/render-v2-20260801-001/ablation.json",
+    "aggregate_file_sha256": "7cf280b25870d332e498b7b50d9ead830444b8fe150023217d6ebc64872b9e3c",
+    "aggregate_content_sha256": "e11fb84971c203bb56241437b38f5f3d329a170ef8e973cb744c56477f0a15f2",
+    "aggregate_status_note": "The first ablation aggregator used a lane-name predicate that marked three successful cases failed_runtime; every child exit was zero, shared memory was owner-unlinked, GPU gates passed, and all three Isaac parent manifests passed.",
+    "static_surface_dual_camera_fps": 3.1226862111480354,
+    "dynamic_surface_single_camera_fps": 2.7647403150294467,
+    "full_dynamic_surface_dual_camera_fps": 2.650383298684307,
+    "full_components_mean_ms": {
+      "reconstruction": 61.149080154806875,
+      "usd_authoring": 1.7910699610512297,
+      "rtx_render": 257.72097922407653,
+      "camera_capture": 4.29221018835777
+    },
+    "isaac41_runtime_receipt_sha256": {
+      "static_surface_dual_camera": "cadebc13db18c395b8f8059c570163569d4db17b74b3e425b12bbba5ca412317",
+      "dynamic_surface_single_camera": "59ba24df9a4c0410bb61581a42c2e42ca871ec93490ac4c27caa4323ff4aa524",
+      "full_dynamic_surface_dual_camera": "c8a5c3dab441ecd32bc2ba4594341d9c2db33da053375e648fbc1c26f41a2af3"
+    }
+  },
+  "visible_particle_display": {
+    "aggregate_path": "/cpfs/shared/simulation/zhuzihou/dev/LabUtopia/outputs/fluid_benchmark_isaac41_newton140/render_ablations/particle-visible-full-v2-20260801-001/ablation.json",
+    "aggregate_file_sha256": "d6989e30c8471d586a8af63979ac62946b38d90c548903e24fd9d0eaf1da5c48",
+    "aggregate_content_sha256": "0fad2aa3c23efa25b830f984ab0c705dea98939c59f74078f641e8f6fb2bab23",
+    "artifact_ready_fps": 3.23510871756708,
+    "quality_numeric_passed": true,
+    "reconstruction_mean_ms": 0.0,
+    "usd_authoring_mean_ms": 0.301472787909648,
+    "rtx_render_mean_ms": 253.11255827937433,
+    "transport_write_mean_ms": 0.049707777172076605,
+    "isaac41_runtime_receipt_sha256": "5783d6a94204a904cf20afccd93ce9c0c1b34cab3cefe17b9a9082b2562c5384",
+    "visual_review": "Local non-independent PASS for particle visibility after direct prototype material binding; this row is a display optimization, not a surface-equivalent strict A/B."
+  }
+}

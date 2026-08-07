@@ -1,0 +1,17 @@
+{
+  "schema": "labutopia.miaoda_html_deployment.v1",
+  "app_id": "app_17b985c9crq",
+  "app_type": "html",
+  "published_at_utc": "2026-08-01T15:24:29Z",
+  "published_url": "https://aicarrier.aiforce.cloud/app/app_17b985c9crq",
+  "management_url": "https://miaoda.feishu.cn/app/app_17b985c9crq",
+  "access_scope": "public",
+  "require_login": false,
+  "verification": {
+    "http_status": 200,
+    "downloaded_html_bytes": 30451,
+    "desktop_local_browser_review": "passed",
+    "tablet_local_browser_review": "passed",
+    "mobile_local_browser_review": "passed"
+  }
+}

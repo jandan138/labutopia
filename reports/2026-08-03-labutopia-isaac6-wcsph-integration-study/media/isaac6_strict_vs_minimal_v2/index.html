@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Isaac 6 液体画面对比</title>
+  <style>
+    :root{--ink:#102038;--paper:#eef4f6;--cyan:#00a9c7;--orange:#ff8a3d;--green:#32c98d;--line:#b7c8ce;--muted:#526b77}
+    *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:"Noto Sans SC","Microsoft YaHei",sans-serif}
+    header{padding:34px clamp(18px,5vw,72px) 28px;border-bottom:1px solid var(--line);background:linear-gradient(100deg,#fff 0 68%,#d9eef1 68%)}
+    .rail{font:700 12px/1.2 "Arial Narrow",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#327486}
+    h1{max-width:920px;margin:12px 0 10px;font:800 clamp(30px,5vw,64px)/.98 "Arial Narrow","Noto Sans SC",sans-serif;letter-spacing:-.035em}
+    .lead{max-width:820px;margin:0;color:var(--muted);font-size:16px;line-height:1.7}
+    .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:22px;font-size:13px}.legend span{display:flex;align-items:center;gap:7px}.dot{width:10px;height:10px;border-radius:50%}
+    main{max-width:1320px;margin:auto;padding:30px clamp(14px,4vw,54px) 52px}
+    .note{display:grid;grid-template-columns:auto 1fr;gap:14px;padding:14px 16px;margin-bottom:24px;border:1px solid var(--line);background:#fff;font-size:13px;line-height:1.6}.note b{color:#a24c19}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    article{border-top:4px solid var(--cyan);padding-top:12px} h2{margin:0 0 5px;font-size:20px} p{margin:0 0 12px;color:var(--muted);font-size:13px;line-height:1.55}
+    video{display:block;width:100%;aspect-ratio:2/1;background:#061020;border:1px solid #94aab2;box-shadow:0 14px 34px rgba(16,32,56,.12)}
+    footer{padding:18px clamp(18px,5vw,72px);border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+    @media(max-width:760px){header{background:#fff}.grid{grid-template-columns:1fr}.note{grid-template-columns:1fr}h1{line-height:1.06}}
+    @media(prefers-reduced-motion:reduce){video{scroll-behavior:auto}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="rail">953 frames · dual camera · 30 fps playback</div>
+    <h1>同一杯液体，左边看真实光照，右边看速度。</h1>
+    <p class="lead">左侧固定为 Isaac 6 RTX Real-Time 2.0；右侧固定为 Minimal mode 2 高对比档。两边使用相同轨迹、相同粒子内容和相同帧号，没有抽帧、补帧或时间拉伸。</p>
+    <div class="legend"><span><i class="dot" style="background:var(--orange)"></i>橙色：源杯</span><span><i class="dot" style="background:var(--green)"></i>绿色：目标杯</span><span><i class="dot" style="background:var(--cyan)"></i>青色：液体</span></div>
+  </header>
+  <main>
+    <div class="note"><b>怎么看</b><span>视频是视觉对比，不是按真实计算速度播放。性能以周报中的端到端计时为准；Minimal 右侧牺牲真实材质与光照，目标是让模型仍能稳定识别杯子和液体。</span></div>
+    <div class="grid">
+      <article><h2>粒子 · 总览相机</h2><p>看完整倾倒路径、目标杯位置与桌面泄漏。</p><video controls preload="metadata" poster="particles_overview_poster.jpg"><source src="particles_overview.mp4" type="video/mp4"></video></article>
+      <article><h2>粒子 · 近景相机</h2><p>看杯沿、粒子流柱与落杯细节。</p><video controls preload="metadata" poster="particles_closeup_poster.jpg"><source src="particles_closeup.mp4" type="video/mp4"></video></article>
+      <article><h2>连续液面 · 总览相机</h2><p>看 GPU 网格液面在完整轨迹中的连续性。</p><video controls preload="metadata" poster="surface_overview_poster.jpg"><source src="surface_overview.mp4" type="video/mp4"></video></article>
+      <article><h2>连续液面 · 近景相机</h2><p>看青色液面、流柱和目标杯内最终状态。</p><video controls preload="metadata" poster="surface_closeup_poster.jpg"><source src="surface_closeup.mp4" type="video/mp4"></video></article>
+    </div>
+  </main>
+  <footer>实验性 Isaac 6.0.1 / driver 570.153.02 override · 非正式 Isaac 4.1 证据 · 视觉自审，非独立评审</footer>
+</body>
+</html>

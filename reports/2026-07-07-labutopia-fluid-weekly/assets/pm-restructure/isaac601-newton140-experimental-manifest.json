@@ -1,0 +1,94 @@
+{
+  "schema": "labutopia.isaac601_newton140_fluid_delivery.v1",
+  "status": "physics_only_complete_rendered_blocked",
+  "claim_boundary": [
+    "experimental lane; not formal Isaac Sim 4.1 evidence",
+    "Newton-specific controller translation retarget; not the exact Isaac 4.1 controller trace",
+    "analytic tabletop half-space guard is part of the Newton candidate boundary",
+    "historical Isaac 4.1 rows lack a matched physics-only measurement",
+    "rendered-headless and visual liquid checks are blocked by the host driver"
+  ],
+  "runtime": {
+    "isaacsim": "6.0.1.0",
+    "newton": "1.4.0",
+    "warp": "1.15.0",
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "driver": "570.153.02"
+  },
+  "benchmark_contract": {
+    "particles": 3600,
+    "observations": 953,
+    "substeps_per_observation": 4,
+    "integration_dt_seconds": 0.008333333333333333,
+    "render_contract": "headless, two 256x256 cameras, online surface reconstruction"
+  },
+  "selected_candidate": {
+    "profile": "sparse_q1_gs_fast",
+    "physics_only_fps": 9.764132890976438,
+    "artifact_ready_fps": 9.683141983446841,
+    "numeric_gate": "PASS",
+    "visual_gate": "BLOCKED",
+    "target_fraction": 0.9986111111111111,
+    "tabletop_spill_fraction": 0.001388888888888889,
+    "below_table": 0,
+    "nonfinite": 0,
+    "stable_tail_observations": 100
+  },
+  "candidate_matrix": [
+    {
+      "profile": "sparse_q1_gs_fast",
+      "physics_only_fps": 9.764132890976438,
+      "numeric_gate": "PASS"
+    },
+    {
+      "profile": "sparse_q1_jacobi_fast",
+      "physics_only_fps": 10.567268200792654,
+      "numeric_gate": "FAIL",
+      "reason": "tabletop spill 6.083%, above 2% maximum"
+    },
+    {
+      "profile": "sparse_q1_gs_balanced",
+      "physics_only_fps": 9.994948238851581,
+      "numeric_gate": "FAIL",
+      "reason": "target 82.194% and tabletop spill 17.806%"
+    },
+    {
+      "profile": "sparse_q1_cg_fast",
+      "physics_only_fps": null,
+      "numeric_gate": "REJECTED",
+      "reason": "Newton 1.4 CG solver does not support active contact"
+    }
+  ],
+  "rendered_lane": {
+    "status": "BLOCKED_RUNTIME",
+    "rendered_2x256_fps": null,
+    "reason": "Isaac Sim 6.0.1 rejects driver 570.153.02 for RTX startup",
+    "recommended_driver": "580.95.05"
+  },
+  "artifacts": {
+    "matrix": {
+      "path": "outputs/fluid_benchmark_isaac601_newton140/runs/20260731Tfinal-newton140-headless-001/matrix.json",
+      "sha256": "cf2fb9c2e84fc7c3948569dfd045ea82d47404c5a891e8792255065e82a7f1c8"
+    },
+    "selected_result": {
+      "path": "outputs/fluid_benchmark_isaac601_newton140/runs/20260731Tfinal-newton140-headless-001/physics_only/sparse_q1_gs_fast/artifacts/result.json",
+      "sha256": "00e372c7d3b47157ed3e48fbbbbb4a85b6182e6042bfce6bee8dc98e709260df"
+    },
+    "packet": {
+      "path": "outputs/fluid_benchmark_isaac601_newton140/packet_v2/fluid_benchmark_packet_v2.json",
+      "sha256": "210ddbef95f14d50293747c094a5c70db649cbb68b93d5b962ab3b25a3677de2"
+    },
+    "newton_environment_lock": {
+      "path": "outputs/fluid_benchmark_isaac601_newton140/environment_locks/newton140/environment-lock.json",
+      "sha256": "3838535f45b9617140bd749049931188edb5cbaa90f40613d0e3686e07dc3985"
+    },
+    "isaac_environment_lock": {
+      "path": "outputs/fluid_benchmark_isaac601_newton140/environment_locks/isaacsim601/environment-lock.json",
+      "sha256": "30c2b724c37de399d9723fe90a7c945564a13aa9477aa3cb747dae22b92cb264"
+    },
+    "isaac_blocked_receipt": {
+      "path": "outputs/fluid_benchmark_isaac601_newton140/environment_attestations/isaacsim601-v3/receipt.json",
+      "sha256": "537ff79afa8fec5b421ef49d883002d162d93b318782a2ab5c06cdcd5b93ba53"
+    }
+  }
+}

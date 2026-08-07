@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="LabUtopia Newton-only 液体求解器专题：10 条路线、953 帧全程筛选、headless 粒子与液面成本，以及与 Isaac Sim 4.1 基线的证据边界。">
+  <title>Newton 液体求解器专题｜LabUtopia 2026-08-01</title>
+  <style>
+    :root {
+      --paper: #f4f0e7;
+      --paper-deep: #e9e1d2;
+      --ink: #17201f;
+      --muted: #66706d;
+      --line: #c9c0b1;
+      --aqua: #00a6a6;
+      --aqua-deep: #087b7b;
+      --aqua-soft: #cce8e3;
+      --orange: #ef6a32;
+      --orange-soft: #f5d0b9;
+      --lime: #b8dc72;
+      --white: #fffdf8;
+      --shadow: 0 16px 50px rgba(39, 46, 42, .10);
+      --radius: 22px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --serif: Georgia, "Noto Serif SC", "Songti SC", serif;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 82% 8%, rgba(0,166,166,.12), transparent 25rem),
+        var(--paper);
+      font-family: var(--sans);
+      line-height: 1.6;
+    }
+    a { color: inherit; }
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      border-bottom: 1px solid rgba(23,32,31,.16);
+      background: rgba(244,240,231,.9);
+      backdrop-filter: blur(16px);
+    }
+    .topbar-inner { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .brand { font-family: var(--mono); font-size: 12px; letter-spacing: .11em; text-transform: uppercase; }
+    nav { display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px; color: var(--muted); }
+    nav a { text-decoration: none; }
+    nav a:hover { color: var(--aqua-deep); }
+    .hero { padding: 86px 0 74px; border-bottom: 1px solid var(--line); }
+    .hero-grid { display: grid; grid-template-columns: 1.16fr .84fr; gap: 64px; align-items: center; }
+    .eyebrow {
+      margin: 0 0 14px; color: var(--aqua-deep); font-family: var(--mono);
+      font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    }
+    h1, h2 { font-family: var(--serif); letter-spacing: -.035em; line-height: 1.06; }
+    h1 { margin: 0; font-size: clamp(50px, 7.2vw, 96px); font-weight: 500; }
+    h1 em { color: var(--orange); font-style: normal; }
+    .lede { max-width: 700px; margin: 28px 0 0; font-size: clamp(18px, 2vw, 24px); line-height: 1.55; color: #3d4845; }
+    .hero-note { margin-top: 28px; display: flex; align-items: flex-start; gap: 10px; max-width: 700px; font-size: 14px; color: var(--muted); }
+    .hero-note i { width: 9px; height: 9px; margin-top: 7px; border-radius: 50%; background: var(--orange); flex: 0 0 auto; }
+    .beaker-card {
+      position: relative; min-height: 430px; overflow: hidden; border: 1px solid var(--ink);
+      border-radius: 34px; background: var(--ink); color: var(--white); box-shadow: var(--shadow);
+    }
+    .beaker-card::before {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(145deg, transparent 42%, rgba(255,255,255,.05) 42.3%, transparent 43%);
+    }
+    .score { position: absolute; inset: 46px 44px auto; z-index: 2; }
+    .score strong { display: block; font-family: var(--serif); font-size: 94px; line-height: .85; font-weight: 500; }
+    .score span { display: block; margin-top: 18px; color: #c7d2cf; font-size: 15px; }
+    .glass {
+      position: absolute; left: 50%; bottom: 36px; width: 220px; height: 205px;
+      transform: translateX(-50%); border: 3px solid rgba(255,255,255,.85); border-top: 0;
+      border-radius: 0 0 74px 74px; overflow: visible;
+    }
+    .glass::before { content: ""; position: absolute; left: -13px; right: -13px; top: -9px; height: 18px; border: 3px solid white; border-radius: 50%; }
+    .liquid { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 59.3%; border-radius: 0 0 59px 59px; background: var(--aqua); }
+    .liquid::before { content: "59.3% 入杯"; position: absolute; top: 16px; left: 0; right: 0; text-align: center; color: white; font-family: var(--mono); font-size: 13px; font-weight: 700; }
+    .spill { position: absolute; right: -45px; bottom: 18px; width: 30px; height: 30px; background: var(--orange); border-radius: 62% 38% 68% 32%; transform: rotate(33deg); }
+    .spill::before, .spill::after { content: ""; position: absolute; background: var(--orange); border-radius: 50%; }
+    .spill::before { width: 12px; height: 12px; left: 31px; top: 27px; }
+    .spill::after { width: 7px; height: 7px; left: -13px; top: 8px; }
+    .section { padding: 76px 0; border-bottom: 1px solid var(--line); }
+    .section-head { display: grid; grid-template-columns: 180px 1fr; gap: 32px; margin-bottom: 38px; }
+    h2 { margin: 0; font-size: clamp(36px, 4.5vw, 62px); font-weight: 500; }
+    .intro { max-width: 820px; margin: 16px 0 0; color: var(--muted); font-size: 17px; }
+    .verdict-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .verdict { min-height: 210px; padding: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,253,248,.62); }
+    .verdict.accent { color: white; background: var(--aqua-deep); border-color: var(--aqua-deep); }
+    .verdict .number { display: block; margin-bottom: 28px; font-family: var(--serif); font-size: 54px; line-height: 1; }
+    .verdict h3 { margin: 0 0 8px; font-size: 17px; }
+    .verdict p { margin: 0; color: var(--muted); font-size: 14px; }
+    .verdict.accent p { color: #d8efeb; }
+    .two-ledgers { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .ledger { padding: 30px; border-radius: var(--radius); background: var(--white); box-shadow: var(--shadow); }
+    .ledger.dark { color: white; background: #202a28; }
+    .ledger h3 { margin: 0 0 8px; font-family: var(--serif); font-size: 29px; font-weight: 500; }
+    .ledger > p { margin: 0 0 26px; color: var(--muted); font-size: 14px; }
+    .ledger.dark > p { color: #afbbb8; }
+    .time-row { display: grid; grid-template-columns: 105px 1fr 74px; gap: 10px; align-items: center; margin-top: 15px; font-size: 13px; }
+    .time-row b { text-align: right; font-family: var(--mono); font-size: 12px; }
+    .time-track { height: 22px; overflow: hidden; border-radius: 20px; background: var(--paper-deep); }
+    .dark .time-track { background: #394440; }
+    .time-fill { width: var(--w); min-width: 8px; height: 100%; border-radius: inherit; background: var(--aqua); }
+    .time-fill.warn { background: var(--orange); }
+    .ledger-foot { margin-top: 24px !important; padding-top: 20px; border-top: 1px solid var(--line); }
+    .dark .ledger-foot { border-color: #44514d; }
+    .control-card {
+      margin-top: 22px; padding: 24px 28px; border: 1px dashed var(--aqua-deep); border-radius: var(--radius);
+      background: var(--aqua-soft); display: grid; grid-template-columns: 180px 1fr; gap: 24px;
+    }
+    .control-card strong { font-family: var(--serif); font-size: 31px; font-weight: 500; }
+    .control-card p { margin: 2px 0 0; font-size: 14px; color: #31504b; }
+    .matrix-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
+    table { width: 100%; min-width: 900px; border-collapse: collapse; }
+    th, td { padding: 18px 20px; border-bottom: 1px solid #ded7ca; text-align: left; vertical-align: middle; }
+    th { color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; background: #eee8dc; }
+    tr:last-child td { border-bottom: 0; }
+    td { font-size: 14px; }
+    td strong { display: block; font-size: 15px; }
+    .sub { color: var(--muted); font-size: 12px; }
+    .metric { font-family: var(--mono); font-weight: 700; white-space: nowrap; }
+    .mini-track { width: 150px; height: 8px; overflow: hidden; border-radius: 10px; background: #ded9cf; }
+    .mini-fill { height: 100%; width: var(--w); border-radius: inherit; background: var(--aqua); }
+    .mini-fill.bad { background: var(--orange); }
+    .tag { display: inline-block; padding: 4px 8px; border-radius: 20px; font-family: var(--mono); font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .tag.fail { color: #862f12; background: var(--orange-soft); }
+    .tag.block { color: #5d5445; background: #e4dccd; }
+    .tag.formal { color: #275a38; background: #d8eccb; }
+    .table-note { margin: 16px 4px 0; color: var(--muted); font-size: 13px; }
+    .display-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 22px; align-items: stretch; }
+    .stack-card { padding: 30px; border-radius: var(--radius); color: white; background: #202a28; }
+    .stack-card h3 { margin: 0 0 10px; font-family: var(--serif); font-size: 30px; font-weight: 500; }
+    .stack-card > p { margin: 0; color: #b9c4c1; font-size: 14px; }
+    .stack-row { display: grid; grid-template-columns: 130px 1fr 82px; gap: 12px; align-items: center; margin-top: 22px; }
+    .stack-row span { font-size: 13px; }
+    .stack-row b { text-align: right; font-family: var(--mono); font-size: 13px; }
+    .stack-bar { display: flex; height: 28px; overflow: hidden; border-radius: 20px; background: #35413e; }
+    .stack-bar i { display: block; height: 100%; }
+    .stack-bar .physics { width: var(--p); background: var(--aqua); }
+    .stack-bar .view { width: var(--v); background: var(--lime); }
+    .stack-bar .surface { width: var(--s); background: var(--orange); }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 24px; color: #b9c4c1; font-size: 12px; }
+    .legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; }
+    .explain-card { padding: 30px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,253,248,.66); }
+    .explain-card .big { display: block; color: var(--orange); font-family: var(--serif); font-size: 68px; line-height: 1; }
+    .explain-card h3 { margin: 16px 0 8px; font-size: 18px; }
+    .explain-card p { margin: 0; color: var(--muted); font-size: 14px; }
+    .cause-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .cause { padding: 25px; border-top: 3px solid var(--aqua); background: rgba(255,253,248,.55); }
+    .cause.warn { border-color: var(--orange); }
+    .cause .id { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+    .cause h3 { margin: 26px 0 10px; font-size: 18px; }
+    .cause p { margin: 0; color: var(--muted); font-size: 14px; }
+    .blockers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .blocker { position: relative; min-height: 220px; padding: 26px; overflow: hidden; border-radius: var(--radius); color: white; background: #202a28; }
+    .blocker::after { content: ""; position: absolute; width: 120px; height: 120px; right: -42px; bottom: -52px; border: 20px solid rgba(239,106,50,.3); border-radius: 50%; }
+    .blocker .status { color: #ffaf83; font-family: var(--mono); font-size: 11px; }
+    .blocker h3 { margin: 28px 0 10px; font-family: var(--serif); font-size: 25px; font-weight: 500; }
+    .blocker p { margin: 0; color: #b9c4c1; font-size: 13px; }
+    .next { display: grid; grid-template-columns: .85fr 1.15fr; gap: 34px; }
+    .next-lead { padding: 34px; border-radius: var(--radius); color: white; background: var(--aqua-deep); }
+    .next-lead .number { display: block; font-family: var(--serif); font-size: 78px; line-height: 1; }
+    .next-lead h3 { margin: 24px 0 8px; font-size: 20px; }
+    .next-lead p { margin: 0; color: #d4eeea; font-size: 14px; }
+    .steps { counter-reset: step; }
+    .step { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+    .step::before { content: counter(step, decimal-leading-zero); color: var(--orange); font-family: var(--mono); font-weight: 700; }
+    .step h3 { margin: 0 0 5px; font-size: 16px; }
+    .step p { margin: 0; color: var(--muted); font-size: 13px; }
+    .fineprint { padding: 34px 0 48px; color: var(--muted); font-size: 12px; }
+    .fineprint-grid { display: grid; grid-template-columns: 180px 1fr; gap: 32px; }
+    .fineprint p { margin: 0 0 10px; }
+    .stamp { font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    @media (max-width: 900px) {
+      .hero-grid, .display-grid, .next { grid-template-columns: 1fr; }
+      .hero { padding-top: 58px; }
+      .beaker-card { min-height: 390px; }
+      .section-head { grid-template-columns: 1fr; gap: 4px; }
+      .two-ledgers, .verdict-grid, .cause-grid, .blockers { grid-template-columns: 1fr; }
+      .control-card { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 24px, 1180px); }
+      nav { display: none; }
+      .hero { padding: 46px 0 52px; }
+      .hero-grid { gap: 38px; }
+      h1 { font-size: 49px; }
+      .beaker-card { min-height: 380px; }
+      .score { inset: 38px 30px auto; }
+      .score strong { font-size: 76px; }
+      .glass { width: 185px; height: 175px; bottom: 20px; }
+      .section { padding: 56px 0; }
+      .time-row { grid-template-columns: 86px 1fr 65px; }
+      .stack-row { grid-template-columns: 90px 1fr 68px; gap: 8px; }
+      .fineprint-grid { grid-template-columns: 1fr; gap: 6px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand">LabUtopia / Fluid Lab Note 02</div>
+      <nav aria-label="页内导航">
+        <a href="#verdict">结论</a><a href="#baseline">两个账本</a><a href="#solvers">10 条路线</a><a href="#headless">Headless</a><a href="#blockers">阻塞项</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">2026-08-01 · Newton-only 液体求解器专题</p>
+          <h1>更快了，<br>但还<em>没倒准</em>。</h1>
+          <p class="lede">10 条液体路线都完成了 900 粒子、953 帧的探索筛选。最快已到 7–9 ms/物理帧，明显看见纯 Newton 的潜力；但没有一条同时满足“至少 90% 入杯、最多 2% 洒出”。</p>
+          <div class="hero-note"><i></i><span>最接近可用的是 WCSPH：8.65 ms/物理帧、59.3% 入杯。它是下一轮搜索起点，不是可交付替代方案。</span></div>
+        </div>
+        <aside class="beaker-card" aria-label="十条路线中零条通过质量门槛，最佳路线入杯率 59.3%">
+          <div class="score"><strong>0 / 10</strong><span>通过最终质量门槛</span></div>
+          <div class="glass"><div class="liquid"></div><div class="spill"></div></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="verdict">
+      <div class="shell">
+        <div class="section-head">
+          <p class="eyebrow">产品结论</p>
+          <div><h2>Newton 不是“换上就快”的开关。</h2><p class="intro">它把仿真器、RTX 和 USD 的大包袱拿掉以后，液体核心确实能跑得很快；但杯壁边界、轨迹和液体参数必须重新匹配。现阶段应把它定义为“高潜力研发路线”，而不是 Isaac PBD 的现成替代品。</p></div>
+        </div>
+        <div class="verdict-grid">
+          <article class="verdict accent"><span class="number">8.65 ms</span><h3>最接近可用的物理候选</h3><p>WCSPH，900 粒子，完整 953 帧；59.3% 入杯、29.3% 洒出，质量未过线。</p></article>
+          <article class="verdict"><span class="number">31.70 ms</span><h3>Isaac 4.1 正式 PBD 物理</h3><p>3600 粒子、同一 packet、正式 v2 runtime；100% 入杯、0% 洒出。粒子数不同，不能直接宣布 3.7× 加速。</p></article>
+          <article class="verdict"><span class="number">1.62 ms</span><h3>Newton 直接粒子 headless RGB</h3><p>640×480、953 帧稳态均值。GPU 液面为 2.58 ms；CPU 液面为 11.22 ms。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="baseline">
+      <div class="shell">
+        <div class="section-head">
+          <p class="eyebrow">先分清口径</p>
+          <div><h2>完整产品链路，和求解器小考，是两个账本。</h2><p class="intro">51.5→163.8 ms 回答“产品里加液体慢多少”；受控 packet 回答“液体算法本身能做到多快”。把两者混成一个加速比，会得到错误结论。</p></div>
+        </div>
+        <div class="two-ledgers">
+          <article class="ledger">
+            <h3>账本 A｜产品完整链路</h3>
+            <p>机械臂、场景、双相机和 Isaac 4.1 的历史同量级 A/B；适合解释用户实际等待时间。</p>
+            <div class="time-row"><span>无液体</span><div class="time-track"><div class="time-fill" style="--w:16%"></div></div><b>51.5 ms</b></div>
+            <div class="time-row"><span>液体粒子</span><div class="time-track"><div class="time-fill" style="--w:50%"></div></div><b>163.8 ms</b></div>
+            <div class="time-row"><span>连续液面</span><div class="time-track"><div class="time-fill warn" style="--w:71%"></div></div><b>233.3 ms</b></div>
+            <div class="time-row"><span>实际倒液</span><div class="time-track"><div class="time-fill warn" style="--w:100%"></div></div><b>~330 ms</b></div>
+            <p class="ledger-foot">通俗解释：加液体后多出的约 112 ms 不是“画几个点”，而是 PhysX PBD、碰撞、数据准备和场景更新共同增加的成本。</p>
+          </article>
+          <article class="ledger dark">
+            <h3>账本 B｜受控求解器 packet</h3>
+            <p>固定 953 帧杯子轨迹，拆开物理、重建和离屏 RGB；适合决定下一步算法投资。</p>
+            <div class="time-row"><span>Newton WCSPH</span><div class="time-track"><div class="time-fill" style="--w:27%"></div></div><b>8.65 ms</b></div>
+            <div class="time-row"><span>Newton MPM</span><div class="time-track"><div class="time-fill" style="--w:33%"></div></div><b>10.49 ms</b></div>
+            <div class="time-row"><span>Isaac 4.1 PBD</span><div class="time-track"><div class="time-fill warn" style="--w:100%"></div></div><b>31.70 ms</b></div>
+            <p class="ledger-foot">关键边界：Newton 是临时环境、900 粒子且质量失败；Isaac 是正式 v2 runtime、3600 粒子且质量通过。这里能证明“值得继续”，不能证明“已经替代”。</p>
+          </article>
+        </div>
+        <div class="control-card"><strong>正式基准仍是 Isaac 4.1</strong><p>本轮重新绑定了 Python 3.10.20、Isaac Sim 4.1.0.0、Kit 生效 NumPy 1.26.0、USD 0.22.11 的 v2 receipt。PBD physics-only 为 31.70 ms，最终 3600/3600 粒子进入目标杯；带连续液面与 RTX 的 model-ready 为 444.83 ms。</p></div>
+      </div>
+    </section>
+
+    <section class="section" id="solvers">
+      <div class="shell">
+        <div class="section-head">
+          <p class="eyebrow">十条路线</p>
+          <div><h2>先看能不能倒准，再看跑多快。</h2><p class="intro">所有探索行都保留失败结果。排序以液体有效性为先，不允许“0% 入杯但 1 ms”成为赢家。下表均为 900 粒子、953 帧的非正式探索首轮。</p></div>
+        </div>
+        <div class="matrix-wrap">
+          <table>
+            <thead><tr><th>路线</th><th>物理均值</th><th>入杯率</th><th>台面洒出</th><th>结论</th></tr></thead>
+            <tbody>
+              <tr><td><strong>LabUtopia DFSPH</strong><span class="sub">密度 + 散度投影</span></td><td class="metric">7.18 ms</td><td><div class="mini-track"><div class="mini-fill" style="--w:28.3%"></div></div><span class="sub">28.3%</span></td><td class="metric">64.2%</td><td><span class="tag fail">质量失败</span></td></tr>
+              <tr><td><strong>SPlisHSPlasH DFSPH Warp port</strong><span class="sub">尚未完成源码等价审查</span></td><td class="metric">7.08 ms</td><td><div class="mini-track"><div class="mini-fill" style="--w:28.3%"></div></div><span class="sub">28.3%</span></td><td class="metric">64.2%</td><td><span class="tag block">算法排除</span></td></tr>
+              <tr><td><strong>LabUtopia WCSPH</strong><span class="sub">当前最佳质量/速度平衡</span></td><td class="metric">8.65 ms</td><td><div class="mini-track"><div class="mini-fill" style="--w:59.3%"></div></div><span class="sub">59.3%</span></td><td class="metric">29.3%</td><td><span class="tag fail">质量失败</span></td></tr>
+              <tr><td><strong>Newton Implicit MPM</strong><span class="sub">官方连续介质路线</span></td><td class="metric">10.49 ms</td><td><div class="mini-track"><div class="mini-fill bad" style="--w:5.6%"></div></div><span class="sub">5.6%</span></td><td class="metric">94.3%</td><td><span class="tag fail">质量失败</span></td></tr>
+              <tr><td><strong>Warp official SPH adaptation</strong><span class="sub">官方示例方程 + 场景边界</span></td><td class="metric">12.64 ms</td><td><div class="mini-track"><div class="mini-fill bad" style="--w:.6%"></div></div><span class="sub">0.6%</span></td><td class="metric">97.6%</td><td><span class="tag fail">质量失败</span></td></tr>
+              <tr><td><strong>Warp official APIC adaptation</strong><span class="sub">网格压力投影 + 后置杯壁</span></td><td class="metric">32.02 ms</td><td><div class="mini-track"><div class="mini-fill bad" style="--w:0%"></div></div><span class="sub">0%</span></td><td class="metric">100%</td><td><span class="tag fail">质量失败</span></td></tr>
+              <tr><td><strong>Newton SemiImplicit particles</strong><span class="sub">通用粒子接触，不是不可压液体</span></td><td class="metric">86.30 ms</td><td><div class="mini-track"><div class="mini-fill bad" style="--w:0%"></div></div><span class="sub">0%</span></td><td class="metric">0%*</td><td><span class="tag fail">2.6% 穿桌</span></td></tr>
+              <tr><td><strong>SPlisHSPlasH PBF Warp port</strong><span class="sub">逐迭代残差同步，且未等价审查</span></td><td class="metric">126.86 ms</td><td><div class="mini-track"><div class="mini-fill bad" style="--w:.6%"></div></div><span class="sub">0.6%</span></td><td class="metric">71.4%</td><td><span class="tag block">算法排除</span></td></tr>
+              <tr><td><strong>Newton XPBD cohesion</strong><span class="sub">接触缓冲溢出，平均 128 子步</span></td><td class="metric">145.12 ms</td><td><div class="mini-track"><div class="mini-fill bad" style="--w:0%"></div></div><span class="sub">0%</span></td><td class="metric">3.8%*</td><td><span class="tag fail">74.7% 穿桌</span></td></tr>
+              <tr><td><strong>Newton VBD self-contact</strong><span class="sub">没有三角形/四面体能量拓扑</span></td><td class="metric">—</td><td>—</td><td>—</td><td><span class="tag block">能力不适用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-note">质量门槛：最终入杯率 ≥90%，台面洒出 ≤2%，无穿桌、无非有限值，并通过 8 帧×2 机位视觉复核。带 * 的路线还有粒子穿过桌面，因此“洒出低”不代表表现好。</p>
+      </div>
+    </section>
+
+    <section class="section" id="headless">
+      <div class="shell">
+        <div class="section-head">
+          <p class="eyebrow">Headless 账本</p>
+          <div><h2>不重建液面，确实是最省的一档。</h2><p class="intro">这里的 headless 不是“不画画面”，而是 ViewerGL 离屏生成 640×480 RGB。953 帧全程实测，并把第一帧 JIT/Shader 冷启动与后续稳态分开。</p></div>
+        </div>
+        <div class="display-grid">
+          <article class="stack-card">
+            <h3>WCSPH + 三种显示方式</h3>
+            <p>下方是两段独立实测的相加估算：8.65 ms 物理 + 留存粒子帧的显示成本；不是同进程端到端正式结果。</p>
+            <div class="stack-row"><span>直接粒子</span><div class="stack-bar"><i class="physics" style="--p:43.5%"></i><i class="view" style="--v:8.2%"></i></div><b>10.27 ms</b></div>
+            <div class="stack-row"><span>GPU 液面</span><div class="stack-bar"><i class="physics" style="--p:43.5%"></i><i class="view" style="--v:13%"></i></div><b>11.23 ms</b></div>
+            <div class="stack-row"><span>CPU 液面</span><div class="stack-bar"><i class="physics" style="--p:43.5%"></i><i class="surface" style="--s:56.5%"></i></div><b>19.87 ms</b></div>
+            <div class="legend"><span><i style="background:var(--aqua)"></i>物理 8.65 ms</span><span><i style="background:var(--lime)"></i>粒子/GPU 显示</span><span><i style="background:var(--orange)"></i>CPU 液面显示</span></div>
+          </article>
+          <aside class="explain-card"><span class="big">0.64 ms</span><h3>GPU 液面重建的稳态均值</h3><p>GPU 密度场 + Marching Cubes 本身已经不再是大头。直接粒子 headless RGB 为 1.62 ms，GPU 液面整条显示为 2.58 ms；CPU 重建单项仍需 9.11 ms。</p><h3>但别把它叫 97 FPS 产品</h3><p>这里没有正式机械臂视觉资产、Isaac RTX 材质和双正式相机，而且 WCSPH 质量尚未过线。</p></aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="shell">
+        <div class="section-head">
+          <p class="eyebrow">为什么有的 Newton 仍然慢</p>
+          <div><h2>瓶颈不是 CPU↔GPU 拷贝，而是算法路径选错。</h2><p class="intro">真正轻量的路线把邻域和杯壁投影直接写成 Warp GPU kernel；原生通用粒子路线却把液体当成大量接触体，成本与稳定性都迅速恶化。</p></div>
+        </div>
+        <div class="cause-grid">
+          <article class="cause"><span class="id">CAUSE 01</span><h3>290 个杯壁盒子进入通用碰撞</h3><p>XPBD/SemiImplicit 每个子步都走 Newton broad phase / narrow phase；XPBD 还出现 contact buffer overflow。轻量 SPH/DFSPH 用的是直接盒投影。</p></article>
+          <article class="cause warn"><span class="id">CAUSE 02</span><h3>CFL 被速度顶到 128 子步</h3><p>XPBD、SemiImplicit 和 PBF 后半段几乎每个 30 Hz 逻辑帧都拆成 128 次，单帧 smoke 的漂亮数字无法代表完整轨迹。</p></article>
+          <article class="cause"><span class="id">CAUSE 03</span><h3>早停也可能制造同步</h3><p>PBF 为了每次迭代读取残差，会频繁触发 GPU→CPU 同步；它的 0.7 ms 单帧热缓存最终变成 126.9 ms 全程均值。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="blockers">
+      <div class="shell">
+        <div class="section-head">
+          <p class="eyebrow">当前阻塞项</p>
+          <div><h2>三件事不能靠“再跑一次”解决。</h2><p class="intro">我们已经把基础设施失败与算法失败分开记录。下面三项解除前，不会生成正式 Newton 加速比或全动力机械臂性能结论。</p></div>
+        </div>
+        <div class="blockers">
+          <article class="blocker"><span class="status">BLOCKED / STORAGE</span><h3>CPFS 可用空间为 0</h3><p>正式 Newton 版本化环境、Conda lock 和 320 个搜索配置无法落盘。临时 `/tmp` 环境只能做探索，不可升级为正式证据。</p></article>
+          <article class="blocker"><span class="status">BLOCKED / RTX</span><h3>驱动处于已知风险区间</h3><p>当前 570.153.02 位于 ViewerRTX 审核阻塞区间 [570.00, 570.158.01)。DSW 无法升级驱动，因此 ViewerRTX 保留 NO-GO 证据。</p></article>
+          <article class="blocker"><span class="status">BLOCKED / ROBOT DYNAMICS</span><h3>Franka USD 单位翻译需审查</h3><p>导入后关节刚度约 5.73×10⁸，最小惯量约 4.20×10⁻¹⁰ kg·m²。固定抓取几何正确，但直接动力学会发散。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="shell next">
+        <article class="next-lead"><span class="number">320</span><h3>正式搜索配置已经编排</h3><p>10 条路线 × 每条 24 个 3600 粒子探索点 + 8 个分辨率细化点。后 8 个会真实继承探索前两名，不再错误回退到 candidate 0。</p></article>
+        <div class="steps">
+          <div class="step"><div><h3>先解决存储，创建锁定 Newton 主环境</h3><p>环境与 RTX 环境分开；绑定 Python、Newton、Warp、CUDA、lock、源码和 GPU/驱动身份。</p></div></div>
+          <div class="step"><div><h3>围绕 WCSPH 做质量优先搜索</h3><p>先把入杯率从 59.3% 推到 ≥90%、洒出压到 ≤2%；重点搜索边界摩擦、支撑半径、声速与轨迹微调。</p></div></div>
+          <div class="step"><div><h3>通过质量门槛后再做 900→7200 粒子缩放</h3><p>只给合格候选做三次重复、两机位 8 帧视觉复核和 headless 三种显示方式；失败行仍保留。</p></div></div>
+          <div class="step"><div><h3>最后才谈“替代 Isaac PBD”</h3><p>要求相同粒子数、轨迹、场景闭包、相机和质量门槛；否则只报告单路线事实，不给跨运行时加速比。</p></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="fineprint">
+    <div class="shell fineprint-grid">
+      <div class="stamp">Evidence boundary</div>
+      <div>
+        <p>Isaac 4.1 受控 packet 行：Python 3.10.20 / Isaac Sim 4.1.0.0 / Kit 生效 NumPy 1.26.0 / USD 0.22.11，matched effective-runtime v2 receipt。Newton 行：Python 3.12.13 / Newton 1.4.0 / Warp 1.15.0 / RTX 4090，在 `/tmp` 临时克隆环境执行，非正式、不可替代正式基线。</p>
+        <p>所有时间为 2026-08-01 当前机器上的实测或明确标注的两段实测相加估算。页面不使用固定性能承诺，也不把算法不合格结果包装成加速成果。</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

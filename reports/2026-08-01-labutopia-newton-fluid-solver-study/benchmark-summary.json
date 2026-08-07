@@ -1,0 +1,46 @@
+{
+  "schema": "labutopia.newton_fluid_pm_summary.v1",
+  "as_of_utc": "2026-08-01",
+  "claim_boundary": "Isaac 4.1 rows are matched effective-runtime v2 evidence; Newton solver and ViewerGL rows are nonformal exploratory runs in a temporary cloned environment; particle counts and scene closures must not be treated as a strict cross-runtime speedup claim",
+  "isaac41_controlled_packet": {
+    "particle_count": 3600,
+    "physics_mean_ms": 31.695478470573406,
+    "rendered_model_ready_mean_ms": 444.83349294628664,
+    "surface_reconstruction_mean_ms": 146.63405839682503,
+    "rtx_render_mean_ms": 256.03850433571625,
+    "target_fraction": 1.0,
+    "tabletop_spill_fraction": 0.0,
+    "runtime_receipt_authority": "isaac41_effective_runtime_receipt_v2",
+    "runtime_receipt_status": "MATCH"
+  },
+  "newton_exploratory_900_particles": [
+    {"solver_id": "labutopia_dfsph", "physics_mean_ms": 7.17571891398645, "target_fraction": 0.2833333333333333, "tabletop_spill_fraction": 0.6422222222222222, "status": "failed_numeric_quality"},
+    {"solver_id": "splishsplash_dfsph_port", "physics_mean_ms": 7.079727236271405, "target_fraction": 0.2833333333333333, "tabletop_spill_fraction": 0.6422222222222222, "status": "excluded_algorithm_conformance"},
+    {"solver_id": "labutopia_wcsph", "physics_mean_ms": 8.646842608265462, "target_fraction": 0.5933333333333334, "tabletop_spill_fraction": 0.29333333333333333, "status": "failed_numeric_quality"},
+    {"solver_id": "newton_implicit_mpm", "physics_mean_ms": 10.490944092514134, "target_fraction": 0.05555555555555555, "tabletop_spill_fraction": 0.9433333333333334, "status": "failed_quality"},
+    {"solver_id": "warp_example_sph", "physics_mean_ms": 12.641119627049438, "target_fraction": 0.005555555555555556, "tabletop_spill_fraction": 0.9755555555555555, "status": "failed_numeric_quality"},
+    {"solver_id": "warp_example_apic", "physics_mean_ms": 32.01833660132863, "target_fraction": 0.0, "tabletop_spill_fraction": 1.0, "status": "failed_numeric_quality"},
+    {"solver_id": "newton_semiimplicit_particles", "physics_mean_ms": 86.30206523871622, "target_fraction": 0.0, "tabletop_spill_fraction": 0.0, "below_table_fraction": 0.025555555555555557, "status": "failed_numeric_quality"},
+    {"solver_id": "splishsplash_pbf_port", "physics_mean_ms": 126.86213999517567, "target_fraction": 0.005555555555555556, "tabletop_spill_fraction": 0.7144444444444444, "status": "excluded_algorithm_conformance"},
+    {"solver_id": "newton_xpbd_cohesion", "physics_mean_ms": 145.12150268708547, "target_fraction": 0.0, "tabletop_spill_fraction": 0.03777777777777778, "below_table_fraction": 0.7466666666666667, "status": "failed_numeric_quality"},
+    {"solver_id": "newton_vbd_self_contact", "physics_mean_ms": null, "target_fraction": null, "tabletop_spill_fraction": null, "status": "failed_capability"}
+  ],
+  "newton_viewergl_headless_640x480_900_particles": {
+    "frame_count": 953,
+    "particles_artifact_ready_steady_mean_ms": 1.623134606150018,
+    "gpu_surface_artifact_ready_steady_mean_ms": 2.579823386769335,
+    "gpu_surface_reconstruction_steady_mean_ms": 0.6370718176124477,
+    "cpu_surface_artifact_ready_steady_mean_ms": 11.221265326402769,
+    "cpu_surface_reconstruction_steady_mean_ms": 9.10521883267064
+  },
+  "quality_gate": {
+    "minimum_target_fraction": 0.9,
+    "maximum_tabletop_spill_fraction": 0.02,
+    "passing_newton_routes": 0
+  },
+  "blocked_lanes": {
+    "formal_newton_environment": "CPFS has zero free bytes; versioned env and lock are not materialized",
+    "viewerrtx": "driver 570.153.02 lies in reviewed blocked interval [570.00, 570.158.01)",
+    "full_franka_dynamics": "raw USD import yields joint stiffness about 5.73e8 and body inertia down to about 4.20e-10 kg m^2; reviewed translation required"
+  }
+}
