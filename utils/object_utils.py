@@ -85,7 +85,7 @@ class ObjectUtils:
         transform = xformable.ComputeLocalToWorldTransform(Usd.TimeCode.Default())
         position = transform.ExtractTranslation()
         return np.array(position)
-    
+
     def set_object_position(self, object_path: str, position: np.ndarray, local_position: np.ndarray = None, position_offset: np.ndarray = None) -> None:
         """Set the object's position in world or local space."""
         prim = self._stage.GetPrimAtPath(object_path)
@@ -101,10 +101,16 @@ class ObjectUtils:
             new_position = Gf.Vec3d(*position)
 
         if xform_ops:
-            xform_ops[0].Set(new_position)
+            op = xform_ops[0]
+            if op.GetOpType() == UsdGeom.XformOp.TypeTransform:
+                transform = np.array(op.Get())
+                transform[:3, 3] = new_position
+                op.Set(Gf.Matrix4d(*transform.tolist()))
+            else:
+                op.Set(new_position)
         else:
             xformable.AddTranslateOp().Set(new_position)
-            
+
     def get_geometry_center(self, object_name: str = None, object_path: str = None) -> np.ndarray:
         path = self._get_object_path(object_name, object_path)
         prim = self._stage.GetPrimAtPath(path)
@@ -120,10 +126,10 @@ class ObjectUtils:
         world_center = center_hom @ transform
         return world_center[:3]
 
-    
+
     def get_transform_quat(self, object_path: str, w_first: bool = False) -> np.ndarray:
         """Get the world-space rotation quaternion from the object's transform.
-        
+
         Args:
             object_path: The USD path to the object.
             w_first: If True, return quaternion in [w, x, y, z] format, else [x, y, z, w].
@@ -135,7 +141,7 @@ class ObjectUtils:
             return None
 
         rotation = prim.GetAttribute("xformOp:orient").Get()
-        
+
         if rotation is None:
             rotation = prim.GetAttribute("xformOp:rotateXYZ").Get()
             rotation = euler_angles_to_quats(rotation, degrees=True)
@@ -145,7 +151,7 @@ class ObjectUtils:
         quat = np.array([rotation.GetImaginary()[0], rotation.GetImaginary()[1], rotation.GetImaginary()[2], rotation.GetReal()])
         if abs(quat[0]) > 0.5 and abs(quat[0]) > abs(quat[3]):
             quat = np.array([quat[1], quat[2], quat[3], quat[0]])
-            
+
         return np.array([quat[3], quat[0], quat[1], quat[2]]) if w_first else quat
 
     def get_world_transform_quat(self, object_path: str, w_first: bool = False) -> np.ndarray:
@@ -169,7 +175,7 @@ class ObjectUtils:
             dtype=np.float64,
         )
         return wxyz if w_first else wxyz[[1, 2, 3, 0]]
-        
+
     def get_revolute_joint_positions(self, joint_path: str) -> np.ndarray:
         joint_prim = self._stage.GetPrimAtPath(joint_path)
 
@@ -184,8 +190,8 @@ class ObjectUtils:
         body1_xform = UsdGeom.Xformable(body1_prim)
         body1_world_transform = Gf.Matrix4f(body1_xform.ComputeLocalToWorldTransform(Usd.TimeCode.Default()))
 
-        local_pos1 = joint_api.GetLocalPos1Attr().Get() 
-        local_rot1 = joint_api.GetLocalRot1Attr().Get()  
+        local_pos1 = joint_api.GetLocalPos1Attr().Get()
+        local_rot1 = joint_api.GetLocalRot1Attr().Get()
 
         rotation_matrix = Gf.Matrix3f(local_rot1)
         local_transform = Gf.Matrix4f()

@@ -1,0 +1,9 @@
+defaults:
+  - diagnostic_level1_pour_native_expert_nonformal_full_pbd_demo_v1
+  - _self_
+
+name: Diagnostic_level1_pour_native_expert_collision_observe_full_pbd_v1
+
+online_fluid:
+  diagnostic_trajectory_mode: "collision_observe_full_trajectory_v1"
+  collision_policy: "record_and_continue"

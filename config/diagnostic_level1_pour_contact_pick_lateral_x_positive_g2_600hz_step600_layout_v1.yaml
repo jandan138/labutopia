@@ -85,6 +85,7 @@ online_fluid:
   grasp_preclose_source_translation_limit_m: 0.001
   grasp_preclose_source_tilt_limit_degrees: 0.5
   dynamic_pre_roll_steps: 600
+  stop_after_pre_roll: false
   filled_static_hold_steps: 1800
   expert_pour_speed_rad_s: -1.0
   expert_pour_target_offset_m: [0.0, 0.0, 0.0]

@@ -38,6 +38,9 @@ V5_CONFIG_PATH = (
 V6_CONFIG_PATH = (
     REPO_ROOT / "config/diagnostic_level1_pour_native_empty_unbound_lift_v6.yaml"
 )
+V7_CONFIG_PATH = (
+    REPO_ROOT / "config/diagnostic_level1_pour_native_empty_unbound_lift_v7.yaml"
+)
 PRODUCTION_CONFIG_PATH = REPO_ROOT / "config/level1_pour.yaml"
 SOURCE = "/World/beaker2/mesh"
 SOURCE_ROOT = "/World/beaker2"
@@ -139,7 +142,7 @@ def _dynamic_source_contract(**changes):
         },
         "source_local_com_authority": {
             "kind": "physx_cooked_rigid_body_properties",
-            "source_body_path": SOURCE,
+            "source_body_path": SOURCE_ROOT,
             "stage_id": 7,
             "query_complete": True,
             "query_timing": "pre_task_reset_nonplaying",
@@ -152,7 +155,7 @@ def _dynamic_source_contract(**changes):
         },
         "read_only_adapter": {
             "kind": "omni.isaac.core.prims.RigidPrimView",
-            "source_body_path": SOURCE,
+            "source_body_path": SOURCE_ROOT,
             "count": 1,
             "initialized": True,
             "reset_xform_properties": False,
@@ -500,6 +503,15 @@ def _v6_protocol():
     return probe.resolve_protocol_spec(
         probe.freeze_diagnostic_config(
             V6_CONFIG_PATH,
+            production_config_path=PRODUCTION_CONFIG_PATH,
+        )["config"]
+    )
+
+
+def _v7_protocol():
+    return probe.resolve_protocol_spec(
+        probe.freeze_diagnostic_config(
+            V7_CONFIG_PATH,
             production_config_path=PRODUCTION_CONFIG_PATH,
         )["config"]
     )
@@ -915,6 +927,106 @@ def test_v6_pins_loaded_contact_and_world_metric_evidence_without_rewriting_v5()
     )
 
 
+def test_v7_removes_hidden_cube_support_and_uses_600hz():
+    v6 = probe.freeze_diagnostic_config(
+        V6_CONFIG_PATH,
+        production_config_path=PRODUCTION_CONFIG_PATH,
+    )
+    v7 = probe.freeze_diagnostic_config(
+        V7_CONFIG_PATH,
+        production_config_path=PRODUCTION_CONFIG_PATH,
+    )
+    protocol = probe.resolve_protocol_spec(v7["config"])
+
+    assert protocol["schema_version"] == 7
+    assert protocol["protocol_id"] == "native_expert_empty_beaker_unbound_lift_v7"
+    assert protocol["support_collider_paths"] == [TABLE_SUPPORT]
+    assert v7["config"]["diagnostic"]["support_collider_paths"] == [TABLE_SUPPORT]
+    assert v7["config"]["diagnostic"]["physics_dt"] == pytest.approx(1.0 / 600.0)
+    assert v7["config"]["diagnostic"]["physics_substeps_per_observation"] == 10
+    assert v7["config"]["diagnostic"]["child_timeout_seconds"] == 1500
+    assert v7["config"]["diagnostic"]["hidden_cube_treatment"]["sha256"] == (
+        "02d60888264a603e40999877ae3e32e3fbcd1fd53f718482780218b7dcb1ccea"
+    )
+    treatment = v7["config"]["diagnostic"]["g0_layout_treatment"]
+    assert treatment == {
+        "authority": "g0_support_aligned_layout_v1",
+        "target_position_m": [0.255, -0.245, 0.8406758673476564],
+        "source_position_m": [0.295, 0.075, 0.8233382266115852],
+        "source_settle_pre_roll_steps": 600,
+    }
+    assert probe.g0_source_settle_pre_roll_steps(
+        v7["config"]["diagnostic"]
+    ) == 600
+    assert v7["config"]["diagnostic"]["g0_native_pick_treatment"] == {
+        "authority": "g0_native_expert_pick_v9",
+        "target_orientation_wxyz": [0.0, 0.0, 1.0, 0.0],
+        "pick_z_offset_m": 0.0139,
+        "pick_x_offset_m": 0.0023,
+        "require_pick_controller_done_before_pour": True,
+        "settle_events_dt": [0.002, 0.002, 0.005, 0.10, 0.005, 0.01, 0.02],
+    }
+    applied = probe.apply_g0_layout_treatment(v7["config"])
+    assert applied["task"]["left_pos"] == {
+        "x": [0.255, 0.255],
+        "y": [-0.245, -0.245],
+        "z": [0.8406758673476564, 0.8406758673476564],
+    }
+    assert applied["task"]["obj_paths"][0]["position_range"] == {
+        "x": [0.295, 0.295],
+        "y": [0.075, 0.075],
+        "z": [0.8233382266115852, 0.8233382266115852],
+    }
+    assert v6["config"]["diagnostic"]["support_collider_paths"] == [
+        SUPPORT,
+        TABLE_SUPPORT,
+    ]
+    assert probe.production_visible_projection(v6["config"]) == probe.production_visible_projection(
+        v7["config"]
+    )
+
+
+def test_v7_g0_eligibility_input_is_parent_only(tmp_path):
+    g0_run_dir = tmp_path / "g0"
+    parent = probe.parse_args(
+        [
+            "--config",
+            str(V7_CONFIG_PATH),
+            "--out-dir",
+            str(tmp_path / "parent-output"),
+            "--g0-run-dir",
+            str(g0_run_dir),
+        ]
+    )
+
+    assert parent.g0_run_dir == g0_run_dir.resolve()
+
+    child_dir = tmp_path / "child"
+    child_dir.mkdir()
+    frozen = child_dir / "frozen.json"
+    frozen.write_text("{}\n", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        probe.parse_args(
+            [
+                "--out-dir",
+                str(child_dir),
+                "--runtime-child",
+                "--treatment",
+                "control",
+                "--frozen-config",
+                str(frozen),
+                "--run-nonce",
+                "nonce",
+                "--parent-pid",
+                "1",
+                "--expected-config-sha256",
+                "a" * 64,
+                "--g0-run-dir",
+                str(g0_run_dir),
+            ]
+        )
+
+
 def test_v4_continues_only_an_omitted_active_support_pair_with_observed_only_evidence():
     identities = _identities(
         support_colliders=[SUPPORT, TABLE_SUPPORT],
@@ -1301,6 +1413,128 @@ def test_v4_parent_replays_observation_gap_journal_prefix_and_rejects_tampering(
     )
     assert missing["audit_valid"] is False
     assert "instrumented_v4_observation_gap_journal_missing" in missing["audit_failures"]
+
+
+def _v7_terminal_lost_parent_replay_fixture():
+    protocol = _v7_protocol()
+    identities = _identities(
+        support_colliders=[TABLE_SUPPORT],
+        other_colliders=[],
+    )
+    identities["collider_owners"][SOURCE] = SOURCE_ROOT
+    table_header = _header(
+        "PERSIST",
+        SOURCE,
+        TABLE_SUPPORT,
+        contact_offset=0,
+        contact_count=1,
+    )
+    table_header["actor0"] = SOURCE_ROOT
+    reports = [
+        {
+            "headers": [table_header],
+            "contact_data": [_point((0.0, 0.0, 0.0), (0.0, 0.0, 1.0))],
+            "friction_anchors": [],
+        },
+        _empty_contact_report(),
+    ]
+    for index, report in enumerate(reports):
+        report.update(
+            {
+                "physics_index": index,
+                "immediate_read_index": index,
+                "immediate_read_count": index + 1,
+            }
+        )
+    contacts = probe.evaluate_contact_trace(
+        reports,
+        identities=identities,
+        geometry=[_geometry() for _index in reports],
+        require_immediate_read=True,
+        protocol=protocol,
+    )
+    lifecycle = probe.evaluate_support_lifecycle(
+        contacts["samples"],
+        [_state(0.0) for _index in reports],
+        protocol=protocol,
+        action_contexts=[
+            {
+                "pick_event": 4,
+                "action": {"joint_positions": [0.0] * 9},
+                "apply_count": 1,
+                "action_receipt": {
+                    "applied": True,
+                    "normal_return": True,
+                    "apply_count": 1,
+                },
+            },
+            None,
+        ],
+    )
+    assert contacts["audit_valid"] is True
+    assert lifecycle["audit_valid"] is True
+    transitions = []
+    for index, (report, sample, decision) in enumerate(
+        zip(reports, contacts["samples"], lifecycle["decisions"])
+    ):
+        summary = probe._runtime_contact_summary(
+            sample,
+            source_awake=True,
+            observer_decision=decision,
+            protocol=protocol,
+        )
+        summary["source_support_recontact"] = False
+        transitions.append(
+            {
+                "transition_index": index,
+                "post": _state(0.0),
+                "pick_event": 4 if index == 0 else None,
+                "action": {"joint_positions": [0.0] * 9} if index == 0 else None,
+                "apply_count": 1 if index == 0 else 0,
+                "action_receipt": (
+                    {
+                        "applied": True,
+                        "normal_return": True,
+                        "apply_count": 1,
+                    }
+                    if index == 0
+                    else None
+                ),
+                "contact": {
+                    "raw_report": copy.deepcopy(report),
+                    "geometry": _geometry(),
+                    **summary,
+                },
+            }
+        )
+    assert transitions[1]["contact"]["support_observation_gap"] is True
+    assert probe._is_v7_terminal_lost_observation_gap(
+        transitions[1]["contact"], protocol=protocol
+    )
+    return transitions, {"contact_identities": identities, "protocol": protocol}, protocol
+
+
+def test_v7_parent_accepts_terminal_lost_observation_gap_without_journal():
+    transitions, evidence, protocol = _v7_terminal_lost_parent_replay_fixture()
+
+    accepted = probe._parent_recompute_v4_observation_gap_prefix(
+        transitions,
+        [],
+        evidence,
+        protocol=protocol,
+    )
+    assert accepted["audit_valid"] is True
+    assert accepted["journal_count"] == 0
+
+    journal = [_v4_gap_journal(transitions, evidence, protocol)]
+    legacy_accepted = probe._parent_recompute_v4_observation_gap_prefix(
+        transitions,
+        journal,
+        evidence,
+        protocol=protocol,
+    )
+    assert legacy_accepted["audit_valid"] is True
+    assert legacy_accepted["journal_count"] == 1
 
 
 def test_trace_accepts_an_observation_gap_journal_before_audit_no_go():
@@ -3832,6 +4066,186 @@ def test_first_contact_observation_preserves_persistent_pairs_without_crediting_
         )
 
 
+def test_v7_accepts_first_and_subsequent_persistent_contacts():
+    identities = _identities(
+        support_colliders=[TABLE_SUPPORT],
+        other_colliders=[],
+    )
+    identities["collider_owners"][SOURCE] = SOURCE_ROOT
+    accumulator = probe.ContactLifecycleAccumulator(
+        identities,
+        protocol=_v7_protocol(),
+    )
+    for index in range(5):
+        accumulator.consume(
+            physics_index=index,
+            raw=_empty_contact_report(),
+        )
+
+    def table_header():
+        header = _header(
+            "PERSIST",
+            SOURCE,
+            TABLE_SUPPORT,
+            contact_offset=0,
+            contact_count=1,
+        )
+        header["actor0"] = SOURCE_ROOT
+        return header
+
+    def finger_header():
+        header = _header(
+            "PERSIST",
+            RIGHT,
+            SOURCE,
+            contact_offset=1,
+            contact_count=1,
+        )
+        header["actor1"] = SOURCE_ROOT
+        return header
+
+    table_report = {
+        "headers": [table_header()],
+        "contact_data": [_point((0.0, 0.0, 0.0), (0.0, 0.0, 1.0))],
+        "friction_anchors": [],
+    }
+    first_table = accumulator.consume(
+        physics_index=5,
+        raw=table_report,
+    )
+    assert first_table["classifications"] == ["SOURCE_SUPPORT"]
+    assert first_table["support"]["current"] is True
+
+    both_report = {
+        "headers": [
+            table_header(),
+            finger_header(),
+        ],
+        "contact_data": [
+            _point((0.0, 0.0, 0.0), (0.0, 0.0, 1.0)),
+            _point((1.0, 0.0, 5.0), (-1.0, 0.0, 0.0)),
+        ],
+        "friction_anchors": [],
+    }
+    first_finger = accumulator.consume(
+        physics_index=6,
+        raw=both_report,
+    )
+    assert set(first_finger["classifications"]) == {
+        "RIGHT_SOURCE",
+        "SOURCE_SUPPORT",
+    }
+    assert all(pair["current"] is True for pair in first_finger["pairs"])
+
+    subsequent = accumulator.consume(
+        physics_index=7,
+        raw=both_report,
+    )
+    assert set(subsequent["classifications"]) == {
+        "RIGHT_SOURCE",
+        "SOURCE_SUPPORT",
+    }
+    assert all(pair["current"] is True for pair in subsequent["pairs"])
+
+
+def test_v7_geometry_supported_state_promotes_to_current_after_table_persist():
+    identities = _identities(
+        support_colliders=[TABLE_SUPPORT],
+        other_colliders=[],
+    )
+    identities["collider_owners"][SOURCE] = SOURCE_ROOT
+    protocol = _v7_protocol()
+    parser = probe.ContactLifecycleAccumulator(
+        identities,
+        protocol=protocol,
+    )
+    observer = probe.SupportObserverAccumulator(protocol=protocol)
+
+    empty = parser.consume(
+        physics_index=0,
+        raw=_empty_contact_report(),
+    )
+    first = observer.consume(
+        empty,
+        source_state=_state(0.0),
+        transition_index=0,
+    )
+    assert first["state"] == "UNOBSERVED"
+
+    table_header = _header(
+        "PERSIST",
+        SOURCE,
+        TABLE_SUPPORT,
+        contact_offset=0,
+        contact_count=1,
+    )
+    table_header["actor0"] = SOURCE_ROOT
+    table_report = {
+        "headers": [table_header],
+        "contact_data": [_point((0.0, 0.0, 0.0), (0.0, 0.0, 1.0))],
+        "friction_anchors": [],
+    }
+    observed = parser.consume(
+        physics_index=1,
+        raw=table_report,
+    )
+    promoted = observer.consume(
+        observed,
+        source_state=_state(0.0),
+        transition_index=1,
+    )
+    assert promoted["state"] == "CURRENT"
+
+    close_gate = observer.observe_action(
+        pick_event=4,
+        action={"joint_positions": [0.012, 0.012]},
+        apply_count=1,
+        action_receipt={
+            "applied": True,
+            "normal_return": True,
+            "apply_count": 1,
+        },
+        classifications=observed["classifications"],
+        sample=observed,
+    )
+    assert close_gate == {"audit_no_go_code": None}
+    gap = parser.consume(
+        physics_index=2,
+        raw=_empty_contact_report(),
+    )
+    lost = observer.consume(
+        gap,
+        source_state=_state(0.0),
+        transition_index=2,
+    )
+    assert lost["state"] == "LOST"
+    assert lost["support_pairs"] == [
+        {
+            "pair": [SOURCE_ROOT, TABLE_SUPPORT],
+            "ever_current": True,
+            "current": False,
+            "terminal_lost": True,
+            "last_events": ["PERSIST"],
+            "current_contact_count": 0,
+            "current_friction_anchor_count": 0,
+            "observed_current": False,
+        }
+    ]
+
+    second_gap = parser.consume(
+        physics_index=3,
+        raw=_empty_contact_report(),
+    )
+    still_lost = observer.consume(
+        second_gap,
+        source_state=_state(0.0),
+        transition_index=3,
+    )
+    assert still_lost["state"] == "LOST"
+    assert still_lost["support_observation_gap"] is False
+    assert still_lost["unreported_active_pairs"] == []
+
+
 def test_contact_lifecycle_retains_compact_recent_pair_history_for_failure_evidence():
     accumulator = probe.ContactLifecycleAccumulator(_identities())
     accumulator.consume(physics_index=0, raw=_first_contact_report())
@@ -4164,7 +4578,7 @@ def test_parent_fake_children_require_both_dynamic_source_contracts(monkeypatch)
     monkeypatch.setattr(
         probe,
         "validate_report_only_layer_catalog",
-        lambda _catalog: {"audit_valid": True, "audit_failures": []},
+        lambda _catalog, **_kwargs: {"audit_valid": True, "audit_failures": []},
     )
     monkeypatch.setattr(
         probe,
@@ -4212,7 +4626,7 @@ def test_parent_fake_children_classify_dual_cap_exhaustion_as_clean_failure(monk
     monkeypatch.setattr(
         probe,
         "validate_report_only_layer_catalog",
-        lambda _catalog: {"audit_valid": True, "audit_failures": []},
+        lambda _catalog, **_kwargs: {"audit_valid": True, "audit_failures": []},
     )
     monkeypatch.setattr(
         probe,
@@ -5446,11 +5860,11 @@ def test_source_local_com_query_is_safe_pre_reset_and_uses_colliders_mode():
 
     class SourcePrim:
         def GetPath(self):
-            return SOURCE
+            return SOURCE_ROOT
 
     class Stage:
         def GetPrimAtPath(self, path):
-            assert path == SOURCE
+            assert path == SOURCE_ROOT
             return SourcePrim()
 
     class World:
@@ -5491,7 +5905,7 @@ def test_source_local_com_query_is_safe_pre_reset_and_uses_colliders_mode():
         query_interface=query,
         query_mode=colliders_mode,
         valid_query_result=valid,
-        sdf_path_to_int=lambda path: 71 if path == SOURCE else None,
+        sdf_path_to_int=lambda path: 71 if path == SOURCE_ROOT else None,
     )
 
     assert query.kwargs["query_mode"] is colliders_mode

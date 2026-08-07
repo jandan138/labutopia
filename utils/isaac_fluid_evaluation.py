@@ -4093,24 +4093,18 @@ def configure_contact_grasp_scene(stage: Any, fluid_cfg: Any) -> dict[str, Any]:
             raise RuntimeError(f"contact_grasp_finger_rigid_body_required:{path}")
         finger_prims[path] = prim
 
-    controlled_contact = bool(
-        str(
-            _optional_config_value(
-                fluid_cfg,
-                "execution_mode",
-                "production_pour_v1",
-            )
+    execution_mode = str(
+        _optional_config_value(
+            fluid_cfg,
+            "execution_mode",
+            "production_pour_v1",
         )
-        == "contact_acquisition_probe_v1"
-        or str(
-            _optional_config_value(
-                fluid_cfg,
-                "execution_mode",
-                "production_pour_v1",
-            )
-        )
-        == "close_contact_allowed_v1"
     )
+    controlled_contact = execution_mode in {
+        "contact_acquisition_probe_v1",
+        "close_contact_allowed_v1",
+        "nonformal_full_pbd_demo_v1",
+    }
     if controlled_contact:
         robot_root_path = CONTACT_REPORT_HAND_BODY_PATH.rsplit("/", 1)[0]
         robot_root = stage.GetPrimAtPath(robot_root_path)
@@ -5341,24 +5335,18 @@ def build_isaac_fluid_evaluation_loop(
             source_body=source_body,
             object_utils=task.object_utils,
         )
-        require_complete_writer_audit = bool(
-            str(
-                _optional_config_value(
-                    fluid,
-                    "execution_mode",
-                    "production_pour_v1",
-                )
-            )
-        == "contact_acquisition_probe_v1"
-        or str(
+        execution_mode = str(
             _optional_config_value(
                 fluid,
                 "execution_mode",
                 "production_pour_v1",
             )
         )
-        == "close_contact_allowed_v1"
-        )
+        require_complete_writer_audit = execution_mode in {
+            "contact_acquisition_probe_v1",
+            "close_contact_allowed_v1",
+            "nonformal_full_pbd_demo_v1",
+        }
         finger_paths = tuple(
             str(path) for path in _config_value(fluid, "finger_body_paths")
         )
@@ -5754,14 +5742,10 @@ def build_isaac_fluid_evaluation_loop(
                 robot.get_gripper_pad_relative_velocities_m_s
             ),
             physics_dt=physics_dt,
-            allow_preclose_contact=bool(
-                str(
-                    _optional_config_value(
-                        fluid, "execution_mode", "production_pour_v1"
-                    )
-                )
-                in {"close_contact_allowed_v1", "production_pour_v1"}
-            ),
+            allow_preclose_contact=execution_mode in {
+                "close_contact_allowed_v1",
+                "production_pour_v1",
+            },
             minimum_side_projection_m=float(
                 _config_value(fluid, "grasp_contact_min_side_projection_m")
             ),

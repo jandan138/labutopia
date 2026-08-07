@@ -2495,6 +2495,30 @@ def test_production_acceptance_ignores_probe_only_terminal_contract():
     assert "probe_control_contract" not in result
 
 
+def test_nonformal_full_pbd_demo_never_emits_production_acceptance():
+    loop, *_ = _make_loop(
+        [],
+        sample_containment_after_substep=lambda: _containment(target=4),
+    )
+    loop.reset_episode("nonformal-full-pbd-demo")
+    loop.observe()
+    loop.mark_pour_started()
+    loop.commit_action(None)
+    loop.observe()
+
+    result = loop.finalize_episode(
+        controller_completed=True,
+        acceptance_mode="nonformal_full_pbd_demo_v1",
+        controller_evidence={},
+        terminal_phase="FINISHED",
+        terminal_action=None,
+    )
+
+    assert result["nonformal_demo"] is True
+    assert result["expert_episode_accepted"] is False
+    assert result["success"] is False
+
+
 def test_invalid_expert_attachment_rejects_h5_without_changing_task_score():
     events: list[str] = []
     loop, _, _, attachment, *_ = _make_loop(events)

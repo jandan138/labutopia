@@ -515,6 +515,36 @@ def test_atomic_pour_can_preserve_native_direct_control_frame_targets(monkeypatc
     )
 
 
+def test_legacy_pick_uses_explicit_g0_pick_offsets(monkeypatch):
+    module = _load_atomic_pick_controller(monkeypatch)
+    cspace = _StubCspaceController()
+    controller = module.PickController(
+        name="pick",
+        cspace_controller=cspace,
+        events_dt=[0.0] * 7,
+    )
+    controller._start = False
+    controller._event = 2
+    position = np.asarray([0.295, 0.075, 0.8161047697067261], dtype=np.float64)
+
+    controller.forward(
+        picking_position=position.copy(),
+        current_joint_positions=np.zeros(9, dtype=np.float64),
+        object_name="beaker2",
+        object_size=np.asarray([0.08, 0.08, 0.12], dtype=np.float64),
+        gripper_control=SimpleNamespace(),
+        gripper_position=position,
+        pick_z_offset_m=0.02,
+        pick_x_offset_m=0.0009,
+    )
+
+    np.testing.assert_allclose(
+        cspace.calls[-1]["target_end_effector_position"],
+        [0.2959, 0.075, 0.8361047697067261],
+        atol=1.0e-12,
+    )
+
+
 def test_legacy_pick_latches_actual_close_and_lift_actions(monkeypatch):
     module = _load_atomic_pick_controller(monkeypatch)
     controller = module.PickController(
@@ -3358,6 +3388,107 @@ def _qualified_native_probe_state(**grasp_overrides):
     return state
 
 
+def _nonformal_demo_containment(*, source=3600, transit=0):
+    return {
+        "substep_sampling_complete": True,
+        "partition_integrity_valid": True,
+        "pre_pour_source_min": source,
+        "pre_pour_non_source_max": {
+            "target": 0,
+            "transit": transit,
+            "tabletop_spill": 0,
+            "below_table": 0,
+            "nonfinite": 0,
+        },
+        "below_table_max": 0,
+        "nonfinite_max": 0,
+    }
+
+
+def test_nonformal_full_demo_blocks_pick_to_pour_on_stale_contact_or_spill(
+    monkeypatch,
+):
+    module, calls = _load_contact_pour_task_controller(monkeypatch)
+    cfg = _native_pour_cfg(execution_mode="nonformal_full_pbd_demo_v1")
+    cfg.online_fluid.expected_particle_count = 3600
+    controller = module.PourTaskController(cfg, robot=object())
+    controller._check_phase_success = lambda: True
+    controller.pick_controller.is_done = lambda: True
+    state = _qualified_native_probe_state(probe_qualified_now=False)
+    state["online_fluid_cumulative_containment"] = _nonformal_demo_containment()
+
+    action, done, success = controller.step(state)
+
+    assert (action, done, success) == (None, True, False)
+    assert controller.current_phase == module.Phase.FINISHED
+    assert "nonformal_demo" in controller._last_failure_reason
+    assert calls.pour_forward == []
+
+
+def test_nonformal_full_demo_blocks_pending_lift_before_any_lift_action(
+    monkeypatch,
+):
+    module, calls = _load_contact_pour_task_controller(monkeypatch)
+    cfg = _native_pour_cfg(execution_mode="nonformal_full_pbd_demo_v1")
+    cfg.online_fluid.expected_particle_count = 3600
+    controller = module.PourTaskController(cfg, robot=object())
+    controller.pick_controller._event = 5
+    controller.pick_controller._last_emitted_event = 4
+    controller.pick_controller.close_emitted = True
+    state = _qualified_native_probe_state(contact_sensor_ready=True)
+    state["online_fluid_cumulative_containment"] = _nonformal_demo_containment(
+        source=3599
+    )
+
+    action, done, success = controller.step(state)
+
+    assert (action, done, success) == (None, True, False)
+    assert "nonformal_demo_containment_invalid" == controller._last_failure_reason
+    assert calls.legacy_pick_forward == []
+
+
+def test_nonformal_full_demo_blocks_pour_action_when_pre_pour_containment_is_dirty(
+    monkeypatch,
+):
+    module, calls = _load_contact_pour_task_controller(monkeypatch)
+    cfg = _native_pour_cfg(execution_mode="nonformal_full_pbd_demo_v1")
+    cfg.online_fluid.expected_particle_count = 3600
+    controller = module.PourTaskController(cfg, robot=object())
+    controller.current_phase = module.Phase.POURING
+    controller.active_controller = controller.pour_controller
+    controller._check_phase_success = lambda: False
+    state = _qualified_native_probe_state()
+    state["online_fluid_cumulative_containment"] = _nonformal_demo_containment(
+        transit=1
+    )
+
+    action, done, success = controller.step(state)
+
+    assert (action, done, success) == (None, True, False)
+    assert controller.current_phase == module.Phase.FINISHED
+    assert "nonformal_demo" in controller._last_failure_reason
+    assert calls.pour_forward == []
+
+
+def test_nonformal_full_demo_allows_native_pick_to_pour_after_fresh_gate(
+    monkeypatch,
+):
+    module, calls = _load_contact_pour_task_controller(monkeypatch)
+    cfg = _native_pour_cfg(execution_mode="nonformal_full_pbd_demo_v1")
+    cfg.online_fluid.expected_particle_count = 3600
+    controller = module.PourTaskController(cfg, robot=object())
+    controller._check_phase_success = lambda: True
+    controller.pick_controller.is_done = lambda: True
+    state = _qualified_native_probe_state(contact_sensor_ready=True)
+    state["online_fluid_cumulative_containment"] = _nonformal_demo_containment()
+
+    action, done, success = controller.step(state)
+
+    assert (action, done, success) == (None, False, False)
+    assert controller.current_phase == module.Phase.POURING
+    assert calls.pour_forward == []
+
+
 @pytest.mark.parametrize("pending_event", [4, 5])
 def test_qualified_native_probe_finishes_before_another_pick_forward(
     monkeypatch,
@@ -3545,6 +3676,46 @@ def test_native_expert_profile_uses_legacy_pick_under_dynamic_ownership(
     evidence = controller.online_fluid_control_evidence()
     assert evidence["expert_control_profile"] == "native_expert_v1"
     assert evidence["native_pick"]["close_command_emitted"] is True
+
+
+def test_g0_native_pick_treatment_passes_native_x_offset(monkeypatch):
+    module, calls = _load_contact_pour_task_controller(monkeypatch)
+    cfg = _native_pour_cfg()
+    cfg.diagnostic = {
+        "g0_native_pick_treatment": {
+            "authority": "g0_native_expert_pick_v9",
+            "target_orientation_wxyz": [0.0, 0.0, 1.0, 0.0],
+            "pick_z_offset_m": 0.0139,
+            "pick_x_offset_m": 0.0023,
+            "require_pick_controller_done_before_pour": True,
+            "settle_events_dt": [0.002, 0.002, 0.005, 0.10, 0.005, 0.01, 0.02],
+        }
+    }
+
+    controller = module.PourTaskController(cfg, robot=object())
+    original_check_phase_success = controller._check_phase_success
+    controller._check_phase_success = lambda: False
+    controller._step_collect(_contact_pour_state())
+
+    forward = calls.legacy_pick_forward[-1]
+    assert forward["pick_x_offset_m"] == pytest.approx(0.0023)
+    assert forward["pick_z_offset_m"] == pytest.approx(0.0139)
+    assert "gripper_distances" not in forward
+    np.testing.assert_allclose(
+        forward["end_effector_orientation"],
+        np.asarray([0.0, 0.0, 1.0, 0.0]),
+    )
+
+    controller._check_phase_success = original_check_phase_success
+    state = _contact_pour_state()
+    state["object_position"] = np.asarray([0.295, 0.075, 0.94])
+    controller.initial_position = np.asarray([0.295, 0.075, 0.80])
+    controller._contact_grasp_required = False
+    controller.state = state
+    controller.pick_controller.is_done = lambda: False
+    assert controller._check_phase_success() is False
+    controller.pick_controller.is_done = lambda: True
+    assert controller._check_phase_success() is True
 
 
 def test_native_expert_pour_omits_online_pose_overrides(monkeypatch):

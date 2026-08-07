@@ -82,10 +82,104 @@ _STAGE_ALLOWED_DECISIONS = {
     stage: frozenset((decision, decision.removesuffix("_GO") + "_NO_GO"))
     for stage, decision in _STAGE_GO_DECISIONS.items()
 }
+_GRASP_SOURCE_PATH = "/World/beaker2"
+_GRASP_SOURCE_SHELL_PATH = "/World/beaker2/mesh"
+_GRASP_WRAPPER_PATH = "/World/beaker2/FluidSafeWrapperCanonical"
+_GRASP_WRAPPER_COLLIDER_COUNT = 145
+_GRASP_LEFT_FINGER_PATH = "/World/Franka/panda_leftfinger"
+_GRASP_RIGHT_FINGER_PATH = "/World/Franka/panda_rightfinger"
+_G0_CLEARANCE_CERTIFICATE_AUTHORITY = "real_pbd_g0_clearance_certificate_v2"
+_G0_CLEARANCE_DECISION_AUTHORITY = "real_pbd_g0_clearance_decision_v2"
 
 
 def _error(stage: str, reason: str) -> ValueError:
     return ValueError(f"real_pbd_{stage}_{reason}")
+
+
+def evaluate_grasp_topology_contract(topology: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate the external-shell and particle-wrapper contact split."""
+    if not isinstance(topology, Mapping):
+        raise ValueError("grasp_topology_mapping_required")
+
+    failures: list[str] = []
+    source_root = topology.get("source_root_path")
+    source_shell = topology.get("source_external_shell_path")
+    wrapper_path = topology.get("wrapper_path")
+    if source_root != _GRASP_SOURCE_PATH:
+        failures.append("source_root_path")
+    if source_shell != _GRASP_SOURCE_SHELL_PATH:
+        failures.append("source_external_shell_path")
+    if topology.get("source_parent_dynamic") is not True:
+        failures.append("source_parent_dynamic")
+    if topology.get("source_parent_kinematic") is not False:
+        failures.append("source_parent_kinematic")
+    if topology.get("source_external_shell_collision_enabled") is not True:
+        failures.append("external_shell_collision_disabled")
+    if topology.get("source_mass_authority") != "parent":
+        failures.append("source_mass_authority")
+    if wrapper_path != _GRASP_WRAPPER_PATH:
+        failures.append("wrapper_path")
+
+    wrapper_count = topology.get("wrapper_collider_count")
+    expected_count = topology.get("expected_wrapper_collider_count")
+    if (
+        type(wrapper_count) is not int
+        or type(expected_count) is not int
+        or wrapper_count != expected_count
+        or expected_count != _GRASP_WRAPPER_COLLIDER_COUNT
+    ):
+        failures.append("wrapper_collider_inventory_mismatch")
+
+    filtered_pairs = topology.get("source_robot_filtered_pairs")
+    if not isinstance(filtered_pairs, list):
+        failures.append("source_robot_filtered_pairs_invalid")
+    elif filtered_pairs:
+        failures.append("source_robot_collision_filter")
+
+    shell_pairs = topology.get("finger_external_shell_pairs")
+    required_shell_pairs = {
+        (_GRASP_LEFT_FINGER_PATH, _GRASP_SOURCE_SHELL_PATH),
+        (_GRASP_RIGHT_FINGER_PATH, _GRASP_SOURCE_SHELL_PATH),
+    }
+    observed_shell_pairs = {
+        tuple(pair)
+        for pair in shell_pairs
+        if isinstance(pair, (list, tuple)) and len(pair) == 2
+    } if isinstance(shell_pairs, list) else set()
+    if not required_shell_pairs.issubset(observed_shell_pairs):
+        failures.append("finger_external_shell_pairs")
+
+    wrapper_pairs = topology.get("finger_wrapper_pairs")
+    if not isinstance(wrapper_pairs, list):
+        failures.append("finger_wrapper_pairs_invalid")
+    elif wrapper_pairs:
+        failures.append("finger_wrapper_contact_route")
+
+    result = {
+        "passed": not failures,
+        "failures": sorted(set(failures)),
+        "grasp_contact_surface": _GRASP_SOURCE_SHELL_PATH,
+        "particle_wrapper": _GRASP_WRAPPER_PATH,
+        "source_root_path": source_root,
+        "wrapper_collider_count": wrapper_count,
+        "expected_wrapper_collider_count": expected_count,
+    }
+    if "robot_asset_path" in topology or "robot_asset_sha256" in topology:
+        robot_asset_path = topology.get("robot_asset_path")
+        robot_asset_sha256 = topology.get("robot_asset_sha256")
+        if not isinstance(robot_asset_path, str) or not robot_asset_path.startswith("/"):
+            failures.append("robot_asset_path")
+        if (
+            not isinstance(robot_asset_sha256, str)
+            or len(robot_asset_sha256) != 64
+            or any(character not in _SHA256_CHARACTERS for character in robot_asset_sha256)
+        ):
+            failures.append("robot_asset_sha256")
+        result["robot_asset_path"] = robot_asset_path
+        result["robot_asset_sha256"] = robot_asset_sha256
+        result["failures"] = sorted(set(failures))
+        result["passed"] = not failures
+    return result
 
 
 def _sha256(value: Any, *, stage: str, field: str) -> str:
@@ -210,7 +304,9 @@ def _hash_checked_mapping(
     return {**payload, hash_field: digest}
 
 
-def _validate_g0_fixture(value: Any) -> tuple[dict[str, Any], set[str]]:
+def _validate_g0_fixture(
+    value: Any,
+) -> tuple[dict[str, Any], set[str], set[tuple[str, str]]]:
     stage = "g0"
     if not isinstance(value, Mapping):
         raise _error(stage, "fixture_mapping_required")
@@ -237,6 +333,21 @@ def _validate_g0_fixture(value: Any) -> tuple[dict[str, Any], set[str]]:
         stage=stage,
         field="support_collider_paths",
     )
+    beaker1 = _path_list(
+        fixture.get("beaker1_collider_paths"),
+        stage=stage,
+        field="beaker1_collider_paths",
+    )
+    full_robot = _path_list(
+        fixture.get("full_robot_collider_paths"),
+        stage=stage,
+        field="full_robot_collider_paths",
+    )
+    if any(
+        path != "/World/Franka" and not path.startswith("/World/Franka/")
+        for path in full_robot
+    ):
+        raise _error(stage, "full_robot_collider_paths_invalid")
     hand = _path_list(
         fixture.get("hand_collider_paths"),
         stage=stage,
@@ -251,10 +362,27 @@ def _validate_g0_fixture(value: Any) -> tuple[dict[str, Any], set[str]]:
     right = _path_list(
         finger_paths["right"], stage=stage, field="right_finger_pad_collider_paths"
     )
-    all_paths = [*external, *wrappers, *support, *hand, *left, *right]
+    designated_fingers = set(left) | set(right)
+    if (
+        not designated_fingers <= set(full_robot)
+        or not set(hand) <= set(full_robot)
+        or not (set(full_robot) - designated_fingers)
+    ):
+        raise _error(stage, "full_robot_collider_partition_invalid")
+    all_paths = [*external, *wrappers, *support, *beaker1, *full_robot]
     if len(all_paths) != len(set(all_paths)):
         raise _error(stage, "fixture_collider_paths_duplicate")
-    return fixture, set(all_paths)
+    required_pairs = {
+        tuple(sorted((robot, target)))
+        for robot in full_robot
+        for target in (*wrappers, *support, *beaker1)
+    }
+    required_pairs.update(
+        tuple(sorted((robot, target)))
+        for robot in set(full_robot) - designated_fingers
+        for target in external
+    )
+    return fixture, set(all_paths), required_pairs
 
 
 def _validate_g0_offsets(value: Any, *, required_paths: set[str]) -> dict[str, Any]:
@@ -270,6 +398,7 @@ def _validate_g0_offsets(value: Any, *, required_paths: set[str]) -> dict[str, A
         if authority not in {
             "runtime_effective_physx_v1",
             "runtime_effective_physx_cooked_v1",
+            "runtime_effective_physx_cooked_v2",
         }:
             raise _error(stage, "effective_offsets_invalid")
         result[path] = {
@@ -325,7 +454,10 @@ def _validate_g0_load_input(value: Any) -> dict[str, Any]:
 
 
 def _validate_g0_candidates(
-    value: Any, *, required_paths: set[str]
+    value: Any,
+    *,
+    required_paths: set[str],
+    required_prohibited_pairs: set[tuple[str, str]],
 ) -> tuple[list[dict[str, Any]], str, dict[str, bool]]:
     stage = "g0"
     if not isinstance(value, Mapping):
@@ -346,6 +478,7 @@ def _validate_g0_candidates(
     all_strictly_positive = True
     all_precontact_positive = True
     all_paths_covered = True
+    all_pairs_covered = True
     for raw in raw_candidates:
         if not isinstance(raw, Mapping):
             raise _error(stage, "candidate_invalid")
@@ -399,6 +532,7 @@ def _validate_g0_candidates(
         ) or not sweeps:
             raise _error(stage, "prohibited_sweeps_invalid")
         covered_paths = set()
+        covered_pairs: set[tuple[str, str]] = set()
         normalized_sweeps = []
         for raw_sweep in sweeps:
             if not isinstance(raw_sweep, Mapping):
@@ -406,7 +540,7 @@ def _validate_g0_candidates(
             pair = _pair(
                 raw_sweep.get("collider_paths"), stage=stage, field="sweep_collider_paths"
             )
-            if not set(pair) <= required_paths:
+            if not set(pair) <= required_paths or pair not in required_prohibited_pairs:
                 raise _error(stage, "prohibited_sweep_invalid")
             clearance = _finite_number(
                 raw_sweep.get("minimum_signed_clearance_m"),
@@ -419,6 +553,7 @@ def _validate_g0_candidates(
             if samples == 0:
                 raise _error(stage, "sweep_sample_count_invalid")
             covered_paths.update(pair)
+            covered_pairs.add(pair)
             all_strictly_positive = all_strictly_positive and clearance > 0.0
             normalized_sweeps.append(
                 {
@@ -428,6 +563,7 @@ def _validate_g0_candidates(
                 }
             )
         all_paths_covered = all_paths_covered and required_paths <= covered_paths
+        all_pairs_covered = all_pairs_covered and required_prohibited_pairs <= covered_pairs
         normalized.append(
             {
                 "id": identifier,
@@ -445,6 +581,7 @@ def _validate_g0_candidates(
             all_precontact_positive
         ),
         "all_required_collider_roles_covered": all_paths_covered,
+        "all_required_prohibited_pairs_covered": all_pairs_covered,
     }
 
 
@@ -455,13 +592,17 @@ def evaluate_g0_clearance_certificate(certificate: Mapping[str, Any]) -> dict[st
     if not isinstance(certificate, Mapping):
         raise _error(stage, "certificate_mapping_required")
     value = copy.deepcopy(dict(certificate))
-    if value.get("authority") != "real_pbd_g0_clearance_certificate_v1":
+    if value.get("authority") != _G0_CLEARANCE_CERTIFICATE_AUTHORITY:
         raise _error(stage, "certificate_authority_invalid")
-    fixture, required_paths = _validate_g0_fixture(value.get("fixture"))
+    fixture, required_paths, required_prohibited_pairs = _validate_g0_fixture(
+        value.get("fixture")
+    )
     _validate_g0_offsets(value.get("effective_offsets_m"), required_paths=required_paths)
     load = _validate_g0_load_input(value.get("load_input_authority"))
     candidates, selected, candidate_checks = _validate_g0_candidates(
-        value.get("candidate_set"), required_paths=required_paths
+        value.get("candidate_set"),
+        required_paths=required_paths,
+        required_prohibited_pairs=required_prohibited_pairs,
     )
     checks = {
         "composed_fixture_complete": True,
@@ -472,7 +613,7 @@ def evaluate_g0_clearance_certificate(certificate: Mapping[str, Any]) -> dict[st
     }
     passed = all(checks.values())
     payload = {
-        "authority": "real_pbd_g0_clearance_decision_v1",
+        "authority": _G0_CLEARANCE_DECISION_AUTHORITY,
         "decision": "G0_GO" if passed else "G0_NO_GO",
         "checks": checks,
         "selected_candidate_id": selected,
@@ -491,6 +632,181 @@ def evaluate_g0_clearance_certificate(certificate: Mapping[str, Any]) -> dict[st
         ),
     }
     return {**payload, "sha256": canonical_json_sha256(payload)}
+
+
+def evaluate_nonformal_v9_diagnostic_eligibility(
+    eligibility: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Validate the narrow, non-promotable v9 diagnostic eligibility sidecar."""
+
+    stage = "nonformal_v9"
+    if not isinstance(eligibility, Mapping):
+        raise _error(stage, "eligibility_mapping_required")
+    value = copy.deepcopy(dict(eligibility))
+    digest = value.pop("sha256", None)
+    _sha256(digest, stage=stage, field="sha256")
+    expected_fields = {
+        "authority",
+        "schema_version",
+        "classification",
+        "strict_g0_decision",
+        "g2_authorized",
+        "formal_promotion_authorized",
+        "allowed_protocol",
+        "native_pick_treatment_sha256",
+        "bindings",
+        "unavailable_public_offset_readback",
+        "raw_geometry_witness",
+        "eligible",
+    }
+    if (
+        set(value) != expected_fields
+        or value["authority"]
+        != "real_pbd_g0_v9_diagnostic_eligibility_sidecar_v1"
+        or value["schema_version"] != 1
+        or value["classification"] != "NON_FORMAL_HISTORICAL_REFERENCE"
+        or value["strict_g0_decision"] != "G0_NO_GO"
+        or value["g2_authorized"] is not False
+        or value["formal_promotion_authorized"] is not False
+        or value["eligible"] is not True
+    ):
+        raise _error(stage, "eligibility_contract_invalid")
+    if canonical_json_sha256(value) != digest:
+        raise _error(stage, "eligibility_sha256_invalid")
+
+    protocol = value["allowed_protocol"]
+    expected_protocol = {
+        "schema_version": 7,
+        "protocol_id": "native_expert_empty_beaker_unbound_lift_v7",
+        "native_pick_authority": "g0_native_expert_pick_v9",
+        "single_named_diagnostic_only": True,
+    }
+    if protocol != expected_protocol:
+        raise _error(stage, "allowed_protocol_invalid")
+    _sha256(
+        value["native_pick_treatment_sha256"],
+        stage=stage,
+        field="native_pick_treatment_sha256",
+    )
+
+    bindings = value["bindings"]
+    expected_binding_fields = {
+        "diagnostic_config_sha256",
+        "g0_child_report_sha256",
+        "g0_runtime_receipt_sha256",
+        "g0_execution_request_sha256",
+        "g0_runtime_contract_sha256",
+        "g0_asset_sha256",
+        "g0_robot_asset_sha256",
+        "g0_overlay_profile_sha256",
+        "g0_collision_inventory_sha256",
+        "raw_geometry_witness_sha256",
+        "g0_public_offset_surface_sha256",
+    }
+    if not isinstance(bindings, Mapping) or set(bindings) != expected_binding_fields:
+        raise _error(stage, "bindings_invalid")
+    normalized_bindings = {
+        name: _sha256(value, stage=stage, field=f"bindings_{name}")
+        for name, value in bindings.items()
+    }
+
+    unavailable = value["unavailable_public_offset_readback"]
+    if (
+        not isinstance(unavailable, Mapping)
+        or set(unavailable)
+        != {
+            "authority",
+            "runtime_contract_sha256",
+            "property_query_info_surface_sha256",
+            "api_surface",
+            "records",
+        }
+        or unavailable["authority"]
+        != "real_pbd_g0_public_offset_readback_unavailable_v1"
+        or unavailable["runtime_contract_sha256"]
+        != normalized_bindings["g0_runtime_contract_sha256"]
+        or unavailable["property_query_info_surface_sha256"]
+        != normalized_bindings["g0_public_offset_surface_sha256"]
+        or unavailable["api_surface"]
+        != "PhysxSchema.PhysxCollisionAPI_authored_offset_readback_v1"
+        or not isinstance(unavailable["records"], list)
+    ):
+        raise _error(stage, "unavailable_offset_readback_invalid")
+    expected_roles = ("left_finger_pad", "right_finger_pad", "table_support")
+    if len(unavailable["records"]) != len(expected_roles):
+        raise _error(stage, "unavailable_offset_readback_invalid")
+    paths = []
+    for expected_role, record in zip(expected_roles, unavailable["records"]):
+        if (
+            not isinstance(record, Mapping)
+            or set(record)
+            != {
+                "role",
+                "path",
+                "contact_offset_status",
+                "rest_offset_status",
+                "contact_offset_usd_nonfinite_sentinel",
+                "rest_offset_usd_nonfinite_sentinel",
+            }
+            or record["role"] != expected_role
+            or record["contact_offset_status"]
+            != "ENGINE_DEFAULT_PUBLIC_READBACK_UNAVAILABLE"
+            or record["rest_offset_status"]
+            != "ENGINE_DEFAULT_PUBLIC_READBACK_UNAVAILABLE"
+            or type(record["contact_offset_usd_nonfinite_sentinel"]) is not bool
+            or type(record["rest_offset_usd_nonfinite_sentinel"]) is not bool
+        ):
+            raise _error(stage, "unavailable_offset_readback_invalid")
+        paths.append(_path(record["path"], stage=stage, field="unavailable_offset_path"))
+    if len(paths) != len(set(paths)):
+        raise _error(stage, "unavailable_offset_readback_invalid")
+
+    raw = value["raw_geometry_witness"]
+    if (
+        not isinstance(raw, Mapping)
+        or set(raw)
+        != {
+            "authority",
+            "schema_version",
+            "status",
+            "inflation_mode",
+            "effective_offset_clearance",
+            "candidate_id",
+            "candidate_target_spec_sha256",
+            "unexpected_hit_paths",
+            "prohibited_hit_paths",
+        }
+        or raw["authority"] != "real_pbd_g0_raw_geometry_no_inflation_witness_v1"
+        or raw["schema_version"] != 1
+        or raw["status"] != "COMPLETE"
+        or raw["inflation_mode"] != "NONE"
+        or raw["effective_offset_clearance"] != "NOT_CLAIMED"
+        or not isinstance(raw["candidate_id"], str)
+        or not raw["candidate_id"]
+    ):
+        raise _error(stage, "raw_geometry_witness_invalid")
+    _sha256(
+        raw["candidate_target_spec_sha256"],
+        stage=stage,
+        field="raw_geometry_candidate_target_spec_sha256",
+    )
+    unexpected_hits = _path_list(
+        raw["unexpected_hit_paths"],
+        stage=stage,
+        field="raw_geometry_unexpected_hit_paths",
+        allow_empty=True,
+    )
+    prohibited_hits = _path_list(
+        raw["prohibited_hit_paths"],
+        stage=stage,
+        field="raw_geometry_prohibited_hit_paths",
+        allow_empty=True,
+    )
+    if unexpected_hits or prohibited_hits:
+        raise _error(stage, "raw_geometry_witness_invalid")
+    if normalized_bindings["raw_geometry_witness_sha256"] != canonical_json_sha256(raw):
+        raise _error(stage, "raw_geometry_witness_hash_invalid")
+    return {**value, "bindings": normalized_bindings, "sha256": digest}
 
 
 def evaluate_static_pbd_fixture_preflight(
@@ -1045,6 +1361,19 @@ def _g0_runtime_capability_offsets(
     return complete, sorted(normalized, key=lambda item: item["path"])
 
 
+def _g0_runtime_grasp_topology(value: Any) -> dict[str, Any]:
+    stage = "g0_runtime_capability"
+    if not isinstance(value, Mapping) or set(value) != {"observed", "evaluation"}:
+        raise _error(stage, "grasp_topology_invalid")
+    try:
+        expected = evaluate_grasp_topology_contract(value["observed"])
+    except (TypeError, ValueError) as exc:
+        raise _error(stage, "grasp_topology_invalid") from exc
+    if value["evaluation"] != expected:
+        raise _error(stage, "grasp_topology_contract_invalid")
+    return expected
+
+
 def evaluate_g0_runtime_capability_audit(*, snapshot: Mapping[str, Any]) -> dict[str, Any]:
     """Evaluate a read-only runtime capability snapshot; this route can never GO."""
 
@@ -1052,7 +1381,7 @@ def evaluate_g0_runtime_capability_audit(*, snapshot: Mapping[str, Any]) -> dict
     if not isinstance(snapshot, Mapping):
         raise _error(stage, "snapshot_mapping_required")
     value = copy.deepcopy(dict(snapshot))
-    expected_fields = {
+    base_fields = {
         "authority",
         "schema_version",
         "run_id",
@@ -1081,10 +1410,19 @@ def evaluate_g0_runtime_capability_audit(*, snapshot: Mapping[str, Any]) -> dict
         "particle_authority",
         "capability_status",
     }
+    schema_version = value.get("schema_version")
+    if schema_version == 2:
+        expected_fields = base_fields
+        expected_authority = "real_pbd_g0_runtime_capability_snapshot_v2"
+    elif schema_version == 3:
+        expected_fields = base_fields | {"grasp_topology"}
+        expected_authority = "real_pbd_g0_runtime_capability_snapshot_v3"
+    else:
+        expected_fields = base_fields
+        expected_authority = None
     if (
         set(value) != expected_fields
-        or value.get("authority") != "real_pbd_g0_runtime_capability_snapshot_v2"
-        or value.get("schema_version") != 2
+        or value.get("authority") != expected_authority
     ):
         raise _error(stage, "snapshot_fields_invalid")
     if not isinstance(value["run_id"], str) or not value["run_id"]:
@@ -1132,6 +1470,11 @@ def evaluate_g0_runtime_capability_audit(*, snapshot: Mapping[str, Any]) -> dict
     profile_extension_evidence, profile_extension_closure_unchanged, profile_extension_policy_satisfied = (
         _g0_runtime_profile_extension_evidence(value["profile_extension_evidence"])
     )
+    grasp_topology = (
+        _g0_runtime_grasp_topology(value["grasp_topology"])
+        if schema_version == 3
+        else None
+    )
     statuses = value["capability_status"]
     if (
         not isinstance(statuses, Mapping)
@@ -1156,6 +1499,8 @@ def evaluate_g0_runtime_capability_audit(*, snapshot: Mapping[str, Any]) -> dict
         "profile_extension_closure_unchanged": profile_extension_closure_unchanged,
         "profile_extension_policy_satisfied": profile_extension_policy_satisfied,
     }
+    if grasp_topology is not None:
+        checks["grasp_topology_contract"] = grasp_topology["passed"]
     reasons = []
     if not checks["audit_completed"]:
         reasons.append(f"audit_status_{str(value['audit_status']).lower()}")
@@ -1174,6 +1519,10 @@ def evaluate_g0_runtime_capability_audit(*, snapshot: Mapping[str, Any]) -> dict
         reasons.append("profile_extension_closure_changed")
     if not profile_extension_policy_satisfied:
         reasons.append("profile_extension_policy_unsatisfied")
+    if grasp_topology is not None and not grasp_topology["passed"]:
+        reasons.extend(
+            f"grasp_topology:{failure}" for failure in grasp_topology["failures"]
+        )
     for capability, status in sorted(statuses.items()):
         if status == "UNAVAILABLE":
             reasons.append(f"{capability}_unavailable")
@@ -1199,6 +1548,8 @@ def evaluate_g0_runtime_capability_audit(*, snapshot: Mapping[str, Any]) -> dict
         "g2_eligible": False,
         "g3_g4_filled_load_authorized": False,
     }
+    if grasp_topology is not None:
+        payload["grasp_topology"] = grasp_topology
     return {**payload, "sha256": canonical_json_sha256(payload)}
 
 
@@ -2864,7 +3215,10 @@ def _g2_sealed_validate_baseline(value: Any) -> dict[str, Any]:
 
 def _g2_sealed_validate_g0_decision(value: Any, certificate: Mapping[str, Any]) -> dict[str, Any]:
     checked = _hash_checked_mapping(
-        value, stage="g2", authority="real_pbd_g0_clearance_decision_v1", hash_field="sha256"
+        value,
+        stage="g2",
+        authority=_G0_CLEARANCE_DECISION_AUTHORITY,
+        hash_field="sha256",
     )
     if (
         checked.get("decision") != "G0_GO"
@@ -2950,7 +3304,7 @@ def build_g2_execution_context(
         raise _error("g2", "g0_decision_invalid")
     baseline = _g2_sealed_validate_baseline(baseline_receipt)
     derived_trajectory = _g2_sealed_validate_trajectory(trajectory)
-    fixture, _ = _validate_g0_fixture(certificate.get("fixture"))
+    fixture, _, _ = _validate_g0_fixture(certificate.get("fixture"))
     raw_candidates = certificate.get("candidate_set", {}).get("candidates", [])
     selected_candidate = next(
         (
@@ -4151,12 +4505,12 @@ def _stage_source_evidence(
         ):
             raise _error("stage", "source_evidence_binding_invalid")
     elif stage == "G0":
-        if authority != "real_pbd_g0_clearance_decision_v1":
+        if authority != _G0_CLEARANCE_DECISION_AUTHORITY:
             raise _error("stage", "source_evidence_identity_invalid")
         checked = _hash_checked_mapping(
             source,
             stage="stage",
-            authority="real_pbd_g0_clearance_decision_v1",
+            authority=_G0_CLEARANCE_DECISION_AUTHORITY,
             hash_field="sha256",
         )
         fixture = checked.get("fixture_identity")

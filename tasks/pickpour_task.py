@@ -40,15 +40,10 @@ class PickPourTask(BaseTask):
         if not self.check_frame_limits():
             return None
 
-        online_fluid = getattr(self.cfg, "online_fluid", None)
-        if online_fluid and bool(getattr(online_fluid, "enabled", False)):
-            source_quaternion = self.object_utils.get_world_transform_quat(
-                object_path=self.current_obj_path
-            )
-        else:
-            source_quaternion = self.object_utils.get_transform_quat(
-                object_path=self.current_obj_path + "/mesh"
-            )
+        # Keep controller terminal state aligned with the dynamic source root.
+        source_quaternion = self.object_utils.get_world_transform_quat(
+            object_path=self.current_obj_path
+        )
         
         return self.get_basic_state_info(
             object_path=self.current_obj_path,

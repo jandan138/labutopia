@@ -27,6 +27,7 @@ from utils.real_pbd_grasp_v2 import (
     build_source_stage_authoring_snapshot,
     consume_g2f_one_use_authorization,
     evaluate_g0_clearance_certificate,
+    evaluate_nonformal_v9_diagnostic_eligibility,
     evaluate_g1_baseline_pair,
     evaluate_g1_treatment,
     evaluate_g2_substep,
@@ -39,9 +40,11 @@ from utils.real_pbd_grasp_v2 import (
 SOURCE_SHELL = "/World/beaker2/mesh"
 SOURCE_WRAPPER = "/World/beaker2/FluidSafeWrapperCanonical/panel_000"
 TABLE = "/World/table/surface/mesh"
+BEAKER1 = "/World/beaker1/mesh"
 LEFT_PAD = "/World/Franka/panda_leftfinger/pad"
 RIGHT_PAD = "/World/Franka/panda_rightfinger/pad"
 HAND = "/World/Franka/panda_hand/collision"
+FULL_ROBOT = [LEFT_PAD, RIGHT_PAD, HAND]
 PARTICLES = "/World/InternDataParityFluid/Particles"
 
 
@@ -55,15 +58,20 @@ def _hashed(payload: dict, *, field: str = "evidence_sha256") -> dict:
 
 def _g0_certificate() -> dict:
     colliders = (
-        LEFT_PAD,
-        RIGHT_PAD,
-        HAND,
+        *FULL_ROBOT,
         SOURCE_SHELL,
         SOURCE_WRAPPER,
         TABLE,
+        BEAKER1,
     )
+    prohibited_pairs = [
+        [robot, target]
+        for robot in FULL_ROBOT
+        for target in (SOURCE_WRAPPER, TABLE, BEAKER1)
+    ]
+    prohibited_pairs.append([HAND, SOURCE_SHELL])
     return {
-        "authority": "real_pbd_g0_clearance_certificate_v1",
+        "authority": "real_pbd_g0_clearance_certificate_v2",
         "fixture": {
             "usd_dependency_closure_sha256": _sha("a"),
             "composed_collision_inventory_sha256": _sha("b"),
@@ -72,6 +80,8 @@ def _g0_certificate() -> dict:
             "source_external_shell_paths": [SOURCE_SHELL],
             "source_internal_wrapper_paths": [SOURCE_WRAPPER],
             "support_collider_paths": [TABLE],
+            "beaker1_collider_paths": [BEAKER1],
+            "full_robot_collider_paths": FULL_ROBOT,
             "finger_pad_collider_paths": {
                 "left": [LEFT_PAD],
                 "right": [RIGHT_PAD],
@@ -125,35 +135,124 @@ def _g0_certificate() -> dict:
                     },
                     "prohibited_sweeps": [
                         {
-                            "collider_paths": [LEFT_PAD, SOURCE_WRAPPER],
+                            "collider_paths": pair,
                             "minimum_signed_clearance_m": 0.002,
                             "sample_count": 5,
-                        },
-                        {
-                            "collider_paths": [RIGHT_PAD, SOURCE_WRAPPER],
-                            "minimum_signed_clearance_m": 0.002,
-                            "sample_count": 5,
-                        },
-                        {
-                            "collider_paths": [HAND, SOURCE_SHELL],
-                            "minimum_signed_clearance_m": 0.003,
-                            "sample_count": 5,
-                        },
-                        {
-                            "collider_paths": [LEFT_PAD, TABLE],
-                            "minimum_signed_clearance_m": 0.010,
-                            "sample_count": 5,
-                        },
-                        {
-                            "collider_paths": [RIGHT_PAD, TABLE],
-                            "minimum_signed_clearance_m": 0.010,
-                            "sample_count": 5,
-                        },
+                        }
+                        for pair in prohibited_pairs
                     ],
                 }
             ],
         },
     }
+
+
+def _nonformal_v9_diagnostic_eligibility() -> dict:
+    payload = {
+        "authority": "real_pbd_g0_v9_diagnostic_eligibility_sidecar_v1",
+        "schema_version": 1,
+        "classification": "NON_FORMAL_HISTORICAL_REFERENCE",
+        "strict_g0_decision": "G0_NO_GO",
+        "g2_authorized": False,
+        "formal_promotion_authorized": False,
+        "allowed_protocol": {
+            "schema_version": 7,
+            "protocol_id": "native_expert_empty_beaker_unbound_lift_v7",
+            "native_pick_authority": "g0_native_expert_pick_v9",
+            "single_named_diagnostic_only": True,
+        },
+        "native_pick_treatment_sha256": _sha("a"),
+        "bindings": {
+            "diagnostic_config_sha256": _sha("b"),
+            "g0_child_report_sha256": _sha("c"),
+            "g0_runtime_receipt_sha256": _sha("d"),
+            "g0_execution_request_sha256": _sha("e"),
+            "g0_runtime_contract_sha256": _sha("f"),
+            "g0_asset_sha256": _sha("1"),
+            "g0_robot_asset_sha256": _sha("2"),
+            "g0_overlay_profile_sha256": _sha("3"),
+            "g0_collision_inventory_sha256": _sha("4"),
+            "raw_geometry_witness_sha256": _sha("5"),
+            "g0_public_offset_surface_sha256": _sha("7"),
+        },
+        "unavailable_public_offset_readback": {
+            "authority": "real_pbd_g0_public_offset_readback_unavailable_v1",
+            "runtime_contract_sha256": _sha("f"),
+            "property_query_info_surface_sha256": _sha("7"),
+            "api_surface": "PhysxSchema.PhysxCollisionAPI_authored_offset_readback_v1",
+            "records": [
+                {
+                    "role": "left_finger_pad",
+                    "path": "/World/Franka/panda_leftfinger/geometry/panda_leftfinger",
+                    "contact_offset_status": "ENGINE_DEFAULT_PUBLIC_READBACK_UNAVAILABLE",
+                    "rest_offset_status": "ENGINE_DEFAULT_PUBLIC_READBACK_UNAVAILABLE",
+                    "contact_offset_usd_nonfinite_sentinel": True,
+                    "rest_offset_usd_nonfinite_sentinel": True,
+                },
+                {
+                    "role": "right_finger_pad",
+                    "path": "/World/Franka/panda_rightfinger/geometry/panda_rightfinger",
+                    "contact_offset_status": "ENGINE_DEFAULT_PUBLIC_READBACK_UNAVAILABLE",
+                    "rest_offset_status": "ENGINE_DEFAULT_PUBLIC_READBACK_UNAVAILABLE",
+                    "contact_offset_usd_nonfinite_sentinel": True,
+                    "rest_offset_usd_nonfinite_sentinel": True,
+                },
+                {
+                    "role": "table_support",
+                    "path": TABLE,
+                    "contact_offset_status": "ENGINE_DEFAULT_PUBLIC_READBACK_UNAVAILABLE",
+                    "rest_offset_status": "ENGINE_DEFAULT_PUBLIC_READBACK_UNAVAILABLE",
+                    "contact_offset_usd_nonfinite_sentinel": False,
+                    "rest_offset_usd_nonfinite_sentinel": False,
+                },
+            ],
+        },
+        "raw_geometry_witness": {
+            "authority": "real_pbd_g0_raw_geometry_no_inflation_witness_v1",
+            "schema_version": 1,
+            "status": "COMPLETE",
+            "inflation_mode": "NONE",
+            "effective_offset_clearance": "NOT_CLAIMED",
+            "candidate_id": "raw_candidate_01",
+            "candidate_target_spec_sha256": _sha("6"),
+            "unexpected_hit_paths": [],
+            "prohibited_hit_paths": [],
+        },
+        "eligible": True,
+    }
+    payload["bindings"]["raw_geometry_witness_sha256"] = canonical_json_sha256(
+        payload["raw_geometry_witness"]
+    )
+    return {**payload, "sha256": canonical_json_sha256(payload)}
+
+
+def test_nonformal_v9_eligibility_preserves_strict_g0_no_go_and_default_gap():
+    eligibility = _nonformal_v9_diagnostic_eligibility()
+
+    result = evaluate_nonformal_v9_diagnostic_eligibility(eligibility)
+
+    assert result["eligible"] is True
+    assert result["strict_g0_decision"] == "G0_NO_GO"
+    assert result["g2_authorized"] is False
+    assert result["formal_promotion_authorized"] is False
+
+    numeric_default = _nonformal_v9_diagnostic_eligibility()
+    numeric_default["unavailable_public_offset_readback"]["records"][0][
+        "contact_offset_m"
+    ] = 0.0
+    numeric_default["sha256"] = canonical_json_sha256(
+        {key: value for key, value in numeric_default.items() if key != "sha256"}
+    )
+    with pytest.raises(ValueError, match="real_pbd_nonformal_v9"):
+        evaluate_nonformal_v9_diagnostic_eligibility(numeric_default)
+
+    g2_escalation = _nonformal_v9_diagnostic_eligibility()
+    g2_escalation["g2_authorized"] = True
+    g2_escalation["sha256"] = canonical_json_sha256(
+        {key: value for key, value in g2_escalation.items() if key != "sha256"}
+    )
+    with pytest.raises(ValueError, match="real_pbd_nonformal_v9"):
+        evaluate_nonformal_v9_diagnostic_eligibility(g2_escalation)
 
 
 def test_g0_requires_composed_geometry_offsets_and_strict_clearance():
@@ -165,6 +264,7 @@ def test_g0_requires_composed_geometry_offsets_and_strict_clearance():
     assert result["selected_candidate_id"] == "top_down_candidate_01"
     assert result["g3_g4_filled_load_authorized"] is False
     assert result["checks"]["all_prohibited_sweeps_strictly_positive"] is True
+    assert result["checks"]["all_required_prohibited_pairs_covered"] is True
 
     zero_margin = copy.deepcopy(certificate)
     zero_margin["candidate_set"]["candidates"][0]["prohibited_sweeps"][0][
@@ -183,6 +283,38 @@ def test_g0_fails_closed_for_unresolved_offsets_or_missing_wrapper_geometry():
     missing_wrapper["fixture"]["source_internal_wrapper_paths"] = []
     with pytest.raises(ValueError, match="real_pbd_g0"):
         evaluate_g0_clearance_certificate(missing_wrapper)
+
+
+def test_g0_accepts_effective_v2_offset_receipts():
+    certificate = _g0_certificate()
+    for record in certificate["effective_offsets_m"].values():
+        record["authority"] = "runtime_effective_physx_cooked_v2"
+
+    assert evaluate_g0_clearance_certificate(certificate)["decision"] == "G0_GO"
+
+
+def test_g0_rejects_missing_hand_coverage_instead_of_treating_it_as_diagnostic_only():
+    certificate = _g0_certificate()
+    certificate["fixture"]["hand_collider_paths"] = []
+    certificate["effective_offsets_m"].pop(HAND)
+    candidate = certificate["candidate_set"]["candidates"][0]
+    candidate["prohibited_sweeps"] = [
+        sweep
+        for sweep in candidate["prohibited_sweeps"]
+        if HAND not in sweep["collider_paths"]
+    ]
+
+    with pytest.raises(ValueError, match="real_pbd_g0"):
+        evaluate_g0_clearance_certificate(certificate)
+
+
+@pytest.mark.parametrize("field", ["full_robot_collider_paths", "beaker1_collider_paths"])
+def test_g0_rejects_certificates_without_complete_full_robot_blocking_scope(field: str):
+    certificate = _g0_certificate()
+    certificate["fixture"].pop(field)
+
+    with pytest.raises(ValueError, match="real_pbd_g0"):
+        evaluate_g0_clearance_certificate(certificate)
 
 
 def _source_matrix(x: float) -> list[list[float]]:
@@ -1315,7 +1447,7 @@ def _stage_bytes(
     )
     if stage == "G0":
         source = {
-            "authority": "real_pbd_g0_clearance_decision_v1",
+            "authority": "real_pbd_g0_clearance_decision_v2",
             "decision": decision,
             "checks": {"composed_fixture_complete": decision == "G0_GO"},
             "selected_candidate_id": "candidate",

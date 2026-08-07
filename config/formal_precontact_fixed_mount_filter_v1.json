@@ -1,0 +1,12 @@
+{
+  "authority": "formal_precontact_fixed_mount_profile_v1",
+  "filter": {
+    "author_collider_path": "/World/Franka/panda_link0/geometry/panda_link0",
+    "overlay_path": "assets/chemistry_lab/lab_001_fluid_eval/lab_001_v7_link0_table_fixed_mount_filter_v1.usda",
+    "overlay_sha256": "84a17318ca268f0a49722f27cc6505d4b8f90da65d507542b84b35419449d6d0",
+    "target_collider_path": "/World/table/surface/mesh"
+  },
+  "profile_id": "v7_link0_table_surface_mount_filter_v1",
+  "robot_position_m": [-0.4, 0.0, 0.772761],
+  "schema_version": 1
+}

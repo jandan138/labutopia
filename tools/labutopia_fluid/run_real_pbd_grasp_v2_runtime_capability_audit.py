@@ -35,6 +35,7 @@ from utils.controlled_contact import canonical_json_sha256  # noqa: E402
 from utils.real_pbd_grasp_v2 import (  # noqa: E402
     build_stage_artifact,
     build_stage_evidence,
+    evaluate_grasp_topology_contract,
     evaluate_g0_runtime_capability_audit,
     serialize_stage_artifact,
     validate_g0_runtime_profile_extension_policy,
@@ -1035,13 +1036,18 @@ def _run_child(
         import omni.timeline
         import omni.usd
         from tools.labutopia_fluid.run_real_pbd_grasp_v2_preflight import (
+            _static_grasp_topology,
             read_static_fixture,
             sha256_file,
             usd_dependency_closure,
         )
 
         asset = Path(spec["asset_path"])
+        robot_asset = REPO_ROOT / "assets/robots/Franka.usd"
+        if not robot_asset.is_file():
+            raise RuntimeError("real_pbd_g0_runtime_audit_robot_asset_missing")
         asset_sha256_before = sha256_file(asset)
+        robot_asset_sha256_before = sha256_file(robot_asset)
         closure_before = usd_dependency_closure(asset)["usd_dependency_closure_sha256"]
         fixture = read_static_fixture(asset)
         expected_paths = sorted([SOURCE_SHELL_PATH, *fixture["wrapper_collider_paths"]])
@@ -1059,6 +1065,8 @@ def _run_child(
         _require_pristine_stage(stage)
         world_root = stage.DefinePrim("/World", "Xform")
         world_root.GetReferences().AddReference(spec["asset_path"])
+        robot_root = stage.DefinePrim("/World/Franka", "Xform")
+        robot_root.GetReferences().AddReference(str(robot_asset))
         baseline_timeline = _timeline_receipt(timeline)
         for _ in range(8):
             if _timeline_receipt(timeline) != baseline_timeline:
@@ -1071,6 +1079,10 @@ def _run_child(
         )
         if runtime_paths != expected_paths:
             raise RuntimeError("real_pbd_g0_runtime_audit_source_collider_inventory_changed")
+        topology_observed = _static_grasp_topology(stage)
+        topology_observed["robot_asset_path"] = str(robot_asset)
+        topology_observed["robot_asset_sha256"] = robot_asset_sha256_before
+        topology_evaluation = evaluate_grasp_topology_contract(topology_observed)
         source_before = _stage_snapshot_hash(stage, spec["source_actor_path"])
         particle_before = _stage_snapshot_hash(stage, spec["particle_path"])
         root_before = _stage_snapshot_hash(stage, "/World")
@@ -1091,10 +1103,12 @@ def _run_child(
         )
         closure_after = usd_dependency_closure(asset)["usd_dependency_closure_sha256"]
         asset_sha256_after = sha256_file(asset)
+        robot_asset_sha256_after = sha256_file(robot_asset)
         if (
             closure_after != closure_before
             or asset_sha256_after != asset_sha256_before
             or asset_sha256_after != spec["asset_sha256"]
+            or robot_asset_sha256_after != robot_asset_sha256_before
         ):
             raise RuntimeError("real_pbd_g0_runtime_audit_input_identity_changed_after_query")
         source_after = _stage_snapshot_hash(stage, spec["source_actor_path"])
@@ -1135,8 +1149,8 @@ def _run_child(
         )
 
         snapshot = {
-            "authority": "real_pbd_g0_runtime_capability_snapshot_v2",
-            "schema_version": 2,
+            "authority": "real_pbd_g0_runtime_capability_snapshot_v3",
+            "schema_version": 3,
             "run_id": secrets.token_hex(16),
             "parent_nonce_sha256": nonce,
             "audit_spec_sha256": canonical_json_sha256(spec),
@@ -1170,6 +1184,10 @@ def _run_child(
                 "particle_write_detected": particle_before != particle_after,
             },
             "expected_source_collider_paths": expected_paths,
+            "grasp_topology": {
+                "observed": topology_observed,
+                "evaluation": topology_evaluation,
+            },
             "cooked_source_query": query,
             "authored_offsets": _authored_offsets(stage, expected_paths),
             "profile_extension_evidence": profile_extension_evidence,

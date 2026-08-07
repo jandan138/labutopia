@@ -62,10 +62,10 @@ class PickController(BaseController):
 
     def _calculate_approach_direction(self, picking_position: np.ndarray) -> np.ndarray:
         if self._robot_position is None:
-            return np.array([-1, 0, 0])  
+            return np.array([-1, 0, 0])
 
         relative_pos = picking_position - self._robot_position
-        
+
         horizontal_vec = relative_pos.copy()
         horizontal_vec[2] = 0
 
@@ -87,7 +87,9 @@ class PickController(BaseController):
         pre_offset_z: float = 0.12,
         after_offset_z: float = 0.15,
         pre_offset_x: float = 0.1,
-        gripper_distances: float = None
+        gripper_distances: float = None,
+        pick_z_offset_m: float = None,
+        pick_x_offset_m: float = None,
     ) -> ArticulationAction:
         """Computes the joint positions for the current picking phase.
 
@@ -104,6 +106,20 @@ class PickController(BaseController):
             ArticulationAction: Joint positions for the robot to execute.
         """
         self.object_size = object_size
+        if pick_z_offset_m is None:
+            self._pick_z_offset_override_m = None
+        else:
+            override = float(pick_z_offset_m)
+            if not np.isfinite(override) or override < 0.0 or override > 0.10:
+                raise ValueError("pick_z_offset_m_invalid")
+            self._pick_z_offset_override_m = override
+        if pick_x_offset_m is None:
+            self._pick_x_offset_override_m = None
+        else:
+            x_override = float(pick_x_offset_m)
+            if not np.isfinite(x_override) or abs(x_override) > 0.10:
+                raise ValueError("pick_x_offset_m_invalid")
+            self._pick_x_offset_override_m = x_override
 
         if self._start:
             return self._handle_start_state(current_joint_positions)
@@ -114,7 +130,7 @@ class PickController(BaseController):
         self.pre_offset_z = pre_offset_z
         self.after_offset_z = after_offset_z
         self.pre_offset_x = pre_offset_x
-        
+
         emitted_event = self._event
         target_joint_positions = self._execute_phase(
             picking_position,
@@ -133,7 +149,7 @@ class PickController(BaseController):
             if self._t >= 1.0:
                 self._event += 1
                 self._t = 0
-            
+
         return target_joint_positions
 
     def _handle_start_state(self, current_joint_positions):
@@ -165,9 +181,9 @@ class PickController(BaseController):
         Returns:
             ArticulationAction: Joint position targets for robot control.
         """
-        
+
         approach_dir = self._calculate_approach_direction(picking_position)
-        
+
         if self._event == 0:
             picking_position = picking_position + approach_dir * (self.pre_offset_x / get_stage_units())
             picking_position[2] += self.object_size[2] + self.pre_offset_z
@@ -195,7 +211,14 @@ class PickController(BaseController):
             return target_joint_positions
 
         elif self._event == 2:
-            picking_position[2] += self.get_pickz_offset(object_name) / get_stage_units()
+            pick_z_offset = (
+                self.get_pickz_offset(object_name)
+                if self._pick_z_offset_override_m is None
+                else self._pick_z_offset_override_m
+            )
+            if self._pick_x_offset_override_m is not None:
+                picking_position[0] += self._pick_x_offset_override_m / get_stage_units()
+            picking_position[2] += pick_z_offset / get_stage_units()
             target_joint_positions = self._cspace_controller.forward(
                 target_end_effector_position=picking_position,
                 target_end_effector_orientation=end_effector_orientation

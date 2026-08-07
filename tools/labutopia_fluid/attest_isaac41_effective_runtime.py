@@ -11,7 +11,7 @@ import secrets
 import subprocess
 import sys
 import tempfile
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +26,10 @@ SCHEMA_VERSION = 2
 CONTRACT_AUTHORITY = "isaac41_effective_runtime_contract_v2"
 RECEIPT_AUTHORITY = "isaac41_effective_runtime_receipt_v2"
 MANIFEST_AUTHORITY = "isaac41_effective_runtime_manifest_v2"
+EXECUTION_REQUEST_AUTHORITY = "isaac41_effective_runtime_execution_request_v1"
+EXECUTION_REQUEST_SCHEMA_VERSION = 1
+EXECUTION_BINDING_AUTHORITY = "isaac41_effective_runtime_execution_binding_v1"
+EXECUTION_BINDING_SCHEMA_VERSION = 1
 RECEIPT_BASENAME = "runtime_receipt.json"
 MANIFEST_BASENAME = "runtime_manifest.json"
 STDOUT_BASENAME = "child.stdout.log"
@@ -91,6 +95,178 @@ def _is_sha256(value: Any) -> bool:
         and len(value) == 64
         and all(character in "0123456789abcdef" for character in value)
     )
+
+
+def _positive_int(value: Any) -> bool:
+    return type(value) is int and value > 0
+
+
+def _validated_source_identity(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != {"files", "git"}:
+        raise ValueError("effective_runtime_source_identity_invalid")
+    files = value["files"]
+    git = value["git"]
+    if (
+        not isinstance(files, Mapping)
+        or not files
+        or any(
+            not isinstance(path, str) or not path or not _is_sha256(digest)
+            for path, digest in files.items()
+        )
+        or not isinstance(git, Mapping)
+        or set(git) != {"revision", "dirty", "status_sha256"}
+    ):
+        raise ValueError("effective_runtime_source_identity_invalid")
+    if git["revision"] is not None and (
+        not isinstance(git["revision"], str) or not git["revision"]
+    ):
+        raise ValueError("effective_runtime_source_identity_invalid")
+    if git["dirty"] is not None and type(git["dirty"]) is not bool:
+        raise ValueError("effective_runtime_source_identity_invalid")
+    if git["status_sha256"] is not None and not _is_sha256(git["status_sha256"]):
+        raise ValueError("effective_runtime_source_identity_invalid")
+    return {
+        "files": dict(sorted((str(path), str(digest)) for path, digest in files.items())),
+        "git": dict(git),
+    }
+
+
+def capture_source_identity(paths: Sequence[Path]) -> dict[str, Any]:
+    """Capture the exact local sources that must agree before child startup."""
+    files: dict[str, str] = {}
+    for raw_path in paths:
+        path = Path(raw_path).resolve()
+        try:
+            key = str(path.relative_to(REPO_ROOT))
+        except ValueError as exc:
+            raise ValueError("effective_runtime_source_path_outside_repo") from exc
+        if not path.is_file():
+            raise FileNotFoundError(f"effective_runtime_source_missing:{path}")
+        if key in files:
+            raise ValueError("effective_runtime_source_path_duplicate")
+        files[key] = _sha256_file(path)
+    return _validated_source_identity({"files": files, "git": _git_identity()})
+
+
+def create_execution_request(
+    *,
+    run_id: str,
+    parent_nonce_sha256: str,
+    parent_pid: int,
+    source: Mapping[str, Any],
+) -> dict[str, Any]:
+    source = _validated_source_identity(source)
+    request = {
+        "authority": EXECUTION_REQUEST_AUTHORITY,
+        "schema_version": EXECUTION_REQUEST_SCHEMA_VERSION,
+        "run_id": run_id,
+        "parent_pid": parent_pid,
+        "parent_nonce_sha256": parent_nonce_sha256,
+        "source": source,
+        "source_sha256": canonical_json_sha256(source),
+    }
+    return validate_execution_request(request)
+
+
+def validate_execution_request(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError("effective_runtime_execution_request_invalid")
+    request = dict(value)
+    expected = {
+        "authority",
+        "schema_version",
+        "run_id",
+        "parent_pid",
+        "parent_nonce_sha256",
+        "source",
+        "source_sha256",
+    }
+    if (
+        set(request) != expected
+        or request["authority"] != EXECUTION_REQUEST_AUTHORITY
+        or request["schema_version"] != EXECUTION_REQUEST_SCHEMA_VERSION
+        or not isinstance(request["run_id"], str)
+        or not request["run_id"]
+        or not _positive_int(request["parent_pid"])
+        or not _is_sha256(request["parent_nonce_sha256"])
+        or not _is_sha256(request["source_sha256"])
+    ):
+        raise ValueError("effective_runtime_execution_request_invalid")
+    source = _validated_source_identity(request["source"])
+    if canonical_json_sha256(source) != request["source_sha256"]:
+        raise ValueError("effective_runtime_execution_request_invalid")
+    return {
+        **request,
+        "source": source,
+    }
+
+
+def verify_execution_request(
+    value: Any,
+    *,
+    source_paths: Sequence[Path],
+) -> dict[str, Any]:
+    request = validate_execution_request(value)
+    if request["parent_pid"] != os.getppid():
+        raise RuntimeError("effective_runtime_execution_parent_pid_mismatch")
+    source = capture_source_identity(source_paths)
+    if canonical_json_sha256(source) != request["source_sha256"]:
+        raise RuntimeError("effective_runtime_execution_source_mismatch")
+    return request
+
+
+def execution_binding_for_request(
+    request: Mapping[str, Any],
+    *,
+    child_pid: int,
+) -> dict[str, Any]:
+    request = validate_execution_request(request)
+    binding = {
+        "authority": EXECUTION_BINDING_AUTHORITY,
+        "schema_version": EXECUTION_BINDING_SCHEMA_VERSION,
+        "run_id": request["run_id"],
+        "parent_pid": request["parent_pid"],
+        "child_pid": child_pid,
+        "parent_nonce_sha256": request["parent_nonce_sha256"],
+        "launch_request_sha256": canonical_json_sha256(request),
+        "source_sha256": request["source_sha256"],
+    }
+    return _validate_execution_binding(binding)
+
+
+def _validate_execution_binding(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError("effective_runtime_receipt_invalid")
+    binding = dict(value)
+    expected = {
+        "authority",
+        "schema_version",
+        "run_id",
+        "parent_pid",
+        "child_pid",
+        "parent_nonce_sha256",
+        "launch_request_sha256",
+        "source_sha256",
+    }
+    if (
+        set(binding) != expected
+        or binding["authority"] != EXECUTION_BINDING_AUTHORITY
+        or binding["schema_version"] != EXECUTION_BINDING_SCHEMA_VERSION
+        or not isinstance(binding["run_id"], str)
+        or not binding["run_id"]
+        or not _positive_int(binding["parent_pid"])
+        or not _positive_int(binding["child_pid"])
+        or any(
+            not _is_sha256(binding[field])
+            for field in (
+                "parent_nonce_sha256",
+                "launch_request_sha256",
+                "source_sha256",
+            )
+        )
+    ):
+        raise ValueError("effective_runtime_receipt_invalid")
+    return binding
 
 
 def _path(prefix: str, relative: str) -> str:
@@ -310,6 +486,7 @@ def validate_runtime_receipt(value: Any) -> dict[str, Any]:
         "authority",
         "schema_version",
         "parent_nonce_sha256",
+        "execution_binding",
         "runtime_contract",
         "observed_runtime",
         "attestation_status",
@@ -323,6 +500,9 @@ def validate_runtime_receipt(value: Any) -> dict[str, Any]:
         raise ValueError("effective_runtime_receipt_invalid")
     if not _is_sha256(receipt["parent_nonce_sha256"]):
         raise ValueError("effective_runtime_receipt_invalid")
+    binding = _validate_execution_binding(receipt["execution_binding"])
+    if binding["parent_nonce_sha256"] != receipt["parent_nonce_sha256"]:
+        raise ValueError("effective_runtime_receipt_invalid")
     contract = validate_runtime_contract(receipt["runtime_contract"])
     status = receipt.get("attestation_status")
     failure = receipt.get("failure")
@@ -333,6 +513,7 @@ def validate_runtime_receipt(value: Any) -> dict[str, Any]:
             "authority": RECEIPT_AUTHORITY,
             "schema_version": SCHEMA_VERSION,
             "parent_nonce_sha256": receipt["parent_nonce_sha256"],
+            "execution_binding": binding,
             "runtime_contract": contract,
             "observed_runtime": None,
             "attestation_status": "UNAVAILABLE",
@@ -347,6 +528,7 @@ def validate_runtime_receipt(value: Any) -> dict[str, Any]:
         "authority": RECEIPT_AUTHORITY,
         "schema_version": SCHEMA_VERSION,
         "parent_nonce_sha256": receipt["parent_nonce_sha256"],
+        "execution_binding": binding,
         "runtime_contract": contract,
         "observed_runtime": dict(observed),
         "attestation_status": expected_status,
@@ -354,10 +536,18 @@ def validate_runtime_receipt(value: Any) -> dict[str, Any]:
     }
 
 
-def require_matched_runtime_receipt(value: Any) -> dict[str, Any]:
+def require_matched_runtime_receipt(
+    value: Any,
+    *,
+    expected_execution_binding: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     receipt = validate_runtime_receipt(value)
     if receipt["attestation_status"] != "MATCH":
         raise ValueError("effective_runtime_receipt_match_required")
+    if expected_execution_binding is not None:
+        expected = _validate_execution_binding(expected_execution_binding)
+        if receipt["execution_binding"] != expected:
+            raise ValueError("effective_runtime_receipt_binding_mismatch")
     return receipt
 
 
@@ -383,6 +573,10 @@ def _atomic_write(path: Path, payload: Mapping[str, Any]) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def write_canonical_json(path: Path, payload: Mapping[str, Any]) -> None:
+    _atomic_write(path, payload)
+
+
 def _read_canonical_json(path: Path) -> dict[str, Any]:
     payload = path.read_bytes()
     try:
@@ -392,6 +586,25 @@ def _read_canonical_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, Mapping) or payload != _canonical_bytes(dict(value)):
         raise ValueError("effective_runtime_receipt_invalid")
     return dict(value)
+
+
+def approved_library_paths() -> tuple[Path, ...]:
+    site = FORMAL_ISAAC41_PREFIX / "lib/python3.10/site-packages"
+    libraries = (
+        site / "isaacsim/extscache/omni.cuda.libs/bin",
+        site / "isaacsim/extscache/omni.gpu_foundation/bin/deps",
+        site / "torch/lib",
+    )
+    missing = [str(path) for path in libraries if not path.is_dir()]
+    if missing:
+        raise RuntimeError(
+            "effective_runtime_approved_library_root_missing:" + ",".join(missing)
+        )
+    return libraries
+
+
+def approved_library_path_value() -> str:
+    return ":".join(str(path) for path in approved_library_paths())
 
 
 def sealed_child_environment(run_root: Path) -> dict[str, str]:
@@ -405,18 +618,10 @@ def sealed_child_environment(run_root: Path) -> dict[str, str]:
     }
     for directory in directories.values():
         directory.mkdir(parents=True, exist_ok=False)
-    site = FORMAL_ISAAC41_PREFIX / "lib/python3.10/site-packages"
-    libraries = (
-        site / "isaacsim/extscache/omni.cuda.libs/bin",
-        site / "isaacsim/extscache/omni.gpu_foundation/bin/deps",
-        site / "torch/lib",
-    )
     environment = {
         **{name: str(path) for name, path in directories.items()},
         "PATH": f"{FORMAL_ISAAC41_PREFIX / 'bin'}:/usr/local/bin:/usr/bin:/bin",
-        "LD_LIBRARY_PATH": ":".join(
-            str(path) for path in libraries if path.is_dir()
-        ),
+        "LD_LIBRARY_PATH": approved_library_path_value(),
         "PYTHONNOUSERSITE": "1",
         "PYTHONDONTWRITEBYTECODE": "1",
         "ACCEPT_EULA": "Y",
@@ -433,19 +638,14 @@ def sealed_child_environment(run_root: Path) -> dict[str, str]:
     return environment
 
 
-def _child_observed_runtime(contract: Mapping[str, Any]) -> tuple[dict[str, Any], Any]:
-    # This function runs in the sealed child. Keep imports before SimulationApp
-    # limited to stdlib and isaacsim's app entrypoint.
-    pre_app_numpy_modules = sorted(
-        name for name in sys.modules if name == "numpy" or name.startswith("numpy.")
-    )
-    from isaacsim import SimulationApp
-
-    pre_app_numpy_modules = sorted(
-        name for name in sys.modules if name == "numpy" or name.startswith("numpy.")
-    )
-    sys.argv = [sys.argv[0]]
-    app = SimulationApp({"headless": True})
+def _observed_runtime_after_app(
+    contract: Mapping[str, Any],
+    *,
+    app: Any,
+    pre_app_numpy_modules: Sequence[str],
+) -> dict[str, Any]:
+    if any(not isinstance(name, str) or not name for name in pre_app_numpy_modules):
+        raise ValueError("effective_runtime_pre_app_numpy_modules_invalid")
     import importlib.metadata
     import importlib
 
@@ -501,10 +701,91 @@ def _child_observed_runtime(contract: Mapping[str, Any]) -> tuple[dict[str, Any]
             "physx_native": _sha256_file(Path(physx_native.__file__).resolve()),
         },
     }
-    return observed, app
+    return observed
 
 
-def run_child(*, receipt_path: Path, parent_nonce_sha256: str) -> int:
+def _child_observed_runtime(contract: Mapping[str, Any]) -> tuple[dict[str, Any], Any]:
+    # This function runs in the sealed child. Keep imports before SimulationApp
+    # limited to stdlib and isaacsim's app entrypoint.
+    from isaacsim import SimulationApp
+
+    pre_app_numpy_modules = sorted(
+        name for name in sys.modules if name == "numpy" or name.startswith("numpy.")
+    )
+    sys.argv = [sys.argv[0]]
+    app = SimulationApp({"headless": True})
+    return (
+        _observed_runtime_after_app(
+            contract,
+            app=app,
+            pre_app_numpy_modules=pre_app_numpy_modules,
+        ),
+        app,
+    )
+
+
+def attest_existing_application(
+    *,
+    application: Any,
+    pre_app_numpy_modules: Sequence[str],
+    execution_request: Mapping[str, Any],
+    source_paths: Sequence[Path],
+) -> dict[str, Any]:
+    """Attest an already bootstrapped Kit app before task construction."""
+    # JSON evidence represents sequences as lists. Normalize here so the
+    # in-memory match decision agrees with the receipt the parent re-reads.
+    pre_app_numpy_modules = list(pre_app_numpy_modules)
+    request = verify_execution_request(
+        execution_request,
+        source_paths=source_paths,
+    )
+    binding = execution_binding_for_request(request, child_pid=os.getpid())
+    contract = formal_effective_runtime_contract()
+    try:
+        observed = _observed_runtime_after_app(
+            contract,
+            app=application,
+            pre_app_numpy_modules=pre_app_numpy_modules,
+        )
+        status = (
+            "MATCH"
+            if runtime_contract_matches(contract=contract, observed=observed)
+            else "MISMATCH"
+        )
+        return {
+            "authority": RECEIPT_AUTHORITY,
+            "schema_version": SCHEMA_VERSION,
+            "parent_nonce_sha256": request["parent_nonce_sha256"],
+            "execution_binding": binding,
+            "runtime_contract": contract,
+            "observed_runtime": observed,
+            "attestation_status": status,
+            "failure": None,
+        }
+    except Exception as exc:
+        return {
+            "authority": RECEIPT_AUTHORITY,
+            "schema_version": SCHEMA_VERSION,
+            "parent_nonce_sha256": request["parent_nonce_sha256"],
+            "execution_binding": binding,
+            "runtime_contract": contract,
+            "observed_runtime": None,
+            "attestation_status": "UNAVAILABLE",
+            "failure": {"type": type(exc).__name__, "message": str(exc)},
+        }
+
+
+def bootstrap_effective_runtime(
+    *,
+    execution_request: Mapping[str, Any],
+    source_paths: Sequence[Path],
+) -> tuple[dict[str, Any], Any | None]:
+    """Start Kit and attest the exact process that will execute the task."""
+    request = verify_execution_request(
+        execution_request,
+        source_paths=source_paths,
+    )
+    binding = execution_binding_for_request(request, child_pid=os.getpid())
     contract = formal_effective_runtime_contract()
     app = None
     try:
@@ -517,7 +798,8 @@ def run_child(*, receipt_path: Path, parent_nonce_sha256: str) -> int:
         receipt = {
             "authority": RECEIPT_AUTHORITY,
             "schema_version": SCHEMA_VERSION,
-            "parent_nonce_sha256": parent_nonce_sha256,
+            "parent_nonce_sha256": request["parent_nonce_sha256"],
+            "execution_binding": binding,
             "runtime_contract": contract,
             "observed_runtime": observed,
             "attestation_status": status,
@@ -527,16 +809,29 @@ def run_child(*, receipt_path: Path, parent_nonce_sha256: str) -> int:
         receipt = {
             "authority": RECEIPT_AUTHORITY,
             "schema_version": SCHEMA_VERSION,
-            "parent_nonce_sha256": parent_nonce_sha256,
+            "parent_nonce_sha256": request["parent_nonce_sha256"],
+            "execution_binding": binding,
             "runtime_contract": contract,
             "observed_runtime": None,
             "attestation_status": "UNAVAILABLE",
             "failure": {"type": type(exc).__name__, "message": str(exc)},
         }
-    _atomic_write(receipt_path, receipt)
-    if app is not None:
-        app.close()
-    return 0
+    return receipt, app
+
+
+def run_child(*, receipt_path: Path, execution_request_path: Path) -> int:
+    app = None
+    try:
+        request = _read_canonical_json(execution_request_path)
+        receipt, app = bootstrap_effective_runtime(
+            execution_request=request,
+            source_paths=(Path(__file__),),
+        )
+        _atomic_write(receipt_path, receipt)
+        return 0
+    finally:
+        if app is not None:
+            app.close()
 
 
 def _environment_sha256(environment: Mapping[str, str]) -> str:
@@ -575,6 +870,16 @@ def run_parent(*, out_dir: Path, timeout_s: float = 180.0) -> dict[str, Any]:
     receipt_path = out_dir / RECEIPT_BASENAME
     environment = sealed_child_environment(out_dir / "runtime")
     nonce_sha256 = hashlib.sha256(secrets.token_bytes(32)).hexdigest()
+    run_id = secrets.token_hex(16)
+    source_before = capture_source_identity((Path(__file__),))
+    execution_request = create_execution_request(
+        run_id=run_id,
+        parent_nonce_sha256=nonce_sha256,
+        parent_pid=os.getpid(),
+        source=source_before,
+    )
+    execution_request_path = out_dir / "execution_request.json"
+    _atomic_write(execution_request_path, execution_request)
     command = [
         str(FORMAL_ISAAC41_PYTHON),
         "-I",
@@ -583,31 +888,41 @@ def run_parent(*, out_dir: Path, timeout_s: float = 180.0) -> dict[str, Any]:
         "--child",
         "--receipt-out",
         str(receipt_path),
-        "--parent-nonce-sha256",
-        nonce_sha256,
+        "--execution-request",
+        str(execution_request_path),
     ]
     stdout_path = out_dir / STDOUT_BASENAME
     stderr_path = out_dir / STDERR_BASENAME
-    completed = None
+    child_pid = None
+    child_returncode = None
     parent_failure = None
     try:
         with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
-            completed = subprocess.run(
+            process = subprocess.Popen(
                 command,
                 cwd=REPO_ROOT,
                 env=environment,
                 stdout=stdout,
                 stderr=stderr,
-                check=False,
-                timeout=timeout_s,
             )
+            child_pid = process.pid
+            try:
+                child_returncode = process.wait(timeout=timeout_s)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                child_returncode = process.wait()
+                raise
         receipt = validate_runtime_receipt(_read_canonical_json(receipt_path))
-        if receipt["parent_nonce_sha256"] != nonce_sha256:
-            raise ValueError("effective_runtime_receipt_nonce_mismatch")
+        require_matched_runtime_receipt(
+            receipt,
+            expected_execution_binding=execution_binding_for_request(
+                execution_request,
+                child_pid=child_pid,
+            ),
+        )
     except Exception as exc:
         receipt = None
         parent_failure = {"type": type(exc).__name__, "message": str(exc)}
-    child_returncode = None if completed is None else completed.returncode
     status = (
         receipt["attestation_status"]
         if receipt is not None and child_returncode == 0
@@ -616,7 +931,7 @@ def run_parent(*, out_dir: Path, timeout_s: float = 180.0) -> dict[str, Any]:
     manifest = {
         "authority": MANIFEST_AUTHORITY,
         "schema_version": SCHEMA_VERSION,
-        "run_id": secrets.token_hex(16),
+        "run_id": run_id,
         "runtime_contract": formal_effective_runtime_contract(),
         "runtime_receipt_sha256": (
             None if receipt is None else canonical_json_sha256(receipt)
@@ -631,7 +946,10 @@ def run_parent(*, out_dir: Path, timeout_s: float = 180.0) -> dict[str, Any]:
             FORMAL_ISAAC41_PREFIX / "conda-meta/history"
         ),
         "attester_sha256": _sha256_file(Path(__file__).resolve()),
-        "source": _git_identity(),
+        "source_before": source_before,
+        "source_after": capture_source_identity((Path(__file__),)),
+        "execution_request_sha256": canonical_json_sha256(execution_request),
+        "child_pid": child_pid,
         "child_returncode": child_returncode,
         "stdout_sha256": _sha256_file(stdout_path),
         "stderr_sha256": _sha256_file(stderr_path),
@@ -645,7 +963,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--child", action="store_true")
     parser.add_argument("--receipt-out", type=Path)
-    parser.add_argument("--parent-nonce-sha256")
+    parser.add_argument("--execution-request", type=Path)
     parser.add_argument("--out-dir", type=Path)
     parser.add_argument("--timeout-s", type=float, default=180.0)
     args = parser.parse_args(argv)
@@ -653,14 +971,14 @@ def main(argv: list[str] | None = None) -> int:
         if (
             args.receipt_out is None
             or args.out_dir is not None
-            or not _is_sha256(args.parent_nonce_sha256)
+            or args.execution_request is None
         ):
-            parser.error("--child requires --receipt-out and --parent-nonce-sha256")
+            parser.error("--child requires --receipt-out and --execution-request")
         return run_child(
             receipt_path=args.receipt_out,
-            parent_nonce_sha256=args.parent_nonce_sha256,
+            execution_request_path=args.execution_request,
         )
-    if args.out_dir is None or args.receipt_out is not None or args.parent_nonce_sha256:
+    if args.out_dir is None or args.receipt_out is not None or args.execution_request:
         parser.error("parent mode requires --out-dir only")
     manifest = run_parent(out_dir=args.out_dir, timeout_s=args.timeout_s)
     return 0 if manifest["attestation_status"] == "MATCH" else 2

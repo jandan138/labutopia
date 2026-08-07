@@ -489,6 +489,7 @@ def classify_visible_beaker_trace(
     records: Sequence[Mapping[str, Any]],
     frame: CupInteriorFrame,
     *,
+    frame_sequence: Sequence[CupInteriorFrame] | None = None,
     requested_count: int,
     steps: int,
     cadence: int,
@@ -522,10 +523,18 @@ def classify_visible_beaker_trace(
 
     frames = []
     particle_explosion = False
-    cup_height = frame.rim_height - frame.interior_floor
-    for record in records:
+    if frame_sequence is not None and len(frame_sequence) != len(records):
+        return {
+            "classification": "STOP_INCOMPLETE_TRACE",
+            "trace_schema_valid": False,
+            "trace_schema_error": "frame_sequence_length_mismatch",
+            "diagnostic_scan_complete": bool(diagnostic_scan_complete),
+        }
+    for index, record in enumerate(records):
+        current_frame = frame_sequence[index] if frame_sequence is not None else frame
+        cup_height = current_frame.rim_height - current_frame.interior_floor
         classified = classify_visible_beaker_positions(
-            record["positions"], frame, legacy_region_config=legacy_region_config
+            record["positions"], current_frame, legacy_region_config=legacy_region_config
         )
         classified["step_index"] = record["step_index"]
         frames.append(classified)

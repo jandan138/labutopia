@@ -6,4 +6,5 @@ name: Diagnostic_level1_pour_contact_pick_lateral_x_positive_g2_fast_preroll120_
 
 online_fluid:
   dynamic_pre_roll_steps: 120
+  stop_after_pre_roll: true
   performance_label: "contact_pick_lateral_x_positive_g2_fast_preroll120_diagnostic"

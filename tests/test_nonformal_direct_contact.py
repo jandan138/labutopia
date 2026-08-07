@@ -19,6 +19,7 @@ SOURCE = "/World/beaker2/mesh"
 LEFT = "/World/Franka/panda_leftfinger/collision"
 RIGHT = "/World/Franka/panda_rightfinger/collision"
 HAND = "/World/Franka/panda_hand/collision"
+ARM = "/World/Franka/panda_link3/collision"
 SUPPORT = "/World/table/collision"
 
 
@@ -28,13 +29,16 @@ def _identities():
         "left_colliders": [LEFT],
         "right_colliders": [RIGHT],
         "hand_colliders": [HAND],
+        "other_robot_colliders": [ARM],
         "support_colliders": [SUPPORT],
         "other_colliders": [],
+        "stage_id": 7,
         "collider_owners": {
             SOURCE: "/World/beaker2",
             LEFT: "/World/Franka/panda_leftfinger",
             RIGHT: "/World/Franka/panda_rightfinger",
             HAND: "/World/Franka/panda_hand",
+            ARM: "/World/Franka/panda_link3",
             SUPPORT: "/World/table",
         },
     }
@@ -49,7 +53,24 @@ def _occurrence(first, second, *, current=True, transient=False, owners=None):
         "collider1": second,
         "proto_index0": 1,
         "proto_index1": 1,
+        "type": "PERSIST" if current else "LOST",
+        "stage_id": 7,
+        "contact_data_offset": 0,
+        "num_contact_data": 1,
+        "friction_anchors_offset": 0,
+        "num_friction_anchors_data": 1,
     }
+    point = {
+        "position": [0.0, 0.0, 0.0],
+        "normal": [0.0, 0.0, 1.0],
+        "impulse": [0.0, 0.0, 0.0],
+        "separation": 0.0,
+        "face_index0": 0,
+        "face_index1": 0,
+        "material0": "__zero__",
+        "material1": "__zero__",
+    }
+    anchor = {"position": [0.0, 0.0, 0.0], "impulse": [0.0, 0.0, 0.0]}
     return {
         "canonical_pair": [
             {"collider_path": first, "proto_index": 1},
@@ -57,17 +78,38 @@ def _occurrence(first, second, *, current=True, transient=False, owners=None):
         ],
         "current": current,
         "transient": transient,
+        "event_sequence": "PERSIST" if current else "LOST",
+        "bootstrap": False,
         "headers": [header],
-        "contact_data": [{"position": [0.0, 0.0, 0.0]}],
-        "fragments": [{"header": header}],
+        "contact_data": [point],
+        "friction_anchors": [anchor],
+        "fragments": [
+            {
+                "header": header,
+                "contact_data": [point],
+                "friction_anchors": [anchor],
+            }
+        ],
     }
 
 
 def _full_report(*occurrences):
+    headers = [header for occurrence in occurrences for header in occurrence["headers"]]
+    points = [point for occurrence in occurrences for point in occurrence["contact_data"]]
+    anchors = [
+        anchor for occurrence in occurrences for anchor in occurrence["friction_anchors"]
+    ]
     return {
         "authority": "full_contact_report_step_v1",
         "physics_index": 17,
         "range_partition_valid": True,
+        "header_count": len(headers),
+        "contact_data_count": len(points),
+        "friction_anchor_count": len(anchors),
+        "occurrence_count": len(occurrences),
+        "event_sequences": [
+            occurrence["event_sequence"] for occurrence in occurrences
+        ],
         "occurrences": list(occurrences),
     }
 
@@ -205,14 +247,10 @@ def test_full_report_adapter_observes_direct_bilateral_contact_without_sensor_fr
 def test_full_report_adapter_rejects_actor_mismatch_in_any_fragment():
     left = _occurrence(SOURCE, LEFT)
     right = _occurrence(SOURCE, RIGHT)
-    right["fragments"].append(
-        {
-            "header": {
-                **right["headers"][0],
-                "actor1": "/World/not-the-right-finger",
-            }
-        }
-    )
+    right["fragments"][0]["header"] = {
+        **right["headers"][0],
+        "actor1": "/World/not-the-right-finger",
+    }
 
     result = nonformal_direct_contact.evaluate_full_report_bilateral_contact(
         _full_report(left, right),
@@ -262,3 +300,43 @@ def test_full_report_adapter_rejects_header_prototype_mismatch():
 
     assert result["decision"] == "AUDIT_NO_GO"
     assert result["failures"] == ["fragment_prototype_mismatch"]
+
+
+def test_full_report_adapter_rejects_nonfinite_contact_points():
+    left = _occurrence(SOURCE, LEFT)
+    left["contact_data"][0]["position"][0] = float("nan")
+
+    result = nonformal_direct_contact.evaluate_full_report_bilateral_contact(
+        _full_report(left, _occurrence(SOURCE, RIGHT)),
+        identities=_identities(),
+    )
+
+    assert result["decision"] == "AUDIT_NO_GO"
+    assert "full_contact_point_invalid" in result["failures"]
+
+
+def test_full_report_adapter_rejects_fragment_payload_mismatch():
+    left = _occurrence(SOURCE, LEFT)
+    left["fragments"][0]["contact_data"] = []
+
+    result = nonformal_direct_contact.evaluate_full_report_bilateral_contact(
+        _full_report(left, _occurrence(SOURCE, RIGHT)),
+        identities=_identities(),
+    )
+
+    assert result["decision"] == "AUDIT_NO_GO"
+    assert result["failures"] == ["fragment_payload_mismatch"]
+
+
+def test_other_robot_link_environment_contact_is_a_physical_failure():
+    result = nonformal_direct_contact.evaluate_full_report_bilateral_contact(
+        _full_report(
+            _occurrence(SOURCE, LEFT),
+            _occurrence(SOURCE, RIGHT),
+            _occurrence(ARM, SUPPORT),
+        ),
+        identities=_identities(),
+    )
+
+    assert result["decision"] == "PHYSICAL_FAIL"
+    assert result["failures"] == ["robot_environment_contact"]

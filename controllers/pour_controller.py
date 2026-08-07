@@ -39,6 +39,8 @@ class PourTaskController(BaseController):
         self._native_expert_profile = False
         self._execution_mode = "production_pour_v1"
         self._contact_acquisition_probe = False
+        self._nonformal_full_pbd_demo = False
+        self._expected_particle_count = None
         self._expert_pick_lift_height_m = 0.5
         self._expert_pour_speed_rad_s = -1.0
         self._grasp_finger_joint_target_m = 0.028
@@ -57,12 +59,18 @@ class PourTaskController(BaseController):
         self._contact_pick_contact_timeout_s = 1.5
         self._contact_pick_source_translation_limit_m = 0.002
         self._contact_pick_source_tilt_limit_degrees = 1.0
+        self._native_pick_z_offset_m = None
+        self._native_pick_x_offset_m = None
+        self._native_pick_events_dt = None
+        self._native_grasp_finger_joint_target_m = None
+        self._native_require_pick_controller_done_before_pour = False
         self._end_effector_target_frame = "tool_center"
         self._rmpflow_control_frame = "right_gripper"
         self._control_to_end_effector_matrix_m = np.eye(4, dtype=np.float64)
         self._finger_joint_indices = (7, 8)
         self._pour_forward_invocation_count = 0
         self._configure_online_fluid(online_fluid)
+        self._configure_g0_native_pick_treatment(getattr(cfg, "diagnostic", None))
         if (
             self._contact_acquisition_probe
             and getattr(cfg, "mode", None) != "collect"
@@ -91,6 +99,88 @@ class PourTaskController(BaseController):
         if norm <= 1.0e-12:
             raise ValueError(error)
         return vector / norm
+
+    def _configure_g0_native_pick_treatment(self, diagnostic):
+        if not isinstance(diagnostic, Mapping):
+            return
+        treatment = diagnostic.get("g0_native_pick_treatment")
+        if treatment is None:
+            return
+        if (
+            not isinstance(treatment, Mapping)
+            or treatment.get("authority")
+            not in {
+                "g0_native_expert_pick_v1",
+                "g0_native_expert_pick_v2",
+                "g0_native_expert_pick_v3",
+                "g0_native_expert_pick_v4",
+                "g0_native_expert_pick_v5",
+                "g0_native_expert_pick_v6",
+                "g0_native_expert_pick_v7",
+                "g0_native_expert_pick_v8",
+                "g0_native_expert_pick_v9",
+            }
+        ):
+            raise ValueError("g0_native_pick_treatment_invalid")
+        self._expert_pick_target_orientation_wxyz = self._normalized_vector(
+            treatment.get("target_orientation_wxyz"),
+            shape=(4,),
+            error="g0_native_pick_target_orientation_invalid",
+        ).copy()
+        offset = treatment.get("pick_z_offset_m")
+        if (
+            isinstance(offset, bool)
+            or not isinstance(offset, (int, float, np.number))
+            or not np.isfinite(float(offset))
+            or not 0.0 <= float(offset) <= 0.10
+        ):
+            raise ValueError("g0_native_pick_z_offset_invalid")
+        self._native_pick_z_offset_m = float(offset)
+        x_offset = treatment.get("pick_x_offset_m")
+        if x_offset is not None:
+            if (
+                isinstance(x_offset, bool)
+                or not isinstance(x_offset, (int, float, np.number))
+                or not np.isfinite(float(x_offset))
+                or abs(float(x_offset)) > 0.10
+            ):
+                raise ValueError("g0_native_pick_x_offset_invalid")
+            self._native_pick_x_offset_m = float(x_offset)
+        gripper_target = treatment.get("grasp_finger_joint_target_m")
+        if gripper_target is not None:
+            if (
+                isinstance(gripper_target, bool)
+                or not isinstance(gripper_target, (int, float, np.number))
+                or not np.isfinite(float(gripper_target))
+                or not 0.0 <= float(gripper_target) <= 0.04
+            ):
+                raise ValueError("g0_native_pick_gripper_target_invalid")
+            self._native_grasp_finger_joint_target_m = float(gripper_target)
+        require_done = treatment.get("require_pick_controller_done_before_pour")
+        if require_done is not None:
+            if type(require_done) is not bool:
+                raise ValueError("g0_native_pick_require_done_invalid")
+            self._native_require_pick_controller_done_before_pour = require_done
+        settle_events_dt = treatment.get("settle_events_dt")
+        if settle_events_dt is not None:
+            if isinstance(settle_events_dt, (str, bytes, bytearray)):
+                raise ValueError("g0_native_pick_settle_events_dt_invalid")
+            try:
+                values = list(settle_events_dt)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("g0_native_pick_settle_events_dt_invalid") from exc
+            if (
+                len(values) != 7
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float, np.number))
+                    or not np.isfinite(float(value))
+                    or float(value) <= 0.0
+                    for value in values
+                )
+            ):
+                raise ValueError("g0_native_pick_settle_events_dt_invalid")
+            self._native_pick_events_dt = [float(value) for value in values]
 
     def _configure_online_fluid(self, online_fluid):
         if not self._online_fluid_enabled:
@@ -187,12 +277,18 @@ class PourTaskController(BaseController):
             "production_pour_v1",
             "contact_acquisition_probe_v1",
             "close_contact_allowed_v1",
+            "nonformal_full_pbd_demo_v1",
         ):
             raise ValueError("online_fluid_execution_mode_unsupported")
         self._contact_acquisition_probe = (
             self._execution_mode
             in {"contact_acquisition_probe_v1", "close_contact_allowed_v1"}
         )
+        self._nonformal_full_pbd_demo = (
+            self._execution_mode == "nonformal_full_pbd_demo_v1"
+        )
+        if self._nonformal_full_pbd_demo and not self._native_expert_profile:
+            raise ValueError("nonformal_full_pbd_demo_requires_native_expert")
         if self._contact_acquisition_probe and not self._contact_grasp_required:
             raise ValueError("contact_acquisition_probe_requires_contact_ownership")
         self._expert_pick_lift_height_m = float(
@@ -210,6 +306,19 @@ class PourTaskController(BaseController):
             raise ValueError("expert_pour_speed_rad_s_invalid")
         if not 0.0 <= self._grasp_finger_joint_target_m <= 0.04:
             raise ValueError("grasp_finger_joint_target_m_invalid")
+        if self._nonformal_full_pbd_demo:
+            expected_particle_count = getattr(
+                online_fluid, "expected_particle_count", None
+            )
+            if (
+                isinstance(expected_particle_count, bool)
+                or not isinstance(expected_particle_count, int)
+                or expected_particle_count <= 0
+            ):
+                raise ValueError(
+                    "nonformal_full_pbd_demo_expected_particle_count_invalid"
+                )
+            self._expected_particle_count = expected_particle_count
 
         if self._use_contact_pick_controller:
             self._end_effector_target_frame = str(
@@ -531,9 +640,13 @@ class PourTaskController(BaseController):
                 ),
             )
         pick_events_dt = (
-            [0.002, 0.002, 0.005, 0.05, 0.05, 0.01, 0.05]
-            if self._native_expert_profile
-            else [0.002, 0.002, 0.005, 0.02, 0.05, 0.01, 0.02]
+            self._native_pick_events_dt
+            if self._native_pick_events_dt is not None
+            else (
+                [0.002, 0.002, 0.005, 0.05, 0.05, 0.01, 0.05]
+                if self._native_expert_profile
+                else [0.002, 0.002, 0.005, 0.02, 0.05, 0.01, 0.02]
+            )
         )
         return PickController(
             name="pick_controller",
@@ -655,6 +768,8 @@ class PourTaskController(BaseController):
                     and not self._contact_acquisition_probe
                 ):
                     controller_done = self.pick_controller.is_done()
+            if self._native_require_pick_controller_done_before_pour:
+                controller_done = self.pick_controller.is_done()
             success = height_reached and grasp_qualified and controller_done
             if not success:
                 self.last_error_info = {
@@ -762,6 +877,42 @@ class PourTaskController(BaseController):
                 return False
         
         return False
+
+    def _nonformal_full_pbd_demo_gate_failure(self, state) -> str | None:
+        if not self._nonformal_full_pbd_demo:
+            return None
+        grasp = state.get("online_fluid_grasp")
+        if not isinstance(grasp, Mapping):
+            return "nonformal_demo_grasp_record_missing"
+        if grasp.get("qualified") is not True:
+            return "nonformal_demo_grasp_not_qualified"
+        if grasp.get("probe_qualified_now") is not True:
+            return "nonformal_demo_grasp_not_current"
+        if grasp.get("contact_sensor_ready") is not True:
+            return "nonformal_demo_contact_sensor_not_ready"
+        if grasp.get("failure_reason") is not None:
+            return "nonformal_demo_grasp_failure"
+        containment = state.get("online_fluid_cumulative_containment")
+        if not isinstance(containment, Mapping):
+            return "nonformal_demo_containment_missing"
+        if (
+            containment.get("substep_sampling_complete") is not True
+            or containment.get("partition_integrity_valid") is not True
+            or containment.get("pre_pour_source_min")
+            != self._expected_particle_count
+            or containment.get("below_table_max") != 0
+            or containment.get("nonfinite_max") != 0
+        ):
+            return "nonformal_demo_containment_invalid"
+        non_source = containment.get("pre_pour_non_source_max")
+        if (
+            not isinstance(non_source, Mapping)
+            or set(non_source)
+            != {"target", "transit", "tabletop_spill", "below_table", "nonfinite"}
+            or any(value != 0 for value in non_source.values())
+        ):
+            return "nonformal_demo_containment_invalid"
+        return None
     def step(self, state):
         """Execute one step of control.
         
@@ -906,13 +1057,26 @@ class PourTaskController(BaseController):
         monitor_failure = self._online_fluid_monitor_failure_reason(state)
         if monitor_failure is not None:
             return self.abort_online_fluid_episode(monitor_failure)
+        if self._nonformal_full_pbd_demo and self._native_expert_profile:
+            pending = getattr(self.pick_controller, "lift_is_next_action", None)
+            if callable(pending) and pending():
+                gate_failure = self._nonformal_full_pbd_demo_gate_failure(state)
+                if gate_failure is not None:
+                    return self.abort_online_fluid_episode(gate_failure)
         if self._native_contact_acquisition_probe_lift_failure(state):
             return self.abort_online_fluid_episode(
                 "contact_acquisition_probe_lift_observed"
             )
+        if self.current_phase == Phase.POURING:
+            gate_failure = self._nonformal_full_pbd_demo_gate_failure(state)
+            if gate_failure is not None:
+                return self.abort_online_fluid_episode(gate_failure)
         success = self._check_phase_success()
         if success:
             if self.current_phase == Phase.PICKING:
+                gate_failure = self._nonformal_full_pbd_demo_gate_failure(state)
+                if gate_failure is not None:
+                    return self.abort_online_fluid_episode(gate_failure)
                 if self._contact_acquisition_probe:
                     print("Contact acquisition probe success!")
                     self._collection_episode_terminal = True
@@ -970,18 +1134,26 @@ class PourTaskController(BaseController):
                         state,
                         default_euler_degrees=[0, 90, 30],
                     )
-                    action = self.pick_controller.forward(
-                        picking_position=picking_position,
-                        current_joint_positions=state['joint_positions'],
-                        object_size=state['object_size'],
-                        object_name=state['object_name'],
-                        gripper_control=self.gripper_control,
-                        gripper_position=state['gripper_position'],
-                        end_effector_orientation=pick_orientation,
-                        pre_offset_x=0.05,
-                        pre_offset_z=0.05,
-                        after_offset_z=0.5,
-                    )
+                    pick_kwargs = {
+                        "picking_position": picking_position,
+                        "current_joint_positions": state['joint_positions'],
+                        "object_size": state['object_size'],
+                        "object_name": state['object_name'],
+                        "gripper_control": self.gripper_control,
+                        "gripper_position": state['gripper_position'],
+                        "end_effector_orientation": pick_orientation,
+                        "pre_offset_x": 0.05,
+                        "pre_offset_z": 0.05,
+                        "after_offset_z": 0.5,
+                        "pick_z_offset_m": self._native_pick_z_offset_m,
+                    }
+                    if self._native_pick_x_offset_m is not None:
+                        pick_kwargs["pick_x_offset_m"] = self._native_pick_x_offset_m
+                    if self._native_grasp_finger_joint_target_m is not None:
+                        pick_kwargs["gripper_distances"] = (
+                            self._native_grasp_finger_joint_target_m
+                        )
+                    action = self.pick_controller.forward(**pick_kwargs)
             else:
                 pour_kwargs = {
                     "articulation_controller": self.robot.get_articulation_controller(),
@@ -1101,6 +1273,7 @@ class PourTaskController(BaseController):
             "expert_pour_position_control": self._expert_pour_position_control,
             "execution_mode": self._execution_mode,
             "contact_acquisition_probe": self._contact_acquisition_probe,
+            "nonformal_full_pbd_demo": self._nonformal_full_pbd_demo,
             "pour_forward_invocation_count": (
                 self._pour_forward_invocation_count
             ),

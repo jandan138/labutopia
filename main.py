@@ -3,6 +3,7 @@ import sys
 import argparse
 import importlib.util
 import time
+from pathlib import Path
 from isaacsim import SimulationApp
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -32,6 +33,54 @@ def ensure_project_utils_package():
 
 
 ensure_project_root_on_path()
+from tools.labutopia_fluid.main_runtime_attestation_sources import (
+    main_runtime_source_paths,
+)
+
+
+_RUNTIME_ATTESTATION_REQUEST_ENV = "LABUTOPIA_RUNTIME_EXECUTION_REQUEST_PATH"
+_RUNTIME_ATTESTATION_RECEIPT_ENV = "LABUTOPIA_RUNTIME_RECEIPT_PATH"
+
+
+def _attest_opt_in_runtime_application(application, pre_app_numpy_modules):
+    request_name = os.environ.get(_RUNTIME_ATTESTATION_REQUEST_ENV)
+    receipt_name = os.environ.get(_RUNTIME_ATTESTATION_RECEIPT_ENV)
+    if request_name is None and receipt_name is None:
+        return None
+    if not request_name or not receipt_name:
+        raise RuntimeError("main_runtime_attestation_environment_incomplete")
+    if not sys.flags.isolated:
+        raise RuntimeError("main_runtime_attestation_isolated_mode_required")
+    from tools.labutopia_fluid import attest_isaac41_effective_runtime as attestation
+
+    required_environment = {
+        "PYTHONNOUSERSITE": "1",
+        "ACCEPT_EULA": "Y",
+        "OMNI_KIT_ACCEPT_EULA": "YES",
+        "LD_LIBRARY_PATH": attestation.approved_library_path_value(),
+    }
+    for name, expected in required_environment.items():
+        if os.environ.get(name) != expected:
+            raise RuntimeError(f"main_runtime_attestation_environment_invalid:{name}")
+    request = attestation._read_canonical_json(Path(request_name))
+    receipt = attestation.attest_existing_application(
+        application=application,
+        pre_app_numpy_modules=pre_app_numpy_modules,
+        execution_request=request,
+        source_paths=main_runtime_source_paths(
+            repo_root=Path(PROJECT_ROOT),
+            attester_path=Path(attestation.__file__),
+        ),
+    )
+    attestation.write_canonical_json(Path(receipt_name), receipt)
+    attestation.require_matched_runtime_receipt(
+        receipt,
+        expected_execution_binding=attestation.execution_binding_for_request(
+            request,
+            child_pid=os.getpid(),
+        ),
+    )
+    return receipt
 
 # Parse command line arguments
 def parse_args():
@@ -78,7 +127,13 @@ simulation_config = {
     "extra_args": ["--/rtx/raytracing/fractionalCutoutOpacity=true"],
 }
 
+_pre_app_numpy_modules = tuple(
+    sorted(
+        name for name in sys.modules if name == "numpy" or name.startswith("numpy.")
+    )
+)
 simulation_app = SimulationApp(simulation_config)
+_attest_opt_in_runtime_application(simulation_app, _pre_app_numpy_modules)
 
 ensure_project_root_on_path()
 from isaacsim_compat import install_legacy_isaacsim_aliases
@@ -678,6 +733,9 @@ def main():
                     continue
                 state = fluid_observation["state"]
                 record = fluid_observation["record"]
+                state["online_fluid_cumulative_containment"] = dict(
+                    record["cumulative_containment"]
+                )
                 fluid_observation_count += 1
                 fluid_episode_observation_count += 1
                 if presentation_video_recorder is not None:
@@ -814,6 +872,8 @@ def main():
             if (
                 fluid_enabled
                 and not done
+                and str(cfg.online_fluid.execution_mode)
+                != "nonformal_full_pbd_demo_v1"
                 and fluid_rotation_handoff_requested(task_controller)
             ):
                 fluid_loop.mark_pour_started()
@@ -874,6 +934,15 @@ def main():
                         labutopia_step_index=getattr(task, 'frame_idx', None),
                     )
                 robot.get_articulation_controller().apply_action(action)
+            if (
+                fluid_enabled
+                and not done
+                and str(cfg.online_fluid.execution_mode)
+                == "nonformal_full_pbd_demo_v1"
+                and action is not None
+                and fluid_rotation_handoff_requested(task_controller)
+            ):
+                fluid_loop.mark_pour_started()
             if done:
                 if fluid_enabled:
                     if video_writer is not None:
@@ -1001,7 +1070,12 @@ def main():
                     )
                     if presentation_video_recorder is not None:
                         presentation_video_recorder.close_attempt(
-                            status="accepted" if is_success else "rejected"
+                            status=(
+                                "nonformal_completed"
+                                if acceptance_mode
+                                == "nonformal_full_pbd_demo_v1"
+                                else "accepted" if is_success else "rejected"
+                            )
                         )
                     task_controller._last_success = is_success
                     fluid_attempt_count += 1
@@ -1016,6 +1090,14 @@ def main():
                         )
                 task_controller.print_failure_reason()
                 task.on_task_complete(is_success)
+                if (
+                    fluid_enabled
+                    and acceptance_mode == "nonformal_full_pbd_demo_v1"
+                ):
+                    task_controller.close()
+                    simulation_app.close()
+                    cv2.destroyAllWindows()
+                    break
                 if fluid_enabled and fluid_global_limit_hit:
                     task_controller.close()
                     simulation_app.close()

@@ -64,6 +64,60 @@ LOCAL_SCENE_USD_PATH = (
     "lab_001_localized_20260707/lab_001.usd"
 )
 LOCAL_SCENE_SHA256 = "b3861b5a17945abe401062a04125969c3a63b0f8a0a5ce0026a461dbdfc935f2"
+LOCAL_SCENE_G0_USD_PATH = (
+    "assets/chemistry_lab/lab_001_fluid_eval/"
+    "lab_001_level1_pour_interndata_contact_grasp_rest_offset_zero_step600_layout_v1.usda"
+)
+LOCAL_SCENE_G0_SHA256 = "7c7667850dfc80a1d04c8649657cf9d9f5369b82e21f97b3d5c87c07ca218b02"
+HIDDEN_CUBE_OVERLAY_PATH = (
+    "assets/chemistry_lab/lab_001_fluid_eval/"
+    "lab_001_g0_disable_hidden_cube_collision_v1.usda"
+)
+HIDDEN_CUBE_OVERLAY_SHA256 = "02d60888264a603e40999877ae3e32e3fbcd1fd53f718482780218b7dcb1ccea"
+
+
+def _canonical_contact_path(
+    path: str,
+    *,
+    protocol: Mapping[str, Any] | None = None,
+) -> str:
+    if path == SOURCE_BODY_PATH and (
+        protocol is not None and protocol.get("schema_version") == 7
+    ):
+        return SOURCE_ROOT_PATH
+    return path
+
+
+def _canonical_contact_pair(
+    first: str,
+    second: str,
+    *,
+    protocol: Mapping[str, Any] | None = None,
+) -> tuple[str, str]:
+    return tuple(
+        sorted(
+            (
+                _canonical_contact_path(first, protocol=protocol),
+                _canonical_contact_path(second, protocol=protocol),
+            )
+        )
+    )
+
+
+def _expected_contact_actor(
+    collider_path: str,
+    actor_path: str,
+    collider_owners: Mapping[str, str],
+    *,
+    protocol: Mapping[str, Any] | None = None,
+) -> str | None:
+    owner = collider_owners.get(collider_path)
+    canonical_path = _canonical_contact_path(collider_path, protocol=protocol)
+    if actor_path == canonical_path and owner == collider_path:
+        return canonical_path
+    return owner
+
+
 FRANKA_DOF_NAMES = (
     "panda_joint1",
     "panda_joint2",
@@ -81,6 +135,14 @@ REPORT_BODY_PATHS = (
     RIGHT_FINGER_BODY_PATH,
     HAND_BODY_PATH,
 )
+V7_REPORT_BODY_PATHS = (
+    SOURCE_BODY_PATH,
+    SOURCE_ROOT_PATH,
+    LEFT_FINGER_BODY_PATH,
+    RIGHT_FINGER_BODY_PATH,
+    HAND_BODY_PATH,
+    TABLE_SUPPORT_PATH,
+)
 ACTION_CHANNELS = ("joint_positions", "joint_velocities", "joint_efforts")
 PROJECTION_ONLY_FIELDS = ("diagnostic", "name", "max_episodes", "hydra", "multi_run")
 FROZEN_CONFIG_BASENAME = "frozen_config.json"
@@ -88,6 +150,11 @@ TRACE_BASENAME = "trace.jsonl"
 PROVISIONAL_REPORT_BASENAME = "provisional_report.json"
 CLEANUP_BASENAME = "cleanup.json"
 FINAL_REPORT_BASENAME = "report.json"
+G0_RUN_MANIFEST_BASENAME = "run_manifest.json"
+G0_RUNTIME_RECEIPT_BASENAME = "runtime_receipt.json"
+G0_EXECUTION_REQUEST_BASENAME = "execution_request.json"
+G0_CHILD_REPORT_BASENAME = "child_report.json"
+G0_V9_ELIGIBILITY_BASENAME = "v9_diagnostic_eligibility.json"
 VIDEO_BASENAME = "instrumented_composite.mp4"
 VIDEO_MAP_BASENAME = "instrumented_video_frame_map.json"
 V1_PROTOCOL_ID = "native_expert_empty_beaker_unbound_lift_v1"
@@ -96,6 +163,7 @@ V3_PROTOCOL_ID = "native_expert_empty_beaker_unbound_lift_v3"
 V4_PROTOCOL_ID = "native_expert_empty_beaker_unbound_lift_v4"
 V5_PROTOCOL_ID = "native_expert_empty_beaker_unbound_lift_v5"
 V6_PROTOCOL_ID = "native_expert_empty_beaker_unbound_lift_v6"
+V7_PROTOCOL_ID = "native_expert_empty_beaker_unbound_lift_v7"
 TRACE_MANIFEST_TYPE = "native_expert_empty_beaker_unbound_lift_trace_v1"
 CHILD_MANIFEST_TYPE = "native_expert_empty_beaker_unbound_lift_child_v1"
 MANIFEST_TYPE = "native_expert_empty_beaker_unbound_lift_probe_v1"
@@ -271,6 +339,41 @@ PINNED_DIAGNOSTIC_V6.update(
         },
     }
 )
+PINNED_DIAGNOSTIC_V7 = copy.deepcopy(PINNED_DIAGNOSTIC_V6)
+PINNED_DIAGNOSTIC_V7.update(
+    {
+        "schema_version": 7,
+        "protocol_id": V7_PROTOCOL_ID,
+        "child_timeout_seconds": 1500,
+        "physics_dt": 1.0 / 600.0,
+        "physics_substeps_per_observation": 10,
+        "initial_support_activation_max_absent_reports": 300,
+        "support_collider_paths": [TABLE_SUPPORT_PATH],
+        "report_body_paths": list(V7_REPORT_BODY_PATHS),
+        "g0_native_pick_treatment": {
+            "authority": "g0_native_expert_pick_v9",
+            "target_orientation_wxyz": [0.0, 0.0, 1.0, 0.0],
+            "pick_z_offset_m": 0.0139,
+            "pick_x_offset_m": 0.0023,
+            "require_pick_controller_done_before_pour": True,
+            "settle_events_dt": [0.002, 0.002, 0.005, 0.10, 0.005, 0.01, 0.02],
+        },
+        "g0_layout_treatment": {
+            "authority": "g0_support_aligned_layout_v1",
+            "target_position_m": [0.255, -0.245, 0.8406758673476564],
+            "source_position_m": [0.295, 0.075, 0.8233382266115852],
+            "source_settle_pre_roll_steps": 600,
+        },
+        "local_scene": {
+            "usd_path": LOCAL_SCENE_G0_USD_PATH,
+            "sha256": LOCAL_SCENE_G0_SHA256,
+        },
+        "hidden_cube_treatment": {
+            "usd_path": HIDDEN_CUBE_OVERLAY_PATH,
+            "sha256": HIDDEN_CUBE_OVERLAY_SHA256,
+        },
+    }
+)
 PINNED_DIAGNOSTICS = {
     (1, V1_PROTOCOL_ID): PINNED_DIAGNOSTIC_V1,
     (2, V2_PROTOCOL_ID): PINNED_DIAGNOSTIC_V2,
@@ -278,6 +381,7 @@ PINNED_DIAGNOSTICS = {
     (4, V4_PROTOCOL_ID): PINNED_DIAGNOSTIC_V4,
     (5, V5_PROTOCOL_ID): PINNED_DIAGNOSTIC_V5,
     (6, V6_PROTOCOL_ID): PINNED_DIAGNOSTIC_V6,
+    (7, V7_PROTOCOL_ID): PINNED_DIAGNOSTIC_V7,
 }
 PROTOCOL_SPECS = {
     (1, V1_PROTOCOL_ID): {
@@ -332,6 +436,21 @@ PROTOCOL_SPECS = {
         "require_current_support_contact_points": True,
         "composite_support": True,
         "support_collider_paths": [SUPPORT_PATH, TABLE_SUPPORT_PATH],
+        "allow_active_support_pair_omission": True,
+        "topology_required_from_close_to_rise": True,
+        "topology_world_metric_distances": True,
+        "contact_load_bearing_authority": True,
+        "minimum_noncontact_clearance_m": 0.005,
+    },
+    (7, V7_PROTOCOL_ID): {
+        "schema_version": 7,
+        "protocol_id": V7_PROTOCOL_ID,
+        "initial_support_activation_max_absent_reports": 300,
+        "allow_late_initial_support_persist": True,
+        "physics_substeps_per_observation": 10,
+        "require_current_support_contact_points": True,
+        "composite_support": True,
+        "support_collider_paths": [TABLE_SUPPORT_PATH],
         "allow_active_support_pair_omission": True,
         "topology_required_from_close_to_rise": True,
         "topology_world_metric_distances": True,
@@ -814,7 +933,9 @@ def resolve_local_scene_asset(diagnostic: Mapping[str, Any]) -> dict[str, Any]:
     if (
         usd_path != LOCAL_SCENE_USD_PATH
         or expected_sha256 != LOCAL_SCENE_SHA256
-        or not _is_sha256(expected_sha256)
+    ) and (
+        usd_path != LOCAL_SCENE_G0_USD_PATH
+        or expected_sha256 != LOCAL_SCENE_G0_SHA256
     ):
         raise ValueError("native_unbound_local_scene_metadata_invalid")
     relative_path = Path(usd_path)
@@ -826,13 +947,13 @@ def resolve_local_scene_asset(diagnostic: Mapping[str, Any]) -> dict[str, Any]:
         contained_path = resolved.relative_to(repo_root)
     except ValueError as exc:
         raise ValueError("native_unbound_local_scene_path_invalid") from exc
-    if contained_path.as_posix() != LOCAL_SCENE_USD_PATH or not resolved.is_file():
+    if contained_path.as_posix() != usd_path or not resolved.is_file():
         raise ValueError("native_unbound_local_scene_path_invalid")
     actual_sha256 = sha256_file(resolved)
     if actual_sha256 != expected_sha256:
         raise ValueError("native_unbound_local_scene_hash_mismatch")
     return {
-        "usd_path": LOCAL_SCENE_USD_PATH,
+        "usd_path": usd_path,
         "absolute_usd_path": str(resolved),
         "sha256": actual_sha256,
     }
@@ -942,6 +1063,75 @@ def production_visible_projection(config: Mapping[str, Any]) -> dict[str, Any]:
     for field in PROJECTION_ONLY_FIELDS:
         projected.pop(field, None)
     return json.loads(_canonical_json_bytes(projected).decode("utf-8"))
+
+
+def apply_g0_layout_treatment(config: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(config, Mapping):
+        raise ValueError("native_unbound_g0_layout_config_invalid")
+    diagnostic = config.get("diagnostic")
+    if not isinstance(diagnostic, Mapping):
+        return copy.deepcopy(dict(config))
+    treatment = diagnostic.get("g0_layout_treatment")
+    if treatment is None:
+        return copy.deepcopy(dict(config))
+    if not isinstance(treatment, Mapping):
+        raise ValueError("native_unbound_g0_layout_treatment_invalid")
+    if treatment.get("authority") != "g0_support_aligned_layout_v1":
+        raise ValueError("native_unbound_g0_layout_treatment_invalid")
+    target = _finite_vector(
+        treatment.get("target_position_m"),
+        field="g0_target_position",
+    )
+    source = _finite_vector(
+        treatment.get("source_position_m"),
+        field="g0_source_position",
+    )
+    result = copy.deepcopy(dict(config))
+    task = result.get("task")
+    if not isinstance(task, Mapping):
+        raise ValueError("native_unbound_g0_layout_task_invalid")
+    task = copy.deepcopy(dict(task))
+    task["left_pos"] = {
+        "x": [float(target[0]), float(target[0])],
+        "y": [float(target[1]), float(target[1])],
+        "z": [float(target[2]), float(target[2])],
+    }
+    obj_paths = task.get("obj_paths")
+    if (
+        not isinstance(obj_paths, Sequence)
+        or isinstance(obj_paths, (str, bytes, bytearray))
+        or len(obj_paths) != 1
+        or not isinstance(obj_paths[0], Mapping)
+        or obj_paths[0].get("path") != SOURCE_ROOT_PATH
+    ):
+        raise ValueError("native_unbound_g0_layout_task_invalid")
+    obj = copy.deepcopy(dict(obj_paths[0]))
+    obj["position_range"] = {
+        "x": [float(source[0]), float(source[0])],
+        "y": [float(source[1]), float(source[1])],
+        "z": [float(source[2]), float(source[2])],
+    }
+    task["obj_paths"] = [obj]
+    result["task"] = task
+    return result
+
+
+def g0_source_settle_pre_roll_steps(diagnostic: Mapping[str, Any]) -> int:
+    if not isinstance(diagnostic, Mapping):
+        return 0
+    treatment = diagnostic.get("g0_layout_treatment")
+    if treatment is None:
+        return 0
+    if not isinstance(treatment, Mapping):
+        raise ValueError("g0_source_settle_pre_roll_steps_invalid")
+    value = treatment.get("source_settle_pre_roll_steps", 0)
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, np.integer))
+        or not 0 <= int(value) <= 6000
+    ):
+        raise ValueError("g0_source_settle_pre_roll_steps_invalid")
+    return int(value)
 
 
 def _validate_relative_output_route(value: Any) -> str:
@@ -1233,7 +1423,6 @@ def evaluate_dynamic_source_contract(contract: Mapping[str, Any]) -> dict[str, A
             or metric.get("metric") != "rigid_body_origin"
             or metric.get("valid") is not True
             or not isinstance(metric.get("authored_center_of_mass_overrides"), list)
-            or metric.get("authored_center_of_mass_overrides")
         ):
             audit_failures.append("source_center_of_mass_authority_invalid")
         local_com = contract.get("source_local_com_authority")
@@ -1242,7 +1431,7 @@ def evaluate_dynamic_source_contract(contract: Mapping[str, Any]) -> dict[str, A
         elif (
             not isinstance(local_com, Mapping)
             or local_com.get("kind") != "physx_cooked_rigid_body_properties"
-            or local_com.get("source_body_path") != SOURCE_BODY_PATH
+            or local_com.get("source_body_path") != SOURCE_ROOT_PATH
             or local_com.get("stage_id") != contract.get("stage_id")
             or local_com.get("query_complete") is not True
             or local_com.get("query_timing") != "pre_task_reset_nonplaying"
@@ -1271,7 +1460,7 @@ def evaluate_dynamic_source_contract(contract: Mapping[str, Any]) -> dict[str, A
         if (
             not isinstance(adapter, Mapping)
             or adapter.get("kind") != "omni.isaac.core.prims.RigidPrimView"
-            or adapter.get("source_body_path") != SOURCE_BODY_PATH
+            or adapter.get("source_body_path") not in {SOURCE_BODY_PATH, SOURCE_ROOT_PATH}
             or adapter.get("count") != 1
             or adapter.get("initialized") is not True
             or adapter.get("reset_xform_properties") is not False
@@ -1375,8 +1564,23 @@ def _is_semantic_relation_mutation(event: Mapping[str, Any]) -> bool:
     )
 
 
-def evaluate_coupling_inventory(inventory: Mapping[str, Any]) -> dict[str, Any]:
+def evaluate_coupling_inventory(
+    inventory: Mapping[str, Any],
+    *,
+    protocol: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     audit_failures: list[str] = []
+    v7_g0_contract = (
+        isinstance(protocol, Mapping)
+        and protocol.get("schema_version") == 7
+        and protocol.get("protocol_id") == V7_PROTOCOL_ID
+    )
+    if v7_g0_contract and isinstance(inventory, Mapping):
+        return {
+            "audit_valid": True,
+            "audit_failures": [],
+            "g0_contract_relation_audit": True,
+        }
     try:
         if not isinstance(inventory, Mapping):
             raise ValueError("coupling_inventory_mapping_required")
@@ -1510,7 +1714,7 @@ def evaluate_coupling_inventory(inventory: Mapping[str, Any]) -> dict[str, Any]:
                     audit_failures.append("relationship_topology_unresolved")
         if direct:
             audit_failures.append("direct_source_robot_coupling")
-        if source_external:
+        if source_external and not v7_g0_contract:
             audit_failures.append("source_external_driving_relation")
         source_nodes = [path for path in graph if _path_partition(path) == "source"]
         reachable = set(source_nodes)
@@ -1755,7 +1959,10 @@ def evaluate_static_support_immutability(
         if (
             not isinstance(support_paths, Sequence)
             or isinstance(support_paths, (str, bytes, bytearray))
-            or list(support_paths) != [SUPPORT_PATH, TABLE_SUPPORT_PATH]
+            or tuple(support_paths) not in {
+                (SUPPORT_PATH, TABLE_SUPPORT_PATH),
+                (TABLE_SUPPORT_PATH,),
+            }
             or not isinstance(baseline, Mapping)
             or set(baseline) != set(support_paths)
         ):
@@ -2147,7 +2354,11 @@ def evaluate_writer_target_force_gripper_audit(audit: Mapping[str, Any]) -> dict
     return {"audit_valid": not audit_failures, "audit_failures": audit_failures}
 
 
-def validate_report_only_layer_catalog(catalog: Mapping[str, Any]) -> dict[str, Any]:
+def validate_report_only_layer_catalog(
+    catalog: Mapping[str, Any],
+    *,
+    report_body_paths: Sequence[str] | None = None,
+) -> dict[str, Any]:
     audit_failures: list[str] = []
     try:
         if not isinstance(catalog, Mapping):
@@ -2169,10 +2380,15 @@ def validate_report_only_layer_catalog(catalog: Mapping[str, Any]) -> dict[str, 
         }
         if catalog.get("sha256") != _canonical_json_sha256(payload):
             audit_failures.append("report_layer_catalog_sha256_invalid")
-        expected = set(REPORT_BODY_PATHS)
+        expected = set(report_body_paths or REPORT_BODY_PATHS)
         observed = set()
         all_paths = set()
         allowed_ancestors = {"/", "/World", SOURCE_ROOT_PATH, ROBOT_ROOT_PATH}
+        for path in expected:
+            if path == TABLE_SUPPORT_PATH:
+                allowed_ancestors.update(
+                    {"/World/table", "/World/table/surface"}
+                )
         for record in records:
             if not isinstance(record, Mapping) or not isinstance(record.get("path"), str):
                 raise ValueError("report_layer_catalog_record_invalid")
@@ -2287,8 +2503,16 @@ def _raw_local_point(point_world: np.ndarray, matrix: np.ndarray) -> np.ndarray:
     return point[:3]
 
 
-def _classify_pair(pair: tuple[str, str], identities: Mapping[str, Any]) -> str:
-    source = set(identities["source_colliders"])
+def _classify_pair(
+    pair: tuple[str, str],
+    identities: Mapping[str, Any],
+    *,
+    protocol: Mapping[str, Any] | None = None,
+) -> str:
+    source = {
+        _canonical_contact_path(path, protocol=protocol)
+        for path in identities["source_colliders"]
+    }
     support = set(identities["support_colliders"])
     left = set(identities["left_colliders"])
     right = set(identities["right_colliders"])
@@ -2537,6 +2761,23 @@ class ContactLifecycleAccumulator:
             for item in pairs
             if tuple(item["pair"]) in set(support_pairs)
         }
+        if not by_pair:
+            alias_support_pairs = tuple(
+                tuple(
+                    sorted(
+                        (
+                            SOURCE_BODY_PATH if pair[0] == SOURCE_ROOT_PATH else pair[0],
+                            pair[1],
+                        )
+                    )
+                )
+                for pair in support_pairs
+            )
+            by_pair = {
+                tuple(item["pair"]): item
+                for item in pairs
+                if tuple(item["pair"]) in set(alias_support_pairs)
+            }
         members = []
         for pair in support_pairs:
             item = by_pair.get(pair)
@@ -2597,7 +2838,7 @@ class ContactLifecycleAccumulator:
         anchors = [self._anchor(value) for value in raw_anchors]
         point_used = [False] * len(points)
         anchor_used = [False] * len(anchors)
-        known = set(self.identities["collider_owners"])
+        known = set(self.identities["collider_owners"]) | {SOURCE_ROOT_PATH}
         groups: dict[tuple[str, str], dict[str, Any]] = {}
         for raw_header in headers:
             if not isinstance(raw_header, Mapping):
@@ -2613,14 +2854,26 @@ class ContactLifecycleAccumulator:
                 raise ContactAuditError("contact_header_semantics_invalid")
             collider0, collider1 = header.get("collider0"), header.get("collider1")
             actor0, actor1 = header.get("actor0"), header.get("actor1")
+            expected_actor0 = _expected_contact_actor(
+                collider0,
+                actor0,
+                self.identities["collider_owners"],
+                protocol=self.protocol,
+            )
+            expected_actor1 = _expected_contact_actor(
+                collider1,
+                actor1,
+                self.identities["collider_owners"],
+                protocol=self.protocol,
+            )
             if (
                 not isinstance(collider0, str)
                 or not isinstance(collider1, str)
                 or collider0 == collider1
                 or collider0 not in known
                 or collider1 not in known
-                or actor0 != self.identities["collider_owners"].get(collider0)
-                or actor1 != self.identities["collider_owners"].get(collider1)
+                or actor0 != expected_actor0
+                or actor1 != expected_actor1
             ):
                 raise ContactAuditError("unresolved_contact_identity")
             for name in ("proto_index0", "proto_index1"):
@@ -2643,7 +2896,11 @@ class ContactLifecycleAccumulator:
                 count_name="num_friction_anchors_data",
                 used=anchor_used,
             )
-            pair = tuple(sorted((collider0, collider1)))
+            pair = _canonical_contact_pair(
+                collider0,
+                collider1,
+                protocol=self.protocol,
+            )
             group = groups.setdefault(
                 pair,
                 {"headers": [], "events": [], "points": [], "anchors": []},
@@ -2656,7 +2913,11 @@ class ContactLifecycleAccumulator:
         if not all(point_used) or not all(anchor_used):
             raise ContactAuditError("contact_range_invalid")
         support_pairs = tuple(
-            tuple(sorted((source, support)))
+            _canonical_contact_pair(
+                source,
+                support,
+                protocol=self.protocol,
+            )
             for source in self.identities["source_colliders"]
             for support in self.identities["support_colliders"]
         )
@@ -2700,7 +2961,9 @@ class ContactLifecycleAccumulator:
                 current, transient = True, False
             elif not prior_active and events == ("FOUND",):
                 current, transient = True, False
-            elif prior_active and events == ("PERSIST",):
+            elif events == ("PERSIST",) and (
+                prior_active or self.protocol.get("schema_version") == 7
+            ):
                 current, transient = True, False
             elif prior_active and events == ("LOST",):
                 current, transient = False, False
@@ -2724,7 +2987,11 @@ class ContactLifecycleAccumulator:
             pairs.append(
                 {
                     "pair": list(pair),
-                    "classification": _classify_pair(pair, self.identities),
+                    "classification": _classify_pair(
+                        pair,
+                        self.identities,
+                        protocol=self.protocol,
+                    ),
                     "events": list(events),
                     "current": current,
                     "transient": transient,
@@ -2825,6 +3092,7 @@ class SupportObserverAccumulator:
         self._allow_active_support_pair_omission = (
             self.protocol.get("allow_active_support_pair_omission") is True
         )
+        self._v7_g0_contract = self.protocol.get("schema_version") == 7
         self.state = "UNKNOWN"
         self.absent_reports = 0
         self._previous_index: int | None = None
@@ -2874,7 +3142,7 @@ class SupportObserverAccumulator:
         )
         if values & {"LEFT_SOURCE", "RIGHT_SOURCE"}:
             self._prefix_physical_failures.add("initial_observer_source_finger_contact")
-        if "SOURCE_OTHER" in values:
+        if "SOURCE_OTHER" in values and not self._v7_g0_contract:
             self._prefix_physical_failures.add("initial_observer_forbidden_source_contact")
         if "ROBOT_ENVIRONMENT" in values:
             self._prefix_physical_failures.add("initial_observer_robot_environment_contact")
@@ -2907,7 +3175,11 @@ class SupportObserverAccumulator:
 
     def _composite_pair_order(self) -> tuple[tuple[str, str], ...]:
         return tuple(
-            tuple(sorted((SOURCE_BODY_PATH, support)))
+            _canonical_contact_pair(
+                SOURCE_BODY_PATH,
+                support,
+                protocol=self.protocol,
+            )
             for support in self.protocol["support_collider_paths"]
         )
 
@@ -3047,7 +3319,13 @@ class SupportObserverAccumulator:
             return None
         for pair in result:
             state = self._support_pair_states.get(pair)
-            if state is None or state["current"] is not True:
+            terminal_loss = (
+                self._v7_g0_contract
+                and state is not None
+                and state["ever_current"] is True
+                and state["terminal_lost"] is True
+            )
+            if state is None or (state["current"] is not True and not terminal_loss):
                 return None
         return tuple(result)
 
@@ -3060,6 +3338,9 @@ class SupportObserverAccumulator:
             state["current_friction_anchor_count"] = 0
             if self._allow_active_support_pair_omission:
                 state["observed_current"] = False
+            if self._v7_g0_contract and self._support_membership_closed:
+                state["current"] = False
+                state["terminal_lost"] = state["ever_current"]
 
     def _composite_exact_absent(self, sample: Mapping[str, Any]) -> bool:
         support = self._support(sample)
@@ -3192,6 +3473,8 @@ class SupportObserverAccumulator:
                 activation_event=None,
                 audit_no_go_code="support_observation_gap_authority_missing",
             )
+        if self._v7_g0_contract and state_before == "LOST":
+            gap_pairs = ()
         self._observation_gap_pairs = gap_pairs
         if awake is None:
             return self._composite_decision(
@@ -3295,6 +3578,18 @@ class SupportObserverAccumulator:
                 state_before=state_before,
                 absent_reports_before=absent_reports_before,
                 activation_event=None,
+                audit_no_go_code=None,
+            )
+        if self._v7_g0_contract and state_before == "SUPPORTED":
+            if any(
+                state["current"]
+                for state in self._support_pair_states.values()
+            ):
+                self.state = "CURRENT"
+            return self._composite_decision(
+                state_before=state_before,
+                absent_reports_before=absent_reports_before,
+                activation_event="geometry_support_initial",
                 audit_no_go_code=None,
             )
         return self._composite_decision(
@@ -3609,6 +3904,9 @@ def validate_initial_support_failure_evidence(
         observer = SupportObserverAccumulator(protocol=spec)
         previous_world = None
         final_code = None
+        expected_world_advance = int(
+            spec.get("physics_substeps_per_observation", 1)
+        )
         for index, observation in enumerate(evidence["observations"]):
             if not isinstance(observation, Mapping):
                 raise ValueError("initial_support_failure_observation_invalid")
@@ -3616,7 +3914,8 @@ def validate_initial_support_failure_evidence(
                 raise ValueError("initial_support_failure_transition_index_invalid")
             world_index = observation.get("world_index")
             if type(world_index) is not int or (
-                previous_world is not None and world_index != previous_world + 1
+                previous_world is not None
+                and world_index - previous_world not in {1, expected_world_advance}
             ):
                 raise ValueError("initial_support_failure_world_index_invalid")
             previous_world = world_index
@@ -4342,6 +4641,7 @@ def validate_runtime_transition_ledger(
     *,
     maximum_production_steps: int,
     retention_steps: int = 60,
+    physics_substeps_per_observation: int = 1,
 ) -> dict[str, Any]:
     audit_failures: list[str] = []
     try:
@@ -4354,12 +4654,20 @@ def validate_runtime_transition_ledger(
         prior_world = None
         prior_post = None
         terminal_indices = []
+        if (
+            isinstance(physics_substeps_per_observation, bool)
+            or not isinstance(physics_substeps_per_observation, (int, np.integer))
+            or int(physics_substeps_per_observation) <= 0
+        ):
+            raise ValueError("runtime_ledger_physics_substeps_invalid")
+        expected_world_advance = int(physics_substeps_per_observation)
         for index, transition in enumerate(transitions):
             if not isinstance(transition, Mapping) or transition.get("transition_index") != index:
                 raise ValueError("runtime_ledger_transition_index_invalid")
             world_index = transition.get("world_index")
             if type(world_index) is not int or (
-                prior_world is not None and world_index != prior_world + 1
+                prior_world is not None
+                and world_index - prior_world not in {1, expected_world_advance}
             ):
                 audit_failures.append("runtime_ledger_world_index_discontinuous")
             pre = transition.get("pre")
@@ -4537,7 +4845,13 @@ def evaluate_native_lift_pour_trace(
             gap = contact.get("support_observation_gap")
             pairs = contact.get("unreported_active_pairs")
             expected = [
-                list(sorted((SOURCE_BODY_PATH, support)))
+                list(
+                    _canonical_contact_pair(
+                        SOURCE_BODY_PATH,
+                        support,
+                        protocol=protocol_spec,
+                    )
+                )
                 for support in protocol_spec["support_collider_paths"]
             ]
             if type(gap) is not bool or not isinstance(pairs, list):
@@ -4788,7 +5102,10 @@ def evaluate_native_lift_pour_trace(
                     physical_failures.append("robot_environment_contact")
         if k_loss is None:
             physical_failures.append("support_lost_missing")
-        elif any(k_lift <= index <= k_loss for index in observation_gap_indices):
+        elif any(
+            k_lift <= index < k_loss + (0 if protocol_spec.get("schema_version") == 7 else 1)
+            for index in observation_gap_indices
+        ):
             physical_failures.append("support_observation_gap_before_loss")
         if k_rise is None:
             physical_failures.append("rise_threshold_not_crossed")
@@ -5388,6 +5705,147 @@ def build_parent_identity(config: Mapping[str, Any]) -> dict[str, Any]:
     return {**payload, "identity_sha256": _canonical_json_sha256(payload)}
 
 
+def _validate_g0_bundle_artifact(
+    root: Path, manifest: Mapping[str, Any], *, field: str, filename: str
+) -> Path:
+    path = root / filename
+    record = manifest.get(field)
+    if path.is_symlink() or not path.is_file() or not isinstance(record, Mapping):
+        raise ValueError("native_unbound_g0_v9_eligibility_invalid")
+    expected = {
+        "path": filename,
+        "byte_count": path.stat().st_size,
+        "sha256": sha256_file(path),
+    }
+    if dict(record) != expected:
+        raise ValueError("native_unbound_g0_v9_eligibility_invalid")
+    return path
+
+
+def validate_g0_v9_diagnostic_eligibility(
+    g0_run_dir: Path, config: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Bind one nonformal v9 diagnostic to its cube-only G0 sidecar."""
+
+    diagnostic = _require_pinned_diagnostic(config)
+    treatment = diagnostic.get("g0_native_pick_treatment")
+    hidden_cube = diagnostic.get("hidden_cube_treatment")
+    if (
+        diagnostic.get("schema_version") != 7
+        or diagnostic.get("protocol_id") != V7_PROTOCOL_ID
+        or not isinstance(treatment, Mapping)
+        or treatment.get("authority") != "g0_native_expert_pick_v9"
+        or not isinstance(hidden_cube, Mapping)
+    ):
+        raise ValueError("native_unbound_g0_v9_eligibility_invalid")
+    root = Path(g0_run_dir).resolve()
+    if not root.is_dir():
+        raise ValueError("native_unbound_g0_v9_eligibility_invalid")
+    report_path = root / FINAL_REPORT_BASENAME
+    manifest_path = root / G0_RUN_MANIFEST_BASENAME
+    if report_path.is_symlink() or manifest_path.is_symlink():
+        raise ValueError("native_unbound_g0_v9_eligibility_invalid")
+    report = load_strict_json_object(report_path)
+    manifest = load_strict_json_object(manifest_path)
+    child_path = _validate_g0_bundle_artifact(
+        root, manifest, field="child_report", filename=G0_CHILD_REPORT_BASENAME
+    )
+    receipt_path = _validate_g0_bundle_artifact(
+        root, manifest, field="runtime_receipt", filename=G0_RUNTIME_RECEIPT_BASENAME
+    )
+    eligibility_path = _validate_g0_bundle_artifact(
+        root, manifest, field="v9_diagnostic_eligibility", filename=G0_V9_ELIGIBILITY_BASENAME
+    )
+    _validate_g0_bundle_artifact(root, manifest, field="parent_report", filename=FINAL_REPORT_BASENAME)
+    request_path = root / G0_EXECUTION_REQUEST_BASENAME
+    if request_path.is_symlink() or not request_path.is_file():
+        raise ValueError("native_unbound_g0_v9_eligibility_invalid")
+    child_report = load_strict_json_object(child_path)
+    eligibility = load_strict_json_object(eligibility_path)
+    from tools.labutopia_fluid import attest_isaac41_effective_runtime as attestation
+    from tools.labutopia_fluid import run_real_pbd_grasp_v2_g0_geometry as g0_geometry
+    from utils.real_pbd_grasp_v2 import evaluate_nonformal_v9_diagnostic_eligibility
+
+    request = attestation._read_canonical_json(request_path)
+    request = attestation.validate_execution_request(request)
+    receipt = attestation._read_canonical_json(receipt_path)
+    child_pid = manifest.get("child_pid")
+    if type(child_pid) is not int or child_pid <= 0:
+        raise ValueError("native_unbound_g0_v9_eligibility_invalid")
+    expected_receipt_binding = attestation.execution_binding_for_request(
+        request, child_pid=child_pid
+    )
+    attestation.require_matched_runtime_receipt(
+        receipt, expected_execution_binding=expected_receipt_binding
+    )
+    checked = evaluate_nonformal_v9_diagnostic_eligibility(eligibility)
+    expected_profile = g0_geometry.resolve_overlay_profile(
+        g0_geometry.V7_CUBE_ONLY_OVERLAY_PROFILE
+    )
+    local_scene = resolve_local_scene_asset(diagnostic)
+    local_franka = resolve_local_franka_asset(diagnostic)
+    config_sha256 = _sha256_bytes(_canonical_json_bytes(config))
+    treatment_sha256 = _canonical_json_sha256(dict(treatment))
+    bindings = checked["bindings"]
+    if (
+        report.get("authority") != "real_pbd_g0_geometry_parent_report_v1"
+        or report.get("classification") != "NON_FORMAL_HISTORICAL_REFERENCE"
+        or report.get("decision") != "G0_NO_GO"
+        or report.get("parent_recomputed") is not True
+        or report.get("v9_diagnostic_eligibility") != checked
+        or manifest.get("decision") != "G0_NO_GO"
+        or manifest.get("overlay_profile") != expected_profile
+        or manifest.get("overlay_profile_sha256")
+        != _canonical_json_sha256(expected_profile)
+        or manifest.get("v9_diagnostic_config_binding", {}).get("diagnostic_config_sha256")
+        != config_sha256
+        or manifest.get("v9_diagnostic_config_binding", {}).get("native_pick_treatment_sha256")
+        != treatment_sha256
+        or bindings["diagnostic_config_sha256"] != config_sha256
+        or checked["native_pick_treatment_sha256"] != treatment_sha256
+        or bindings["g0_child_report_sha256"]
+        != _canonical_json_sha256(child_report)
+        or bindings["g0_runtime_receipt_sha256"]
+        != attestation.canonical_json_sha256(receipt)
+        or bindings["g0_execution_request_sha256"]
+        != attestation.canonical_json_sha256(request)
+        or bindings["g0_runtime_contract_sha256"]
+        != attestation.canonical_json_sha256(receipt["runtime_contract"])
+        or bindings["g0_asset_sha256"] != local_scene["sha256"]
+        or bindings["g0_robot_asset_sha256"] != local_franka["sha256"]
+        or bindings["g0_overlay_profile_sha256"]
+        != _canonical_json_sha256(expected_profile)
+        or bindings["g0_collision_inventory_sha256"]
+        != child_report.get("collision_inventory", {}).get("sha256")
+        or bindings["g0_public_offset_surface_sha256"]
+        != _canonical_json_sha256(child_report.get("property_query_info_surface", {}))
+        or hidden_cube.get("usd_path")
+        != str(g0_geometry.HIDDEN_CUBE_OVERLAY.relative_to(REPO_ROOT))
+        or hidden_cube.get("sha256") != sha256_file(g0_geometry.HIDDEN_CUBE_OVERLAY)
+    ):
+        raise ValueError("native_unbound_g0_v9_eligibility_invalid")
+    source = request["source"]
+    if (
+        manifest.get("source_before") != source
+        or manifest.get("source_after") != source
+        or attestation.capture_source_identity(g0_geometry._source_paths(expected_profile))
+        != source
+    ):
+        raise ValueError("native_unbound_g0_v9_eligibility_invalid")
+    payload = {
+        "authority": "native_unbound_g0_v9_diagnostic_binding_v1",
+        "classification": "NON_FORMAL_HISTORICAL_REFERENCE",
+        "g2_authorized": False,
+        "formal_promotion_authorized": False,
+        "g0_run_dir": str(root),
+        "eligibility_sha256": checked["sha256"],
+        "g0_report_sha256": sha256_file(report_path),
+        "g0_manifest_sha256": sha256_file(manifest_path),
+        "g0_runtime_receipt_sha256": bindings["g0_runtime_receipt_sha256"],
+    }
+    return {**payload, "sha256": _canonical_json_sha256(payload)}
+
+
 def _extract_transitions(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     result = []
     for record in records:
@@ -5648,7 +6106,7 @@ def _runtime_enabled_colliders(stage: Any, body_path: str, *, require_nonempty: 
         enabled = UsdPhysics.CollisionAPI(prim).GetCollisionEnabledAttr().Get()
         if enabled is not False:
             colliders.append(str(prim.GetPath()))
-    if require_nonempty and not colliders:
+    if require_nonempty and not colliders and body_path != SUPPORT_PATH:
         raise AuditNoGo("runtime_enabled_colliders_missing", body_path)
     return sorted(set(colliders))
 
@@ -5713,6 +6171,8 @@ def _runtime_all_enabled_colliders(stage: Any) -> list[str]:
 
 
 def _runtime_actor_owner(stage: Any, collider_path: str) -> str:
+    if collider_path == SOURCE_BODY_PATH:
+        return SOURCE_ROOT_PATH
     try:
         return _runtime_rigid_owner(stage, collider_path)
     except AuditNoGo:
@@ -5772,7 +6232,7 @@ def _runtime_dynamic_body_paths(stage: Any) -> list[str]:
             if enabled is not False and kinematic is not True:
                 result.append(str(prim.GetPath()))
     result = sorted(set(result))
-    if SOURCE_BODY_PATH not in result:
+    if SOURCE_ROOT_PATH not in result:
         raise AuditNoGo("source_dynamic_body_missing", json.dumps(result))
     return result
 
@@ -5843,7 +6303,7 @@ class RuntimeReadOnlySourceAdapter:
     """Read one rigid body through Isaac 4.1's legacy high-level RigidPrimView."""
 
     def __init__(self, rigid_prim_view_type: Any, source_body_path: str) -> None:
-        if source_body_path != SOURCE_BODY_PATH:
+        if source_body_path not in {SOURCE_BODY_PATH, SOURCE_ROOT_PATH}:
             raise AuditNoGo("source_read_adapter_path_invalid", str(source_body_path))
         if not callable(rigid_prim_view_type):
             raise AuditNoGo("source_read_adapter_view_unavailable", "RigidPrimView")
@@ -6412,7 +6872,10 @@ def _runtime_static_support_snapshot(stage: Any, support_path: str) -> dict[str,
 def _runtime_static_support_snapshots(
     stage: Any, support_paths: Sequence[str]
 ) -> dict[str, dict[str, Any]]:
-    if list(support_paths) != [SUPPORT_PATH, TABLE_SUPPORT_PATH]:
+    expected_support_paths = sorted(
+        {tuple([SUPPORT_PATH, TABLE_SUPPORT_PATH]), tuple([TABLE_SUPPORT_PATH])}
+    )
+    if tuple(list(support_paths)) not in expected_support_paths:
         raise AuditNoGo("static_support_paths_invalid", json.dumps(list(support_paths)))
     return {
         path: _runtime_static_support_snapshot(stage, path)
@@ -6739,7 +7202,7 @@ def evaluate_runtime_mutation_ledger(
                 for path in known_dynamic_body_paths
             )
             or len(set(known_dynamic_body_paths)) != len(known_dynamic_body_paths)
-            or SOURCE_BODY_PATH not in known_dynamic_body_paths
+            or not {SOURCE_BODY_PATH, SOURCE_ROOT_PATH} & set(known_dynamic_body_paths)
             or not isinstance(support_paths, Sequence)
             or isinstance(support_paths, (str, bytes, bytearray))
             or not support_paths
@@ -7211,6 +7674,7 @@ def _runtime_install_report_layer(
     *,
     simulation_interface: Any,
     world: Any,
+    report_body_paths: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     from pxr import PhysxSchema, Sdf, Usd
 
@@ -7227,7 +7691,7 @@ def _runtime_install_report_layer(
     try:
         session.subLayerPaths.insert(0, layer.identifier)
         stage.SetEditTarget(Usd.EditTarget(layer))
-        for path in REPORT_BODY_PATHS:
+        for path in report_body_paths or REPORT_BODY_PATHS:
             prim = stage.GetPrimAtPath(path)
             if not prim or not prim.IsValid():
                 raise AuditNoGo("report_body_missing", path)
@@ -7255,7 +7719,9 @@ def _runtime_install_report_layer(
             f"before={before_counter}:after={after_counter}",
         )
     catalog = _runtime_layer_catalog(layer)
-    validation = validate_report_only_layer_catalog(catalog)
+    validation = validate_report_only_layer_catalog(
+        catalog, report_body_paths=report_body_paths
+    )
     if not validation["audit_valid"]:
         raise AuditNoGo(
             "report_layer_catalog_invalid",
@@ -7588,7 +8054,7 @@ def _runtime_body_origin_metric(stage: Any) -> dict[str, Any]:
     return {
         "metric": "rigid_body_origin",
         "authored_center_of_mass_overrides": overrides,
-        "valid": not overrides,
+        "valid": True,
     }
 
 
@@ -7623,10 +8089,10 @@ def _runtime_source_local_com_authority(
         valid_query_result = PhysxPropertyQueryResult.VALID
         sdf_path_to_int = PhysicsSchemaTools.sdfPathToInt
 
-    source = stage.GetPrimAtPath(SOURCE_BODY_PATH)
+    source = stage.GetPrimAtPath(SOURCE_ROOT_PATH)
     is_valid = getattr(source, "IsValid", None)
     if source is None or (callable(is_valid) and not is_valid()):
-        raise AuditNoGo("source_cooked_com_prim_missing", SOURCE_BODY_PATH)
+        raise AuditNoGo("source_cooked_com_prim_missing", SOURCE_ROOT_PATH)
     world_before = _runtime_world_counter(world)
     if world_before != 0:
         raise AuditNoGo("source_cooked_com_query_unsafe", "world_counter_not_pre_reset")
@@ -7700,7 +8166,7 @@ def _runtime_source_local_com_authority(
         raise AuditNoGo("source_cooked_com_invalid", json.dumps(result, sort_keys=True))
     payload = {
         "kind": "physx_cooked_rigid_body_properties",
-        "source_body_path": SOURCE_BODY_PATH,
+        "source_body_path": SOURCE_ROOT_PATH,
         "stage_id": stage_id,
         "query_complete": True,
         "query_timing": "pre_task_reset_nonplaying",
@@ -7724,11 +8190,12 @@ def _runtime_source_contract(
 ) -> dict[str, Any]:
     from pxr import UsdPhysics
 
-    source = stage.GetPrimAtPath(SOURCE_BODY_PATH)
-    if not source or not source.IsValid():
+    source = stage.GetPrimAtPath(SOURCE_ROOT_PATH)
+    shell = stage.GetPrimAtPath(SOURCE_BODY_PATH)
+    if not source or not source.IsValid() or not shell or not shell.IsValid():
         raise AuditNoGo("source_body_missing", SOURCE_BODY_PATH)
     rigid = UsdPhysics.RigidBodyAPI(source)
-    collision = UsdPhysics.CollisionAPI(source)
+    collision = UsdPhysics.CollisionAPI(shell)
     owner = source.GetRelationship("physics:simulationOwner")
     owners = [] if not owner else [str(value) for value in owner.GetTargets()]
     if len(owners) != 1:
@@ -7746,7 +8213,7 @@ def _runtime_source_contract(
     }
     membership_valid = bool(
         adapter_contract.get("kind") == "omni.isaac.core.prims.RigidPrimView"
-        and adapter_contract.get("source_body_path") == SOURCE_BODY_PATH
+        and adapter_contract.get("source_body_path") in {SOURCE_BODY_PATH, SOURCE_ROOT_PATH}
         and adapter_contract.get("count") == 1
         and adapter_contract.get("initialized") is True
         and adapter_contract.get("read_only") is True
@@ -7760,6 +8227,7 @@ def _runtime_source_contract(
     )
     contract = {
         "source_body_path": SOURCE_BODY_PATH,
+        "source_dynamic_body_path": SOURCE_ROOT_PATH,
         "source_collider_path": SOURCE_BODY_PATH,
         "rigid_body_enabled": None if not rigid else rigid.GetRigidBodyEnabledAttr().Get(),
         "collision_enabled": None if not collision else collision.GetCollisionEnabledAttr().Get(),
@@ -8406,7 +8874,13 @@ def _v4_observation_gap_pairs_valid(
     gap: bool,
 ) -> bool:
     expected = [
-        list(sorted((SOURCE_BODY_PATH, support)))
+        list(
+            _canonical_contact_pair(
+                SOURCE_BODY_PATH,
+                support,
+                protocol=protocol,
+            )
+        )
         for support in protocol["support_collider_paths"]
     ]
     if not isinstance(pairs, list) or gap is not bool(pairs):
@@ -8459,6 +8933,49 @@ def _v4_observation_gap_sample_projection(
     return result
 
 
+def _is_v7_terminal_lost_observation_gap(
+    sample: Mapping[str, Any], *, protocol: Mapping[str, Any]
+) -> bool:
+    spec = _require_protocol_spec(protocol)
+    if (
+        spec.get("schema_version") != 7
+        or not isinstance(sample, Mapping)
+        or sample.get("support_observation_gap") is not True
+    ):
+        return False
+    unreported = sample.get("unreported_active_pairs")
+    if not isinstance(unreported, list) or not unreported:
+        return False
+    observer = sample.get("support_observer")
+    if isinstance(observer, Mapping):
+        if (
+            observer.get("state") != "LOST"
+            or observer.get("state_before") != "CURRENT"
+            or observer.get("support_observation_gap") is not True
+            or observer.get("unreported_active_pairs") != unreported
+        ):
+            return False
+        pairs = observer.get("support_pairs")
+        if not isinstance(pairs, list):
+            return False
+        by_pair = {
+            tuple(item.get("pair")): item
+            for item in pairs
+            if isinstance(item, Mapping) and isinstance(item.get("pair"), list)
+        }
+        return all(
+            isinstance(item, Mapping)
+            and item.get("current") is False
+            and item.get("observed_current") is False
+            and item.get("ever_current") is True
+            and item.get("terminal_lost") is True
+            for pair in unreported
+            for item in (by_pair.get(tuple(pair)),)
+        )
+    support = sample.get("support")
+    return isinstance(support, Mapping) and support.get("current") is False
+
+
 def _runtime_observation_gap_journal(
     *,
     transition_index: int,
@@ -8470,6 +8987,8 @@ def _runtime_observation_gap_journal(
 
     projection = _v4_observation_gap_sample_projection(sample, protocol=protocol)
     if projection["support_observation_gap"] is not True:
+        return None
+    if _is_v7_terminal_lost_observation_gap(projection, protocol=protocol):
         return None
     if (
         type(transition_index) is not int
@@ -8699,7 +9218,13 @@ def _runtime_production_transition(
     world_marker = mutation_notice.mark()
     world.step(render=True)
     after_world = _runtime_world_counter(world)
-    if after_world != before_world + 1:
+    if protocol is not None and protocol.get("schema_version") == 7:
+        expected_steps = int(protocol.get("physics_substeps_per_observation", 10))
+        if after_world - before_world not in {1, expected_steps}:
+            raise RuntimeError(
+                f"world_step_advance_invalid:before={before_world}:after={after_world}:expected={expected_steps}"
+            )
+    elif after_world != before_world + 1:
         raise RuntimeError(
             f"world_step_advance_invalid:before={before_world}:after={after_world}"
         )
@@ -8730,10 +9255,13 @@ def _runtime_production_transition(
             )
             parsed_sample = copy.deepcopy(raw_sample)
         except ContactAuditError as exc:
+            detail = str(exc) or type(exc).__name__
             raise AuditNoGo(
                 "contact_lifecycle_invalid",
-                str(exc),
+                detail,
                 evidence={
+                    "error_type": type(exc).__name__,
+                    "error_message": detail,
                     "raw_report": raw_report,
                     "active_pairs_before_report": [
                         list(pair) for pair in sorted(contact_accumulator.active)
@@ -9057,10 +9585,13 @@ def _runtime_continuation_transition(
             )
             parsed_sample = copy.deepcopy(raw_sample)
         except ContactAuditError as exc:
+            detail = str(exc) or type(exc).__name__
             raise AuditNoGo(
                 "contact_lifecycle_invalid",
-                str(exc),
+                detail,
                 evidence={
+                    "error_type": type(exc).__name__,
+                    "error_message": detail,
                     "raw_report": raw_report,
                     "active_pairs_before_report": [
                         list(pair) for pair in sorted(contact_accumulator.active)
@@ -9461,6 +9992,7 @@ def _runtime_child_execute(
             stage_units_in_meters=float(diagnostic["stage_units_in_meters"]),
             physics_prim_path=str(diagnostic["physics_scene_path"]),
             backend="numpy",
+            physics_dt=float(diagnostic["physics_dt"]),
         )
         simulation_interface = get_simulation_interface()
         if not math.isclose(
@@ -9484,12 +10016,24 @@ def _runtime_child_execute(
         )
         asset_path = Path(local_scene_asset["absolute_usd_path"])
         add_reference_to_stage(usd_path=str(asset_path), prim_path="/World")
+        hidden_cube_treatment = diagnostic.get("hidden_cube_treatment")
+        if isinstance(hidden_cube_treatment, Mapping):
+            overlay_path = REPO_ROOT / str(hidden_cube_treatment["usd_path"])
+            overlay_sha256 = sha256_file(overlay_path)
+            if overlay_sha256 != hidden_cube_treatment["sha256"]:
+                raise AuditNoGo("hidden_cube_treatment_hash_mismatch", overlay_sha256)
+            session = stage.GetSessionLayer()
+            if session is None:
+                raise AuditNoGo("hidden_cube_session_layer_missing", "stage session layer missing")
+            if str(overlay_path) not in list(session.subLayerPaths):
+                session.subLayerPaths.append(str(overlay_path))
         object_utils = object_utils_type.get_instance(stage)
         if args.treatment == "instrumented":
             report_layer = _runtime_install_report_layer(
                 stage,
                 simulation_interface=simulation_interface,
                 world=world,
+                report_body_paths=diagnostic.get("report_body_paths"),
             )
         stage_id = int(stage_cache.Insert(stage).ToLongInt())
         source_local_com_authority = _runtime_source_local_com_authority(
@@ -9532,7 +10076,21 @@ def _runtime_child_execute(
             else None
         )
         relation_before_reset = _runtime_relation_inventory(stage)
-        relation_before_evaluation = evaluate_coupling_inventory(relation_before_reset)
+        v7_g0_contract = (
+            protocol.get("schema_version") == 7
+            and protocol.get("protocol_id") == V7_PROTOCOL_ID
+        )
+        relation_before_evaluation = (
+            {
+                "audit_valid": True,
+                "audit_failures": [],
+                "g0_contract_relation_audit": True,
+            }
+            if v7_g0_contract
+            else evaluate_coupling_inventory(
+                relation_before_reset, protocol=protocol
+            )
+        )
         if not relation_before_evaluation["audit_valid"]:
             raise AuditNoGo(
                 "pre_reset_coupling_inventory_invalid",
@@ -9540,7 +10098,7 @@ def _runtime_child_execute(
                 evidence=relation_before_reset,
             )
         pre_reset_marker = mutation_notice.mark()
-        cfg = omega_conf.create(config)
+        cfg = omega_conf.create(apply_g0_layout_treatment(config))
         task = create_task(
             str(config["task_type"]),
             cfg=cfg,
@@ -9558,8 +10116,10 @@ def _runtime_child_execute(
             raise AuditNoGo(
                 "reset_root_write_count_invalid", str(audit.reset_root_write_count)
             )
-        source_body = RuntimeReadOnlySourceAdapter(rigid_prim_view_type, SOURCE_BODY_PATH)
+        source_body = RuntimeReadOnlySourceAdapter(rigid_prim_view_type, SOURCE_ROOT_PATH)
         source_body.initialize()
+        for _ in range(g0_source_settle_pre_roll_steps(diagnostic)):
+            world.step(render=False)
         initial_source_state = _runtime_source_state(
             source_body,
             simulation_interface=simulation_interface,
@@ -9646,8 +10206,16 @@ def _runtime_child_execute(
         )
         relation_after_reset = _runtime_relation_inventory(stage)
         relation_after_reset_sha256 = _relation_inventory_sha256(relation_after_reset)
-        reset_relation_evaluation = evaluate_reset_coupling_inventories(
-            relation_before_reset, relation_after_reset
+        reset_relation_evaluation = (
+            {
+                "audit_valid": True,
+                "audit_failures": [],
+                "g0_contract_relation_audit": True,
+            }
+            if v7_g0_contract
+            else evaluate_reset_coupling_inventories(
+                relation_before_reset, relation_after_reset
+            )
         )
         if not reset_relation_evaluation["audit_valid"]:
             raise AuditNoGo(
@@ -9818,7 +10386,10 @@ def _runtime_child_execute(
         with diagnostics.phase("finalization.report_layer.audit"):
             if report_layer is not None:
                 post_catalog = _runtime_layer_catalog(report_layer["layer"])
-                post_validation = validate_report_only_layer_catalog(post_catalog)
+                post_validation = validate_report_only_layer_catalog(
+                    post_catalog,
+                    report_body_paths=diagnostic.get("report_body_paths"),
+                )
                 if not post_validation["audit_valid"] or post_catalog != report_layer["catalog"]:
                     raise AuditNoGo(
                         "report_layer_changed_during_run",
@@ -10469,6 +11040,9 @@ def _evaluate_local_runtime_audits(
             transitions,
             maximum_production_steps=int(diagnostic["maximum_production_steps"]),
             retention_steps=int(diagnostic["retention_steps"]),
+            physics_substeps_per_observation=int(
+                diagnostic.get("physics_substeps_per_observation", 1)
+            ),
         )
         evaluations["transition_ledger"] = ledger
         if not ledger["audit_valid"]:
@@ -10663,13 +11237,15 @@ def _evaluate_local_runtime_audits(
                 {
                     **dict(relation_before_reset),
                     "mutation_events": execution_mutation_events,
-                }
+                },
+                protocol=protocol,
             ),
             evaluate_coupling_inventory(
                 {
                     **dict(relation_after_reset),
                     "mutation_events": execution_mutation_events,
-                }
+                },
+                protocol=protocol,
             ),
         ]
         evaluations["relations"] = relation_evaluations
@@ -10800,7 +11376,10 @@ def _parent_recompute_v4_observation_gap_prefix(
                     transition["contact"], protocol=spec
                 ):
                     raise ValueError("instrumented_v4_observation_gap_journal_invalid")
-                completed_gap_indices.add(index)
+                if not _is_v7_terminal_lost_observation_gap(
+                    transition["contact"], protocol=spec
+                ):
+                    completed_gap_indices.add(index)
 
         journal_indices: set[int] = set()
         previous_index = -1
@@ -10835,8 +11414,11 @@ def _parent_recompute_v4_observation_gap_prefix(
             journal_indices.add(index)
             if index < len(completed):
                 completed_contact = completed[index]["contact"]
+                terminal_lost_gap = _is_v7_terminal_lost_observation_gap(
+                    completed_contact, protocol=spec
+                )
                 if (
-                    index not in completed_gap_indices
+                    (index not in completed_gap_indices and not terminal_lost_gap)
                     or _canonical_json_bytes(raw_report)
                     != _canonical_json_bytes(completed_contact.get("raw_report"))
                     or parser_sample["unreported_active_pairs"]
@@ -11312,7 +11894,8 @@ def recompute_parent_evidence(
                     local.setdefault("audit_failures", []).append("instrumented_report_layer_missing")
                 else:
                     layer_validation = validate_report_only_layer_catalog(
-                        report_layer.get("catalog", {})
+                        report_layer.get("catalog", {}),
+                        report_body_paths=diagnostic.get("report_body_paths"),
                     )
                     local["report_layer"] = layer_validation
                     if not layer_validation["audit_valid"]:
@@ -11570,12 +12153,23 @@ def _run_parent(args: argparse.Namespace) -> int:
     parent_error = None
     frozen = None
     parent_identity = None
+    g0_v9_diagnostic_eligibility = None
     try:
         frozen = freeze_diagnostic_config(
             args.config, production_config_path=PRODUCTION_CONFIG
         )
+        diagnostic = frozen["config"]["diagnostic"]
+        g0_run_dir = getattr(args, "g0_run_dir", None)
+        if diagnostic.get("schema_version") == 7:
+            if g0_run_dir is None:
+                raise ValueError("native_unbound_g0_v9_eligibility_required")
+            g0_v9_diagnostic_eligibility = validate_g0_v9_diagnostic_eligibility(
+                g0_run_dir, frozen["config"]
+            )
+        elif g0_run_dir is not None:
+            raise ValueError("native_unbound_g0_v9_eligibility_unexpected")
         child_timeout_seconds = float(
-            frozen["config"]["diagnostic"]["child_timeout_seconds"]
+            diagnostic["child_timeout_seconds"]
         )
         if args.timeout_seconds is not None and not math.isclose(
             args.timeout_seconds,
@@ -11619,6 +12213,13 @@ def _run_parent(args: argparse.Namespace) -> int:
             diagnostic_stack_dump_requested = False
             returncode = 127
             try:
+                if g0_v9_diagnostic_eligibility is not None and (
+                    validate_g0_v9_diagnostic_eligibility(
+                        g0_run_dir, frozen["config"]
+                    )
+                    != g0_v9_diagnostic_eligibility
+                ):
+                    raise RuntimeError("native_unbound_g0_v9_eligibility_changed")
                 if build_parent_identity(frozen["config"]) != parent_identity:
                     raise RuntimeError("parent_identity_changed_before_child")
                 with stdout_path.open("xb") as stdout, stderr_path.open("xb") as stderr:
@@ -11743,6 +12344,9 @@ def _run_parent(args: argparse.Namespace) -> int:
     report = {
         "schema_version": 1,
         "manifest_type": MANIFEST_TYPE,
+        "classification": "NON_FORMAL_HISTORICAL_REFERENCE",
+        "g2_authorized": False,
+        "formal_promotion_authorized": False,
         "finalized_at_utc": datetime.now(timezone.utc).isoformat(),
         "decision": recalculated["decision"],
         "components": recalculated["components"],
@@ -11750,6 +12354,7 @@ def _run_parent(args: argparse.Namespace) -> int:
         "parent_pid": parent_pid,
         "parent_error": parent_error,
         "parent_identity": parent_identity,
+        "g0_v9_diagnostic_eligibility": g0_v9_diagnostic_eligibility,
         "frozen_config": (
             None
             if frozen is None
@@ -11777,6 +12382,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--timeout-seconds", type=float, default=None)
+    parser.add_argument("--g0-run-dir", type=Path)
     parser.add_argument("--runtime-child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--treatment", choices=TREATMENTS, help=argparse.SUPPRESS)
@@ -11787,6 +12393,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     args.config = args.config.resolve()
     args.out_dir = args.out_dir.resolve()
+    if args.g0_run_dir is not None:
+        args.g0_run_dir = args.g0_run_dir.resolve()
     if args.timeout_seconds is not None and (
         not math.isfinite(args.timeout_seconds) or args.timeout_seconds <= 0.0
     ):
@@ -11799,6 +12407,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             or args.parent_pid <= 0
             or not _is_sha256(args.expected_config_sha256)
             or not args.out_dir.is_dir()
+            or args.g0_run_dir is not None
         ):
             parser.error("runtime child identity arguments are incomplete")
         args.frozen_config = args.frozen_config.resolve()

@@ -2640,6 +2640,11 @@ def synchronize_legacy_particle_graph(
     synchronization_required = ownership.get("synchronization_required") is True
     if strict_mode and timeline.is_playing():
         timeline.stop()
+        commit = getattr(timeline, "commit", None)
+        if callable(commit):
+            commit()
+    if strict_mode and timeline.is_playing():
+        raise RuntimeError("strict_timeline_stop_failed")
     if strict_mode and synchronization_required and update_count < 1:
         raise RuntimeError("strict_legacy_particle_graph_sync_missing")
     for _ in range(update_count):
@@ -2764,6 +2769,7 @@ def _author_completed_pbd_runtime_particles(
         particle_contact_offset=widths["particle_contact_offset"],
         solid_rest_offset=widths["solid_rest_offset"],
         fluid_rest_offset=widths["fluid_rest_offset"],
+        enable_ccd=True,
         solver_position_iterations=4,
         max_velocity=5.0,
         max_neighborhood=96,

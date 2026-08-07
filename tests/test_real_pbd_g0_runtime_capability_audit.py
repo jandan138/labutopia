@@ -8,6 +8,7 @@ from utils.controlled_contact import canonical_json_sha256
 from utils.real_pbd_grasp_v2 import (
     build_stage_artifact,
     build_stage_evidence,
+    evaluate_grasp_topology_contract,
     evaluate_g0_runtime_capability_audit,
     serialize_stage_artifact,
 )
@@ -157,6 +158,30 @@ def _snapshot() -> dict:
     }
 
 
+def _valid_grasp_topology() -> dict:
+    observed = {
+        "source_root_path": SOURCE,
+        "source_external_shell_path": SHELL,
+        "source_parent_dynamic": True,
+        "source_parent_kinematic": False,
+        "source_external_shell_collision_enabled": True,
+        "source_mass_authority": "parent",
+        "wrapper_path": "/World/beaker2/FluidSafeWrapperCanonical",
+        "wrapper_collider_count": 145,
+        "expected_wrapper_collider_count": 145,
+        "source_robot_filtered_pairs": [],
+        "finger_external_shell_pairs": [
+            ["/World/Franka/panda_leftfinger", SHELL],
+            ["/World/Franka/panda_rightfinger", SHELL],
+        ],
+        "finger_wrapper_pairs": [],
+    }
+    return {
+        "observed": observed,
+        "evaluation": evaluate_grasp_topology_contract(observed),
+    }
+
+
 def test_runtime_capability_audit_is_no_go_only_and_stage_sealable():
     snapshot = _snapshot()
 
@@ -262,6 +287,39 @@ def test_runtime_capability_audit_is_no_go_only_and_stage_sealable():
         predecessor_byte_hashes={},
     )
     assert serialize_stage_artifact(artifact).endswith(b"\n")
+
+
+def test_runtime_capability_audit_recomputes_v3_grasp_topology_contract():
+    snapshot = _snapshot()
+    snapshot["authority"] = "real_pbd_g0_runtime_capability_snapshot_v3"
+    snapshot["schema_version"] = 3
+    snapshot["grasp_topology"] = _valid_grasp_topology()
+
+    report = evaluate_g0_runtime_capability_audit(snapshot=snapshot)
+
+    assert report["grasp_topology"]["passed"] is True
+    assert report["checks"]["grasp_topology_contract"] is True
+    assert "grasp_topology:source_robot_collision_filter" not in report["no_go_reasons"]
+
+
+def test_runtime_capability_audit_rejects_v3_wrapper_finger_route():
+    snapshot = _snapshot()
+    snapshot["authority"] = "real_pbd_g0_runtime_capability_snapshot_v3"
+    snapshot["schema_version"] = 3
+    topology = _valid_grasp_topology()
+    topology["observed"]["finger_wrapper_pairs"] = [
+        [
+            "/World/Franka/panda_leftfinger",
+            "/World/beaker2/FluidSafeWrapperCanonical/panel_000",
+        ]
+    ]
+    topology["evaluation"] = evaluate_grasp_topology_contract(topology["observed"])
+    snapshot["grasp_topology"] = topology
+
+    report = evaluate_g0_runtime_capability_audit(snapshot=snapshot)
+
+    assert report["checks"]["grasp_topology_contract"] is False
+    assert "grasp_topology:finger_wrapper_contact_route" in report["no_go_reasons"]
 
 
 def test_runtime_capability_audit_fails_closed_for_drift_or_incomplete_query():

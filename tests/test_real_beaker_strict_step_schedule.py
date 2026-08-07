@@ -47,6 +47,14 @@ class _FakeTimeline:
         self.stop_count += 1
 
 
+class _DeferredStopTimeline(_FakeTimeline):
+    def stop(self) -> None:
+        self.stop_count += 1
+
+    def commit(self) -> None:
+        self.playing = False
+
+
 class _FakeApp:
     def __init__(self) -> None:
         self.update_count = 0
@@ -272,6 +280,31 @@ def test_strict_legacy_graph_sync_stops_timeline_and_runs_update_barrier():
     assert timeline.stop_count == 1
     assert app.update_count == 1
     assert result["ownership_isolation"]["synchronization_updates"] == 1
+    assert result["ownership_isolation"]["synchronization_verified"] is True
+
+
+def test_strict_legacy_graph_sync_commits_deferred_timeline_stop():
+    app = _FakeApp()
+    timeline = _DeferredStopTimeline(playing=True)
+    settings = _FakeSettings()
+    isolation = {
+        "ownership_isolation": {
+            "verified": True,
+            "synchronization_required": True,
+        }
+    }
+
+    result = runner.synchronize_legacy_particle_graph(
+        app=app,
+        timeline=timeline,
+        settings=settings,
+        isolation_summary=isolation,
+        warmup_updates=1,
+        strict_mode=True,
+    )
+
+    assert timeline.stop_count == 1
+    assert app.update_count == 1
     assert result["ownership_isolation"]["synchronization_verified"] is True
 
 

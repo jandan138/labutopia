@@ -54,10 +54,24 @@ def _receipt(contract: dict) -> dict:
         "authority": attester.RECEIPT_AUTHORITY,
         "schema_version": attester.SCHEMA_VERSION,
         "parent_nonce_sha256": "a" * 64,
+        "execution_binding": _execution_binding(),
         "runtime_contract": copy.deepcopy(contract),
         "observed_runtime": observed,
         "attestation_status": "MATCH",
         "failure": None,
+    }
+
+
+def _execution_binding() -> dict:
+    return {
+        "authority": attester.EXECUTION_BINDING_AUTHORITY,
+        "schema_version": attester.EXECUTION_BINDING_SCHEMA_VERSION,
+        "run_id": "run-0123456789abcdef",
+        "parent_pid": 100,
+        "child_pid": 200,
+        "parent_nonce_sha256": "a" * 64,
+        "launch_request_sha256": "b" * 64,
+        "source_sha256": "c" * 64,
     }
 
 
@@ -82,6 +96,79 @@ def test_runtime_receipt_accepts_exact_clean_post_app_provenance():
     receipt = attester.validate_runtime_receipt(_receipt(contract))
 
     assert receipt["attestation_status"] == "MATCH"
+
+
+def test_runtime_receipt_requires_the_expected_same_child_execution_binding():
+    contract = attester.formal_effective_runtime_contract()
+    receipt = _receipt(contract)
+    expected = _execution_binding()
+
+    attester.require_matched_runtime_receipt(
+        receipt,
+        expected_execution_binding=expected,
+    )
+
+    expected["child_pid"] = 201
+    with pytest.raises(ValueError, match="effective_runtime_receipt_binding_mismatch"):
+        attester.require_matched_runtime_receipt(
+            receipt,
+            expected_execution_binding=expected,
+        )
+
+
+def test_runtime_receipt_rejects_malformed_execution_binding():
+    contract = attester.formal_effective_runtime_contract()
+    receipt = _receipt(contract)
+    del receipt["execution_binding"]["source_sha256"]
+
+    with pytest.raises(ValueError, match="effective_runtime_receipt_invalid"):
+        attester.validate_runtime_receipt(receipt)
+
+
+def test_existing_application_attestation_uses_the_supplied_app(monkeypatch):
+    contract = attester.formal_effective_runtime_contract()
+    request = {
+        "run_id": "run-0123456789abcdef",
+        "parent_nonce_sha256": "a" * 64,
+    }
+    binding = _execution_binding()
+    application = object()
+    calls = []
+
+    monkeypatch.setattr(
+        attester,
+        "verify_execution_request",
+        lambda value, *, source_paths: calls.append((value, source_paths)) or request,
+    )
+    monkeypatch.setattr(
+        attester,
+        "execution_binding_for_request",
+        lambda value, *, child_pid: binding,
+    )
+    monkeypatch.setattr(
+        attester,
+        "_observed_runtime_after_app",
+        lambda received_contract, *, app, pre_app_numpy_modules: (
+            _observed(received_contract)
+            if (
+                app is application
+                and isinstance(pre_app_numpy_modules, list)
+                and pre_app_numpy_modules == []
+            )
+            else None
+        ),
+    )
+
+    receipt = attester.attest_existing_application(
+        application=application,
+        pre_app_numpy_modules=(),
+        execution_request=request,
+        source_paths=(attester.REPO_ROOT / "main.py",),
+    )
+
+    assert receipt["attestation_status"] == "MATCH"
+    assert receipt["execution_binding"] == binding
+    assert calls == [(request, (attester.REPO_ROOT / "main.py",))]
 
 
 def test_runtime_receipt_rejects_conda_numpy_even_if_version_matches():

@@ -3019,6 +3019,7 @@ class FluidEvaluationLoop:
             "production_pour_v1",
             "contact_acquisition_probe_v1",
             "close_contact_allowed_v1",
+            "nonformal_full_pbd_demo_v1",
         ):
             raise ValueError("fluid_acceptance_mode_unsupported")
         if self._attempt_sealed:
@@ -3136,10 +3137,13 @@ class FluidEvaluationLoop:
             and expert_attachment_valid
             and source_visual_sync_valid
         )
+        nonformal_demo = acceptance_mode == "nonformal_full_pbd_demo_v1"
+        if nonformal_demo:
+            expert_episode_accepted = False
         success = (
             contact_acquisition_probe_accepted
             if acceptance_mode == "contact_acquisition_probe_v1"
-            else controller_completed and task_passed
+            else False if nonformal_demo else controller_completed and task_passed
         )
         result = {
             **seal,
@@ -3166,6 +3170,7 @@ class FluidEvaluationLoop:
                 contact_acquisition_probe_accepted
             ),
             "expert_episode_accepted": expert_episode_accepted,
+            "nonformal_demo": nonformal_demo,
             "success": success,
         }
         if dynamic_grasp:

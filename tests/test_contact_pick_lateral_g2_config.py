@@ -4,6 +4,8 @@ from pathlib import Path
 
 import yaml
 
+from tools.labutopia_fluid import run_nonformal_pbd_direct_contact_probe as probe
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = (
@@ -46,6 +48,7 @@ def test_lateral_g2_candidate_is_controlled_and_cannot_enter_lift_or_pour():
     assert fluid["controlled_contact_maximum_source_angular_speed_degrees_s"] == 2.0
     assert "synthetic_attachment_collision_filter_root_path" not in fluid
     assert "attachment_matrix_policy" not in fluid
+    assert fluid["stop_after_pre_roll"] is False
 
 
 def test_fast_lateral_g2_overlay_is_explicitly_diagnostic_only():
@@ -61,6 +64,12 @@ def test_fast_lateral_g2_overlay_is_explicitly_diagnostic_only():
     assert config["online_fluid"]["dynamic_pre_roll_steps"] == 120
     assert "fast_preroll120" in config["online_fluid"]["performance_label"]
 
+    composed, closure = probe.load_composed_config(FAST_CONFIG_PATH)
+    assert composed.online_fluid.execution_mode == "contact_acquisition_probe_v1"
+    assert composed.online_fluid.stop_after_pre_roll is True
+    assert str(CONFIG_PATH.resolve()) in closure
+    assert str(FAST_CONFIG_PATH.resolve()) in closure
+
 
 def test_sensor_health_overlay_stops_after_the_minimum_readiness_window():
     config = yaml.safe_load(SENSOR_HEALTH_CONFIG_PATH.read_text(encoding="utf-8"))
@@ -75,6 +84,8 @@ def test_sensor_health_overlay_stops_after_the_minimum_readiness_window():
     )
     assert config["online_fluid"]["dynamic_pre_roll_steps"] == 20
     assert "sensor_health" in config["online_fluid"]["performance_label"]
+    composed, _ = probe.load_composed_config(SENSOR_HEALTH_CONFIG_PATH)
+    assert composed.online_fluid.stop_after_pre_roll is True
 
 
 def test_sensor_topology_overlay_stops_before_any_controller_action():
@@ -90,3 +101,5 @@ def test_sensor_topology_overlay_stops_before_any_controller_action():
     )
     assert config["online_fluid"]["dynamic_pre_roll_steps"] == 1
     assert "sensor_topology" in config["online_fluid"]["performance_label"]
+    composed, _ = probe.load_composed_config(SENSOR_TOPOLOGY_CONFIG_PATH)
+    assert composed.online_fluid.stop_after_pre_roll is True

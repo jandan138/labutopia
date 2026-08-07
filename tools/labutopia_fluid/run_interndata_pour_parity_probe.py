@@ -888,10 +888,13 @@ def author_inner_wall_collision_proxy(
     visual_mesh_path: str,
     material_path: str = COLLIDER_MATERIAL_PATH,
     kinematic_actor: bool = False,
+    dynamic_actor: bool = False,
 ) -> dict[str, Any]:
     from pxr import UsdGeom, UsdPhysics, UsdShade
     from tools.labutopia_fluid.real_beaker import author_canonical_fluid_wrapper
 
+    if kinematic_actor and dynamic_actor:
+        raise ValueError("inner_wall_actor_modes_are_mutually_exclusive")
     contract = build_inner_wall_contract()
     proxy_radius = float(frame.interior_radius) - float(contract["center_inset"])
     if proxy_radius <= 0.0:
@@ -915,13 +918,21 @@ def author_inner_wall_collision_proxy(
     actor_initial_matrices: list[list[list[float]]] = []
     actor_strategy = "static_canonical_compound_shapes"
     visual_actor_path = visual_mesh_path
-    if kinematic_actor:
+    if kinematic_actor or dynamic_actor:
+        source_mass = None
+        if dynamic_actor:
+            mass_attr = mesh_prim.GetAttribute("physics:mass")
+            if mass_attr and mass_attr.HasAuthoredValueOpinion():
+                source_mass = mass_attr.Get()
         if mesh_prim.HasAPI(UsdPhysics.RigidBodyAPI):
             mesh_prim.RemoveAPI(UsdPhysics.RigidBodyAPI)
         parent_prim = stage.GetPrimAtPath(parent_path)
         parent_rigid = UsdPhysics.RigidBodyAPI.Apply(parent_prim)
         parent_rigid.CreateRigidBodyEnabledAttr().Set(True)
-        parent_rigid.CreateKinematicEnabledAttr().Set(True)
+        parent_rigid.CreateKinematicEnabledAttr().Set(bool(kinematic_actor))
+        if dynamic_actor and source_mass is not None:
+            parent_mass = UsdPhysics.MassAPI.Apply(parent_prim)
+            parent_mass.CreateMassAttr().Set(float(source_mass))
         actor_path = parent_path
         actor_paths = [parent_path]
         actor_world = UsdGeom.XformCache().GetLocalToWorldTransform(parent_prim)
@@ -931,7 +942,11 @@ def author_inner_wall_collision_proxy(
                 for row in range(4)
             ]
         ]
-        actor_strategy = "parent_compound_kinematic_actor"
+        actor_strategy = (
+            "parent_compound_kinematic_actor"
+            if kinematic_actor
+            else "parent_compound_dynamic_actor"
+        )
         visual_actor_path = parent_path
     elif mesh_prim.HasAPI(UsdPhysics.RigidBodyAPI):
         mesh_rigid = UsdPhysics.RigidBodyAPI(mesh_prim)
@@ -972,6 +987,10 @@ def author_inner_wall_collision_proxy(
         "actor_initial_matrices": actor_initial_matrices,
         "actor_strategy": actor_strategy,
         "kinematic_actor_enabled": bool(kinematic_actor),
+        "dynamic_actor_enabled": bool(dynamic_actor),
+        "transferred_mass_kg": (
+            float(source_mass) if dynamic_actor and source_mass is not None else None
+        ),
         "visual_actor_path": visual_actor_path,
         "visual_mesh_path": visual_mesh_path,
     }

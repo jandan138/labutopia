@@ -19,6 +19,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from utils.real_pbd_grasp_v2 import evaluate_grasp_topology_contract
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -34,6 +36,8 @@ WRAPPER_PATH = "/World/beaker2/FluidSafeWrapperCanonical"
 EXPECTED_WRAPPER_COLLIDER_COUNT = 145
 REPORT_BASENAME = "report.json"
 G0_ARTIFACT_BASENAME = "g0_stage_artifact.json"
+LEFT_FINGER_PATH = "/World/Franka/panda_leftfinger"
+RIGHT_FINGER_PATH = "/World/Franka/panda_rightfinger"
 
 
 def sha256_file(path: str | os.PathLike[str]) -> str:
@@ -128,6 +132,91 @@ def _finite_nonnegative(value: Any, *, field: str) -> float:
     return result
 
 
+def _static_grasp_topology(stage: Any) -> dict[str, Any]:
+    """Extract the shell/wrapper ownership facts used by the pure contract."""
+    from pxr import Usd, UsdPhysics
+
+    source = stage.GetPrimAtPath(SOURCE_PATH)
+    source_shell_path = f"{SOURCE_PATH}/mesh"
+    source_shell = stage.GetPrimAtPath(source_shell_path)
+    if not source or not source.IsValid() or not source_shell or not source_shell.IsValid():
+        raise RuntimeError("real_pbd_preflight_source_shell_missing")
+
+    def enabled_colliders(root_path: str) -> list[str]:
+        root = stage.GetPrimAtPath(root_path)
+        if not root or not root.IsValid():
+            return []
+        paths = []
+        for prim in Usd.PrimRange(root):
+            if not prim.HasAPI(UsdPhysics.CollisionAPI):
+                continue
+            enabled = prim.GetAttribute("physics:collisionEnabled")
+            if enabled and enabled.Get() is False:
+                continue
+            paths.append(str(prim.GetPath()))
+        return sorted(set(paths))
+
+    source_filtered_pairs: set[tuple[str, str]] = set()
+    world = stage.GetPrimAtPath("/World")
+    if world and world.IsValid():
+        for prim in Usd.PrimRange(world):
+            if not prim.HasAPI(UsdPhysics.FilteredPairsAPI):
+                continue
+            relation = UsdPhysics.FilteredPairsAPI(prim).GetFilteredPairsRel()
+            for target in relation.GetTargets():
+                left = str(prim.GetPath())
+                right = str(target)
+                source_side = left.startswith(SOURCE_PATH) or right.startswith(SOURCE_PATH)
+                robot_side = left.startswith("/World/Franka") or right.startswith("/World/Franka")
+                if source_side and robot_side:
+                    source_filtered_pairs.add(tuple(sorted((left, right))))
+
+    rigid = UsdPhysics.RigidBodyAPI(source)
+    source_mass = source.GetAttribute("physics:mass")
+    mesh_mass = source_shell.GetAttribute("physics:mass")
+    if source_mass and source_mass.HasAuthoredValueOpinion():
+        mass_authority = "parent"
+    elif mesh_mass and mesh_mass.HasAuthoredValueOpinion():
+        mass_authority = "mesh"
+    else:
+        mass_authority = "unresolved"
+
+    finger_shell_pairs = [
+        [finger, source_shell_path]
+        for finger in (LEFT_FINGER_PATH, RIGHT_FINGER_PATH)
+        if enabled_colliders(finger)
+    ]
+    robot_colliders = enabled_colliders("/World/Franka")
+    finger_collider_paths = {
+        finger: enabled_colliders(finger)
+        for finger in (LEFT_FINGER_PATH, RIGHT_FINGER_PATH)
+    }
+    wrapper_paths = enabled_colliders(WRAPPER_PATH)
+    return {
+        "source_root_path": SOURCE_PATH,
+        "source_external_shell_path": source_shell_path,
+        "source_parent_dynamic": bool(rigid) and (
+            rigid.GetRigidBodyEnabledAttr().Get() is not False
+        ),
+        "source_parent_kinematic": bool(rigid) and bool(
+            rigid.GetKinematicEnabledAttr().Get() or False
+        ),
+        "source_external_shell_collision_enabled": (
+            source_shell.GetAttribute("physics:collisionEnabled").Get() is True
+        ),
+        "source_mass_authority": mass_authority,
+        "wrapper_path": WRAPPER_PATH,
+        "wrapper_collider_count": len(wrapper_paths),
+        "expected_wrapper_collider_count": EXPECTED_WRAPPER_COLLIDER_COUNT,
+        "wrapper_collider_paths": wrapper_paths,
+        "source_robot_filtered_pairs": [list(pair) for pair in sorted(source_filtered_pairs)],
+        "finger_external_shell_pairs": finger_shell_pairs,
+        "finger_wrapper_pairs": [],
+        "robot_collider_paths": robot_colliders,
+        "finger_collider_paths": finger_collider_paths,
+    }
+
+
 def read_static_fixture(asset_path: str | os.PathLike[str]) -> dict[str, Any]:
     """Read authored source, particle, and wrapper facts without starting physics."""
 
@@ -180,6 +269,7 @@ def read_static_fixture(asset_path: str | os.PathLike[str]) -> dict[str, Any]:
         "particle_count": particle_count,
         "wrapper_collider_count": len(wrapper_colliders),
         "wrapper_collider_paths": sorted(wrapper_colliders),
+        "grasp_topology": _static_grasp_topology(stage),
     }
 
 
@@ -210,12 +300,27 @@ def build_static_preflight_report(
             "runtime_stable_particle_ids_available": False,
         }
     )
+    topology = fixture.get("grasp_topology")
+    topology_evaluation = (
+        evaluate_grasp_topology_contract(topology)
+        if topology is not None
+        else None
+    )
+    if topology_evaluation is not None and not topology_evaluation["passed"]:
+        evaluation = {
+            **evaluation,
+            "no_go_reasons": sorted(
+                set(evaluation["no_go_reasons"])
+                | {f"grasp_topology:{failure}" for failure in topology_evaluation["failures"]}
+            ),
+        }
     return {
         "authority": "real_pbd_static_fixture_preflight_report_v1",
         "asset_path": str(asset),
         "asset_sha256": asset_sha256,
         **closure,
         "static_fixture": dict(fixture),
+        "grasp_topology": topology_evaluation,
         "evaluation": evaluation,
     }
 
