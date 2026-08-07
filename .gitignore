@@ -219,6 +219,12 @@ artifacts/videos/
 # Run-scoped Isaac evidence is retained in the workspace but not committed.
 artifacts/runs/
 
+# Local experiment packaging and runtime state. Curated reports and manifests
+# live under reports/; these directories are recoverable workspace evidence.
+artifacts/labutopia-wcsph-pm-dist-*/
+artifacts/**/runtime/
+test-results/
+
 # Local git worktrees
 .worktrees/
 
