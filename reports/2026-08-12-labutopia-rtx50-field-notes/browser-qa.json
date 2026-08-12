@@ -1,13 +1,16 @@
 {
   "schema_version": 1,
   "status": "passed",
-  "scope": "local_static_page_before_publish",
-  "checked_at_utc": "2026-08-12T12:20:42.715Z",
+  "scope": "local_static_page_and_published_github_pages",
+  "local_checked_at_utc": "2026-08-12T12:20:42.715Z",
+  "published_checked_at_utc": "2026-08-12T12:35:29.929Z",
+  "published_url": "https://jandan138.github.io/labutopia/reports/2026-08-12-labutopia-rtx50-field-notes/",
+  "published_source_commit": "e4a2309",
   "browser": "Chromium",
   "viewports": [
-    {"width": 1440, "height": 900, "status": "passed"},
-    {"width": 1024, "height": 768, "status": "passed"},
-    {"width": 390, "height": 844, "status": "passed"}
+    {"width": 1440, "height": 900, "local_status": "passed", "published_status": "passed"},
+    {"width": 1024, "height": 768, "local_status": "passed", "published_status": "passed"},
+    {"width": 390, "height": 844, "local_status": "passed", "published_status": "passed"}
   ],
   "checks": {
     "http_status_200": true,
@@ -18,7 +21,9 @@
     "video_width": 256,
     "video_height": 256,
     "video_duration_seconds": 31.78,
-    "synchronized_playback_works": true
+    "synchronized_playback_works": true,
+    "published_webp_posters_visible": true
   },
+  "transport_note": "GitHub Pages direct Chromium access transiently reset during two probes; bounded retries passed with identical page and media checks.",
   "note": "Independent visual task review is a separate FAIL: the videos prove a complete RTX 50 Hz stream and expose the current failure, not a successful pour."
 }
