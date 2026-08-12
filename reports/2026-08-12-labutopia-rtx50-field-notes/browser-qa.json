@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "scope": "local_static_page_before_publish",
+  "checked_at_utc": "2026-08-12T12:20:42.715Z",
+  "browser": "Chromium",
+  "viewports": [
+    {"width": 1440, "height": 900, "status": "passed"},
+    {"width": 1024, "height": 768, "status": "passed"},
+    {"width": 390, "height": 844, "status": "passed"}
+  ],
+  "checks": {
+    "http_status_200": true,
+    "no_horizontal_overflow": true,
+    "no_broken_images": true,
+    "no_console_or_page_errors": true,
+    "video_count": 2,
+    "video_width": 256,
+    "video_height": 256,
+    "video_duration_seconds": 31.78,
+    "synchronized_playback_works": true
+  },
+  "note": "Independent visual task review is a separate FAIL: the videos prove a complete RTX 50 Hz stream and expose the current failure, not a successful pour."
+}

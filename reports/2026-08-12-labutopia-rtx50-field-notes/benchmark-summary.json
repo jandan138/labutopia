@@ -1,0 +1,70 @@
+{
+  "schema": "labutopia.rtx50_field_notes_summary.v1",
+  "status": "performance_pass_quality_fail",
+  "date": "2026-08-12",
+  "runtime": {
+    "python": "3.10.20",
+    "isaacsim": "4.1.0.0",
+    "effective_numpy": "1.26.0",
+    "usd": "0.22.11",
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "driver": "570.153.02"
+  },
+  "contract": {
+    "resolution": [256, 256],
+    "physics_hz": 30,
+    "render_hz": 50,
+    "physics_states": 953,
+    "rtx_frames": 1589,
+    "mapping": "physics_index=floor(render_index*30/50)",
+    "consumer": "same_process_cuda_checksum_consumer",
+    "cpu_rgb_readback_in_timed_path": false
+  },
+  "full_videos": [
+    {
+      "lane": "headless-product",
+      "rtx_fps": 52.22388435063739,
+      "physics_fps": 31.32118425812299,
+      "timed_elapsed_s": 30.426691154018044,
+      "file": "media/headless-product-full-50fps.mp4",
+      "sha256": "3d77c22ea5f3d6ce4ac2be085f80ce52db70723acb78ac41f1532a4e7ae091cd",
+      "raw_rgb_sha256": "abd6264336ef906f3f6bc221644f121f23956dd994ae56730796f5568ab46199",
+      "sequence_sha256": "f86371ebbccc4747eed0ae717f2f1d4feb5c98292ad11f5b5ab7d64e60540bdf",
+      "receipt_sha256": "42b9460932d4275752533cec22c0f0f885481a605910245ef953663e6f22e72d",
+      "encoded_fps": 50,
+      "frame_count": 1589,
+      "duration_s": 31.78,
+      "resolution": [256, 256]
+    },
+    {
+      "lane": "offscreen-viewport",
+      "rtx_fps": 51.852212530428666,
+      "physics_fps": 31.098274727185977,
+      "timed_elapsed_s": 30.644786836579442,
+      "file": "media/offscreen-viewport-full-50fps.mp4",
+      "sha256": "cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344",
+      "raw_rgb_sha256": "1cdc584e5ed5c8e7a2ff6480fed15e1c3c5e26906b10aae9c79c3724481f23c1",
+      "sequence_sha256": "d54d08e54d9398893678a29ce78f87d3dca4285f3f091a51192c431ef4c69297",
+      "receipt_sha256": "34e22e4ddd0d621a85ab7fecba0d364dedb24f5ee66f280ec5ac7cabbd212305",
+      "encoded_fps": 50,
+      "frame_count": 1589,
+      "duration_s": 31.78,
+      "resolution": [256, 256]
+    }
+  ],
+  "qualification_matrix": {
+    "headless_current_rtx_fps": [47.64551255467479, 48.923428766946664, 50.363731684968975],
+    "headless_fast_glass_rtx_fps": [53.969706010975706, 55.679660417307566, 50.257822493767925],
+    "offscreen_current_rtx_fps": [49.55183413670425, 48.56774312073869, 51.05785742980865],
+    "offscreen_fast_glass_rtx_fps": [52.54808922248986, 52.396655812082194, 53.040337288166434]
+  },
+  "quality_boundary": {
+    "status": "failed",
+    "first_below_table_physics_index": {
+      "headless": 423,
+      "offscreen": 422
+    },
+    "visual_first_obvious_failure_render_index": 759,
+    "statement": "RTX throughput is qualified; liquid containment and full-action framing are not qualified."
+  }
+}

@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2307141d'/%3E%3Cpath d='M18 18h28v8H36v22h-8V26H18z' fill='%234de8ca'/%3E%3C/svg%3E">
+  <meta name="description" content="一次把 Isaac Sim GUI 的 50 FPS 拆成真实 RTX 完成帧、CUDA 消费与正式证据合同的工程复盘。">
+  <title>实战复盘：从 GUI 50 FPS 到真正可消费的 RTX 50 Hz</title>
+  <style>
+    :root {
+      --paper: #eaf2f4;
+      --paper-2: #dce9ec;
+      --ink: #102e3b;
+      --muted: #526f79;
+      --line: #a8c0c6;
+      --signal: #007f86;
+      --signal-2: #45c8be;
+      --blue: #246b9a;
+      --warn: #c4513a;
+      --amber: #b8780b;
+      --panel: rgba(250, 253, 253, .76);
+      --code: #123442;
+      --shadow: 0 22px 60px rgba(16, 46, 59, .10);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(90deg, rgba(36,107,154,.035) 1px, transparent 1px),
+        linear-gradient(rgba(36,107,154,.035) 1px, transparent 1px),
+        var(--paper);
+      background-size: 24px 24px;
+      color: var(--ink);
+      font-family: "Noto Serif SC", "Songti SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.72;
+    }
+    a { color: var(--signal); text-underline-offset: 3px; }
+    button, input { font: inherit; }
+    button:focus-visible, a:focus-visible, input:focus-visible, video:focus-visible {
+      outline: 3px solid var(--signal-2); outline-offset: 3px;
+    }
+    #progress { position: fixed; inset: 0 auto auto 0; height: 4px; width: 0; z-index: 20; background: var(--warn); }
+    .shell { display: grid; grid-template-columns: 250px minmax(0, 900px); max-width: 1260px; margin: auto; }
+    .rail {
+      position: sticky; top: 0; height: 100vh; padding: 28px 24px;
+      border-right: 1px solid var(--line); overflow: auto;
+      font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+    }
+    .rail .brand { color: var(--signal); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; }
+    .rail h1 { margin: 13px 0 25px; font: 700 22px/1.15 system-ui, sans-serif; letter-spacing: -.03em; }
+    .rail nav { display: grid; gap: 8px; }
+    .rail nav a { color: var(--muted); font-size: 12px; line-height: 1.3; text-decoration: none; }
+    .rail nav a:hover, .rail nav a.active { color: var(--warn); font-weight: 700; }
+    .rail .runtime { margin-top: 32px; padding-top: 14px; border-top: 1px dashed var(--line); color: var(--muted); font-size: 10px; line-height: 1.55; }
+    main { min-width: 0; padding: 0 58px 100px; }
+    section { padding: 55px 0 42px; border-bottom: 1px solid var(--line); scroll-margin-top: 10px; }
+    .hero { padding-top: 72px; }
+    .eyebrow { color: var(--signal); font: 600 11px/1.3 "IBM Plex Mono", "SFMono-Regular", monospace; letter-spacing: .13em; text-transform: uppercase; }
+    h2 { margin: 12px 0 20px; font: 750 clamp(34px,5vw,57px)/1.04 system-ui, sans-serif; letter-spacing: -.055em; }
+    h3 { margin: 8px 0 19px; font: 720 35px/1.12 system-ui, sans-serif; letter-spacing: -.04em; }
+    h4 { margin: 30px 0 9px; font: 700 20px/1.25 system-ui, sans-serif; letter-spacing: -.02em; }
+    p { margin: 0 0 17px; }
+    .lede { max-width: 760px; color: #31515e; font-size: 23px; line-height: 1.55; }
+    .verdict { display: inline-flex; gap: 9px; align-items: center; margin: 11px 0 28px; padding: 7px 11px; border: 1px solid #8fb8b9; background: rgba(69,200,190,.12); font: 700 12px system-ui, sans-serif; }
+    .verdict i { width: 8px; height: 8px; border-radius: 50%; background: var(--signal); }
+    .recorder { margin: 37px 0 8px; padding: 20px; border: 1px solid var(--line); background: rgba(250,253,253,.62); box-shadow: var(--shadow); }
+    .track { display: grid; grid-template-columns: 100px 1fr 58px; align-items: center; gap: 12px; margin: 10px 0; }
+    .track-label, .track-value { font: 700 11px "IBM Plex Mono", "SFMono-Regular", monospace; color: var(--muted); }
+    .track-value { color: var(--ink); text-align: right; }
+    .ticks { display: flex; height: 24px; align-items: center; gap: 2px; overflow: hidden; }
+    .ticks i { flex: 1 1 auto; min-width: 2px; height: 8px; background: var(--signal-2); opacity: .48; }
+    .track.physics .ticks i { height: 14px; background: var(--blue); }
+    .clock-note { margin-top: 13px; color: var(--muted); font: 11px/1.55 "IBM Plex Mono", "SFMono-Regular", monospace; }
+    .elevator { margin: 30px 0; padding: 22px 24px; border-left: 6px solid var(--signal); background: var(--panel); }
+    .elevator strong:first-child { display: block; margin-bottom: 12px; font: 750 14px system-ui, sans-serif; color: var(--signal); }
+    .elevator p:last-child { margin-bottom: 0; }
+    .metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1px; margin: 26px 0; border: 1px solid var(--line); background: var(--line); }
+    .metric { min-width: 0; padding: 17px; background: #f7fbfb; }
+    .metric b { display: block; font: 750 28px/1 system-ui, sans-serif; color: var(--signal); }
+    .metric span { display: block; margin-top: 8px; color: var(--muted); font: 10px/1.4 "IBM Plex Mono", "SFMono-Regular", monospace; }
+    .callout { margin: 25px 0; padding: 17px 20px; border: 1px solid var(--line); border-left: 5px solid var(--signal); background: var(--panel); }
+    .callout.warn { border-left-color: var(--warn); }
+    .callout.amber { border-left-color: var(--amber); }
+    .callout b:first-child { display: block; margin-bottom: 6px; font: 750 12px system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+    .callout p:last-child { margin-bottom: 0; }
+    .quote { margin: 27px 0; padding: 16px 21px; border-left: 4px solid var(--blue); color: #214c62; font-size: 21px; }
+    code { padding: 2px 5px; background: rgba(16,46,59,.09); font: 13px/1.5 "IBM Plex Mono", "SFMono-Regular", monospace; overflow-wrap: anywhere; }
+    pre { margin: 24px 0; padding: 18px 20px; overflow: auto; background: var(--code); color: #d8f0f0; font: 13px/1.65 "IBM Plex Mono", "SFMono-Regular", monospace; }
+    .video-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 20px 0 12px; padding: 12px; border: 1px solid var(--line); background: var(--panel); }
+    .video-toolbar button { border: 1px solid var(--ink); background: transparent; color: var(--ink); padding: 7px 11px; cursor: pointer; font: 700 11px "IBM Plex Mono", monospace; }
+    .video-toolbar button:hover { background: var(--ink); color: white; }
+    .video-toolbar input { flex: 1 1 230px; accent-color: var(--signal); }
+    #timeReadout { min-width: 95px; text-align: right; font: 11px "IBM Plex Mono", monospace; color: var(--muted); }
+    .videos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .video-card { min-width: 0; padding: 12px; border: 1px solid var(--line); background: #f6fafa; }
+    .video-card header { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 9px; font: 700 11px "IBM Plex Mono", monospace; }
+    .video-card header span:last-child { color: var(--signal); }
+    video { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background: #102e3b; }
+    .caption { margin: 10px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .table-wrap { width: 100%; overflow-x: auto; margin: 24px 0; }
+    table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 15px; }
+    th, td { padding: 11px 9px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font: 700 10px "IBM Plex Mono", monospace; letter-spacing: .06em; text-transform: uppercase; }
+    td.pass { color: var(--signal); font-weight: 700; }
+    td.fail { color: var(--warn); font-weight: 700; }
+    .acts { counter-reset: act; list-style: none; padding: 0; margin: 24px 0; }
+    .acts li { position: relative; padding: 14px 16px 14px 66px; border-top: 1px solid var(--line); }
+    .acts li::before { counter-increment: act; content: "ACT " counter(act); position: absolute; left: 0; top: 17px; color: var(--warn); font: 750 11px "IBM Plex Mono", monospace; }
+    .acts strong { font-family: system-ui, sans-serif; }
+    .boundary { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 23px 0; }
+    .boundary article { padding: 18px; border: 1px solid var(--line); background: var(--panel); }
+    .boundary article:first-child { border-top: 5px solid var(--signal); }
+    .boundary article:last-child { border-top: 5px solid var(--warn); }
+    .boundary h4 { margin-top: 0; }
+    .boundary ul { padding-left: 20px; margin-bottom: 0; }
+    .qa details { border-top: 1px solid var(--line); padding: 15px 0; }
+    .qa summary { cursor: pointer; font: 700 17px system-ui, sans-serif; }
+    .qa details p { margin: 12px 0 0; color: #31515e; }
+    .hash { color: var(--muted); font: 10px/1.55 "IBM Plex Mono", monospace; overflow-wrap: anywhere; }
+    footer { padding: 30px 0; color: var(--muted); font: 11px/1.6 "IBM Plex Mono", monospace; }
+    @media (max-width: 900px) {
+      .shell { display: block; }
+      .rail { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .rail nav, .rail .runtime { display: none; }
+      main { padding: 0 28px 70px; }
+      .hero { padding-top: 50px; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 0 18px 60px; }
+      section { padding: 42px 0 30px; }
+      h2 { font-size: 40px; }
+      h3 { font-size: 30px; }
+      .lede { font-size: 20px; }
+      .track { grid-template-columns: 72px 1fr 44px; gap: 7px; }
+      .metrics, .videos, .boundary { grid-template-columns: 1fr; }
+      .metric b { font-size: 25px; }
+      .video-toolbar input { order: 3; flex-basis: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <div id="progress"></div>
+  <div class="shell">
+    <aside class="rail">
+      <div class="brand">LabUtopia · Field Notes</div>
+      <h1>RTX 50 Hz<br>飞行记录</h1>
+      <nav aria-label="文章目录">
+        <a href="#cover">00 / 电梯版</a>
+        <a href="#videos">01 / 两段完整视频</a>
+        <a href="#problem">02 / 50 FPS 的误会</a>
+        <a href="#contract">03 / 什么才算一帧</a>
+        <a href="#battle">04 / 四幕排障</a>
+        <a href="#qualification">05 / 资格矩阵</a>
+        <a href="#boundary">06 / 已闭合与未闭合</a>
+        <a href="#eval">07 / 能否交给评测</a>
+        <a href="#interview">08 / 追问预案</a>
+      </nav>
+      <div class="runtime">FORMAL RUNTIME<br>Isaac Sim 4.1.0.0<br>Python 3.10.20<br>Kit NumPy 1.26.0<br>USD 0.22.11</div>
+    </aside>
+    <main>
+      <section id="cover" class="hero">
+        <div class="eyebrow">2026-08-12 · Rendering systems / evidence engineering</div>
+        <h2>从 GUI 50 FPS<br>到真正可消费的 RTX 50 Hz</h2>
+        <p class="lede">一个画面角落显示 50 FPS 的液体 demo，为什么模型同步取图却只有 3.31 FPS？这次复盘讲我们如何重新定义“完成一帧”，把 RTX 图留在 GPU，并用 12 次正式运行把答案从观感变成证据。</p>
+        <div class="verdict"><i></i> PERFORMANCE CLOSED · PHYSICS QUALITY OPEN</div>
+
+        <div class="recorder" aria-label="50赫兹渲染与30赫兹物理双时钟示意">
+          <div class="track render"><span class="track-label">RTX FRAME</span><span class="ticks" id="renderTicks"></span><span class="track-value">50 Hz</span></div>
+          <div class="track physics"><span class="track-label">PHYSICS</span><span class="ticks" id="physicsTicks"></span><span class="track-value">30 Hz</span></div>
+          <p class="clock-note">同一秒里完成 50 张新 RTX 图，但只有 30 个新物理状态；部分相邻图片诚实地共享同一个 sim state。</p>
+        </div>
+
+        <div class="elevator">
+          <strong>3 分钟电梯版（面试可直接讲）</strong>
+          <p>我遇到的是一个<strong>指标合同错位</strong>：GUI overlay 显示约 50 FPS，同事录屏也很流畅，但同步 headless RGB 端点只有 3.31 FPS。overlay 测的是 viewport 更新，不证明每秒真的有 50 张模型能消费的新 RTX 图。</p>
+          <p>我把物理和渲染拆成 30/50 两个时钟，用目标 render product 的 <code>NEW_FRAME</code> 完成事件计数；每一帧都必须有递增 frame number，并通过 <code>LdrColor(device="cuda")</code> 进入三槽 GPU consumer。计时路径不做 CPU RGB 读回。</p>
+          <p>第一版快速材质达到 57 FPS，却让透明烧杯消失；原始玻璃可辨，但三次只有 1/3 过 50。最终保留 DLSS、反射、阴影和透明，把间接漫反射关掉、折射从 6 次降到 2 次：headless 与 offscreen 都 3/3 超过 50。</p>
+          <p>我没有把性能成功包装成产品成功。完整轨迹从物理状态 422–423 起仍有粒子穿桌，render 759 后源杯被镜头裁掉。我们闭合的是 RTX GPU 出图吞吐，不是“不撒不漏”的液体质量。</p>
+        </div>
+      </section>
+
+      <section id="videos">
+        <div class="eyebrow">01 · Complete 50 FPS videos</div>
+        <h3>1589 张都在，不是 24 张抽帧</h3>
+        <p>下面两段均为 256×256、H.264、50 FPS、1589 帧、31.78 秒。每一帧先在正式计时窗口中留存到 CUDA 全帧库；计时结束后才统一读回并编码。点击“同步播放”可以直接比较纯 headless render product 与保留 viewport 的 offscreen 路线。</p>
+        <div class="video-toolbar">
+          <button id="syncPlay" type="button">同步播放</button>
+          <button id="syncPause" type="button">同步暂停</button>
+          <input id="syncSeek" aria-label="同步视频进度" type="range" min="0" max="31.78" step="0.02" value="0">
+          <span id="timeReadout">00.00 / 31.78</span>
+        </div>
+        <div class="videos">
+          <article class="video-card">
+            <header><span>A · HEADLESS PRODUCT</span><span>52.22 FPS</span></header>
+            <video id="headlessVideo" controls preload="metadata" poster="media/headless-poster.jpg">
+              <source src="media/headless-product-full-50fps.mp4" type="video/mp4">
+            </video>
+            <p class="caption">更接近服务器数采：直接创建 render product，RTX 完成图进入 CUDA consumer。</p>
+          </article>
+          <article class="video-card">
+            <header><span>B · OFFSCREEN VIEWPORT</span><span>51.85 FPS</span></header>
+            <video id="offscreenVideo" controls preload="metadata" poster="media/offscreen-poster.jpg">
+              <source src="media/offscreen-viewport-full-50fps.mp4" type="video/mp4">
+            </video>
+            <p class="caption">更接近 GUI：保留 viewport window，但仍在 headless SimulationApp 中离屏运行。</p>
+          </article>
+        </div>
+        <div class="callout warn">
+          <b>诚实观看提示</b>
+          <p>独立 clean-room 复核为高置信度 FAIL：约 15.18 秒后，移动杯体悬在液滩上方并逐渐移出画面，全程没有可辨认的连续液流。这不是视频损坏；两段只能证明完整 50 Hz 帧流和当前失败形态，不能证明一次可识别的倒液成功或完整倒液失败过程。</p>
+        </div>
+      </section>
+
+      <section id="problem">
+        <div class="eyebrow">02 · The misleading number</div>
+        <h3>GUI 写着 50，MP4 却只有 30</h3>
+        <p>同事给的 GUI 视频是 1554×1068、504 帧、16.8 秒，文件编码帧率是 30 FPS。角落 overlay 显示约 49.76–54.16 FPS，那更接近编辑器 viewport 的刷新/应用循环速度。</p>
+        <p>而最初正式模型端点要求每个物理步都等待 RTX 完成、把 1554×1068 RGB 从 GPU 读回 CPU。它测到 301.88 ms/帧，也就是 3.31 FPS。两个数字都可能是真的，只是回答了不同问题。</p>
+        <div class="metrics">
+          <div class="metric"><b>50-ish</b><span>GUI overlay · 非完成帧证据</span></div>
+          <div class="metric"><b>30 FPS</b><span>同事 MP4 的实际编码率</span></div>
+          <div class="metric"><b>3.31 FPS</b><span>1554×1068 同步 CPU RGB</span></div>
+          <div class="metric"><b>52.22 FPS</b><span>256×256 完成 RTX → CUDA</span></div>
+        </div>
+        <p class="quote">先定义“什么才算交付了一帧”，再谈 FPS。否则大家只是拿同一个单位讲四件不同的事。</p>
+      </section>
+
+      <section id="contract">
+        <div class="eyebrow">03 · Frame completion contract</div>
+        <h3>什么才算一张新图</h3>
+        <pre>target render product emits NEW_FRAME
+  → product_path matches
+  → frame_number strictly increases
+  → LdrColor is a CUDA tensor
+  → copy into GPU ring / full-frame store
+  → CUDA event completes
+  → count exactly one delivered frame</pre>
+        <p>不能数 <code>app.update()</code>，因为一次 update 未必完成一张新图；也不能只看 annotator 指针，因为 Isaac 4.1 偶尔会在事件边界给出未注册的 host pointer。我们丢弃这类无效事件，继续等待下一张真正 CUDA 图，并把丢弃次数写入证据。</p>
+        <h4>为什么是 1589 帧？</h4>
+        <p>轨迹有 953 个 30 Hz 物理状态。目标渲染频率是 50 Hz：</p>
+        <pre>render_count = ceil(953 × 50 / 30) = 1589
+physics_index = floor(render_index × 30 / 50)</pre>
+        <p>因此每个物理状态至少出现一次；约 2/5 的物理状态会支持第二张新 RTX 图。这不是把旧像素重复发两遍，而是同一状态的两次新渲染完成。</p>
+      </section>
+
+      <section id="battle">
+        <div class="eyebrow">04 · The debugging campaign</div>
+        <h3>四幕排障：速度不是唯一门</h3>
+        <ol class="acts">
+          <li><strong>第一幕：把同步大端点拆开。</strong> 物理约 6–10 ms，真正拖慢 1554×1068 路线的是 RTX 完成和 CPU 读回。我们改为 256×256、GPU 常驻、30/50 双时钟。</li>
+          <li><strong>第二幕：57 FPS 的假胜利。</strong> fast-opaque 关闭透明路径后很快，但视觉复核只看到一团青色液体，玻璃烧杯消失。性能通过、任务画面失败，候选被拒绝。</li>
+          <li><strong>第三幕：用画面反推最小光照集合。</strong> 原始玻璃清楚但贴着 50 波动。关 TAA 反而更慢，因为 op=3 是 DLSS 快路径；折射降到 1 次杯壁消失，2 次仍可辨。最终保留 DLSS、反射、阴影、透明，关闭间接漫反射。</li>
+          <li><strong>第四幕：把单次成功升级成资格。</strong> 原始玻璃在 headless/offscreen 都只有 1/3 过线；fast-glass 两边都是 3/3。期间还抓到一次配置分支覆盖错误和一次 GPU 利用率残留误报，说明 effective settings 和重复实验比 profile 名字可靠。</li>
+        </ol>
+        <div class="callout amber">
+          <b>我最大的一次误判</b>
+          <p>第一次完整 fast-glass 跑到 55.19 FPS，我差点把它当成最终结果；结果 effective settings 证明它实际生效的是 1 次折射，杯壁已经消失。证据字段救了结论。</p>
+        </div>
+      </section>
+
+      <section id="qualification">
+        <div class="eyebrow">05 · Qualification, not a lucky run</div>
+        <h3>12 次完整运行告诉我们的</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>路径</th><th>画质档</th><th>三次 RTX FPS</th><th>平均</th><th>50 FPS</th></tr></thead>
+            <tbody>
+              <tr><td>Headless</td><td>原始玻璃</td><td>47.65 / 48.92 / 50.36</td><td>48.98</td><td class="fail">1 / 3</td></tr>
+              <tr><td>Headless</td><td>fast-glass</td><td>53.97 / 55.68 / 50.26</td><td>53.30</td><td class="pass">3 / 3</td></tr>
+              <tr><td>Offscreen viewport</td><td>原始玻璃</td><td>49.55 / 48.57 / 51.06</td><td>49.73</td><td class="fail">1 / 3</td></tr>
+              <tr><td>Offscreen viewport</td><td>fast-glass</td><td>52.55 / 52.40 / 53.04</td><td>52.66</td><td class="pass">3 / 3</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>上表不包含这次“保存完整视频”的两条额外正式运行。加入 298 MiB CUDA 全帧库后，headless 为 52.22 FPS，offscreen 为 51.85 FPS；说明完整留帧没有把推荐档拖回 50 以下。</p>
+      </section>
+
+      <section id="boundary">
+        <div class="eyebrow">06 · Evidence boundary</div>
+        <h3>知道哪条线闭合，比“全都成功”更重要</h3>
+        <div class="boundary">
+          <article>
+            <h4>已闭合</h4>
+            <ul>
+              <li>每张图由目标 RTX NEW_FRAME 事件证明完成。</li>
+              <li>1589 张图严格递增并进入 CUDA consumer。</li>
+              <li>headless/offscreen fast-glass 重复集均 3/3 超过 50。</li>
+              <li>完整 CUDA 留帧后的两条视频运行仍超过 50。</li>
+              <li>两条运行绑定 Isaac 4.1 effective-runtime v2 receipt。</li>
+            </ul>
+          </article>
+          <article>
+            <h4>未闭合</h4>
+            <ul>
+              <li>物理状态 422–423 起出现粒子穿到桌面下。</li>
+              <li>目标杯最终接收率仍为 0。</li>
+              <li>render 759 后源杯被镜头上边界裁切。</li>
+              <li>独立复核看不到连续液流，视频不具备完整倒液过程的视觉资格。</li>
+              <li>H.264 编码在计时后完成，不声称实时编码 50 FPS。</li>
+              <li>尚未接真实模型队列，不声称端到端模型吞吐。</li>
+            </ul>
+          </article>
+        </div>
+        <div class="callout warn"><b>正确对外表述</b><p>“我们已把单相机 256×256 RTX 完成图的 GPU 端吞吐提升并资格到 50 Hz；当前液体碰撞质量和全动作构图仍待修复。”</p></div>
+      </section>
+
+      <section id="eval">
+        <div class="eyebrow">07 · Future evaluation input</div>
+        <h3>能输出给评测吗？能，但先别偷换语义</h3>
+        <p>这条链路已经能够输出标准 50 FPS MP4，也能输出逐帧图像或 CUDA tensor 流，所以未来可以作为评测的相机帧源。当前模型/动作通常按 30 Hz 决策，建议评测时在每个决策点取“最新且因果有效”的一张 50 Hz 图，而不是强迫模型对共享物理状态的两张图都推理。</p>
+        <p>真正接评测时再补三件事：每帧双时间戳（物理 sim time 与 RTX 完成 wall time）、frame→physics/action 映射、模型积压时的 latest-frame/drop 记录。本项目现在没有修改 EOS，也没有把 GPU checksum 假消费者冒充成模型。</p>
+      </section>
+
+      <section id="interview" class="qa">
+        <div class="eyebrow">08 · Interview follow-ups</div>
+        <h3>面试官大概率会追问什么</h3>
+        <details open><summary>GUI 都显示 50 FPS 了，为什么还要重测？</summary><p>因为 overlay 没有证明目标相机完成了新 RTX 图，也没有证明图像进入模型可用的 tensor。完成事件、递增帧号和消费者是三个独立门。</p></details>
+        <details><summary>为什么不直接关掉玻璃透明，速度不是更快吗？</summary><p>fast-opaque 确实更快，但烧杯从 observation 中消失，属于任务语义破坏。最终配置是视觉可辨与吞吐之间的最小妥协，不是最高裸 FPS。</p></details>
+        <details><summary>两张图共享一个物理状态，算不算假 50 Hz？</summary><p>相机确实完成了 50 次新渲染，所以是 50 Hz imaging；世界状态只有 30 Hz，所以不能叫 50 Hz state sampling。manifest 明确保留一对多映射。</p></details>
+        <details><summary>为什么 3 次都要跑？</summary><p>原始玻璃最能说明问题：单次曾有 50.36，但另外两次 47.65/48.92。没有重复资格，就很容易挑到一次幸运结果。</p></details>
+        <details><summary>最值得复用的方法是什么？</summary><p>先定义可证伪的端点，再分层测量；所有优化都记录 effective settings；速度门与视觉/物理质量门分开；单次成功永远不自动升级为资格声明。</p></details>
+      </section>
+
+      <section id="evidence">
+        <div class="eyebrow">Evidence ledger</div>
+        <h3>可复核身份</h3>
+        <p class="hash">Headless MP4 · 3d77c22ea5f3d6ce4ac2be085f80ce52db70723acb78ac41f1532a4e7ae091cd</p>
+        <p class="hash">Offscreen MP4 · cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344</p>
+        <p class="hash">Headless runtime receipt · 42b9460932d4275752533cec22c0f0f885481a605910245ef953663e6f22e72d</p>
+        <p class="hash">Offscreen runtime receipt · 34e22e4ddd0d621a85ab7fecba0d364dedb24f5ee66f280ec5ac7cabbd212305</p>
+        <p>完整结构化摘要见 <a href="benchmark-summary.json">benchmark-summary.json</a>。</p>
+      </section>
+      <footer>LabUtopia · RTX 50 Hz Field Notes · formal Isaac Sim 4.1 lane · 2026-08-12</footer>
+    </main>
+  </div>
+  <script>
+    const renderTicks = document.getElementById('renderTicks');
+    const physicsTicks = document.getElementById('physicsTicks');
+    for (let i = 0; i < 50; i++) renderTicks.append(document.createElement('i'));
+    for (let i = 0; i < 30; i++) physicsTicks.append(document.createElement('i'));
+
+    const progress = document.getElementById('progress');
+    const navLinks = [...document.querySelectorAll('.rail nav a')];
+    const sections = [...document.querySelectorAll('main section[id]')];
+    function updateReadingState() {
+      const max = document.documentElement.scrollHeight - innerHeight;
+      progress.style.width = `${max > 0 ? scrollY / max * 100 : 0}%`;
+      let current = sections[0]?.id;
+      for (const section of sections) if (section.getBoundingClientRect().top < 180) current = section.id;
+      navLinks.forEach(link => link.classList.toggle('active', link.hash === `#${current}`));
+    }
+    addEventListener('scroll', updateReadingState, { passive: true });
+    updateReadingState();
+
+    const videos = [document.getElementById('headlessVideo'), document.getElementById('offscreenVideo')];
+    const seek = document.getElementById('syncSeek');
+    const readout = document.getElementById('timeReadout');
+    let seeking = false;
+    document.getElementById('syncPlay').addEventListener('click', async () => {
+      const t = Number(seek.value);
+      videos.forEach(video => { if (Math.abs(video.currentTime - t) > .08) video.currentTime = t; });
+      await Promise.all(videos.map(video => video.play().catch(() => null)));
+    });
+    document.getElementById('syncPause').addEventListener('click', () => videos.forEach(video => video.pause()));
+    seek.addEventListener('input', () => {
+      seeking = true;
+      const t = Number(seek.value);
+      videos.forEach(video => { video.currentTime = t; });
+      readout.textContent = `${t.toFixed(2)} / 31.78`;
+    });
+    seek.addEventListener('change', () => { seeking = false; });
+    videos[0].addEventListener('timeupdate', () => {
+      if (seeking) return;
+      const t = videos[0].currentTime;
+      seek.value = t;
+      readout.textContent = `${t.toFixed(2)} / 31.78`;
+      if (!videos[1].paused && Math.abs(videos[1].currentTime - t) > .12) videos[1].currentTime = t;
+    });
+  </script>
+</body>
+</html>

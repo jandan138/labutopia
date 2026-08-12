@@ -1,0 +1,21 @@
+{
+  "schema": "labutopia.rtx50_full_video_visual_review.v1",
+  "status": "failed",
+  "review_method": "independent_clean_room_pixel_review",
+  "reviewed_sequences": {
+    "headless-product": ["start", "early", "failure", "late", "end"],
+    "offscreen-viewport": ["start", "early", "failure", "late", "end"]
+  },
+  "overall_verdict": "FAIL",
+  "findings": [
+    "Neither sequence contains blank or visibly corrupt frames.",
+    "The two lanes are visually comparable and effectively share the same framing and progression.",
+    "No continuous pour stream or clearly trackable transfer is visible.",
+    "At the failure phase the moving vessel appears suspended above a white puddle, then exits the frame and remains cropped at the top edge."
+  ],
+  "claim_boundary": "adequate_as_complete_50hz_frame_stream_and_narrow_failure_demonstration;not_adequate_as_visual_evidence_of_a_complete_liquid_pour",
+  "first_visibly_failed_phase": "failure",
+  "first_visibly_failed_render_index_approx": 759,
+  "retake_recommendation": "Use a wider stable view that retains both vessels and impact area, and capture vessel tilt, continuous liquid stream, target arrival, and failure without cropping.",
+  "confidence": "high"
+}
