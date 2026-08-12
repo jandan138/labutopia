@@ -31,6 +31,8 @@ def test_report_claims_and_failure_boundary() -> None:
     parser = _Parser()
     parser.feed(html)
     assert {"cover", "videos", "problem", "contract", "battle", "qualification", "boundary", "eval", "interview"}.issubset(parser.ids)
+    assert parser.media
+    assert all((REPORT_DIR / media).is_file() for media in parser.media)
     for text in ("1589", "31.78", "52.22 FPS", "51.85 FPS", "3 / 3", "独立 clean-room 复核为高置信度 FAIL", "不能证明一次可识别的倒液成功"):
         assert text in html
 
