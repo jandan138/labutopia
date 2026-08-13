@@ -347,10 +347,12 @@ def _configure_profile(stage: Any, profile: str) -> dict[str, Any]:
     return {"profile": profile, "before": before, "after": after, "material": authored_material}
 
 
-def _author_source_semantics(stage: Any) -> dict[str, Any]:
+def _author_source_semantics(
+    stage: Any, prim_path: str = baseline.SOURCE_MESH_PATH
+) -> dict[str, Any]:
     from pxr import Semantics, Usd
 
-    root = stage.GetPrimAtPath(baseline.SOURCE_MESH_PATH)
+    root = stage.GetPrimAtPath(prim_path)
     if not root or not root.IsValid():
         raise RuntimeError("visible_sync_source_prim_missing")
     authored_paths = []
@@ -365,7 +367,7 @@ def _author_source_semantics(stage: Any) -> dict[str, Any]:
             semantic.CreateSemanticDataAttr().Set(SOURCE_SEMANTIC_LABEL)
             authored_paths.append(str(prim.GetPath()))
     return {
-        "prim_path": baseline.SOURCE_MESH_PATH,
+        "prim_path": prim_path,
         "authored_paths": authored_paths,
         "type": "class",
         "label": SOURCE_SEMANTIC_LABEL,
@@ -375,14 +377,29 @@ def _author_source_semantics(stage: Any) -> dict[str, Any]:
 
 
 def _author_visible_sync_proxy_material(stage: Any) -> dict[str, Any]:
-    """Make transparent source geometry visible to Isaac 4.1 instance buffers."""
+    """Add an opaque audit marker that inherits the source rigid transform.
+
+    Isaac 4.1's instance annotator can retain the initial instance transform for
+    the scene's transparent imported beaker mesh.  Binding an opaque material to
+    that mesh does not invalidate the stale instance entry.  A fresh session-only
+    child cube avoids that cache path while still exercising the exact USD parent
+    transform consumed by Hydra.
+    """
+    import numpy as np
+
     from pxr import Gf, Sdf, Usd, UsdGeom, UsdShade
 
     root = stage.GetPrimAtPath(baseline.SOURCE_MESH_PATH)
     if not root or not root.IsValid():
         raise RuntimeError("visible_sync_proxy_source_missing")
     material_path = "/World/Looks/LabUtopiaVisibleSyncProxy"
-    bound_paths = []
+    proxy_path = f"{baseline.SOURCE_PATH}/LabUtopiaVisibleSyncProxy"
+    root_world = baseline._prim_world_matrix(stage, baseline.SOURCE_PATH)
+    mesh_center_world = np.asarray(
+        baseline._prim_world_bounds(stage, baseline.SOURCE_MESH_PATH)["center"],
+        dtype=np.float64,
+    )
+    mesh_center_local = np.append(mesh_center_world, 1.0) @ np.linalg.inv(root_world)
     with Usd.EditContext(stage, stage.GetSessionLayer()):
         if not stage.GetPrimAtPath("/World/Looks"):
             UsdGeom.Scope.Define(stage, "/World/Looks")
@@ -398,27 +415,26 @@ def _author_visible_sync_proxy_material(stage: Any) -> dict[str, Any]:
         material.CreateSurfaceOutput().ConnectToSource(
             shader.ConnectableAPI(), "surface"
         )
-        for prim in Usd.PrimRange(root):
-            if prim.IsA(UsdGeom.Gprim):
-                UsdShade.MaterialBindingAPI.Apply(prim).Bind(
-                    material,
-                    bindingStrength=UsdShade.Tokens.strongerThanDescendants,
-                )
-                bound_paths.append(str(prim.GetPath()))
-        if not bound_paths:
-            UsdShade.MaterialBindingAPI.Apply(root).Bind(
-                material,
-                bindingStrength=UsdShade.Tokens.strongerThanDescendants,
-            )
-            bound_paths.append(str(root.GetPath()))
+        proxy = UsdGeom.Cube.Define(stage, proxy_path)
+        proxy.CreateSizeAttr(0.035)
+        UsdGeom.XformCommonAPI(proxy).SetTranslate(
+            Gf.Vec3d(*[float(value) for value in mesh_center_local[:3]])
+        )
+        UsdShade.MaterialBindingAPI.Apply(proxy.GetPrim()).Bind(
+            material,
+            bindingStrength=UsdShade.Tokens.strongerThanDescendants,
+        )
     return {
         "material_path": material_path,
-        "bound_paths": bound_paths,
+        "proxy_path": proxy_path,
+        "bound_paths": [proxy_path],
+        "proxy_center_local": [float(value) for value in mesh_center_local[:3]],
+        "proxy_size_m": 0.035,
         "color": [0.1, 0.9, 0.2],
         "opacity": 1.0,
         "authoring_layer": "anonymous_session_layer",
         "input_usd_mutated": False,
-        "scope": "independent_instance_segmentation_audit_only",
+        "scope": "session_only_parent_transform_instance_segmentation_audit",
         "timed_rgb_or_delivery_video_affected": False,
     }
 
@@ -1186,8 +1202,8 @@ def _run_visible_sync_audit_measurement(
     stage, stage_record = baseline._open_stage(args, application)
     profile_record = _configure_profile(stage, args.profile)
     camera_record = _define_benchmark_camera(stage, packet, args.camera_policy)
-    semantics = _author_source_semantics(stage)
     proxy_material = _author_visible_sync_proxy_material(stage)
+    semantics = _author_source_semantics(stage, proxy_material["proxy_path"])
     for _ in range(4):
         application.update()
     target = _create_render_target(args, application, camera_record["camera_path"])
