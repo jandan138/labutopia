@@ -1143,7 +1143,7 @@ def _run_visible_sync_audit_measurement(
     target = _create_render_target(args, application, camera_record["camera_path"])
     product_path = str(target["product_path"])
     rgb = rep.AnnotatorRegistry.get_annotator("rgb")
-    instance = rep.AnnotatorRegistry.get_annotator("instance_segmentation_fast")
+    instance = rep.AnnotatorRegistry.get_annotator("instance_segmentation")
     rgb.attach([product_path])
     instance.attach([product_path])
     timeline = omni.timeline.get_timeline_interface()
@@ -1263,6 +1263,7 @@ def _run_visible_sync_audit_measurement(
             "integration_hz": args.integration_hz,
             "physics_states": EXPECTED_OBSERVATIONS,
             "same_render_product_for_rgb_and_instance": True,
+            "instance_annotator": "instance_segmentation",
             "performance_claim": False,
         },
         "semantics": semantics,
