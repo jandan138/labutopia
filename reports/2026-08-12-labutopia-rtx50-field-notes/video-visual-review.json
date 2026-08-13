@@ -1,27 +1,28 @@
 {
-  "schema": "labutopia.rtx50_full_video_visual_review.v2",
+  "schema": "labutopia.rtx50_full_video_visual_review.v3",
   "date": "2026-08-13",
-  "review_method": "local_non_independent_uniform_contact_sheet_and_full_video_review",
+  "review_method": "local_non_independent_full_video_contact_sheet_and_keyframe_review",
   "reviewed_videos": [
-    {"lane": "headless-product", "file": "media/kinematic-headless-diagnostic-50fps-playback-v1.mp4", "sha256": "f587476ac13aa429a1ffeee57c859572c9c4d157820eb2c88c323ff127d3765e"},
-    {"lane": "offscreen-viewport", "file": "media/kinematic-offscreen-diagnostic-50fps-playback-v1.mp4", "sha256": "d406d06bc1d48457973b8b47328ea89dde722f080a140d4a92a0ca3ce56fe5c7"}
+    {"lane": "headless-product", "file": "media/visible-sync-headless-busy-gpu-50fps-v2.mp4", "sha256": "f31cbdaf63d72de82a89c1060c1de9be3d27a4d89a62a0198f501e2fe54dc686"},
+    {"lane": "offscreen-viewport", "file": "media/visible-sync-offscreen-busy-gpu-50fps-v2.mp4", "sha256": "997227e45b1a366cb94e4ff60914c0afe06f64e2ef9231b3441f8a21d4606ba7"}
   ],
   "sampling": {
-    "uniform_review_frames_per_lane": 24,
-    "render_indices": [0, 69, 138, 207, 276, 345, 414, 483, 552, 621, 690, 759, 829, 898, 967, 1036, 1105, 1174, 1243, 1312, 1381, 1450, 1519, 1588]
+    "uniform_interval_seconds": 0.5,
+    "keyframes_seconds": [0, 16, 18, 20, 22, 24, 26, 28, 30, 31.5]
   },
   "verdicts": {
+    "visible_source_motion": "pass",
     "diagnostic_video": "pass",
     "successful_pour_video": "fail"
   },
   "findings": [
     "Neither sequence contains blank or visibly corrupt frames.",
-    "The two lanes are visually comparable and both vessels remain in frame through the full trajectory.",
-    "Detached liquid blobs are visible during motion.",
-    "A thin vertical liquid or penetration streak is visible, consistent with the numeric below-table failure.",
-    "The videos are adequate evidence of the current failure mode, not evidence of a spill-free successful pour."
+    "The visible source beaker translates, lifts, tilts, and settles instead of remaining at its initial pose.",
+    "Both lanes use the same fixed trajectory-envelope camera and remain visually comparable.",
+    "Detached liquid remains visible and numeric pre-tilt retention fails.",
+    "The videos are evidence of the visible-source synchronization fix, not evidence of a spill-free pour or formal 50 Hz qualification."
   ],
-  "claim_boundary": "adequate_as_complete_kinematic_failure_diagnostic;not_adequate_as_visual_evidence_of_a_successful_spill_free_pour",
+  "claim_boundary": "adequate_as_busy_gpu_visible_source_sync_diagnostic;not_adequate_as_formal_performance_or_spill_free_pour_evidence",
   "confidence": "high",
   "independence": "not_independent"
 }

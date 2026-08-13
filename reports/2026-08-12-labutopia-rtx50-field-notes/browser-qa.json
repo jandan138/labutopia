@@ -1,16 +1,17 @@
 {
-  "schema_version": 2,
-  "status": "passed",
-  "scope": "local_static_page_and_published_github_pages",
-  "checked_at_utc": "2026-08-13T02:44:00Z",
+  "schema_version": 3,
+  "status": "local_passed_pending_published_qa",
+  "scope": "local_static_page_passed; published_github_pages_check_pending",
+  "checked_at_utc": "2026-08-13T14:57:40Z",
   "published_url": "https://jandan138.github.io/labutopia/reports/2026-08-12-labutopia-rtx50-field-notes/",
-  "published_source_commit": "18eb72fd3ef63ca3d11f9a77c6d90d54a575e617",
-  "pages_workflow_run": "https://github.com/jandan138/labutopia/actions/runs/31661442387",
+  "published_source_commit": null,
+  "pages_workflow_run": null,
   "browser": "Chromium",
   "review_mode": "local_non_independent",
   "viewports": [
-    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "passed"},
-    {"width": 390, "height": 844, "local_status": "passed", "published_status": "passed"}
+    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "pending"},
+    {"width": 900, "height": 1100, "local_status": "passed", "published_status": "pending"},
+    {"width": 390, "height": 844, "local_status": "passed", "published_status": "pending"}
   ],
   "checks": {
     "http_status_200": true,
@@ -24,16 +25,22 @@
     "video_height": 256,
     "video_duration_seconds": 31.78,
     "video_encoded_fps": 50,
-    "published_webp_posters_visible": true,
+    "published_webp_posters_visible": null,
     "current_headless_mp4_sha256_matches": true,
     "current_offscreen_mp4_sha256_matches": true,
-    "published_summary_status_200": true,
-    "published_visual_review_status_200": true
+    "published_summary_status_200": null,
+    "published_visual_review_status_200": null
   },
   "current_media": [
-    {"file": "media/kinematic-headless-diagnostic-50fps-playback-v1.mp4", "sha256": "f587476ac13aa429a1ffeee57c859572c9c4d157820eb2c88c323ff127d3765e"},
-    {"file": "media/kinematic-offscreen-diagnostic-50fps-playback-v1.mp4", "sha256": "d406d06bc1d48457973b8b47328ea89dde722f080a140d4a92a0ca3ce56fe5c7"}
+    {"file": "media/visible-sync-headless-busy-gpu-50fps-v2.mp4", "sha256": "f31cbdaf63d72de82a89c1060c1de9be3d27a4d89a62a0198f501e2fe54dc686"},
+    {"file": "media/visible-sync-offscreen-busy-gpu-50fps-v2.mp4", "sha256": "997227e45b1a366cb94e4ff60914c0afe06f64e2ef9231b3441f8a21d4606ba7"}
   ],
-  "transport_note": "Video preload can keep networkidle open; page layout was checked at DOMContentLoaded with media requests blocked, then both published MP4 files were downloaded separately and hash-verified.",
-  "claim_boundary": "Browser and delivery QA passed. Successful-pour visual quality and real-time 50 Hz performance remain failed."
+  "local_audit_artifacts": {
+    "directory": "/tmp/rtx50-page-qa",
+    "audit_json": "/tmp/rtx50-page-qa/audit.json",
+    "desktop_screenshot": "/tmp/rtx50-page-qa/desktop-final.png",
+    "tablet_screenshot": "/tmp/rtx50-page-qa/tablet.png",
+    "mobile_screenshot": "/tmp/rtx50-page-qa/mobile.png"
+  },
+  "claim_boundary": "Local browser and media QA passed. Published delivery QA is pending. Media is explicitly busy-GPU exploratory and not spill-free-pour evidence."
 }

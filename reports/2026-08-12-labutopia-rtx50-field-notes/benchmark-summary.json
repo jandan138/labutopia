@@ -1,6 +1,6 @@
 {
-  "schema": "labutopia.rtx50_field_notes_summary.v2",
-  "status": "kinematic_diagnostic_published_performance_and_physics_no_go",
+  "schema": "labutopia.rtx50_field_notes_summary.v3",
+  "status": "visible_source_sync_exploration_published_formal_performance_and_physics_no_go",
   "date": "2026-08-13",
   "runtime": {
     "python": "3.10.20",
@@ -9,7 +9,6 @@
     "usd": "0.22.11",
     "gpu": "NVIDIA GeForce RTX 4090",
     "driver": "570.153.02",
-    "source_revision_for_formal_runs": "fb10f670ffb848d709609a719c5c2f576226fb14",
     "effective_runtime_receipts": "matched v2"
   },
   "contract": {
@@ -19,96 +18,104 @@
     "physics_states": 953,
     "rtx_frames": 1589,
     "mapping": "physics_index=floor(render_index*30/50)",
-    "consumer": "same_process_cuda_checksum_consumer",
     "cpu_rgb_readback_in_timed_path": false,
     "encoded_fps": 50,
-    "claim_boundary": "50 FPS is the MP4 playback rate; measured RTX FPS is the wall-clock completed-frame production rate"
+    "claim_boundary": "50 FPS is MP4 playback; measured RTX FPS is wall-clock completed-frame production"
   },
   "current_kinematic_diagnostic": {
     "status": "measured_no_go",
+    "evidence_class": "non_authoritative_busy_gpu_exploration",
     "source_driver": "physx-kinematic-target",
-    "camera_policy": "trajectory-follow",
+    "camera_policy": "trajectory-envelope",
     "control_hz": 30,
     "integration_hz": 30,
     "profile": "fast-glass",
+    "visible_source_sync": {
+      "numeric_pose_sync": "pass",
+      "maximum_target_to_physx_position_error_m": 1.228781230931777e-7,
+      "maximum_target_to_physx_rotation_error_degrees": 2.4567327398802266e-5,
+      "maximum_physx_to_usd_position_error_m": 0.0,
+      "maximum_physx_to_usd_rotation_error_degrees": 2.9575586669421963e-6,
+      "maximum_mesh_relation_position_error_m": 0.0,
+      "maximum_mesh_relation_rotation_error_degrees": 2.9575586669421963e-6,
+      "rgb_full_video_review": "pass",
+      "isaac41_instance_segmentation_gate": "blocked_by_stale_initial_transform_cache",
+      "statement": "The visible source beaker now translates, lifts, tilts, and settles with the PhysX source body. Isaac 4.1 instance segmentation retained the initial transform and is not used as a passing pixel gate."
+    },
     "qualification_matrix": {
-      "file_sha256": "af25c85dad0b0c5cf396eee603f55d1763810fd976b12cbe1b9e582ac3e91d86",
-      "content_sha256": "a685d2bc35b13d1e55e9370daa38ac242ce62703109224d9488d790b848d601b",
+      "scope": "historical formal trajectory-follow matrix; retained as non-comparable context",
       "headless_product": {
         "rtx_fps": [40.52631536795541, 42.09573844365984, 41.53342512026127],
         "rtx_fps_mean": 41.38515964395884,
-        "physics_fps": [24.305587505136256, 25.246846278670755, 24.909599836129004],
-        "physics_fps_mean": 24.820677873312007,
-        "runs_meeting_50_rtx_fps": 0,
-        "runs_meeting_30_physics_fps": 0
+        "runs_meeting_50_rtx_fps": 0
       },
       "offscreen_viewport": {
         "rtx_fps": [42.1791731512113, 42.30941109508181, 41.27877144504767],
         "rtx_fps_mean": 41.922451897113596,
-        "physics_fps": [25.296886100128617, 25.374996081568888, 24.756871735135572],
-        "physics_fps_mean": 25.14291797227769,
-        "runs_meeting_50_rtx_fps": 0,
-        "runs_meeting_30_physics_fps": 0
+        "runs_meeting_50_rtx_fps": 0
       }
     },
     "full_videos": [
       {
         "lane": "headless-product",
         "status": "measured_no_go",
-        "rtx_fps": 42.83046165789233,
-        "physics_fps": 25.687495254859275,
-        "timed_elapsed_s": 37.09976354427636,
-        "file": "media/kinematic-headless-diagnostic-50fps-playback-v1.mp4",
-        "sha256": "f587476ac13aa429a1ffeee57c859572c9c4d157820eb2c88c323ff127d3765e",
-        "raw_rgb_sha256": "8ec3a2f95e832559515bbc2dfac4a7e8a1f753d05ea755999e900ddffe9bf143",
-        "sequence_sha256": "7a6101f63b3717af600af6ec2be36afa01ec0690d1ab641a9a076d9347af073e",
-        "receipt_sha256": "716742471ad3fa5009f475bdf3d0a0772225e3c86db580fad442d7eb48699ba3",
-        "manifest_sha256": "d8155e44dededc88934cfdfd821cd64317f68d87e4a34ea9c0be06f1861c4b6f",
+        "evidence_class": "non_authoritative_busy_gpu_exploration",
+        "rtx_fps": 47.24231762220946,
+        "physics_fps": 28.333498234087866,
+        "timed_elapsed_s": 33.63509836047888,
+        "file": "media/visible-sync-headless-busy-gpu-50fps-v2.mp4",
+        "sha256": "f31cbdaf63d72de82a89c1060c1de9be3d27a4d89a62a0198f501e2fe54dc686",
+        "raw_rgb_sha256": "d6ee5557e54e420ee70e1952642ea602af5a81a4a0dd254674e91d761004c651",
+        "sequence_sha256": "5d57ff41a8d6826b98b42508661fecaccf008d33d865b4dd10e05522deba2046",
+        "receipt_sha256": "5569909741d5f4dab4c53ce1fc843b969b6dab76aa02962e65cde739d8f8e3f5",
+        "result_sha256": "a21a0bb5e2a2d7773055a55b8c265e587958c818a09a3370a7afb6e8f753f817",
         "encoded_fps": 50,
         "frame_count": 1589,
         "duration_s": 31.78,
         "resolution": [256, 256],
-        "physics_final": {"target": 503, "tabletop_spill": 43, "below_table": 2, "nonfinite": 0, "target_fraction": 0.9178832116788321},
-        "pre_tilt_max_outside": 33,
+        "physics_final": {"target": 508, "tabletop_spill": 40, "below_table": 0, "nonfinite": 0},
+        "pre_tilt_max_outside": 32,
         "performance_passed": false,
         "physics_passed": false
       },
       {
         "lane": "offscreen-viewport",
         "status": "measured_no_go",
-        "rtx_fps": 41.99470258132042,
-        "physics_fps": 25.186250195090217,
-        "timed_elapsed_s": 37.83810581639409,
-        "file": "media/kinematic-offscreen-diagnostic-50fps-playback-v1.mp4",
-        "sha256": "d406d06bc1d48457973b8b47328ea89dde722f080a140d4a92a0ca3ce56fe5c7",
-        "raw_rgb_sha256": "6574e6284c60e33b7169fa0b74cb066e275cd36941cf8769a6288dd5ceed5481",
-        "sequence_sha256": "60341535d7c7e70f82173b7c8644ba0b707db56582a7defd4dcf4bbf5b686f5c",
-        "receipt_sha256": "db5979bbda81997d9233864af03899c991417ad5dd1fb52237acb0c628a36f55",
-        "manifest_sha256": "e0b696227e4658974d557c19c497c1914e7f94e8d884c33987daa658ba262946",
+        "evidence_class": "non_authoritative_busy_gpu_exploration",
+        "rtx_fps": 47.17451924687302,
+        "physics_fps": 28.29283627581497,
+        "timed_elapsed_s": 33.68343812227249,
+        "file": "media/visible-sync-offscreen-busy-gpu-50fps-v2.mp4",
+        "sha256": "997227e45b1a366cb94e4ff60914c0afe06f64e2ef9231b3441f8a21d4606ba7",
+        "raw_rgb_sha256": "0b63d8035609be0490e195054b30faa965a860b084604a9279c86c8f3c79104c",
+        "sequence_sha256": "b00b94f6d509f2cf298aea327fa9c1a8b06a46b7e631abc405f723c6ee0f1d4b",
+        "receipt_sha256": "2c5771cba9ccc752d96cdbba6c059d6b3d50ded0a8d57f57310b9cfb71310c39",
+        "result_sha256": "548048b1798f2f28ed682a30398969a20ceca0c835178c1cb3592899fbebb01d",
         "encoded_fps": 50,
         "frame_count": 1589,
         "duration_s": 31.78,
         "resolution": [256, 256],
-        "physics_final": {"target": 504, "tabletop_spill": 42, "below_table": 2, "nonfinite": 0, "target_fraction": 0.9197080291970803},
+        "physics_final": {"target": 504, "tabletop_spill": 44, "below_table": 0, "nonfinite": 0},
         "pre_tilt_max_outside": 34,
         "performance_passed": false,
         "physics_passed": false
       }
     ],
     "visual_boundary": {
+      "visible_source_motion": "pass",
       "diagnostic_video": "pass",
       "successful_pour": "fail",
       "review_mode": "local_non_independent",
-      "statement": "Both vessels remain visible, but detached liquid blobs and thin penetration streaks remain visible."
+      "statement": "The visible source beaker follows the physical motion. Detached liquid remains visible and pre-tilt retention fails."
     }
   },
-  "physics_only_kinematic_sweep": {
-    "status": "driver_pass_quality_no_go",
-    "content_sha256": "f343c5f5c2b7fda02adf0dd5e7341e80c90991c7dc37ce7cd3dd06e2e8401c8f",
+  "busy_gpu_integration_screen": {
+    "status": "all_quality_no_go",
+    "claim_boundary": "shared-GPU exploratory screen; do not compare as formal performance qualification",
     "runs": [
-      {"integration_hz": 30, "physics_mean_ms": 5.761374304650211, "model_ready_fps": 164.6044289221205, "pre_tilt_max_outside": 32, "final_target": 507, "final_tabletop_spill": 40, "final_below_table": 1, "status": "measured_no_go"},
-      {"integration_hz": 60, "physics_mean_ms": 10.992341741387333, "model_ready_fps": 88.35041394601252, "pre_tilt_max_outside": 23, "final_target": 496, "final_tabletop_spill": 38, "final_below_table": 14, "status": "measured_no_go"},
-      {"integration_hz": 120, "physics_mean_ms": 21.636711478530735, "model_ready_fps": 45.46117650406641, "pre_tilt_max_outside": 23, "final_target": 478, "final_tabletop_spill": 40, "final_below_table": 30, "status": "measured_no_go"}
+      {"integration_hz": 30, "rtx_fps": 47.24231762220946, "physics_fps": 28.333498234087866, "pre_tilt_max_outside": 32, "final_target": 508, "final_tabletop_spill": 40, "final_below_table": 0},
+      {"integration_hz": 60, "rtx_fps": 38.28491157530111, "physics_fps": 22.96130945957329, "pre_tilt_max_outside": 23, "final_target": 490, "final_tabletop_spill": 39, "final_below_table": 19},
+      {"integration_hz": 120, "rtx_fps": 28.587, "physics_fps": 17.145, "pre_tilt_max_outside": 22, "final_target": 488, "final_tabletop_spill": 39, "final_below_table": 21}
     ]
   },
   "historical_teleport_reference": {
@@ -121,5 +128,5 @@
       {"lane": "offscreen-viewport", "rtx_fps": 51.852212530428666, "file": "media/offscreen-viewport-full-50fps.mp4", "sha256": "cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344"}
     ]
   },
-  "next_gate": "Fix pre-tilt retention, tabletop spill, penetration, and stable-tail quality before presenting a successful-pour video; re-profile the kinematic capture path before claiming real-time 50 Hz."
+  "next_gate": "Repair source-beaker collision geometry, offsets, and initial particle placement before publishing a successful-pour claim; repeat performance qualification on an idle GPU."
 }
