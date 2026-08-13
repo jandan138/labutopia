@@ -200,6 +200,7 @@ def test_kinematic_driver_interpolates_four_targets_at_120hz(monkeypatch) -> Non
     stepper = Stepper()
     identity = np.eye(4, dtype=np.float64)
     monkeypatch.setattr(baseline, "_prim_world_matrix", lambda _stage, _path: identity)
+    monkeypatch.setattr(baseline, "_mirror_physx_pose_to_usd", lambda *_args: None)
     action = baseline._advance_source_interval(
         np=np,
         args=Namespace(

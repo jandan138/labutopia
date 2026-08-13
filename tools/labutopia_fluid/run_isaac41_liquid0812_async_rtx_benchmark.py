@@ -170,7 +170,12 @@ def _source_instance_ids(info: dict[str, Any]) -> list[int]:
     if isinstance(labels, dict) and "idToLabels" in labels:
         labels = labels["idToLabels"]
     for raw_id, value in labels.items():
-        if SOURCE_SEMANTIC_LABEL in str(value):
+        rendered_label = str(value)
+        if (
+            SOURCE_SEMANTIC_LABEL in rendered_label
+            or baseline.SOURCE_MESH_PATH in rendered_label
+            or baseline.SOURCE_PATH in rendered_label
+        ):
             result.append(int(raw_id))
     return sorted(set(result))
 

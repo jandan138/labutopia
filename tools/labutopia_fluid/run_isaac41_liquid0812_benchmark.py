@@ -531,13 +531,19 @@ def _advance_source_interval(
         source_view.get_transforms(), dtype=np.float64
     ).reshape((-1, 7))[0]
     actual_packet_pose = _packet_pose_for_actual_rigid(np, alignment, actual_pose)
-    usd_root_matrix = _prim_world_matrix(stage, SOURCE_PATH)
-    usd_root_pose = _matrix_pose_xyzw(np, usd_root_matrix)
     if initial_physx_to_usd_matrix is None:
         initial_physx_to_usd_matrix = np.eye(4, dtype=np.float64)
     expected_usd_root_matrix = (
         initial_physx_to_usd_matrix @ _pose_matrix_xyzw(np, actual_pose)
     )
+    if args.source_driver == "physx-kinematic-target":
+        _mirror_physx_pose_to_usd(
+            stage,
+            expected_usd_root_matrix,
+            source_matrix_time_code,
+        )
+    usd_root_matrix = _prim_world_matrix(stage, SOURCE_PATH)
+    usd_root_pose = _matrix_pose_xyzw(np, usd_root_matrix)
     usd_pose_error = _pose_error(
         np,
         _matrix_pose_xyzw(np, expected_usd_root_matrix),
@@ -604,6 +610,23 @@ def _root_to_mesh_relation(np: Any, stage: Any) -> Any:
     return mesh_world @ np.linalg.inv(root_world)
 
 
+def _mirror_physx_pose_to_usd(
+    stage: Any,
+    matrix_value: Any,
+    time_code: float | None,
+) -> None:
+    """Mirror a completed PhysX pose into the anonymous render session only."""
+    from pxr import Usd
+
+    with Usd.EditContext(stage, stage.GetSessionLayer()):
+        _set_source_usd_matrix(
+            stage,
+            matrix_value,
+            time_code,
+            simulation=None,
+        )
+
+
 def _source_usd_matrix(stage: Any) -> tuple[Any, float | None, list[float]]:
     import numpy as np
     from pxr import UsdGeom
@@ -662,7 +685,8 @@ def _set_source_usd_matrix(
             usd_time = Usd.TimeCode(time_code)
             translate.Set(translation, usd_time)
             orient.Set(rotation, usd_time)
-    simulation.flush_changes()
+    if simulation is not None:
+        simulation.flush_changes()
 
 
 def _read_positions(stage: Any) -> Any:
