@@ -180,6 +180,14 @@ def _source_instance_ids(info: dict[str, Any]) -> list[int]:
     return sorted(set(result))
 
 
+def _instance_info_digest(info: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in info.items()
+        if key in {"idToLabels", "idToSemantics"}
+    }
+
+
 def _evaluate_visible_sync_records(records: Sequence[dict[str, Any]]) -> dict[str, Any]:
     import numpy as np
 
@@ -342,17 +350,25 @@ def _configure_profile(stage: Any, profile: str) -> dict[str, Any]:
 def _author_source_semantics(stage: Any) -> dict[str, Any]:
     from pxr import Semantics, Usd
 
-    prim = stage.GetPrimAtPath(baseline.SOURCE_MESH_PATH)
-    if not prim or not prim.IsValid():
+    root = stage.GetPrimAtPath(baseline.SOURCE_MESH_PATH)
+    if not root or not root.IsValid():
         raise RuntimeError("visible_sync_source_prim_missing")
+    authored_paths = []
     with Usd.EditContext(stage, stage.GetSessionLayer()):
-        semantic = Semantics.SemanticsAPI.Get(prim, "LabUtopiaVisibleSync")
-        if not semantic:
-            semantic = Semantics.SemanticsAPI.Apply(prim, "LabUtopiaVisibleSync")
-        semantic.CreateSemanticTypeAttr().Set("class")
-        semantic.CreateSemanticDataAttr().Set(SOURCE_SEMANTIC_LABEL)
+        for prim in Usd.PrimRange(root):
+            if not prim.IsActive() or not prim.IsDefined():
+                continue
+            semantic = Semantics.SemanticsAPI.Get(prim, "LabUtopiaVisibleSync")
+            if not semantic:
+                semantic = Semantics.SemanticsAPI.Apply(
+                    prim, "LabUtopiaVisibleSync"
+                )
+            semantic.CreateSemanticTypeAttr().Set("class")
+            semantic.CreateSemanticDataAttr().Set(SOURCE_SEMANTIC_LABEL)
+            authored_paths.append(str(prim.GetPath()))
     return {
         "prim_path": baseline.SOURCE_MESH_PATH,
+        "authored_paths": authored_paths,
         "type": "class",
         "label": SOURCE_SEMANTIC_LABEL,
         "authoring_layer": "anonymous_session_layer",
@@ -1090,6 +1106,7 @@ def _visible_sync_sample(
         "stage": stage_name,
         "physics_index": physics_index,
         "instance_ids": ids,
+        "instance_info": _instance_info_digest(info),
         "mask_pixel_count": int(mask.sum()),
         "mask_bbox_px": bbox,
         "mask_centroid_px": centroid,
