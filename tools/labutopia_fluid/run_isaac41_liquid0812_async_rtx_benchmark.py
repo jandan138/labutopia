@@ -1045,7 +1045,7 @@ def _visible_sync_sample(
     centroid = (
         [float(xs.mean()), float(ys.mean())]
         if len(xs)
-        else [float("inf"), float("inf")]
+        else [-1.0e9, -1.0e9]
     )
     bbox = (
         [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]
