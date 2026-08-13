@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from html.parser import HTMLParser
 import json
 from pathlib import Path
@@ -33,25 +34,35 @@ def test_report_claims_and_failure_boundary() -> None:
     assert {"cover", "videos", "problem", "contract", "battle", "qualification", "kinematic", "boundary", "eval", "interview"}.issubset(parser.ids)
     assert parser.media
     assert all((REPORT_DIR / media).is_file() for media in parser.media)
-    for text in ("1589", "31.78", "52.22 FPS", "51.85 FPS", "3 / 3", "独立 clean-room 复核为高置信度 FAIL", "不能证明一次可识别的倒液成功"):
+    for text in ("1589", "31.78", "42.83 FPS", "41.99 FPS", "0 / 3", "本地、非独立", "不通过“成功倒液视频”门"):
         assert text in html
-    for text in ("0.000123 mm", "164.60", "88.35", "45.46", "为什么没有再产一条新视频"):
+    for text in ("0.000123 mm", "164.60", "88.35", "45.46", "为什么现在有新视频，但仍然写 NO-GO"):
+        assert text in html
+    for text in ("展开历史 teleport 视频", "50 FPS 是播放/编码速度", "真实产图约 42 FPS"):
         assert text in html
 
 
 def test_report_summary_and_media_contract() -> None:
     summary = json.loads((REPORT_DIR / "benchmark-summary.json").read_text(encoding="utf-8"))
     review = json.loads((REPORT_DIR / "video-visual-review.json").read_text(encoding="utf-8"))
-    assert summary["status"] == "performance_pass_quality_fail"
+    assert summary["status"] == "kinematic_diagnostic_published_performance_and_physics_no_go"
     assert summary["contract"]["rtx_frames"] == 1589
-    assert summary["kinematic_followup"]["status"] == "driver_pass_quality_no_go"
-    assert summary["kinematic_followup"]["selected_integration_hz"] is None
-    assert summary["kinematic_followup"]["rtx_rerun_skipped_by_stop_rule"] is True
-    assert [run["integration_hz"] for run in summary["kinematic_followup"]["runs"]] == [30, 60, 120]
-    assert review["status"] == "failed"
-    for video in summary["full_videos"]:
+    current = summary["current_kinematic_diagnostic"]
+    assert current["status"] == "measured_no_go"
+    assert current["source_driver"] == "physx-kinematic-target"
+    assert current["camera_policy"] == "trajectory-follow"
+    assert current["qualification_matrix"]["headless_product"]["runs_meeting_50_rtx_fps"] == 0
+    assert current["qualification_matrix"]["offscreen_viewport"]["runs_meeting_50_rtx_fps"] == 0
+    assert [run["integration_hz"] for run in summary["physics_only_kinematic_sweep"]["runs"]] == [30, 60, 120]
+    assert summary["historical_teleport_reference"]["use_for_current_claims"] is False
+    assert review["verdicts"] == {"diagnostic_video": "pass", "successful_pour_video": "fail"}
+    assert review["independence"] == "not_independent"
+    for video in current["full_videos"]:
         path = REPORT_DIR / video["file"]
         assert path.is_file()
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == video["sha256"]
+        assert video["performance_passed"] is False
+        assert video["physics_passed"] is False
         completed = subprocess.run(
             ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height,avg_frame_rate,nb_frames,duration", "-of", "json", str(path)],
             check=True,

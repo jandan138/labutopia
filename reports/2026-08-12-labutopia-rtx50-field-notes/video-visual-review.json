@@ -1,21 +1,27 @@
 {
-  "schema": "labutopia.rtx50_full_video_visual_review.v1",
-  "status": "failed",
-  "review_method": "independent_clean_room_pixel_review",
-  "reviewed_sequences": {
-    "headless-product": ["start", "early", "failure", "late", "end"],
-    "offscreen-viewport": ["start", "early", "failure", "late", "end"]
+  "schema": "labutopia.rtx50_full_video_visual_review.v2",
+  "date": "2026-08-13",
+  "review_method": "local_non_independent_uniform_contact_sheet_and_full_video_review",
+  "reviewed_videos": [
+    {"lane": "headless-product", "file": "media/kinematic-headless-diagnostic-50fps-playback-v1.mp4", "sha256": "f587476ac13aa429a1ffeee57c859572c9c4d157820eb2c88c323ff127d3765e"},
+    {"lane": "offscreen-viewport", "file": "media/kinematic-offscreen-diagnostic-50fps-playback-v1.mp4", "sha256": "d406d06bc1d48457973b8b47328ea89dde722f080a140d4a92a0ca3ce56fe5c7"}
+  ],
+  "sampling": {
+    "uniform_review_frames_per_lane": 24,
+    "render_indices": [0, 69, 138, 207, 276, 345, 414, 483, 552, 621, 690, 759, 829, 898, 967, 1036, 1105, 1174, 1243, 1312, 1381, 1450, 1519, 1588]
   },
-  "overall_verdict": "FAIL",
+  "verdicts": {
+    "diagnostic_video": "pass",
+    "successful_pour_video": "fail"
+  },
   "findings": [
     "Neither sequence contains blank or visibly corrupt frames.",
-    "The two lanes are visually comparable and effectively share the same framing and progression.",
-    "No continuous pour stream or clearly trackable transfer is visible.",
-    "At the failure phase the moving vessel appears suspended above a white puddle, then exits the frame and remains cropped at the top edge."
+    "The two lanes are visually comparable and both vessels remain in frame through the full trajectory.",
+    "Detached liquid blobs are visible during motion.",
+    "A thin vertical liquid or penetration streak is visible, consistent with the numeric below-table failure.",
+    "The videos are adequate evidence of the current failure mode, not evidence of a spill-free successful pour."
   ],
-  "claim_boundary": "adequate_as_complete_50hz_frame_stream_and_narrow_failure_demonstration;not_adequate_as_visual_evidence_of_a_complete_liquid_pour",
-  "first_visibly_failed_phase": "failure",
-  "first_visibly_failed_render_index_approx": 759,
-  "retake_recommendation": "Use a wider stable view that retains both vessels and impact area, and capture vessel tilt, continuous liquid stream, target arrival, and failure without cropping.",
-  "confidence": "high"
+  "claim_boundary": "adequate_as_complete_kinematic_failure_diagnostic;not_adequate_as_visual_evidence_of_a_successful_spill_free_pour",
+  "confidence": "high",
+  "independence": "not_independent"
 }

@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2307141d'/%3E%3Cpath d='M18 18h28v8H36v22h-8V26H18z' fill='%234de8ca'/%3E%3C/svg%3E">
-  <meta name="description" content="一次把 Isaac Sim GUI 的 50 FPS 拆成真实 RTX 完成帧、CUDA 消费与正式证据合同的工程复盘。">
-  <title>实战复盘：从 GUI 50 FPS 到真正可消费的 RTX 50 Hz</title>
+  <meta name="description" content="Isaac Sim 液体倒液从 teleport 改为 PhysX kinematic 驱动后的完整视频、真实性能与失败边界。">
+  <title>实战复盘：规范驱动后的 RTX 视频与液体质量边界</title>
   <style>
     :root {
       --paper: #eaf2f4;
@@ -118,6 +118,9 @@
     .qa details { border-top: 1px solid var(--line); padding: 15px 0; }
     .qa summary { cursor: pointer; font: 700 17px system-ui, sans-serif; }
     .qa details p { margin: 12px 0 0; color: #31515e; }
+    details.history { margin-top: 24px; padding: 16px 18px; border: 1px dashed var(--line); background: rgba(250,253,253,.48); }
+    details.history summary { cursor: pointer; font: 700 15px system-ui, sans-serif; }
+    details.history .videos { margin-top: 16px; }
     .hash { color: var(--muted); font: 10px/1.55 "IBM Plex Mono", monospace; overflow-wrap: anywhere; }
     footer { padding: 30px 0; color: var(--muted); font: 11px/1.6 "IBM Plex Mono", monospace; }
     @media (max-width: 900px) {
@@ -148,10 +151,10 @@
   <div class="shell">
     <aside class="rail">
       <div class="brand">LabUtopia · Field Notes</div>
-      <h1>RTX 50 Hz<br>飞行记录</h1>
+      <h1>液体 RTX<br>复测记录</h1>
       <nav aria-label="文章目录">
         <a href="#cover">00 / 电梯版</a>
-        <a href="#videos">01 / 两段完整视频</a>
+        <a href="#videos">01 / 新版完整视频</a>
         <a href="#problem">02 / 50 FPS 的误会</a>
         <a href="#contract">03 / 什么才算一帧</a>
         <a href="#battle">04 / 四幕排障</a>
@@ -166,29 +169,29 @@
     <main>
       <section id="cover" class="hero">
         <div class="eyebrow">2026-08-12 · 2026-08-13 follow-up · Rendering systems / evidence engineering</div>
-        <h2>从 GUI 50 FPS<br>到真正可消费的 RTX 50 Hz</h2>
-        <p class="lede">一个画面角落显示 50 FPS 的液体 demo，为什么模型同步取图却只有 3.31 FPS？这次复盘讲我们如何重新定义“完成一帧”，把 RTX 图留在 GPU，并用 12 次正式运行把答案从观感变成证据。</p>
-        <div class="verdict"><i></i> PERFORMANCE CLOSED · PHYSICS QUALITY OPEN</div>
+        <h2>驱动方式修正了，<br>但漏液还没有修好</h2>
+        <p class="lede">新版不再逐帧瞬移杯子，而是让 PhysX 用 kinematic target 正规驱动，并用跟随相机保留完整动作。结果很明确：两条 1589 帧视频已经重录，真实产图约 42 FPS；杯外散粒和穿透仍可见，因此性能与液体质量都暂时是 NO-GO。</p>
+        <div class="verdict"><i></i> DIAGNOSTIC VIDEO READY · PERFORMANCE / PHYSICS NO-GO</div>
 
         <div class="recorder" aria-label="50赫兹渲染与30赫兹物理双时钟示意">
-          <div class="track render"><span class="track-label">RTX FRAME</span><span class="ticks" id="renderTicks"></span><span class="track-value">50 Hz</span></div>
+          <div class="track render"><span class="track-label">RTX TARGET</span><span class="ticks" id="renderTicks"></span><span class="track-value">50 Hz</span></div>
           <div class="track physics"><span class="track-label">PHYSICS</span><span class="ticks" id="physicsTicks"></span><span class="track-value">30 Hz</span></div>
-          <p class="clock-note">同一秒里完成 50 张新 RTX 图，但只有 30 个新物理状态；部分相邻图片诚实地共享同一个 sim state。</p>
+          <p class="clock-note">合同目标仍是每秒 50 张 RTX 图、30 个物理状态；本轮 kinematic + 跟随构图的实测只完成约 42 张图，不能把 50 FPS 的视频编码率当成真实生产吞吐。</p>
         </div>
 
         <div class="elevator">
           <strong>3 分钟电梯版（面试可直接讲）</strong>
           <p>我遇到的是一个<strong>指标合同错位</strong>：GUI overlay 显示约 50 FPS，同事录屏也很流畅，但同步 headless RGB 端点只有 3.31 FPS。overlay 测的是 viewport 更新，不证明每秒真的有 50 张模型能消费的新 RTX 图。</p>
           <p>我把物理和渲染拆成 30/50 两个时钟，用目标 render product 的 <code>NEW_FRAME</code> 完成事件计数；每一帧都必须有递增 frame number，并通过 <code>LdrColor(device="cuda")</code> 进入三槽 GPU consumer。计时路径不做 CPU RGB 读回。</p>
-          <p>第一版快速材质达到 57 FPS，却让透明烧杯消失；原始玻璃可辨，但三次只有 1/3 过 50。最终保留 DLSS、反射、阴影和透明，把间接漫反射关掉、折射从 6 次降到 2 次：headless 与 offscreen 都 3/3 超过 50。</p>
-          <p>我没有把性能成功包装成产品成功。完整轨迹从物理状态 422–423 起仍有粒子穿桌，render 759 后源杯被镜头裁掉。我们闭合的是 RTX GPU 出图吞吐，不是“不撒不漏”的液体质量。</p>
+          <p>历史 teleport + 固定相机链路在 fast-glass 下曾达到 52.22 / 51.85 FPS，但那条视频的杯子驱动不规范、后半程还被裁掉，不能代表现在的方法。新版使用 PhysX kinematic target 和跟随构图，六次资格运行均只有约 41–42 FPS。</p>
+          <p>这次完整视频没有藏失败：两个杯子全程在画面里，液体却会形成脱离杯体的团块和细长穿透痕迹。它适合说明问题，不适合证明“不撒不漏”，更不能当作 50 Hz 实时数采已闭合。</p>
         </div>
       </section>
 
       <section id="videos">
-        <div class="eyebrow">01 · Complete 50 FPS videos</div>
-        <h3>1589 张都在，不是 24 张抽帧</h3>
-        <p>下面两段均为 256×256、H.264、50 FPS、1589 帧、31.78 秒。每一帧先在正式计时窗口中留存到 CUDA 全帧库；计时结束后才统一读回并编码。点击“同步播放”可以直接比较纯 headless render product 与保留 viewport 的 offscreen 路线。</p>
+        <div class="eyebrow">01 · Kinematic diagnostic videos</div>
+        <h3>新版完整视频：1589 张都在，失败也在</h3>
+        <p>下面两段都使用正式 Isaac Sim 4.1、PhysX kinematic target、30 Hz 物理和跟随构图。文件是 256×256、H.264、50 FPS、1589 帧、31.78 秒；这里的 <strong>50 FPS 是播放/编码速度</strong>，不是机器真实产图速度。计时窗口实际完成 1589 张图用了更久，headless 为 42.83 FPS，offscreen 为 41.99 FPS。</p>
         <div class="video-toolbar">
           <button id="syncPlay" type="button">同步播放</button>
           <button id="syncPause" type="button">同步暂停</button>
@@ -197,24 +200,32 @@
         </div>
         <div class="videos">
           <article class="video-card">
-            <header><span>A · HEADLESS PRODUCT</span><span>52.22 FPS</span></header>
-            <video id="headlessVideo" controls preload="metadata" poster="media/headless-poster.webp">
-              <source src="media/headless-product-full-50fps.mp4" type="video/mp4">
+            <header><span>A · KINEMATIC HEADLESS</span><span>42.83 FPS · NO-GO</span></header>
+            <video id="headlessVideo" controls preload="metadata" poster="media/kinematic-headless-diagnostic-poster-v1.webp">
+              <source src="media/kinematic-headless-diagnostic-50fps-playback-v1.mp4" type="video/mp4">
             </video>
-            <p class="caption">更接近服务器数采：直接创建 render product，RTX 完成图进入 CUDA consumer。</p>
+            <p class="caption">纯 headless render product；杯子由 PhysX kinematic target 驱动，动态相机同时保留源杯和目标杯。</p>
           </article>
           <article class="video-card">
-            <header><span>B · OFFSCREEN VIEWPORT</span><span>51.85 FPS</span></header>
-            <video id="offscreenVideo" controls preload="metadata" poster="media/offscreen-poster.webp">
-              <source src="media/offscreen-viewport-full-50fps.mp4" type="video/mp4">
+            <header><span>B · KINEMATIC OFFSCREEN</span><span>41.99 FPS · NO-GO</span></header>
+            <video id="offscreenVideo" controls preload="metadata" poster="media/kinematic-offscreen-diagnostic-poster-v1.webp">
+              <source src="media/kinematic-offscreen-diagnostic-50fps-playback-v1.mp4" type="video/mp4">
             </video>
-            <p class="caption">更接近 GUI：保留 viewport window，但仍在 headless SimulationApp 中离屏运行。</p>
+            <p class="caption">保留 viewport window 的离屏路径；相同驱动、相同构图政策和相同 1589 帧交付合同。</p>
           </article>
         </div>
         <div class="callout warn">
           <b>诚实观看提示</b>
-          <p>独立 clean-room 复核为高置信度 FAIL：约 15.18 秒后，移动杯体悬在液滩上方并逐渐移出画面，全程没有可辨认的连续液流。这不是视频损坏；两段只能证明完整 50 Hz 帧流和当前失败形态，不能证明一次可识别的倒液成功或完整倒液失败过程。</p>
+          <p>本地、非独立的逐段视觉复核结论是：两段视频都没有黑帧或材质丢失，两个杯子也全程可见；但中段能看到脱离杯体的液体团块和细长穿透痕迹。因此它们通过“失败诊断视频”门，不通过“成功倒液视频”门。</p>
         </div>
+        <details class="history">
+          <summary>展开历史 teleport 视频（52.22 / 51.85 FPS，仅作方法对照）</summary>
+          <p class="caption">这两段沿用逐控制点直接改 USD transform 的旧驱动和固定相机，速度较快，但动作不规范且后半程裁切。它们不能替代上面的 kinematic 结果。</p>
+          <div class="videos">
+            <article class="video-card"><header><span>HISTORICAL · HEADLESS</span><span>52.22 FPS</span></header><video controls preload="none" poster="media/headless-poster.webp"><source src="media/headless-product-full-50fps.mp4" type="video/mp4"></video></article>
+            <article class="video-card"><header><span>HISTORICAL · OFFSCREEN</span><span>51.85 FPS</span></header><video controls preload="none" poster="media/offscreen-poster.webp"><source src="media/offscreen-viewport-full-50fps.mp4" type="video/mp4"></video></article>
+          </div>
+        </details>
       </section>
 
       <section id="problem">
@@ -226,7 +237,7 @@
           <div class="metric"><b>50-ish</b><span>GUI overlay · 非完成帧证据</span></div>
           <div class="metric"><b>30 FPS</b><span>同事 MP4 的实际编码率</span></div>
           <div class="metric"><b>3.31 FPS</b><span>1554×1068 同步 CPU RGB</span></div>
-          <div class="metric"><b>52.22 FPS</b><span>256×256 完成 RTX → CUDA</span></div>
+          <div class="metric"><b>≈42 FPS</b><span>新版 kinematic + 跟随相机实测</span></div>
         </div>
         <p class="quote">先定义“什么才算交付了一帧”，再谈 FPS。否则大家只是拿同一个单位讲四件不同的事。</p>
       </section>
@@ -266,7 +277,8 @@ physics_index = floor(render_index × 30 / 50)</pre>
 
       <section id="qualification">
         <div class="eyebrow">05 · Qualification, not a lucky run</div>
-        <h3>12 次完整运行告诉我们的</h3>
+        <h3>旧方法过了 50，新方法没有</h3>
+        <p>第一张表保留 2026-08-12 的历史结果，用来解释 fast-glass 是怎样选出来的。它使用 teleport 驱动和固定相机，只能回答那条历史渲染链路有多快，不能替新版 kinematic 链路背书。</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>路径</th><th>画质档</th><th>三次 RTX FPS</th><th>平均</th><th>50 FPS</th></tr></thead>
@@ -278,7 +290,17 @@ physics_index = floor(render_index × 30 / 50)</pre>
             </tbody>
           </table>
         </div>
-        <p>上表不包含这次“保存完整视频”的两条额外正式运行。加入 298 MiB CUDA 全帧库后，headless 为 52.22 FPS，offscreen 为 51.85 FPS；说明完整留帧没有把推荐档拖回 50 以下。</p>
+        <p>历史完整视频运行是 52.22 / 51.85 FPS。改成规范驱动与跟随构图后，我们重新做了 3×2 次正式资格运行：</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>新版路径</th><th>三次 RTX FPS</th><th>平均</th><th>物理平均</th><th>50 FPS</th><th>30 Hz 物理</th></tr></thead>
+            <tbody>
+              <tr><td>Kinematic headless</td><td>40.53 / 42.10 / 41.53</td><td>41.39</td><td>24.82 FPS</td><td class="fail">0 / 3</td><td class="fail">0 / 3</td></tr>
+              <tr><td>Kinematic offscreen</td><td>42.18 / 42.31 / 41.28</td><td>41.92</td><td>25.14 FPS</td><td class="fail">0 / 3</td><td class="fail">0 / 3</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>完整留帧视频运行与资格矩阵一致：headless 42.83 FPS、offscreen 41.99 FPS。主要新成本同时包含逐物理状态 kinematic 更新、PhysX 姿态读回以及跟随相机更新；这是一条新的完整链路，不能只把下降归因于某一个算子。</p>
       </section>
 
       <section id="kinematic">
@@ -288,8 +310,8 @@ physics_index = floor(render_index × 30 / 50)</pre>
         <div class="metrics">
           <div class="metric"><b>0.000123 mm</b><span>三档最大位置跟踪误差</span></div>
           <div class="metric"><b>0.000025°</b><span>三档最大旋转跟踪误差</span></div>
-          <div class="metric"><b>548 / 548</b><span>第 0 帧粒子全部在源杯</span></div>
-          <div class="metric"><b>NO-GO</b><span>三档液体质量门均失败</span></div>
+          <div class="metric"><b>42.83 / 41.99</b><span>两条完整视频真实 RTX FPS</span></div>
+          <div class="metric"><b>NO-GO</b><span>性能与液体质量门均失败</span></div>
         </div>
         <div class="table-wrap">
           <table>
@@ -303,8 +325,8 @@ physics_index = floor(render_index × 30 / 50)</pre>
         </div>
         <p>这组数字把两个问题拆开了：<strong>杯子驱动已经修好</strong>，但液体仍在尚未倾斜时从 548/548 下降到约 524–526 个杯内。更小的 120 Hz 步长没有救回质量，最终穿到桌下的粒子反而从 1 个增加到 30 个。因此根因不再是“轨迹瞬移”，而应继续查粒子初始间距、源杯 convex decomposition 内壁、rest/contact offset 与运动碰撞裕量。</p>
         <div class="callout warn">
-          <b>为什么没有再产一条新视频</b>
-          <p>预先约定的 stop rule 是：静置、倾斜前保液和完整倾倒数值门先通过，才进入 RTX 50 Hz 与视频交付。三档都失败，所以本轮停在物理层；继续渲染只能得到一条更规范地展示失败的视频，不能成为“不撒不漏”的交付物。</p>
+          <b>为什么现在有新视频，但仍然写 NO-GO</b>
+          <p>我们后来明确选择“质量不过也先比较速度”，所以越过原 stop rule，额外产出了诊断视频。两条完整运行最终分别有 503/504 个粒子到目标杯，43/42 个落在桌面，另各有 2 个落到桌下；目标接收率超过 91%，但稳定尾段、撒漏和穿透门仍失败。视频是对失败的可视化，不是验收通过。</p>
         </div>
       </section>
 
@@ -317,31 +339,29 @@ physics_index = floor(render_index × 30 / 50)</pre>
             <ul>
               <li>每张图由目标 RTX NEW_FRAME 事件证明完成。</li>
               <li>1589 张图严格递增并进入 CUDA consumer。</li>
-              <li>headless/offscreen fast-glass 重复集均 3/3 超过 50。</li>
-              <li>完整 CUDA 留帧后的两条视频运行仍超过 50。</li>
-              <li>两条运行绑定 Isaac 4.1 effective-runtime v2 receipt。</li>
+              <li>新版两个杯子在完整动作里保持可见，不再发生旧视频的后半程裁切。</li>
+              <li>两条新版运行均绑定 Isaac 4.1 effective-runtime v2 receipt。</li>
               <li>源杯已改为 PhysX kinematic target，姿态读回误差远低于 0.5 mm / 0.1° 门槛。</li>
             </ul>
           </article>
           <article>
             <h4>未闭合</h4>
             <ul>
-              <li>规范驱动下仍有 23–32 个粒子在倾斜前离开源杯分类。</li>
-              <li>30/60/120 Hz 最终分别有 1/14/30 个粒子穿到桌下。</li>
-              <li>render 759 后源杯被镜头上边界裁切。</li>
-              <li>独立复核看不到连续液流，视频不具备完整倒液过程的视觉资格。</li>
-              <li>H.264 编码在计时后完成，不声称实时编码 50 FPS。</li>
+              <li>新版资格矩阵六次均未达到 50 RTX FPS 或 30 Hz 物理。</li>
+              <li>完整视频最终仍有 42–43 个粒子撒在桌面、各 2 个粒子落到桌下。</li>
+              <li>本地视觉复核看到脱离杯体的团块与细线状穿透。</li>
+              <li>H.264 是按 50 FPS 编码播放，不代表实时产图达到 50 FPS。</li>
               <li>尚未接真实模型队列，不声称端到端模型吞吐。</li>
             </ul>
           </article>
         </div>
-        <div class="callout warn"><b>正确对外表述</b><p>“我们已把单相机 256×256 RTX 完成图的 GPU 端吞吐提升并资格到 50 Hz；当前液体碰撞质量和全动作构图仍待修复。”</p></div>
+        <div class="callout warn"><b>正确对外表述</b><p>“我们已经用规范 kinematic 驱动重录完整诊断视频；当前单相机 256×256 RTX 实际约 42 FPS，视频按 50 FPS 播放，液体撒漏与穿透仍未通过。”</p></div>
       </section>
 
       <section id="eval">
         <div class="eyebrow">07 · Future evaluation input</div>
         <h3>能输出给评测吗？能，但先别偷换语义</h3>
-        <p>这条链路已经能够输出标准 50 FPS MP4，也能输出逐帧图像或 CUDA tensor 流，所以未来可以作为评测的相机帧源。当前模型/动作通常按 30 Hz 决策，建议评测时在每个决策点取“最新且因果有效”的一张 50 Hz 图，而不是强迫模型对共享物理状态的两张图都推理。</p>
+        <p>这条链路已经能够输出标准 50 FPS 播放的 MP4，也能输出逐帧图像或 CUDA tensor 流，所以技术上可以作为未来评测的相机帧源。但当前真实在线吞吐约 42 FPS，不能对评测方承诺稳定 50 Hz 实时输入。模型/动作通常按 30 Hz 决策时，可以在每个决策点取“最新且因果有效”的一张图。</p>
         <p>真正接评测时再补三件事：每帧双时间戳（物理 sim time 与 RTX 完成 wall time）、frame→physics/action 映射、模型积压时的 latest-frame/drop 记录。本项目现在没有修改 EOS，也没有把 GPU checksum 假消费者冒充成模型。</p>
       </section>
 
@@ -350,7 +370,7 @@ physics_index = floor(render_index × 30 / 50)</pre>
         <h3>面试官大概率会追问什么</h3>
         <details open><summary>GUI 都显示 50 FPS 了，为什么还要重测？</summary><p>因为 overlay 没有证明目标相机完成了新 RTX 图，也没有证明图像进入模型可用的 tensor。完成事件、递增帧号和消费者是三个独立门。</p></details>
         <details><summary>为什么不直接关掉玻璃透明，速度不是更快吗？</summary><p>fast-opaque 确实更快，但烧杯从 observation 中消失，属于任务语义破坏。最终配置是视觉可辨与吞吐之间的最小妥协，不是最高裸 FPS。</p></details>
-        <details><summary>两张图共享一个物理状态，算不算假 50 Hz？</summary><p>相机确实完成了 50 次新渲染，所以是 50 Hz imaging；世界状态只有 30 Hz，所以不能叫 50 Hz state sampling。manifest 明确保留一对多映射。</p></details>
+        <details><summary>MP4 属性写着 50 FPS，为什么结果还不算 50 Hz？</summary><p>MP4 的 50 FPS 决定播放器用多快的节奏展示 1589 张图；真实吞吐看计时窗口生成这些图用了多久。新版两条视频分别只有 42.83 / 41.99 FPS，所以播放会比生产时的墙钟更快。</p></details>
         <details><summary>为什么 3 次都要跑？</summary><p>原始玻璃最能说明问题：单次曾有 50.36，但另外两次 47.65/48.92。没有重复资格，就很容易挑到一次幸运结果。</p></details>
         <details><summary>最值得复用的方法是什么？</summary><p>先定义可证伪的端点，再分层测量；所有优化都记录 effective settings；速度门与视觉/物理质量门分开；单次成功永远不自动升级为资格声明。</p></details>
         <details><summary>改成 kinematic target 后为什么还漏？</summary><p>kinematic target 修复的是“杯子怎么移动”，不是“粒子和杯壁如何接触”。姿态回读已经证明杯子严格跟轨迹走；剩余的早期漏液更指向源杯内壁碰撞近似、offset 和粒子初始状态。把积分从 30 提高到 120 Hz 仍失败，也排除了“只要多算几个子步就好”的简单解释。</p></details>
@@ -359,14 +379,15 @@ physics_index = floor(render_index × 30 / 50)</pre>
       <section id="evidence">
         <div class="eyebrow">Evidence ledger</div>
         <h3>可复核身份</h3>
-        <p class="hash">Headless MP4 · 3d77c22ea5f3d6ce4ac2be085f80ce52db70723acb78ac41f1532a4e7ae091cd</p>
-        <p class="hash">Offscreen MP4 · cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344</p>
-        <p class="hash">Headless runtime receipt · 42b9460932d4275752533cec22c0f0f885481a605910245ef953663e6f22e72d</p>
-        <p class="hash">Offscreen runtime receipt · 34e22e4ddd0d621a85ab7fecba0d364dedb24f5ee66f280ec5ac7cabbd212305</p>
+        <p class="hash">Kinematic headless MP4 · f587476ac13aa429a1ffeee57c859572c9c4d157820eb2c88c323ff127d3765e</p>
+        <p class="hash">Kinematic offscreen MP4 · d406d06bc1d48457973b8b47328ea89dde722f080a140d4a92a0ca3ce56fe5c7</p>
+        <p class="hash">Headless runtime receipt · 716742471ad3fa5009f475bdf3d0a0772225e3c86db580fad442d7eb48699ba3</p>
+        <p class="hash">Offscreen runtime receipt · db5979bbda81997d9233864af03899c991417ad5dd1fb52237acb0c628a36f55</p>
+        <p class="hash">Kinematic RTX matrix · af25c85dad0b0c5cf396eee603f55d1763810fd976b12cbe1b9e582ac3e91d86</p>
         <p class="hash">Kinematic sweep · f343c5f5c2b7fda02adf0dd5e7341e80c90991c7dc37ce7cd3dd06e2e8401c8f</p>
         <p>完整结构化摘要见 <a href="benchmark-summary.json">benchmark-summary.json</a>。</p>
       </section>
-      <footer>LabUtopia · RTX 50 Hz Field Notes · formal Isaac Sim 4.1 lane · updated 2026-08-13</footer>
+      <footer>LabUtopia · Kinematic liquid diagnostic · formal Isaac Sim 4.1 lane · updated 2026-08-13</footer>
     </main>
   </div>
   <script>

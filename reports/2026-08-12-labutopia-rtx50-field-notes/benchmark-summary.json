@@ -1,86 +1,125 @@
 {
-  "schema": "labutopia.rtx50_field_notes_summary.v1",
-  "status": "performance_pass_quality_fail",
-  "date": "2026-08-12",
+  "schema": "labutopia.rtx50_field_notes_summary.v2",
+  "status": "kinematic_diagnostic_published_performance_and_physics_no_go",
+  "date": "2026-08-13",
   "runtime": {
     "python": "3.10.20",
     "isaacsim": "4.1.0.0",
     "effective_numpy": "1.26.0",
     "usd": "0.22.11",
     "gpu": "NVIDIA GeForce RTX 4090",
-    "driver": "570.153.02"
+    "driver": "570.153.02",
+    "source_revision_for_formal_runs": "fb10f670ffb848d709609a719c5c2f576226fb14",
+    "effective_runtime_receipts": "matched v2"
   },
   "contract": {
     "resolution": [256, 256],
-    "physics_hz": 30,
-    "render_hz": 50,
+    "physics_hz_target": 30,
+    "rtx_hz_target": 50,
     "physics_states": 953,
     "rtx_frames": 1589,
     "mapping": "physics_index=floor(render_index*30/50)",
     "consumer": "same_process_cuda_checksum_consumer",
-    "cpu_rgb_readback_in_timed_path": false
+    "cpu_rgb_readback_in_timed_path": false,
+    "encoded_fps": 50,
+    "claim_boundary": "50 FPS is the MP4 playback rate; measured RTX FPS is the wall-clock completed-frame production rate"
   },
-  "full_videos": [
-    {
-      "lane": "headless-product",
-      "rtx_fps": 52.22388435063739,
-      "physics_fps": 31.32118425812299,
-      "timed_elapsed_s": 30.426691154018044,
-      "file": "media/headless-product-full-50fps.mp4",
-      "sha256": "3d77c22ea5f3d6ce4ac2be085f80ce52db70723acb78ac41f1532a4e7ae091cd",
-      "raw_rgb_sha256": "abd6264336ef906f3f6bc221644f121f23956dd994ae56730796f5568ab46199",
-      "sequence_sha256": "f86371ebbccc4747eed0ae717f2f1d4feb5c98292ad11f5b5ab7d64e60540bdf",
-      "receipt_sha256": "42b9460932d4275752533cec22c0f0f885481a605910245ef953663e6f22e72d",
-      "encoded_fps": 50,
-      "frame_count": 1589,
-      "duration_s": 31.78,
-      "resolution": [256, 256]
-    },
-    {
-      "lane": "offscreen-viewport",
-      "rtx_fps": 51.852212530428666,
-      "physics_fps": 31.098274727185977,
-      "timed_elapsed_s": 30.644786836579442,
-      "file": "media/offscreen-viewport-full-50fps.mp4",
-      "sha256": "cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344",
-      "raw_rgb_sha256": "1cdc584e5ed5c8e7a2ff6480fed15e1c3c5e26906b10aae9c79c3724481f23c1",
-      "sequence_sha256": "d54d08e54d9398893678a29ce78f87d3dca4285f3f091a51192c431ef4c69297",
-      "receipt_sha256": "34e22e4ddd0d621a85ab7fecba0d364dedb24f5ee66f280ec5ac7cabbd212305",
-      "encoded_fps": 50,
-      "frame_count": 1589,
-      "duration_s": 31.78,
-      "resolution": [256, 256]
-    }
-  ],
-  "qualification_matrix": {
-    "headless_current_rtx_fps": [47.64551255467479, 48.923428766946664, 50.363731684968975],
-    "headless_fast_glass_rtx_fps": [53.969706010975706, 55.679660417307566, 50.257822493767925],
-    "offscreen_current_rtx_fps": [49.55183413670425, 48.56774312073869, 51.05785742980865],
-    "offscreen_fast_glass_rtx_fps": [52.54808922248986, 52.396655812082194, 53.040337288166434]
-  },
-  "quality_boundary": {
-    "status": "failed",
-    "first_below_table_physics_index": {
-      "headless": 423,
-      "offscreen": 422
-    },
-    "visual_first_obvious_failure_render_index": 759,
-    "statement": "RTX throughput is qualified; liquid containment and full-action framing are not qualified."
-  },
-  "kinematic_followup": {
-    "date": "2026-08-13",
-    "status": "driver_pass_quality_no_go",
+  "current_kinematic_diagnostic": {
+    "status": "measured_no_go",
     "source_driver": "physx-kinematic-target",
+    "camera_policy": "trajectory-follow",
     "control_hz": 30,
-    "selected_integration_hz": null,
-    "selection_policy": "lowest integration frequency passing static hold, pre-tilt retention, pose tracking and full-pour numeric quality",
-    "sweep_content_sha256": "f343c5f5c2b7fda02adf0dd5e7341e80c90991c7dc37ce7cd3dd06e2e8401c8f",
+    "integration_hz": 30,
+    "profile": "fast-glass",
+    "qualification_matrix": {
+      "file_sha256": "af25c85dad0b0c5cf396eee603f55d1763810fd976b12cbe1b9e582ac3e91d86",
+      "content_sha256": "a685d2bc35b13d1e55e9370daa38ac242ce62703109224d9488d790b848d601b",
+      "headless_product": {
+        "rtx_fps": [40.52631536795541, 42.09573844365984, 41.53342512026127],
+        "rtx_fps_mean": 41.38515964395884,
+        "physics_fps": [24.305587505136256, 25.246846278670755, 24.909599836129004],
+        "physics_fps_mean": 24.820677873312007,
+        "runs_meeting_50_rtx_fps": 0,
+        "runs_meeting_30_physics_fps": 0
+      },
+      "offscreen_viewport": {
+        "rtx_fps": [42.1791731512113, 42.30941109508181, 41.27877144504767],
+        "rtx_fps_mean": 41.922451897113596,
+        "physics_fps": [25.296886100128617, 25.374996081568888, 24.756871735135572],
+        "physics_fps_mean": 25.14291797227769,
+        "runs_meeting_50_rtx_fps": 0,
+        "runs_meeting_30_physics_fps": 0
+      }
+    },
+    "full_videos": [
+      {
+        "lane": "headless-product",
+        "status": "measured_no_go",
+        "rtx_fps": 42.83046165789233,
+        "physics_fps": 25.687495254859275,
+        "timed_elapsed_s": 37.09976354427636,
+        "file": "media/kinematic-headless-diagnostic-50fps-playback-v1.mp4",
+        "sha256": "f587476ac13aa429a1ffeee57c859572c9c4d157820eb2c88c323ff127d3765e",
+        "raw_rgb_sha256": "8ec3a2f95e832559515bbc2dfac4a7e8a1f753d05ea755999e900ddffe9bf143",
+        "sequence_sha256": "7a6101f63b3717af600af6ec2be36afa01ec0690d1ab641a9a076d9347af073e",
+        "receipt_sha256": "716742471ad3fa5009f475bdf3d0a0772225e3c86db580fad442d7eb48699ba3",
+        "manifest_sha256": "d8155e44dededc88934cfdfd821cd64317f68d87e4a34ea9c0be06f1861c4b6f",
+        "encoded_fps": 50,
+        "frame_count": 1589,
+        "duration_s": 31.78,
+        "resolution": [256, 256],
+        "physics_final": {"target": 503, "tabletop_spill": 43, "below_table": 2, "nonfinite": 0, "target_fraction": 0.9178832116788321},
+        "pre_tilt_max_outside": 33,
+        "performance_passed": false,
+        "physics_passed": false
+      },
+      {
+        "lane": "offscreen-viewport",
+        "status": "measured_no_go",
+        "rtx_fps": 41.99470258132042,
+        "physics_fps": 25.186250195090217,
+        "timed_elapsed_s": 37.83810581639409,
+        "file": "media/kinematic-offscreen-diagnostic-50fps-playback-v1.mp4",
+        "sha256": "d406d06bc1d48457973b8b47328ea89dde722f080a140d4a92a0ca3ce56fe5c7",
+        "raw_rgb_sha256": "6574e6284c60e33b7169fa0b74cb066e275cd36941cf8769a6288dd5ceed5481",
+        "sequence_sha256": "60341535d7c7e70f82173b7c8644ba0b707db56582a7defd4dcf4bbf5b686f5c",
+        "receipt_sha256": "db5979bbda81997d9233864af03899c991417ad5dd1fb52237acb0c628a36f55",
+        "manifest_sha256": "e0b696227e4658974d557c19c497c1914e7f94e8d884c33987daa658ba262946",
+        "encoded_fps": 50,
+        "frame_count": 1589,
+        "duration_s": 31.78,
+        "resolution": [256, 256],
+        "physics_final": {"target": 504, "tabletop_spill": 42, "below_table": 2, "nonfinite": 0, "target_fraction": 0.9197080291970803},
+        "pre_tilt_max_outside": 34,
+        "performance_passed": false,
+        "physics_passed": false
+      }
+    ],
+    "visual_boundary": {
+      "diagnostic_video": "pass",
+      "successful_pour": "fail",
+      "review_mode": "local_non_independent",
+      "statement": "Both vessels remain visible, but detached liquid blobs and thin penetration streaks remain visible."
+    }
+  },
+  "physics_only_kinematic_sweep": {
+    "status": "driver_pass_quality_no_go",
+    "content_sha256": "f343c5f5c2b7fda02adf0dd5e7341e80c90991c7dc37ce7cd3dd06e2e8401c8f",
     "runs": [
       {"integration_hz": 30, "physics_mean_ms": 5.761374304650211, "model_ready_fps": 164.6044289221205, "pre_tilt_max_outside": 32, "final_target": 507, "final_tabletop_spill": 40, "final_below_table": 1, "status": "measured_no_go"},
       {"integration_hz": 60, "physics_mean_ms": 10.992341741387333, "model_ready_fps": 88.35041394601252, "pre_tilt_max_outside": 23, "final_target": 496, "final_tabletop_spill": 38, "final_below_table": 14, "status": "measured_no_go"},
       {"integration_hz": 120, "physics_mean_ms": 21.636711478530735, "model_ready_fps": 45.46117650406641, "pre_tilt_max_outside": 23, "final_target": 478, "final_tabletop_spill": 40, "final_below_table": 30, "status": "measured_no_go"}
-    ],
-    "formal_runtime_receipts": "3/3 MATCH effective-runtime v2",
-    "rtx_rerun_skipped_by_stop_rule": true
-  }
+    ]
+  },
+  "historical_teleport_reference": {
+    "status": "historical_noncomparable",
+    "source_driver": "usd-transform-teleport",
+    "camera_policy": "fixed",
+    "use_for_current_claims": false,
+    "full_videos": [
+      {"lane": "headless-product", "rtx_fps": 52.22388435063739, "file": "media/headless-product-full-50fps.mp4", "sha256": "3d77c22ea5f3d6ce4ac2be085f80ce52db70723acb78ac41f1532a4e7ae091cd"},
+      {"lane": "offscreen-viewport", "rtx_fps": 51.852212530428666, "file": "media/offscreen-viewport-full-50fps.mp4", "sha256": "cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344"}
+    ]
+  },
+  "next_gate": "Fix pre-tilt retention, tabletop spill, penetration, and stable-tail quality before presenting a successful-pour video; re-profile the kinematic capture path before claiming real-time 50 Hz."
 }
