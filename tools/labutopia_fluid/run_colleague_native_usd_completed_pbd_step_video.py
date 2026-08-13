@@ -492,6 +492,7 @@ def normalize_strict_particle_offsets(
 @dataclass
 class StrictPhysicsStepper:
     interface: Any
+    transformation_interface: Any | None
     logical_dt: float
     integration_dt: float
     substeps_per_logical_step: int
@@ -502,6 +503,7 @@ class StrictPhysicsStepper:
     executed_integration_steps: int = 0
     render_invariance_checks: int = 0
     simulate_fetch_pair_count: int = 0
+    transformation_writeback_count: int = 0
     lifecycle_event_count: int = 0
     _ordered_lifecycle_valid: bool = True
     _fetch_pending: bool = False
@@ -537,6 +539,7 @@ class StrictPhysicsStepper:
         cls,
         *,
         interface: Any,
+        transformation_interface: Any | None = None,
         logical_dt: float,
         integration_dt: float,
         substeps_per_logical_step: int,
@@ -546,6 +549,7 @@ class StrictPhysicsStepper:
             raise ValueError("strict_physx_stage_id_invalid")
         candidate = cls(
             interface=interface,
+            transformation_interface=transformation_interface,
             logical_dt=logical_dt,
             integration_dt=integration_dt,
             substeps_per_logical_step=substeps_per_logical_step,
@@ -599,6 +603,30 @@ class StrictPhysicsStepper:
             )
             self._fetch_pending = False
             self.simulate_fetch_pair_count += 1
+            if self.transformation_interface is not None:
+                try:
+                    self.transformation_interface.update_transformations(
+                        updateToFastCache=True,
+                        updateToUsd=True,
+                        updateVelocitiesToUsd=False,
+                        outputVelocitiesLocalSpace=False,
+                    )
+                except Exception:
+                    self._ordered_lifecycle_valid = False
+                    self._record_lifecycle_event(
+                        "transformation_writeback_failed",
+                        integration_step=integration_step,
+                    )
+                    raise
+                self.transformation_writeback_count += 1
+                self._record_lifecycle_event(
+                    "transformation_writeback_completed",
+                    integration_step=integration_step,
+                    update_to_fast_cache=True,
+                    update_to_usd=True,
+                    update_velocities_to_usd=False,
+                    output_velocities_local_space=False,
+                )
             self.executed_integration_steps += 1
             if after_integration_step is not None:
                 after_integration_step(
@@ -644,6 +672,7 @@ class StrictPhysicsStepper:
         expected_lifecycle_events = (
             1
             + 2 * self.executed_integration_steps
+            + self.transformation_writeback_count
             + self.executed_logical_steps
             + self.render_invariance_checks
             + int(self.detach_verified)
@@ -652,6 +681,11 @@ class StrictPhysicsStepper:
             self._ordered_lifecycle_valid
             and not self._fetch_pending
             and self.simulate_fetch_pair_count == self.executed_integration_steps
+            and (
+                self.transformation_interface is None
+                or self.transformation_writeback_count
+                == self.executed_integration_steps
+            )
             and self.lifecycle_event_count == expected_lifecycle_events
         )
         return {
@@ -673,6 +707,19 @@ class StrictPhysicsStepper:
             "exact_integration_step_count_verified": exact_integration,
             "exact_step_count_verified": exact_logical and exact_integration,
             "simulate_fetch_pair_count": self.simulate_fetch_pair_count,
+            "transformation_writeback": {
+                "enabled": self.transformation_interface is not None,
+                "count": self.transformation_writeback_count,
+                "exactly_once_after_each_fetch": (
+                    self.transformation_interface is not None
+                    and self.transformation_writeback_count
+                    == self.executed_integration_steps
+                ),
+                "update_to_fast_cache": True,
+                "update_to_usd": True,
+                "update_velocities_to_usd": False,
+                "output_velocities_local_space": False,
+            },
             "ordered_lifecycle_verified": ordered_lifecycle_verified,
             "lifecycle_event_count": self.lifecycle_event_count,
             "lifecycle_event_sha256": self._lifecycle_hasher.hexdigest(),

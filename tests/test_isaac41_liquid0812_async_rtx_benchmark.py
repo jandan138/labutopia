@@ -107,7 +107,7 @@ def test_full_video_cuda_store_size_is_bounded() -> None:
     assert byte_count < 300 * 1024 * 1024
 
 
-def test_kinematic_driver_interpolates_four_targets_at_120hz() -> None:
+def test_kinematic_driver_interpolates_four_targets_at_120hz(monkeypatch) -> None:
     class View:
         def __init__(self) -> None:
             self.pose = np.asarray([[0, 0, 0, 0, 0, 0, 1]], dtype=np.float32)
@@ -130,6 +130,7 @@ def test_kinematic_driver_interpolates_four_targets_at_120hz() -> None:
     view = View()
     stepper = Stepper()
     identity = np.eye(4, dtype=np.float64)
+    monkeypatch.setattr(baseline, "_prim_world_matrix", lambda _stage, _path: identity)
     action = baseline._advance_source_interval(
         np=np,
         args=Namespace(
@@ -167,7 +168,11 @@ def test_motion_acceptance_rejects_legacy_driver_and_visible_numeric_leak() -> N
         {"source": 548, "nonfinite": 0, "below_table": 0},
     ]
     actions = [
-        {"pose_error": {"position_m": 0.0, "rotation_degrees": 0.0}}
+        {
+            "pose_error": {"position_m": 0.0, "rotation_degrees": 0.0},
+            "usd_pose_error": {"position_m": 0.0, "rotation_degrees": 0.0},
+            "mesh_pose_error": {"position_m": 0.0, "rotation_degrees": 0.0},
+        }
         for _ in scores
     ]
     result = baseline._motion_acceptance(

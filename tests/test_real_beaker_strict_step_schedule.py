@@ -14,6 +14,9 @@ class _FakePhysxSimulation:
         self.attach_success = attach_success
         self.attached_stage = 0
 
+    def update_transformations(self, **kwargs) -> None:
+        self.calls.append(("update_transformations", kwargs))
+
     def attach_stage(self, stage_id: int) -> bool:
         self.calls.append(("attach_stage", stage_id))
         if self.attach_success:
@@ -121,7 +124,16 @@ def test_strict_stepper_executes_exact_substeps_and_monotonic_simulation_time():
         "exact_logical_step_count_verified": True,
         "exact_integration_step_count_verified": True,
         "exact_step_count_verified": True,
-        "simulate_fetch_pair_count": 30,
+            "simulate_fetch_pair_count": 30,
+            "transformation_writeback": {
+                "enabled": False,
+                "count": 0,
+                "exactly_once_after_each_fetch": False,
+                "update_to_fast_cache": True,
+                "update_to_usd": True,
+                "update_velocities_to_usd": False,
+                "output_velocities_local_space": False,
+            },
         "ordered_lifecycle_verified": True,
         "lifecycle_event_count": 65,
         "stage_id": 1234,
@@ -143,6 +155,46 @@ def test_strict_stepper_fails_closed_when_stage_attach_fails():
             substeps_per_logical_step=10,
             stage_id=1234,
         )
+
+
+def test_strict_stepper_writes_physx_transforms_to_usd_after_every_fetch():
+    interface = _FakePhysxSimulation()
+    stepper = runner.StrictPhysicsStepper.attach(
+        interface=interface,
+        transformation_interface=interface,
+        logical_dt=1.0 / 60.0,
+        integration_dt=1.0 / 120.0,
+        substeps_per_logical_step=2,
+        stage_id=1234,
+    )
+
+    stepper.step()
+
+    assert [call[0] for call in interface.calls] == [
+        "attach_stage",
+        "simulate",
+        "fetch_results",
+        "update_transformations",
+        "simulate",
+        "fetch_results",
+        "update_transformations",
+    ]
+    assert interface.calls[3][1] == {
+        "updateToFastCache": True,
+        "updateToUsd": True,
+        "updateVelocitiesToUsd": False,
+        "outputVelocitiesLocalSpace": False,
+    }
+    summary = stepper.summary(requested_steps=1)
+    assert summary["transformation_writeback"] == {
+        "enabled": True,
+        "count": 2,
+        "exactly_once_after_each_fetch": True,
+        "update_to_fast_cache": True,
+        "update_to_usd": True,
+        "update_velocities_to_usd": False,
+        "output_velocities_local_space": False,
+    }
 
 
 def test_paused_render_update_rejects_timeline_that_is_still_playing():

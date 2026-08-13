@@ -1019,6 +1019,7 @@ def _run_measurement(
             source_poses=source_poses,
             initial_usd_matrix=initial_usd_matrix,
         )
+        initial_root_to_mesh_matrix = baseline._root_to_mesh_relation(np, stage)
         simulation = omni.physx.get_physx_simulation_interface()
         physics_index = -1
         physics_ms: list[float] = []
@@ -1046,6 +1047,7 @@ def _run_measurement(
                     current_packet_pose=source_poses[physics_index],
                     source_matrix_time_code=source_matrix_time_code,
                     simulation=simulation,
+                    initial_root_to_mesh_matrix=initial_root_to_mesh_matrix,
                 )
                 positions = baseline._read_positions(stage)
                 physics_ms.append((time.perf_counter() - physics_started) * 1000.0)
@@ -1278,6 +1280,7 @@ def _run_measurement(
             "source_matrix_time_code": source_matrix_time_code,
             "source_matrix_time_samples": source_matrix_time_samples,
             "rigid_from_packet_relation": alignment["rigid_from_packet"].tolist(),
+            "initial_root_to_mesh_relation": initial_root_to_mesh_matrix.tolist(),
             "motion_acceptance": motion_acceptance,
             "quality": quality,
             "stability": stability,

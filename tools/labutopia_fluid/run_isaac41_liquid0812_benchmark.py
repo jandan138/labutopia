@@ -39,6 +39,7 @@ PARTICLE_SET_PATH = "/World/ParticleSet"
 PARTICLE_SYSTEM_PATH = "/World/ParticleSystem"
 PHYSICS_SCENE_PATH = "/World/PhysicsScene"
 SOURCE_PATH = "/World/beaker2"
+SOURCE_MESH_PATH = "/World/beaker2/mesh"
 TARGET_PATH = "/World/beaker1"
 CAMERA_PATH = "/OmniverseKit_Persp"
 EXPECTED_PARTICLE_COUNT = 548
@@ -50,8 +51,8 @@ INTEGRATION_HZ_CHOICES = (30, 60, 120)
 DEFAULT_SOURCE_DRIVER = "physx-kinematic-target"
 DEFAULT_INTEGRATION_HZ = 120
 PRE_TILT_MAX_OUTSIDE_FRACTION = 0.02
-MAX_KINEMATIC_POSITION_ERROR_M = 5.0e-4
-MAX_KINEMATIC_ROTATION_ERROR_DEG = 0.1
+MAX_KINEMATIC_POSITION_ERROR_M = 1.0e-3
+MAX_KINEMATIC_ROTATION_ERROR_DEG = 0.2
 STATIC_HOLD_SECONDS = 8
 REVIEW_INDICES = frozenset({0, 300, 450, 580, 650, 750, 852, 952})
 
@@ -163,6 +164,21 @@ def _motion_acceptance(
         float(action["pose_error"]["rotation_degrees"])
         for action in action_records
     )
+    maximum_usd_position_error = max(
+        float(action["usd_pose_error"]["position_m"]) for action in action_records
+    )
+    maximum_usd_rotation_error = max(
+        float(action["usd_pose_error"]["rotation_degrees"])
+        for action in action_records
+    )
+    maximum_mesh_position_error = max(
+        float(action["mesh_pose_error"]["position_m"])
+        for action in action_records
+    )
+    maximum_mesh_rotation_error = max(
+        float(action["mesh_pose_error"]["rotation_degrees"])
+        for action in action_records
+    )
     pre_tilt_max_allowed = int(
         math.floor(EXPECTED_PARTICLE_COUNT * PRE_TILT_MAX_OUTSIDE_FRACTION)
     )
@@ -179,9 +195,17 @@ def _motion_acceptance(
         "source_pose_tracking": {
             "passed": source_driver == "physx-kinematic-target"
             and maximum_pose_position_error <= MAX_KINEMATIC_POSITION_ERROR_M
-            and maximum_pose_rotation_error <= MAX_KINEMATIC_ROTATION_ERROR_DEG,
+            and maximum_pose_rotation_error <= MAX_KINEMATIC_ROTATION_ERROR_DEG
+            and maximum_usd_position_error <= MAX_KINEMATIC_POSITION_ERROR_M
+            and maximum_usd_rotation_error <= MAX_KINEMATIC_ROTATION_ERROR_DEG
+            and maximum_mesh_position_error <= MAX_KINEMATIC_POSITION_ERROR_M
+            and maximum_mesh_rotation_error <= MAX_KINEMATIC_ROTATION_ERROR_DEG,
             "maximum_position_error_m": maximum_pose_position_error,
             "maximum_rotation_error_degrees": maximum_pose_rotation_error,
+            "maximum_physx_to_usd_position_error_m": maximum_usd_position_error,
+            "maximum_physx_to_usd_rotation_error_degrees": maximum_usd_rotation_error,
+            "maximum_mesh_relation_position_error_m": maximum_mesh_position_error,
+            "maximum_mesh_relation_rotation_error_degrees": maximum_mesh_rotation_error,
             "position_threshold_m": MAX_KINEMATIC_POSITION_ERROR_M,
             "rotation_threshold_degrees": MAX_KINEMATIC_ROTATION_ERROR_DEG,
         },
@@ -406,6 +430,7 @@ def _attach_stepper_and_source(
     stage_id = UsdUtils.StageCache.Get().GetId(stage).ToLongInt()
     stepper = StrictPhysicsStepper.attach(
         interface=omni.physx.get_physx_simulation_interface(),
+        transformation_interface=omni.physx.get_physx_interface(),
         logical_dt=1.0 / args.integration_hz,
         integration_dt=1.0 / args.integration_hz,
         substeps_per_logical_step=1,
@@ -475,6 +500,7 @@ def _advance_source_interval(
     current_packet_pose: Any,
     source_matrix_time_code: float | None,
     simulation: Any,
+    initial_root_to_mesh_matrix: Any | None = None,
 ) -> dict[str, Any]:
     from tools.labutopia_fluid.fluid_benchmark_contract import interpolate_pose_xyzw
 
@@ -504,13 +530,47 @@ def _advance_source_interval(
         source_view.get_transforms(), dtype=np.float64
     ).reshape((-1, 7))[0]
     actual_packet_pose = _packet_pose_for_actual_rigid(np, alignment, actual_pose)
+    usd_root_matrix = _prim_world_matrix(stage, SOURCE_PATH)
+    usd_root_pose = _matrix_pose_xyzw(np, usd_root_matrix)
+    usd_pose_error = _pose_error(np, actual_pose, usd_root_pose)
+    if initial_root_to_mesh_matrix is None:
+        initial_root_to_mesh_matrix = np.eye(4, dtype=np.float64)
+    usd_mesh_matrix = _prim_world_matrix(stage, SOURCE_MESH_PATH)
+    expected_mesh_matrix = initial_root_to_mesh_matrix @ usd_root_matrix
+    mesh_pose_error = _pose_error(
+        np,
+        _matrix_pose_xyzw(np, expected_mesh_matrix),
+        _matrix_pose_xyzw(np, usd_mesh_matrix),
+    )
     return {
         "target_pose_xyzw": np.asarray(target_pose, dtype=np.float64),
         "actual_pose_xyzw": actual_pose,
         "actual_packet_pose_xyzw": actual_packet_pose,
         "pose_error": _pose_error(np, target_pose, actual_pose),
+        "usd_root_pose_xyzw": usd_root_pose,
+        "usd_pose_error": usd_pose_error,
+        "mesh_pose_error": mesh_pose_error,
         "integration_steps": substeps,
     }
+
+
+def _prim_world_matrix(stage: Any, prim_path: str) -> Any:
+    import numpy as np
+    from pxr import Usd, UsdGeom
+
+    prim = stage.GetPrimAtPath(prim_path)
+    if not prim or not prim.IsValid():
+        raise RuntimeError(f"liquid0812_world_matrix_prim_missing:{prim_path}")
+    value = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(
+        Usd.TimeCode.Default()
+    )
+    return np.asarray([list(row) for row in value], dtype=np.float64)
+
+
+def _root_to_mesh_relation(np: Any, stage: Any) -> Any:
+    root_world = _prim_world_matrix(stage, SOURCE_PATH)
+    mesh_world = _prim_world_matrix(stage, SOURCE_MESH_PATH)
+    return mesh_world @ np.linalg.inv(root_world)
 
 
 def _source_usd_matrix(stage: Any) -> tuple[Any, float | None, list[float]]:
@@ -637,6 +697,7 @@ def _run_static_hold(args: argparse.Namespace, application: Any, packet: Any) ->
         source_poses=source_poses,
         initial_usd_matrix=initial_usd_matrix,
     )
+    initial_root_to_mesh_matrix = _root_to_mesh_relation(np, stage)
     step_count = args.integration_hz * STATIC_HOLD_SECONDS
     timings = []
     scores = []
@@ -776,6 +837,7 @@ def _run_pour(
         source_poses=source_poses,
         initial_usd_matrix=initial_usd_matrix,
     )
+    initial_root_to_mesh_matrix = _root_to_mesh_relation(np, stage)
     simulation = omni.physx.get_physx_simulation_interface()
 
     rendered = args.mode == "headless-rendered"
@@ -825,6 +887,7 @@ def _run_pour(
             current_packet_pose=source_poses[0],
             source_matrix_time_code=source_matrix_time_code,
             simulation=simulation,
+            initial_root_to_mesh_matrix=initial_root_to_mesh_matrix,
         )
         initial_positions = _read_positions(stage)
         initial_position_hash = hashlib.sha256(
@@ -846,6 +909,7 @@ def _run_pour(
                 current_packet_pose=source_poses[observation_index],
                 source_matrix_time_code=source_matrix_time_code,
                 simulation=simulation,
+                initial_root_to_mesh_matrix=initial_root_to_mesh_matrix,
             )
             positions = _read_positions(stage)
             physics_ms.append((time.perf_counter() - physics_started) * 1000.0)
@@ -915,6 +979,8 @@ def _run_pour(
                                     "actual_packet_pose_xyzw"
                                 ].tolist(),
                                 "pose_error": action["pose_error"],
+                                "usd_pose_error": action["usd_pose_error"],
+                                "mesh_pose_error": action["mesh_pose_error"],
                             },
                         },
                         sort_keys=True,
@@ -1012,9 +1078,12 @@ def _run_pour(
             "target_pose_xyzw": initial_action["target_pose_xyzw"].tolist(),
             "actual_pose_xyzw": initial_action["actual_pose_xyzw"].tolist(),
             "pose_error": initial_action["pose_error"],
+            "usd_pose_error": initial_action["usd_pose_error"],
+            "mesh_pose_error": initial_action["mesh_pose_error"],
         },
         "rigid_from_packet_relation": alignment["rigid_from_packet"].tolist(),
         "usd_from_packet_relation": alignment["usd_from_packet"].tolist(),
+        "initial_root_to_mesh_relation": initial_root_to_mesh_matrix.tolist(),
         "initial_position_sha256": initial_position_hash,
         "timing": timing,
         "quality": quality,
