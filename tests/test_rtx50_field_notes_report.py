@@ -45,6 +45,7 @@ def test_report_claims_and_failure_boundary() -> None:
 def test_report_summary_and_media_contract() -> None:
     summary = json.loads((REPORT_DIR / "benchmark-summary.json").read_text(encoding="utf-8"))
     review = json.loads((REPORT_DIR / "video-visual-review.json").read_text(encoding="utf-8"))
+    browser_qa = json.loads((REPORT_DIR / "browser-qa.json").read_text(encoding="utf-8"))
     assert summary["status"] == "kinematic_diagnostic_published_performance_and_physics_no_go"
     assert summary["contract"]["rtx_frames"] == 1589
     current = summary["current_kinematic_diagnostic"]
@@ -57,6 +58,10 @@ def test_report_summary_and_media_contract() -> None:
     assert summary["historical_teleport_reference"]["use_for_current_claims"] is False
     assert review["verdicts"] == {"diagnostic_video": "pass", "successful_pour_video": "fail"}
     assert review["independence"] == "not_independent"
+    assert browser_qa["status"] == "passed"
+    assert browser_qa["checks"]["current_video_count"] == 2
+    assert browser_qa["checks"]["total_video_count_including_collapsed_history"] == 4
+    assert browser_qa["checks"]["historical_section_collapsed_by_default"] is True
     for video in current["full_videos"]:
         path = REPORT_DIR / video["file"]
         assert path.is_file()

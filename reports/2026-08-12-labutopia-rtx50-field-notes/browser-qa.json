@@ -1,29 +1,39 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "status": "passed",
   "scope": "local_static_page_and_published_github_pages",
-  "local_checked_at_utc": "2026-08-12T12:20:42.715Z",
-  "published_checked_at_utc": "2026-08-12T12:35:29.929Z",
+  "checked_at_utc": "2026-08-13T02:44:00Z",
   "published_url": "https://jandan138.github.io/labutopia/reports/2026-08-12-labutopia-rtx50-field-notes/",
-  "published_source_commit": "e4a2309",
+  "published_source_commit": "18eb72fd3ef63ca3d11f9a77c6d90d54a575e617",
+  "pages_workflow_run": "https://github.com/jandan138/labutopia/actions/runs/31661442387",
   "browser": "Chromium",
+  "review_mode": "local_non_independent",
   "viewports": [
-    {"width": 1440, "height": 900, "local_status": "passed", "published_status": "passed"},
-    {"width": 1024, "height": 768, "local_status": "passed", "published_status": "passed"},
+    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "passed"},
     {"width": 390, "height": 844, "local_status": "passed", "published_status": "passed"}
   ],
   "checks": {
     "http_status_200": true,
     "no_horizontal_overflow": true,
-    "no_broken_images": true,
     "no_console_or_page_errors": true,
-    "video_count": 2,
+    "current_video_count": 2,
+    "total_video_count_including_collapsed_history": 4,
+    "historical_section_collapsed_by_default": true,
+    "historical_section_opens": true,
     "video_width": 256,
     "video_height": 256,
     "video_duration_seconds": 31.78,
-    "synchronized_playback_works": true,
-    "published_webp_posters_visible": true
+    "video_encoded_fps": 50,
+    "published_webp_posters_visible": true,
+    "current_headless_mp4_sha256_matches": true,
+    "current_offscreen_mp4_sha256_matches": true,
+    "published_summary_status_200": true,
+    "published_visual_review_status_200": true
   },
-  "transport_note": "GitHub Pages direct Chromium access transiently reset during two probes; bounded retries passed with identical page and media checks.",
-  "note": "Independent visual task review is a separate FAIL: the videos prove a complete RTX 50 Hz stream and expose the current failure, not a successful pour."
+  "current_media": [
+    {"file": "media/kinematic-headless-diagnostic-50fps-playback-v1.mp4", "sha256": "f587476ac13aa429a1ffeee57c859572c9c4d157820eb2c88c323ff127d3765e"},
+    {"file": "media/kinematic-offscreen-diagnostic-50fps-playback-v1.mp4", "sha256": "d406d06bc1d48457973b8b47328ea89dde722f080a140d4a92a0ca3ce56fe5c7"}
+  ],
+  "transport_note": "Video preload can keep networkidle open; page layout was checked at DOMContentLoaded with media requests blocked, then both published MP4 files were downloaded separately and hash-verified.",
+  "claim_boundary": "Browser and delivery QA passed. Successful-pour visual quality and real-time 50 Hz performance remain failed."
 }
