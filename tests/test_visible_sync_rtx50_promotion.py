@@ -19,7 +19,12 @@ def _result() -> dict:
             "performance_passed": False,
             "physics_passed": False,
         },
-        "artifacts": {"full_video": {"checks": {"frame_count": True}}},
+        "artifacts": {
+            "full_video": {
+                "checks": {"frame_count": True},
+                "flicker_audit": {"passed": True},
+            }
+        },
     }
 
 
@@ -43,3 +48,10 @@ def test_promotion_fails_closed_on_visible_sync_gate(gate: str) -> None:
     audit[f"{gate}_sync"]["passed"] = False
     with pytest.raises(RuntimeError, match=f"audit_{gate}_failed"):
         promotion._eligible(_result(), audit, "headless-product")
+
+
+def test_promotion_fails_closed_on_flicker_gate() -> None:
+    result = _result()
+    result["artifacts"]["full_video"]["flicker_audit"]["passed"] = False
+    with pytest.raises(RuntimeError, match="promotion_flicker_audit_failed"):
+        promotion._eligible(result, _audit(), "headless-product")

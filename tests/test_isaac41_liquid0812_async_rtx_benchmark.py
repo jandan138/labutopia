@@ -24,6 +24,50 @@ def test_benchmark_defaults_to_reproducible_session_camera() -> None:
     assert args.save_full_video is False
     assert args.source_driver == "physx-kinematic-target"
     assert args.integration_hz == 120
+    assert args.aa_mode == "dlss"
+    assert args.pose_render_settle_frames == 0
+    assert args.save_flicker_audit is False
+
+
+def test_flicker_audit_passes_stable_same_state_pairs() -> None:
+    frames = np.zeros((4, 32, 32, 3), dtype=np.uint8)
+    records = [
+        {
+            "render_index": index,
+            "physics_index": index // 2,
+            "source_center_px": [16.0, 16.0],
+            "source_moving": index >= 2,
+        }
+        for index in range(4)
+    ]
+    result = benchmark._evaluate_flicker_frames(frames, records)
+    assert result["passed"] is True
+    assert result["pair_count"] == 1
+
+
+def test_flicker_audit_rejects_alternating_source_appearance() -> None:
+    frames = np.zeros((4, 32, 32, 3), dtype=np.uint8)
+    frames[3, 8:24, 8:24] = 64
+    records = [
+        {
+            "render_index": index,
+            "physics_index": index // 2,
+            "source_center_px": [16.0, 16.0],
+            "source_moving": index >= 2,
+        }
+        for index in range(4)
+    ]
+    result = benchmark._evaluate_flicker_frames(frames, records)
+    assert result["passed"] is False
+    assert result["summary"]["changed_fraction_max"] > 0.01
+
+
+def test_flicker_audit_requires_full_video() -> None:
+    args = benchmark.build_parser().parse_args(["--save-flicker-audit"])
+    import pytest
+
+    with pytest.raises(ValueError, match="flicker_audit_requires_full_video"):
+        benchmark._validate_args(args)
 
 
 def test_trajectory_camera_contract_covers_complete_motion_and_target() -> None:

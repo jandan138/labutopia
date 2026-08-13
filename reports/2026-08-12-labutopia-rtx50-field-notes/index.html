@@ -154,7 +154,7 @@
       <h1>液体 RTX<br>复测记录</h1>
       <nav aria-label="文章目录">
         <a href="#cover">00 / 电梯版</a>
-        <a href="#videos">01 / 新版完整视频</a>
+        <a href="#videos">01 / 视频质量门</a>
         <a href="#problem">02 / 50 FPS 的误会</a>
         <a href="#contract">03 / 什么才算一帧</a>
         <a href="#battle">04 / 四幕排障</a>
@@ -169,14 +169,14 @@
     <main>
       <section id="cover" class="hero">
         <div class="eyebrow">2026-08-12 · 2026-08-13 follow-up · Rendering systems / evidence engineering</div>
-        <h2>驱动和可见杯<br>终于同步了，<br>但漏液还没有修好</h2>
-        <p class="lede">这次又修掉了一个关键问题：PhysX 碰撞杯运动后，可见 USD 杯现在会同步到同一姿态，不再出现“无形杯在动、画面里的杯子留在原地”。两条 1589 帧固定相机视频已替换；共享 GPU 忙载下约 47 FPS，但杯外散粒仍可见，因此这仍是探索诊断版，不是不漏液验收版。</p>
-        <div class="verdict"><i></i> DIAGNOSTIC VIDEO READY · PERFORMANCE / PHYSICS NO-GO</div>
+        <h2>驱动和可见杯<br>已经同步，<br>但视频仍会闪烁</h2>
+        <p class="lede">PhysX 碰撞杯和可见 USD 杯的数值姿态已经同步，但逐帧复核发现运动杯在相邻 RTX 图中交替发白、残影和恢复。DLSS、Native AA、丢弃一张过渡帧及其组合都没有通过闪烁门，所以本页撤回“诊断视频已就绪”的结论，也没有用另一条坏视频覆盖它。</p>
+        <div class="verdict"><i></i> VIDEO QUALITY NO-GO · NO REPLACEMENT PROMOTED</div>
 
         <div class="recorder" aria-label="50赫兹渲染与30赫兹物理双时钟示意">
           <div class="track render"><span class="track-label">RTX TARGET</span><span class="ticks" id="renderTicks"></span><span class="track-value">50 Hz</span></div>
           <div class="track physics"><span class="track-label">PHYSICS</span><span class="ticks" id="physicsTicks"></span><span class="track-value">30 Hz</span></div>
-          <p class="clock-note">合同目标仍是每秒 50 张 RTX 图、30 个物理状态；本轮固定相机同步版在共享 GPU 忙载下完成约 47 张图。这个数字只回答“大概能否跑上”，不能替代空闲 GPU 的正式可比资格结果。</p>
+          <p class="clock-note">合同目标仍是每秒 50 张 RTX 图、30 个物理状态；但现在多了一道必要的视觉门：同一物理状态对应的相邻 RTX 图不能让运动杯交替发白或产生残影。速度合格不能覆盖这个失败。</p>
         </div>
 
         <div class="elevator">
@@ -184,40 +184,38 @@
           <p>我遇到的是一个<strong>指标合同错位</strong>：GUI overlay 显示约 50 FPS，同事录屏也很流畅，但同步 headless RGB 端点只有 3.31 FPS。overlay 测的是 viewport 更新，不证明每秒真的有 50 张模型能消费的新 RTX 图。</p>
           <p>我把物理和渲染拆成 30/50 两个时钟，用目标 render product 的 <code>NEW_FRAME</code> 完成事件计数；每一帧都必须有递增 frame number，并通过 <code>LdrColor(device="cuda")</code> 进入三槽 GPU consumer。计时路径不做 CPU RGB 读回。</p>
           <p>上一版虽然已使用 PhysX kinematic target，但 RTX 画面仍可能读取静止的 USD 杯；现在每个物理步完成后都读取 PhysX 实际姿态，并把同一姿态镜像到渲染 session。数值门显示目标、PhysX、USD 根节点与可见 mesh 的最大位置误差只有 0.000123 mm。</p>
-          <p>这次完整视频没有藏失败：源杯会随碰撞体平移、抬升、倾倒和回落，但液体仍会形成脱离杯体的团块。它适合验证同步修复和忙载吞吐，不适合证明“不撒不漏”，更不能当作正式 50 Hz 资格已闭合。</p>
+          <p>逐帧审查进一步发现：源杯虽然会随碰撞体运动，但外观在相邻 RTX 图中交替变化。原始 CUDA 帧已经闪，说明问题发生在编码之前；四组修复候选均失败，因此视频只保留为折叠诊断证据，不再作为当前交付结果。</p>
         </div>
       </section>
 
       <section id="videos">
-        <div class="eyebrow">01 · Kinematic diagnostic videos</div>
-        <h3>新版完整视频：1589 张都在，失败也在</h3>
-        <p>下面两段都使用正式 Isaac Sim 4.1 runtime、PhysX kinematic target、30 Hz 物理和覆盖完整轨迹的固定相机。文件是 256×256、H.264、50 FPS、1589 帧、31.78 秒；这里的 <strong>50 FPS 是播放/编码速度</strong>。共享 GPU 忙载下实际完成速度为 headless 47.24 FPS、offscreen 47.17 FPS，因此只能作探索观察，不能与空闲 GPU 正式结果横向比较。</p>
-        <div class="video-toolbar">
-          <button id="syncPlay" type="button">同步播放</button>
-          <button id="syncPause" type="button">同步暂停</button>
-          <input id="syncSeek" aria-label="同步视频进度" type="range" min="0" max="31.78" step="0.02" value="0">
-          <span id="timeReadout">00.00 / 31.78</span>
+        <div class="eyebrow">01 · Frame-by-frame video quality gate</div>
+        <h3>没有一条候选通过，所以不替换主视频</h3>
+        <p>我们在两条原始 1589 帧、31.78 秒视频的运动阶段，专门寻找“同一个 30 Hz 物理状态对应的两张 50 Hz RTX 图”。理论上杯子没动，这两张图也应稳定；实际杯子会在清晰、发白和残影之间交替。原始 CUDA 帧与 H.264 解码帧同时失败，排除了网页播放器和视频压缩。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>候选</th><th>短片 RTX FPS*</th><th>原始帧变化比例 P95</th><th>结果</th></tr></thead>
+            <tbody>
+              <tr><td>DLSS</td><td>59.26</td><td>2.71%</td><td class="fail">FLICKER</td></tr>
+              <tr><td>Native AA</td><td>59.65</td><td>2.49%</td><td class="fail">FLICKER</td></tr>
+              <tr><td>DLSS + 丢弃过渡帧</td><td>38.22</td><td>2.70%</td><td class="fail">FLICKER</td></tr>
+              <tr><td>Native AA + 丢弃过渡帧</td><td>38.05</td><td>2.72%</td><td class="fail">FLICKER</td></tr>
+            </tbody>
+          </table>
         </div>
-        <div class="videos">
-          <article class="video-card">
-            <header><span>A · VISIBLE-SYNC HEADLESS</span><span>47.24 FPS · BUSY GPU</span></header>
-            <video id="headlessVideo" controls preload="metadata" poster="media/visible-sync-headless-busy-gpu-poster-v2.webp">
-              <source src="media/visible-sync-headless-busy-gpu-50fps-v2.mp4" type="video/mp4">
-            </video>
-            <p class="caption">纯 headless render product；固定相机覆盖完整轨迹。重点看 16 秒以后：源杯视觉网格会随实际 PhysX 杯抬升、倾倒并回落。</p>
-          </article>
-          <article class="video-card">
-            <header><span>B · VISIBLE-SYNC OFFSCREEN</span><span>47.17 FPS · BUSY GPU</span></header>
-            <video id="offscreenVideo" controls preload="metadata" poster="media/visible-sync-offscreen-busy-gpu-poster-v2.webp">
-              <source src="media/visible-sync-offscreen-busy-gpu-50fps-v2.mp4" type="video/mp4">
-            </video>
-            <p class="caption">保留 viewport window 的离屏路径；相同驱动、相同固定构图和相同 1589 帧交付合同。</p>
-          </article>
-        </div>
+        <p class="caption">* 650 个物理状态的共享 GPU 探索筛选，只用于比较修复方向；源码收尾后又用最终代码复跑 DLSS，58.04 FPS，原始帧 P95 仍为 2.54%，结论未变。发布门要求 P95 ≤ 0.5%、最大值 ≤ 1.0%。</p>
         <div class="callout warn">
-          <b>诚实观看提示</b>
-          <p>本地、非独立的全片抽帧复核结论是：两段视频都没有黑帧或材质丢失，源杯会与碰撞杯同步完成整段动作；但中段仍能看到脱离杯体的液体团块。数值上首次倾斜前已有 32 / 34 个粒子离开源杯，因此它们通过“同步修复诊断视频”门，不通过“成功倒液视频”门。</p>
+          <b>当前结论</b>
+          <p>数值姿态同步通过，但视频视觉稳定性失败；此外液体仍会提前漏出。下一步不再继续调 AA，而要检查异步 <code>NEW_FRAME</code> 事件、<code>LdrColor(device="cuda", do_array_copy=False)</code> 与 USD/PhysX 状态之间是否取到了交替的新旧缓冲。</p>
         </div>
+        <details class="history">
+          <summary>展开有闪烁的 visible-sync 视频（仅供复现问题）</summary>
+          <p class="caption">重点看约 14 秒以后。它们是失败证据，不是当前可交付视频。</p>
+          <div class="videos">
+            <article class="video-card"><header><span>FAILED · HEADLESS</span><span>FLICKER</span></header><video controls preload="none" poster="media/visible-sync-headless-busy-gpu-poster-v2.webp"><source src="media/visible-sync-headless-busy-gpu-50fps-v2.mp4" type="video/mp4"></video></article>
+            <article class="video-card"><header><span>FAILED · OFFSCREEN</span><span>FLICKER</span></header><video controls preload="none" poster="media/visible-sync-offscreen-busy-gpu-poster-v2.webp"><source src="media/visible-sync-offscreen-busy-gpu-50fps-v2.mp4" type="video/mp4"></video></article>
+          </div>
+        </details>
         <details class="history">
           <summary>展开历史 teleport 视频（52.22 / 51.85 FPS，仅作方法对照）</summary>
           <p class="caption">这两段沿用逐控制点直接改 USD transform 的旧驱动和固定相机，速度较快，但动作不规范且后半程裁切。它们不能替代上面的 kinematic 结果。</p>
@@ -300,7 +298,7 @@ physics_index = floor(render_index × 30 / 50)</pre>
             </tbody>
           </table>
         </div>
-        <p>本页刚替换的固定相机同步版在共享 GPU 忙载下为 headless 47.24 FPS、offscreen 47.17 FPS。它证明修复可见杯同步后仍大致接近 50，但由于 GPU 同时有其他任务，不能加入上面的正式资格矩阵。旧的 42.83 / 41.99 FPS 跟随相机视频已从主展示撤下。</p>
+        <p>此前固定相机同步版在共享 GPU 忙载下为 headless 47.24 FPS、offscreen 47.17 FPS，但逐帧闪烁门现已否决这两条视频。它们不能再被描述为“诊断视频已就绪”，也不能加入正式资格矩阵。</p>
       </section>
 
       <section id="kinematic">
@@ -323,7 +321,7 @@ physics_index = floor(render_index × 30 / 50)</pre>
             </tbody>
           </table>
         </div>
-        <p>这组同一渲染链路的忙载筛选把两个问题拆开了：<strong>杯子驱动和可见姿态同步已经修好</strong>，但倾斜前杯外粒子从 32 降到 23、再到 22 后就基本不再改善；与此同时 RTX 吞吐从 47.24 降到 38.28、再到 28.59 FPS。继续堆子步性价比很差，下一步应查粒子初始间距、源杯 convex decomposition 内壁、rest/contact offset 与运动碰撞裕量。</p>
+        <p>这组同一渲染链路的忙载筛选把问题拆成了三层：<strong>杯子数值姿态同步已经修好</strong>；液体保留仍失败；视频还新增了相邻帧闪烁失败。继续堆物理子步既不能解决漏液，也不能解决取帧闪烁。</p>
         <div class="callout warn">
           <b>为什么现在有新视频，但仍然写 NO-GO</b>
           <p>我们后来明确选择“质量不过也先比较速度”，因此允许在共享 GPU 忙载下先产出诊断视频。两条 30 Hz 完整运行最终分别有 508/504 个粒子到目标杯，40/44 个落在桌面，桌下均为 0；但倾斜前保液和稳定尾段仍失败。视频是同步修复与当前失败的可视化，不是验收通过。</p>
@@ -339,7 +337,7 @@ physics_index = floor(render_index × 30 / 50)</pre>
             <ul>
               <li>每张图由目标 RTX NEW_FRAME 事件证明完成。</li>
               <li>1589 张图严格递增并进入 CUDA consumer。</li>
-              <li>源杯视觉网格会与 PhysX 碰撞杯同步完成平移、抬升、倾倒与回落。</li>
+              <li>USD 根节点、可见 mesh 与 PhysX 碰撞杯的数值姿态同步通过。</li>
               <li>两条运行均绑定 Isaac 4.1 effective-runtime v2 receipt；证据类别明确为忙 GPU 探索。</li>
               <li>源杯已改为 PhysX kinematic target，姿态读回误差远低于 0.5 mm / 0.1° 门槛。</li>
             </ul>
@@ -348,6 +346,7 @@ physics_index = floor(render_index × 30 / 50)</pre>
             <h4>未闭合</h4>
             <ul>
               <li>本轮约 47 FPS 来自共享 GPU 忙载运行，不是正式可比资格结果。</li>
+              <li>两条完整视频的运动杯会在相邻 RTX 帧中交替发白或出现残影。</li>
               <li>完整视频最终仍有 40 / 44 个粒子撒在桌面。</li>
               <li>本地视觉复核看到脱离杯体的液体团块。</li>
               <li>H.264 是按 50 FPS 编码播放，不代表实时产图达到 50 FPS。</li>
@@ -355,7 +354,7 @@ physics_index = floor(render_index × 30 / 50)</pre>
             </ul>
           </article>
         </div>
-        <div class="callout warn"><b>正确对外表述</b><p>“可见杯与 PhysX 碰撞杯已经同步；共享 GPU 忙载下单相机 256×256 RTX 大约 47 FPS，视频按 50 FPS 播放。液体倾斜前保留和最终撒漏仍未通过，正式性能资格待空闲 GPU 复测。”</p></div>
+        <div class="callout warn"><b>正确对外表述</b><p>“可见杯与 PhysX 碰撞杯的数值姿态已经同步，但异步 RTX 视频存在相邻帧闪烁；四种 AA/过渡帧组合均未通过，因此没有发布修好版视频。液体保留与正式性能资格也仍未通过。”</p></div>
       </section>
 
       <section id="eval">
@@ -409,30 +408,6 @@ physics_index = floor(render_index × 30 / 50)</pre>
     addEventListener('scroll', updateReadingState, { passive: true });
     updateReadingState();
 
-    const videos = [document.getElementById('headlessVideo'), document.getElementById('offscreenVideo')];
-    const seek = document.getElementById('syncSeek');
-    const readout = document.getElementById('timeReadout');
-    let seeking = false;
-    document.getElementById('syncPlay').addEventListener('click', async () => {
-      const t = Number(seek.value);
-      videos.forEach(video => { if (Math.abs(video.currentTime - t) > .08) video.currentTime = t; });
-      await Promise.all(videos.map(video => video.play().catch(() => null)));
-    });
-    document.getElementById('syncPause').addEventListener('click', () => videos.forEach(video => video.pause()));
-    seek.addEventListener('input', () => {
-      seeking = true;
-      const t = Number(seek.value);
-      videos.forEach(video => { video.currentTime = t; });
-      readout.textContent = `${t.toFixed(2)} / 31.78`;
-    });
-    seek.addEventListener('change', () => { seeking = false; });
-    videos[0].addEventListener('timeupdate', () => {
-      if (seeking) return;
-      const t = videos[0].currentTime;
-      seek.value = t;
-      readout.textContent = `${t.toFixed(2)} / 31.78`;
-      if (!videos[1].paused && Math.abs(videos[1].currentTime - t) > .12) videos[1].currentTime = t;
-    });
   </script>
 </body>
 </html>

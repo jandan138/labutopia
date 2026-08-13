@@ -1,23 +1,24 @@
 {
-  "schema_version": 3,
-  "status": "passed",
-  "scope": "local_browser_and_published_github_pages_delivery",
-  "checked_at_utc": "2026-08-13T07:16:38Z",
+  "schema_version": 4,
+  "status": "local_passed_pending_published_qa",
+  "scope": "local_browser_qa_after_flicker_no_go_retraction",
+  "checked_at_utc": "2026-08-13T08:41:13Z",
   "published_url": "https://jandan138.github.io/labutopia/reports/2026-08-12-labutopia-rtx50-field-notes/",
-  "media_page_source_commit": "0009383f0289d2a060f3994a821befb55b99f1a0",
+  "media_page_source_commit": null,
   "pages_workflow_run": null,
   "browser": "Chromium",
   "review_mode": "local_non_independent",
   "viewports": [
-    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "byte_identical_to_local"},
-    {"width": 900, "height": 1100, "local_status": "passed", "published_status": "byte_identical_to_local"},
-    {"width": 390, "height": 844, "local_status": "passed", "published_status": "byte_identical_to_local"}
+    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "pending"},
+    {"width": 900, "height": 1100, "local_status": "passed", "published_status": "pending"},
+    {"width": 390, "height": 844, "local_status": "passed", "published_status": "pending"}
   ],
   "checks": {
     "http_status_200": true,
     "no_horizontal_overflow": true,
     "no_console_or_page_errors": true,
-    "current_video_count": 2,
+    "no_unresolved_failed_assets": true,
+    "current_video_count": 0,
     "total_video_count_including_collapsed_history": 4,
     "historical_section_collapsed_by_default": true,
     "historical_section_opens": true,
@@ -25,31 +26,23 @@
     "video_height": 256,
     "video_duration_seconds": 31.78,
     "video_encoded_fps": 50,
-    "published_webp_posters_visible": true,
-    "current_headless_mp4_sha256_matches": true,
-    "current_offscreen_mp4_sha256_matches": true,
-    "published_summary_status_200": true,
-    "published_visual_review_status_200": true
+    "published_webp_posters_visible": null,
+    "current_headless_mp4_sha256_matches": null,
+    "current_offscreen_mp4_sha256_matches": null,
+    "published_summary_status_200": null,
+    "published_visual_review_status_200": null
   },
-  "current_media": [
+  "retracted_flicker_media": [
     {"file": "media/visible-sync-headless-busy-gpu-50fps-v2.mp4", "sha256": "f31cbdaf63d72de82a89c1060c1de9be3d27a4d89a62a0198f501e2fe54dc686"},
     {"file": "media/visible-sync-offscreen-busy-gpu-50fps-v2.mp4", "sha256": "997227e45b1a366cb94e4ff60914c0afe06f64e2ef9231b3441f8a21d4606ba7"}
   ],
   "local_audit_artifacts": {
-    "directory": "/tmp/rtx50-page-qa",
-    "audit_json": "/tmp/rtx50-page-qa/audit.json",
-    "desktop_screenshot": "/tmp/rtx50-page-qa/desktop-final.png",
-    "tablet_screenshot": "/tmp/rtx50-page-qa/tablet.png",
-    "mobile_screenshot": "/tmp/rtx50-page-qa/mobile.png"
+    "audit_json": "/tmp/rtx50-flicker-page-qa/audit.json",
+    "desktop_screenshot": "/tmp/rtx50-flicker-page-qa/desktop.png",
+    "tablet_screenshot": "/tmp/rtx50-flicker-page-qa/tablet.png",
+    "mobile_screenshot": "/tmp/rtx50-flicker-page-qa/mobile.png",
+    "note": "Chromium media metadata loading cancels the preceding preload=none requests. Direct HTTP reads for all four MP4 files and both visible-sync WebP posters returned 200; this is not an unresolved asset failure."
   },
-  "published_delivery": {
-    "index_sha256": "bc827f687cee959453880852663dfdfa99a39c31b3ec5cf0ed3f7c184bd7aecd",
-    "index_byte_identical_to_local_browser_audited_source": true,
-    "headless_mp4_http_status": 200,
-    "offscreen_mp4_http_status": 200,
-    "both_mp4_sha256_match": true,
-    "both_poster_sha256_match": true,
-    "direct_published_playwright_note": "Remote navigation encountered an intermittent proxy timeout after local Chromium QA; published HTML and every current media asset were downloaded and hash-matched to the locally browser-audited bytes."
-  },
-  "claim_boundary": "Browser layout and media delivery QA passed. Media is explicitly busy-GPU exploratory and not spill-free-pour evidence."
+  "published_delivery": null,
+  "claim_boundary": "The page retracts current video delivery and keeps flickering videos collapsed as failure evidence. Published QA is pending deployment."
 }

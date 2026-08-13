@@ -1,6 +1,6 @@
 {
-  "schema": "labutopia.rtx50_field_notes_summary.v3",
-  "status": "visible_source_sync_exploration_published_formal_performance_and_physics_no_go",
+  "schema": "labutopia.rtx50_field_notes_summary.v4",
+  "status": "visible_source_numeric_sync_pass_video_flicker_no_go_no_replacement_promoted",
   "date": "2026-08-13",
   "runtime": {
     "python": "3.10.20",
@@ -38,9 +38,9 @@
       "maximum_physx_to_usd_rotation_error_degrees": 2.9575586669421963e-6,
       "maximum_mesh_relation_position_error_m": 0.0,
       "maximum_mesh_relation_rotation_error_degrees": 2.9575586669421963e-6,
-      "rgb_full_video_review": "pass",
+      "rgb_full_video_review": "fail_flicker",
       "isaac41_instance_segmentation_gate": "blocked_by_stale_initial_transform_cache",
-      "statement": "The visible source beaker now translates, lifts, tilts, and settles with the PhysX source body. Isaac 4.1 instance segmentation retained the initial transform and is not used as a passing pixel gate."
+      "statement": "Numeric PhysX/USD/mesh pose synchronization passes, but the moving beaker alternates between clear, pale, and ghosted appearances in adjacent RTX frames."
     },
     "qualification_matrix": {
       "scope": "historical formal trajectory-follow matrix; retained as non-comparable context",
@@ -103,11 +103,37 @@
     ],
     "visual_boundary": {
       "visible_source_motion": "pass",
-      "diagnostic_video": "pass",
+      "diagnostic_video": "fail_flicker",
       "successful_pour": "fail",
       "review_mode": "local_non_independent",
-      "statement": "The visible source beaker follows the physical motion. Detached liquid remains visible and pre-tilt retention fails."
+      "statement": "Numeric source motion follows PhysX, but the video flicker gate fails; detached liquid and pre-tilt retention also fail."
     }
+  },
+  "flicker_ab_screen": {
+    "status": "all_candidates_failed_no_promotion",
+    "evidence_class": "non_authoritative_busy_gpu_exploration",
+    "scope": "650-state headless screen; final code revalidated with a fresh matched runtime receipt",
+    "thresholds": {
+      "pixel_delta": 12,
+      "changed_fraction_p95_max": 0.005,
+      "changed_fraction_absolute_max": 0.01,
+      "mean_luma_delta_p95_max": 1.5
+    },
+    "candidates": [
+      {"aa_mode": "dlss", "settle_frames": 0, "rtx_fps": 59.26082556128154, "raw_changed_fraction_p95": 0.027101711127643747, "status": "failed"},
+      {"aa_mode": "native", "settle_frames": 0, "rtx_fps": 59.65422270117702, "raw_changed_fraction_p95": 0.0248698055053672, "status": "failed"},
+      {"aa_mode": "dlss", "settle_frames": 1, "rtx_fps": 38.22029221573131, "raw_changed_fraction_p95": 0.02699542990753534, "status": "failed"},
+      {"aa_mode": "native", "settle_frames": 1, "rtx_fps": 38.04551262998944, "raw_changed_fraction_p95": 0.027207992347752154, "status": "failed"}
+    ],
+    "final_code_revalidation": {
+      "aa_mode": "dlss",
+      "settle_frames": 0,
+      "rtx_fps": 58.04040539199826,
+      "raw_changed_fraction_p95": 0.025401211605909236,
+      "decoded_h264_changed_fraction_p95": 0.026038898926559677,
+      "status": "failed"
+    },
+    "decision": "No candidate video is promoted. Investigate asynchronous CUDA capture and render-state coherence."
   },
   "busy_gpu_integration_screen": {
     "status": "all_quality_no_go",
@@ -128,5 +154,5 @@
       {"lane": "offscreen-viewport", "rtx_fps": 51.852212530428666, "file": "media/offscreen-viewport-full-50fps.mp4", "sha256": "cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344"}
     ]
   },
-  "next_gate": "Repair source-beaker collision geometry, offsets, and initial particle placement before publishing a successful-pour claim; repeat performance qualification on an idle GPU."
+  "next_gate": "Repair asynchronous CUDA capture/render-state coherence before promoting a video; separately repair source-beaker collision geometry and particle retention."
 }

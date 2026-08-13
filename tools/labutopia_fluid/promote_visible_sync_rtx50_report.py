@@ -72,6 +72,9 @@ def _eligible(result: dict[str, Any], audit: dict[str, Any], lane: str) -> None:
     full = result["artifacts"].get("full_video")
     if not full or not all(full["checks"].values()):
         raise RuntimeError(f"promotion_full_video_failed:{lane}")
+    flicker = full.get("flicker_audit")
+    if not flicker or not flicker.get("passed"):
+        raise RuntimeError(f"promotion_flicker_audit_failed:{lane}")
 
 
 def main() -> int:

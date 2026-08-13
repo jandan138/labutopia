@@ -40,6 +40,7 @@ PHYSICS_DT = baseline.PHYSICS_DT
 EXPECTED_OBSERVATIONS = baseline.EXPECTED_OBSERVATIONS
 LANES = ("headless-product", "offscreen-viewport")
 PROFILES = ("current", "fast-translucent", "fast-glass", "fast-opaque")
+AA_MODES = ("dlss", "native")
 CAMERA_POLICIES = ("trajectory-follow", "trajectory-envelope", "benchmark", "scene")
 TARGET_RENDER_HZ = 50
 DEFAULT_WIDTH = 256
@@ -51,6 +52,11 @@ MAX_PROJECTED_CENTER_ERROR_PX = 8.0
 MIN_TRAJECTORY_DIRECTION_COSINE = 0.8
 MIN_TRAJECTORY_MAGNITUDE_RATIO = 0.7
 MAX_TRAJECTORY_MAGNITUDE_RATIO = 1.3
+FLICKER_PIXEL_DELTA = 12
+FLICKER_P95_CHANGED_FRACTION = 0.005
+FLICKER_MAX_CHANGED_FRACTION = 0.01
+FLICKER_P95_MEAN_LUMA_DELTA = 1.5
+FLICKER_ROI_HALF_SIZE = 48
 
 
 def source_paths() -> tuple[Path, ...]:
@@ -257,11 +263,13 @@ def _evaluate_visible_sync_records(records: Sequence[dict[str, Any]]) -> dict[st
     }
 
 
-def _configure_profile(stage: Any, profile: str) -> dict[str, Any]:
+def _configure_profile(stage: Any, profile: str, aa_mode: str = "dlss") -> dict[str, Any]:
     import carb
 
     if profile not in PROFILES:
         raise ValueError(f"unknown_rtx_profile:{profile}")
+    if aa_mode not in AA_MODES:
+        raise ValueError(f"unknown_aa_mode:{aa_mode}")
     settings = carb.settings.get_settings()
     paths = (
         "/rtx/rendermode",
@@ -342,9 +350,22 @@ def _configure_profile(stage: Any, profile: str) -> dict[str, Any]:
             "authored_in_memory_only": True,
             "authoring_layer": "anonymous_session_layer",
         }
+    # Apply the requested AA mode last because fast-glass otherwise forces
+    # DLSS.  Native mode deliberately removes temporal history so moving USD
+    # session-layer transforms can be diagnosed without DLSS ghosting.
+    effective_aa_op = 3 if aa_mode == "dlss" else 0
+    settings.set_int("/rtx/post/aa/op", effective_aa_op)
+    settings.set("/rtx-defaults/post/aa/op", effective_aa_op)
     settings.set_bool("/app/hydraEngine/waitIdle", False)
     after = {path: settings.get(path) for path in paths}
-    return {"profile": profile, "before": before, "after": after, "material": authored_material}
+    return {
+        "profile": profile,
+        "aa_mode": aa_mode,
+        "effective_aa_op": effective_aa_op,
+        "before": before,
+        "after": after,
+        "material": authored_material,
+    }
 
 
 def _author_source_semantics(
@@ -901,6 +922,150 @@ class _CudaFrameSink:
         self.consumed_sequences.sort()
 
 
+def _flicker_pair_metrics(
+    left: Any,
+    right: Any,
+    *,
+    center_px: Sequence[float],
+    half_size: int = FLICKER_ROI_HALF_SIZE,
+) -> dict[str, Any]:
+    """Measure appearance changes inside a clipped moving-source ROI."""
+    import numpy as np
+
+    left = np.asarray(left, dtype=np.uint8)
+    right = np.asarray(right, dtype=np.uint8)
+    if left.shape != right.shape or left.ndim != 3 or left.shape[2] < 3:
+        raise ValueError(f"flicker_frame_shape:{left.shape}:{right.shape}")
+    height, width = left.shape[:2]
+    center_x, center_y = (float(center_px[0]), float(center_px[1]))
+    x0 = max(0, int(math.floor(center_x - half_size)))
+    x1 = min(width, int(math.ceil(center_x + half_size)))
+    y0 = max(0, int(math.floor(center_y - half_size)))
+    y1 = min(height, int(math.ceil(center_y + half_size)))
+    if x1 <= x0 or y1 <= y0:
+        raise ValueError(f"flicker_roi_empty:{center_px}:{width}:{height}")
+    left_roi = left[y0:y1, x0:x1, :3].astype(np.int16)
+    right_roi = right[y0:y1, x0:x1, :3].astype(np.int16)
+    delta = np.abs(right_roi - left_roi)
+    left_luma = (
+        left_roi[..., 0] * 0.2126
+        + left_roi[..., 1] * 0.7152
+        + left_roi[..., 2] * 0.0722
+    )
+    right_luma = (
+        right_roi[..., 0] * 0.2126
+        + right_roi[..., 1] * 0.7152
+        + right_roi[..., 2] * 0.0722
+    )
+    return {
+        "roi_xyxy": [x0, y0, x1, y1],
+        "changed_fraction": float((delta.max(axis=2) >= FLICKER_PIXEL_DELTA).mean()),
+        "mean_luma_delta": abs(float(right_luma.mean() - left_luma.mean())),
+    }
+
+
+def _evaluate_flicker_frames(
+    frames: Any,
+    records: Sequence[dict[str, Any]],
+) -> dict[str, Any]:
+    """Fail closed on alternating appearance for one unchanged moving pose."""
+    import numpy as np
+
+    if len(frames) != len(records):
+        raise ValueError(f"flicker_frame_record_count:{len(frames)}:{len(records)}")
+    pairs = []
+    for index in range(1, len(records)):
+        left_record = records[index - 1]
+        right_record = records[index]
+        if int(left_record["physics_index"]) != int(right_record["physics_index"]):
+            continue
+        if not bool(right_record.get("source_moving", False)):
+            continue
+        left_center = np.asarray(left_record["source_center_px"], dtype=np.float64)
+        right_center = np.asarray(right_record["source_center_px"], dtype=np.float64)
+        center = ((left_center + right_center) * 0.5).tolist()
+        metrics = _flicker_pair_metrics(frames[index - 1], frames[index], center_px=center)
+        pairs.append(
+            {
+                "left_render_index": int(left_record["render_index"]),
+                "right_render_index": int(right_record["render_index"]),
+                "physics_index": int(right_record["physics_index"]),
+                **metrics,
+            }
+        )
+    if not pairs:
+        return {
+            "passed": False,
+            "reason": "no_same_state_moving_pairs",
+            "pair_count": 0,
+            "pairs": [],
+        }
+    changed = sorted(float(item["changed_fraction"]) for item in pairs)
+    luma = sorted(float(item["mean_luma_delta"]) for item in pairs)
+
+    def percentile95(values: Sequence[float]) -> float:
+        return float(values[min(len(values) - 1, max(0, math.ceil(0.95 * len(values)) - 1))])
+
+    summary = {
+        "changed_fraction_p95": percentile95(changed),
+        "changed_fraction_max": max(changed),
+        "mean_luma_delta_p95": percentile95(luma),
+    }
+    thresholds = {
+        "pixel_delta": FLICKER_PIXEL_DELTA,
+        "changed_fraction_p95_max": FLICKER_P95_CHANGED_FRACTION,
+        "changed_fraction_absolute_max": FLICKER_MAX_CHANGED_FRACTION,
+        "mean_luma_delta_p95_max": FLICKER_P95_MEAN_LUMA_DELTA,
+    }
+    return {
+        "passed": bool(
+            summary["changed_fraction_p95"] <= FLICKER_P95_CHANGED_FRACTION
+            and summary["changed_fraction_max"] <= FLICKER_MAX_CHANGED_FRACTION
+            and summary["mean_luma_delta_p95"] <= FLICKER_P95_MEAN_LUMA_DELTA
+        ),
+        "reason": None,
+        "pair_count": len(pairs),
+        "summary": summary,
+        "thresholds": thresholds,
+        "pairs": pairs,
+    }
+
+
+def _decode_video_rgb(path: Path, *, width: int, height: int, frame_count: int) -> Any:
+    """Decode H.264 through ffmpeg so the published bytes get the same gate."""
+    import numpy as np
+
+    completed = subprocess.run(
+        [
+            "/usr/bin/ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            str(path),
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgb24",
+            "-",
+        ],
+        check=False,
+        capture_output=True,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"flicker_video_decode_failed:{completed.returncode}:{completed.stderr[-1000:]!r}"
+        )
+    expected_bytes = frame_count * width * height * 3
+    if len(completed.stdout) != expected_bytes:
+        raise RuntimeError(
+            f"flicker_video_decode_size:{len(completed.stdout)}:{expected_bytes}"
+        )
+    return np.frombuffer(completed.stdout, dtype=np.uint8).reshape(
+        (frame_count, height, width, 3)
+    )
+
+
 def _save_review_artifacts(output_dir: Path, sink: _CudaFrameSink, *, fps: int = 15) -> dict[str, Any]:
     import numpy as np
     from PIL import Image
@@ -947,6 +1112,7 @@ def _save_full_video_artifacts(
     *,
     lane: str,
     fps: int = TARGET_RENDER_HZ,
+    save_flicker_audit: bool = False,
 ) -> dict[str, Any]:
     """Read the retained CUDA sequence back after timing and encode every frame."""
     import numpy as np
@@ -1056,6 +1222,53 @@ def _save_full_video_artifacts(
     if not all(video_checks.values()):
         raise RuntimeError(f"full_video_probe_contract_failed:{video_checks}:{stream}")
 
+    frames_hwc = frames_chw.transpose(0, 2, 3, 1)
+    raw_flicker = _evaluate_flicker_frames(frames_hwc, records)
+    decoded = _decode_video_rgb(
+        video_path,
+        width=sink.width,
+        height=sink.height,
+        frame_count=len(records),
+    )
+    decoded_flicker = _evaluate_flicker_frames(decoded, records)
+    flicker_audit = {
+        "schema": "labutopia.isaac41.rtx_flicker_audit.v1",
+        "status": (
+            "passed" if raw_flicker["passed"] and decoded_flicker["passed"] else "failed"
+        ),
+        "raw_cuda_frames": raw_flicker,
+        "decoded_h264_frames": decoded_flicker,
+    }
+    flicker_path = output_dir / "flicker-audit.json"
+    _atomic_json(flicker_path, flicker_audit)
+    review_frames = []
+    if save_flicker_audit:
+        from PIL import Image
+
+        review_dir = output_dir / "flicker_frames"
+        review_dir.mkdir(parents=True, exist_ok=True)
+        worst_pairs = sorted(
+            raw_flicker.get("pairs", []),
+            key=lambda item: (
+                float(item["changed_fraction"]),
+                float(item["mean_luma_delta"]),
+            ),
+            reverse=True,
+        )[:6]
+        indices = sorted(
+            {
+                int(value)
+                for pair in worst_pairs
+                for value in (pair["left_render_index"], pair["right_render_index"])
+            }
+        )
+        for render_index in indices:
+            frame_path = review_dir / f"render_{render_index:04d}.png"
+            Image.fromarray(frames_hwc[render_index], mode="RGB").save(frame_path)
+            review_frames.append(
+                {"render_index": render_index, **baseline._file_record(frame_path)}
+            )
+
     sequence = [
         {
             "render_index": int(record["render_index"]),
@@ -1092,6 +1305,11 @@ def _save_full_video_artifacts(
         "sequence": sequence,
         "ffprobe": stream,
         "checks": video_checks,
+        "flicker_audit": {
+            "passed": flicker_audit["status"] == "passed",
+            "record": baseline._file_record(flicker_path),
+            "review_frames": review_frames,
+        },
         "video": baseline._file_record(video_path),
     }
     manifest_path = output_dir / "full_video_manifest.json"
@@ -1107,6 +1325,7 @@ def _save_full_video_artifacts(
         "readback_after_timing_s": readback_s,
         "encoding_after_timing_s": encode_s,
         "checks": video_checks,
+        "flicker_audit": manifest["flicker_audit"],
     }
 
 
@@ -1200,7 +1419,7 @@ def _run_visible_sync_audit_measurement(
     output_dir.mkdir(parents=True, exist_ok=True)
     packet = load_packet(args.packet)
     stage, stage_record = baseline._open_stage(args, application)
-    profile_record = _configure_profile(stage, args.profile)
+    profile_record = _configure_profile(stage, args.profile, args.aa_mode)
     camera_record = _define_benchmark_camera(stage, packet, args.camera_policy)
     proxy_material = _author_visible_sync_proxy_material(stage)
     semantics = _author_source_semantics(stage, proxy_material["proxy_path"])
@@ -1394,7 +1613,7 @@ def _run_measurement(
     output_dir.mkdir(parents=True, exist_ok=True)
     packet = load_packet(args.packet)
     stage, stage_record = baseline._open_stage(args, application)
-    profile_record = _configure_profile(stage, args.profile)
+    profile_record = _configure_profile(stage, args.profile, args.aa_mode)
     camera_record = _define_benchmark_camera(stage, packet, args.camera_policy)
     target = _create_render_target(args, application, camera_record["camera_path"])
     product_path = str(target["product_path"])
@@ -1424,6 +1643,7 @@ def _run_measurement(
     requested_render_index = -1
     requested_physics_index = -1
     current_physics_timestamp = None
+    settle_frames_remaining = 0
     last_camera_physics_index = None
     warmup_valid = 0
     records: list[dict[str, Any]] = []
@@ -1437,6 +1657,7 @@ def _run_measurement(
     def on_new_frame(event: Any) -> None:
         nonlocal armed, warmup_valid, ignored_events, foreign_events
         nonlocal duplicate_frame_numbers, invalid_cuda_events, last_frame_number
+        nonlocal settle_frames_remaining
         try:
             parsed = sdg.parse_rendered_simulation_event(
                 event.payload["product_path_handle"], event.payload["results"]
@@ -1471,6 +1692,10 @@ def _run_measurement(
                 warmup_valid += 1
                 return
             if not armed:
+                ignored_events += 1
+                return
+            if settle_frames_remaining > 0:
+                settle_frames_remaining -= 1
                 ignored_events += 1
                 return
             event_wall = time.perf_counter()
@@ -1511,7 +1736,11 @@ def _run_measurement(
     timeline = omni.timeline.get_timeline_interface()
     timeline.stop()
     timeline_time_before = float(timeline.get_current_time())
-    scheduler_frame_budget = args.render_warmup_frames + render_count + 64
+    scheduler_frame_budget = (
+        args.render_warmup_frames
+        + render_count * (1 + args.pose_render_settle_frames)
+        + 64
+    )
     capture_on_play_before = bool(
         carb.settings.get_settings().get("/omni/replicator/captureOnPlay")
     )
@@ -1541,6 +1770,14 @@ def _run_measurement(
             initial_usd_matrix=initial_usd_matrix,
         )
         initial_root_to_mesh_matrix = baseline._root_to_mesh_relation(np, stage)
+        initial_source_center_world = np.asarray(
+            baseline._prim_world_bounds(stage, baseline.SOURCE_MESH_PATH)["center"],
+            dtype=np.float64,
+        )
+        initial_source_center_local = (
+            np.append(initial_source_center_world, 1.0)
+            @ np.linalg.inv(initial_usd_matrix)
+        )
         initial_physx_to_usd_matrix = (
             initial_usd_matrix
             @ np.linalg.inv(baseline._pose_matrix_xyzw(np, initial_source_pose))
@@ -1553,6 +1790,7 @@ def _run_measurement(
         phase = "timed"
         timed_started = time.perf_counter()
         for render_index in range(render_count):
+            previous_physics_index = physics_index
             desired_physics_index = min(
                 args.max_observations - 1, _physics_index_for_render(render_index)
             )
@@ -1607,6 +1845,11 @@ def _run_measurement(
                     last_camera_physics_index = physics_index
             requested_render_index = render_index
             requested_physics_index = physics_index
+            settle_frames_remaining = (
+                args.pose_render_settle_frames
+                if physics_index != previous_physics_index
+                else 0
+            )
             armed = True
             record_count_before = len(records)
             for _ in range(args.max_updates_per_frame):
@@ -1619,6 +1862,49 @@ def _run_measurement(
                 raise TimeoutError(f"render_frame_timeout:{render_index}:{product_path}")
         sink.drain()
         timed_finished = time.perf_counter()
+        # Derive the flicker-audit ROI after the timed window so diagnostics do
+        # not lower the measured renderer throughput.  The center follows the
+        # completed PhysX pose that was mirrored into the render session.
+        for record in records:
+            record_physics_index = int(record["physics_index"])
+            action = action_records[record_physics_index]
+            source_root_matrix = (
+                initial_physx_to_usd_matrix
+                @ baseline._pose_matrix_xyzw(np, action["actual_pose_xyzw"])
+            )
+            source_center_world = (
+                initial_source_center_local @ source_root_matrix
+            )[:3]
+            follow_poses = camera_record.get("follow_frame_poses") or []
+            camera_pose = (
+                follow_poses[record_physics_index]
+                if follow_poses
+                else {
+                    "eye": camera_record["eye"],
+                    "target": camera_record["target"],
+                }
+            )
+            record["source_center_px"] = list(
+                _project_world_point(
+                    source_center_world,
+                    eye=camera_pose["eye"],
+                    target=camera_pose["target"],
+                    width=args.width,
+                    height=args.height,
+                    focal_length_mm=camera_record["focal_length_mm"],
+                    horizontal_aperture_mm=camera_record["horizontal_aperture_mm"],
+                    vertical_aperture_mm=camera_record["vertical_aperture_mm"],
+                )
+            )
+            record["source_moving"] = bool(
+                record_physics_index > 0
+                and not np.allclose(
+                    source_poses[record_physics_index],
+                    source_poses[record_physics_index - 1],
+                    rtol=0.0,
+                    atol=1.0e-10,
+                )
+            )
         timeline_time_after = float(timeline.get_current_time())
         timeline_playing_after = bool(timeline.is_playing())
         if timeline_playing_after:
@@ -1671,7 +1957,13 @@ def _run_measurement(
     )
     review = _save_review_artifacts(output_dir, sink) if args.save_review else None
     full_video = (
-        _save_full_video_artifacts(output_dir, sink, records, lane=args.lane)
+        _save_full_video_artifacts(
+            output_dir,
+            sink,
+            records,
+            lane=args.lane,
+            save_flicker_audit=args.save_flicker_audit,
+        )
         if args.save_full_video
         else None
     )
@@ -1702,6 +1994,9 @@ def _run_measurement(
     if args.save_full_video:
         performance_acceptance["full_video_encoded_and_verified"] = bool(
             full_video and all(full_video["checks"].values())
+        )
+        performance_acceptance["flicker_audit_passed"] = bool(
+            full_video and full_video["flicker_audit"]["passed"]
         )
     physics_acceptance = {
         "formal_kinematic_driver": args.source_driver == "physx-kinematic-target",
@@ -1753,6 +2048,8 @@ def _run_measurement(
             ),
             "source_driver": args.source_driver,
             "target_render_hz": TARGET_RENDER_HZ,
+            "aa_mode": args.aa_mode,
+            "pose_render_settle_frames": args.pose_render_settle_frames,
             "observation_count": args.max_observations,
             "render_count": render_count,
             "mapping": "physics_index=floor(render_index*30/50)",
@@ -1925,6 +2222,7 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
     command = [
         str(FORMAL_ISAAC41_PYTHON), "-I", "-B", str(Path(__file__).resolve()),
         "--child", "--lane", args.lane, "--profile", args.profile,
+        "--aa-mode", args.aa_mode,
         "--camera-policy", args.camera_policy,
         "--scene", str(args.scene), "--packet", str(args.packet),
         "--output-dir", str(args.output_dir), "--evidence-dir", str(args.evidence_dir),
@@ -1937,6 +2235,7 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
         "--review-frames", str(args.review_frames),
         "--source-driver", args.source_driver,
         "--integration-hz", str(args.integration_hz),
+        "--pose-render-settle-frames", str(args.pose_render_settle_frames),
     ]
     if args.allow_busy_gpu_exploratory:
         command.append("--allow-busy-gpu-exploratory")
@@ -1944,6 +2243,8 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
         command.append("--save-review")
     if args.save_full_video:
         command.append("--save-full-video")
+    if args.save_flicker_audit:
+        command.append("--save-flicker-audit")
     if args.visible_sync_audit:
         command.append("--visible-sync-audit")
     return command
@@ -2137,6 +2438,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--lanes", nargs="+", choices=LANES, default=list(LANES))
     parser.add_argument("--profiles", nargs="+", choices=PROFILES, default=list(PROFILES))
+    parser.add_argument("--aa-mode", choices=AA_MODES, default="dlss")
     parser.add_argument("--scene", type=Path, default=DEFAULT_SCENE)
     parser.add_argument("--packet", type=Path, default=DEFAULT_PACKET)
     parser.add_argument("--output-root", type=Path)
@@ -2164,6 +2466,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--save-review", action="store_true")
     parser.add_argument("--save-full-video", action="store_true")
+    parser.add_argument("--save-flicker-audit", action="store_true")
+    parser.add_argument("--pose-render-settle-frames", type=int, choices=(0, 1), default=0)
     parser.add_argument("--visible-sync-audit", action="store_true")
     parser.add_argument("--allow-busy-gpu-exploratory", action="store_true")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
@@ -2180,6 +2484,8 @@ def _validate_args(args: argparse.Namespace) -> None:
         raise ValueError("warmup_and_update_limit_must_be_positive")
     if args.review_frames < 0:
         raise ValueError("review_frames_must_be_nonnegative")
+    if args.save_flicker_audit and not args.save_full_video:
+        raise ValueError("flicker_audit_requires_full_video")
     baseline._integration_substeps(args.integration_hz)
 
 
