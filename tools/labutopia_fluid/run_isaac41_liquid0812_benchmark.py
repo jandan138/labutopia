@@ -501,6 +501,7 @@ def _advance_source_interval(
     source_matrix_time_code: float | None,
     simulation: Any,
     initial_root_to_mesh_matrix: Any | None = None,
+    initial_physx_to_usd_matrix: Any | None = None,
 ) -> dict[str, Any]:
     from tools.labutopia_fluid.fluid_benchmark_contract import interpolate_pose_xyzw
 
@@ -532,7 +533,16 @@ def _advance_source_interval(
     actual_packet_pose = _packet_pose_for_actual_rigid(np, alignment, actual_pose)
     usd_root_matrix = _prim_world_matrix(stage, SOURCE_PATH)
     usd_root_pose = _matrix_pose_xyzw(np, usd_root_matrix)
-    usd_pose_error = _pose_error(np, actual_pose, usd_root_pose)
+    if initial_physx_to_usd_matrix is None:
+        initial_physx_to_usd_matrix = np.eye(4, dtype=np.float64)
+    expected_usd_root_matrix = (
+        initial_physx_to_usd_matrix @ _pose_matrix_xyzw(np, actual_pose)
+    )
+    usd_pose_error = _pose_error(
+        np,
+        _matrix_pose_xyzw(np, expected_usd_root_matrix),
+        usd_root_pose,
+    )
     if initial_root_to_mesh_matrix is None:
         initial_root_to_mesh_matrix = np.eye(4, dtype=np.float64)
     usd_mesh_matrix = _prim_world_matrix(stage, SOURCE_MESH_PATH)
@@ -859,6 +869,10 @@ def _run_pour(
         initial_usd_matrix=initial_usd_matrix,
     )
     initial_root_to_mesh_matrix = _root_to_mesh_relation(np, stage)
+    initial_physx_to_usd_matrix = (
+        initial_usd_matrix
+        @ np.linalg.inv(_pose_matrix_xyzw(np, initial_source_pose))
+    )
     simulation = omni.physx.get_physx_simulation_interface()
 
     rendered = args.mode == "headless-rendered"
@@ -909,6 +923,7 @@ def _run_pour(
             source_matrix_time_code=source_matrix_time_code,
             simulation=simulation,
             initial_root_to_mesh_matrix=initial_root_to_mesh_matrix,
+            initial_physx_to_usd_matrix=initial_physx_to_usd_matrix,
         )
         initial_positions = _read_positions(stage)
         initial_position_hash = hashlib.sha256(
@@ -931,6 +946,7 @@ def _run_pour(
                 source_matrix_time_code=source_matrix_time_code,
                 simulation=simulation,
                 initial_root_to_mesh_matrix=initial_root_to_mesh_matrix,
+                initial_physx_to_usd_matrix=initial_physx_to_usd_matrix,
             )
             positions = _read_positions(stage)
             physics_ms.append((time.perf_counter() - physics_started) * 1000.0)

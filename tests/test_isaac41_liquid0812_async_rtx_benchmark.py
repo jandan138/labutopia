@@ -164,6 +164,18 @@ def test_projection_places_camera_target_at_image_center() -> None:
     assert projected == (128.0, 128.0)
 
 
+def test_instance_id_lookup_supports_isaac41_label_mapping() -> None:
+    ids = benchmark._source_instance_ids(
+        {
+            "idToLabels": {
+                "0": "BACKGROUND",
+                "7": {"class": benchmark.SOURCE_SEMANTIC_LABEL},
+            }
+        }
+    )
+    assert ids == [7]
+
+
 def test_kinematic_driver_interpolates_four_targets_at_120hz(monkeypatch) -> None:
     class View:
         def __init__(self) -> None:

@@ -166,7 +166,13 @@ def _source_instance_ids(info: dict[str, Any]) -> list[int]:
     for raw_id, labels in semantics.items():
         if isinstance(labels, dict) and SOURCE_SEMANTIC_LABEL in str(labels.get("class", "")):
             result.append(int(raw_id))
-    return sorted(result)
+    labels = info.get("idToLabels", {})
+    if isinstance(labels, dict) and "idToLabels" in labels:
+        labels = labels["idToLabels"]
+    for raw_id, value in labels.items():
+        if SOURCE_SEMANTIC_LABEL in str(value):
+            result.append(int(raw_id))
+    return sorted(set(result))
 
 
 def _evaluate_visible_sync_records(records: Sequence[dict[str, Any]]) -> dict[str, Any]:
@@ -331,7 +337,7 @@ def _configure_profile(stage: Any, profile: str) -> dict[str, Any]:
 def _author_source_semantics(stage: Any) -> dict[str, Any]:
     from pxr import Semantics, Usd
 
-    prim = stage.GetPrimAtPath(baseline.SOURCE_PATH)
+    prim = stage.GetPrimAtPath(baseline.SOURCE_MESH_PATH)
     if not prim or not prim.IsValid():
         raise RuntimeError("visible_sync_source_prim_missing")
     with Usd.EditContext(stage, stage.GetSessionLayer()):
@@ -341,7 +347,7 @@ def _author_source_semantics(stage: Any) -> dict[str, Any]:
         semantic.CreateSemanticTypeAttr().Set("class")
         semantic.CreateSemanticDataAttr().Set(SOURCE_SEMANTIC_LABEL)
     return {
-        "prim_path": baseline.SOURCE_PATH,
+        "prim_path": baseline.SOURCE_MESH_PATH,
         "type": "class",
         "label": SOURCE_SEMANTIC_LABEL,
         "authoring_layer": "anonymous_session_layer",
@@ -1138,6 +1144,10 @@ def _run_visible_sync_audit_measurement(
         initial_usd_matrix=initial_usd_matrix,
     )
     initial_root_to_mesh_matrix = baseline._root_to_mesh_relation(np, stage)
+    initial_physx_to_usd_matrix = (
+        initial_usd_matrix
+        @ np.linalg.inv(baseline._pose_matrix_xyzw(np, initial_source_pose))
+    )
     simulation = omni.physx.get_physx_simulation_interface()
     windows = _sync_audit_physics_indices(source_poses)
     selected = {
@@ -1161,6 +1171,7 @@ def _run_visible_sync_audit_measurement(
                 source_matrix_time_code=source_matrix_time_code,
                 simulation=simulation,
                 initial_root_to_mesh_matrix=initial_root_to_mesh_matrix,
+                initial_physx_to_usd_matrix=initial_physx_to_usd_matrix,
             )
             action_records.append(action)
             if physics_index in selected:
@@ -1242,6 +1253,7 @@ def _run_visible_sync_audit_measurement(
         "source_matrix_time_code": source_matrix_time_code,
         "source_matrix_time_samples": source_matrix_time_samples,
         "initial_root_to_mesh_relation": initial_root_to_mesh_matrix.tolist(),
+        "initial_physx_to_usd_relation": initial_physx_to_usd_matrix.tolist(),
     }
     result["content_sha256"] = hashlib.sha256(
         json.dumps(result, sort_keys=True, separators=(",", ":"), allow_nan=False).encode(
@@ -1439,6 +1451,10 @@ def _run_measurement(
             initial_usd_matrix=initial_usd_matrix,
         )
         initial_root_to_mesh_matrix = baseline._root_to_mesh_relation(np, stage)
+        initial_physx_to_usd_matrix = (
+            initial_usd_matrix
+            @ np.linalg.inv(baseline._pose_matrix_xyzw(np, initial_source_pose))
+        )
         simulation = omni.physx.get_physx_simulation_interface()
         physics_index = -1
         physics_ms: list[float] = []
@@ -1467,6 +1483,7 @@ def _run_measurement(
                     source_matrix_time_code=source_matrix_time_code,
                     simulation=simulation,
                     initial_root_to_mesh_matrix=initial_root_to_mesh_matrix,
+                    initial_physx_to_usd_matrix=initial_physx_to_usd_matrix,
                 )
                 positions = baseline._read_positions(stage)
                 physics_ms.append((time.perf_counter() - physics_started) * 1000.0)
@@ -1700,6 +1717,7 @@ def _run_measurement(
             "source_matrix_time_samples": source_matrix_time_samples,
             "rigid_from_packet_relation": alignment["rigid_from_packet"].tolist(),
             "initial_root_to_mesh_relation": initial_root_to_mesh_matrix.tolist(),
+            "initial_physx_to_usd_relation": initial_physx_to_usd_matrix.tolist(),
             "motion_acceptance": motion_acceptance,
             "quality": quality,
             "stability": stability,
