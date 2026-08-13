@@ -40,7 +40,7 @@ PHYSICS_DT = baseline.PHYSICS_DT
 EXPECTED_OBSERVATIONS = baseline.EXPECTED_OBSERVATIONS
 LANES = ("headless-product", "offscreen-viewport")
 PROFILES = ("current", "fast-translucent", "fast-glass", "fast-opaque")
-CAMERA_POLICIES = ("trajectory-envelope", "benchmark", "scene")
+CAMERA_POLICIES = ("trajectory-follow", "trajectory-envelope", "benchmark", "scene")
 TARGET_RENDER_HZ = 50
 DEFAULT_WIDTH = 256
 DEFAULT_HEIGHT = 256
@@ -264,6 +264,127 @@ def _trajectory_envelope_camera_contract(
     }
 
 
+def _fit_follow_camera_pose(
+    *,
+    source_center: Any,
+    source_radius: float,
+    target_bounds: dict[str, Any],
+    table_z: float,
+) -> dict[str, Any]:
+    """Fit one deterministic camera pose to the current source and target."""
+    import numpy as np
+
+    source_center = np.asarray(source_center, dtype=np.float64)
+    target_minimum = np.asarray(target_bounds["minimum"], dtype=np.float64)
+    target_maximum = np.asarray(target_bounds["maximum"], dtype=np.float64)
+    source_minimum = source_center - float(source_radius)
+    source_maximum = source_center + float(source_radius)
+    minimum = np.minimum(source_minimum, target_minimum)
+    maximum = np.maximum(source_maximum, target_maximum)
+    minimum[2] = min(float(minimum[2]), float(table_z) - 0.005)
+    unpadded_extent = maximum - minimum
+    padding = np.maximum(unpadded_extent * 0.04, np.asarray([0.008, 0.008, 0.008]))
+    minimum -= padding
+    maximum += padding
+    center = (minimum + maximum) * 0.5
+
+    view_direction = np.asarray([0.55, 1.0, 0.65], dtype=np.float64)
+    view_direction /= np.linalg.norm(view_direction)
+    forward = -view_direction
+    world_up = np.asarray([0.0, 0.0, 1.0], dtype=np.float64)
+    right = np.cross(forward, world_up)
+    right /= np.linalg.norm(right)
+    up = np.cross(right, forward)
+    focal_length_mm = 26.0
+    horizontal_aperture_mm = 24.0
+    vertical_aperture_mm = 16.0
+    tan_horizontal = horizontal_aperture_mm / (2.0 * focal_length_mm)
+    tan_vertical = vertical_aperture_mm / (2.0 * focal_length_mm)
+    corners = np.asarray(
+        [
+            [x, y, z]
+            for x in (minimum[0], maximum[0])
+            for y in (minimum[1], maximum[1])
+            for z in (minimum[2], maximum[2])
+        ],
+        dtype=np.float64,
+    )
+    relative = corners - center
+    required_distance = max(
+        max(
+            abs(float(point @ right)) / tan_horizontal - float(point @ forward),
+            abs(float(point @ up)) / tan_vertical - float(point @ forward),
+            -float(point @ forward) + 0.01,
+        )
+        for point in relative
+    )
+    distance = required_distance * 1.04
+    eye = center + view_direction * distance
+    return {
+        "eye": eye.tolist(),
+        "target": center.tolist(),
+        "camera_distance_m": float(distance),
+        "envelope_minimum": minimum.tolist(),
+        "envelope_maximum": maximum.tolist(),
+    }
+
+
+def _source_follow_camera_contract(
+    *,
+    source_bounds: dict[str, Any],
+    target_bounds: dict[str, Any],
+    source_poses_xyzw: Any,
+    table_z: float,
+) -> dict[str, Any]:
+    import numpy as np
+
+    poses = np.asarray(source_poses_xyzw, dtype=np.float64)
+    if poses.ndim != 2 or poses.shape[1] != 7 or not np.isfinite(poses).all():
+        raise ValueError("follow_camera_source_poses_invalid")
+    initial_center = np.asarray(source_bounds["center"], dtype=np.float64)
+    source_centers = initial_center + poses[:, :3] - poses[0, :3]
+    source_radius = float(
+        np.linalg.norm(np.asarray(source_bounds["extent"], dtype=np.float64)) * 0.5
+    )
+    frame_poses = [
+        _fit_follow_camera_pose(
+            source_center=center,
+            source_radius=source_radius,
+            target_bounds=target_bounds,
+            table_z=table_z,
+        )
+        for center in source_centers
+    ]
+    distances = [float(frame["camera_distance_m"]) for frame in frame_poses]
+    return {
+        "frame_poses": frame_poses,
+        "source_pose_count": int(poses.shape[0]),
+        "source_radius_m": source_radius,
+        "minimum_camera_distance_m": min(distances),
+        "maximum_camera_distance_m": max(distances),
+        "same_physics_state_reuses_camera_pose": True,
+        "physics_changes": False,
+        "method": "per_physics_state_source_target_perspective_fit",
+    }
+
+
+def _author_camera_pose(stage: Any, camera_path: str, pose: dict[str, Any]) -> None:
+    from pxr import Gf, UsdGeom
+
+    camera = UsdGeom.Camera(stage.GetPrimAtPath(camera_path))
+    if not camera:
+        raise RuntimeError(f"follow_camera_missing:{camera_path}")
+    transform = Gf.Matrix4d(1).SetLookAt(
+        Gf.Vec3d(*pose["eye"]),
+        Gf.Vec3d(*pose["target"]),
+        Gf.Vec3d(0.0, 0.0, 1.0),
+    ).GetInverse()
+    ops = camera.GetOrderedXformOps()
+    if len(ops) != 1:
+        raise RuntimeError(f"follow_camera_transform_op_count:{len(ops)}")
+    ops[0].Set(transform)
+
+
 def _define_benchmark_camera(stage: Any, packet: Any, policy: str) -> dict[str, Any]:
     """Author a reproducible close lab camera in the anonymous session layer."""
     if policy == "scene":
@@ -272,7 +393,7 @@ def _define_benchmark_camera(stage: Any, packet: Any, policy: str) -> dict[str, 
             "policy": policy,
             "authored": False,
         }
-    if policy not in {"benchmark", "trajectory-envelope"}:
+    if policy not in {"benchmark", "trajectory-envelope", "trajectory-follow"}:
         raise ValueError(f"unknown_camera_policy:{policy}")
 
     from pxr import Gf, Usd, UsdGeom
@@ -300,7 +421,20 @@ def _define_benchmark_camera(stage: Any, packet: Any, policy: str) -> dict[str, 
     target = bounds(baseline.TARGET_PATH)
     table_z = float(packet.manifest["frames"]["table_top_z_m"])
     trajectory_contract = None
-    if policy == "trajectory-envelope":
+    follow_contract = None
+    if policy == "trajectory-follow":
+        follow_contract = _source_follow_camera_contract(
+            source_bounds=source,
+            target_bounds=target,
+            source_poses_xyzw=packet.array(
+                "source_poses_xyzw", (EXPECTED_OBSERVATIONS, 7)
+            ),
+            table_z=table_z,
+        )
+        eye = tuple(follow_contract["frame_poses"][0]["eye"])
+        look_at = tuple(follow_contract["frame_poses"][0]["target"])
+        pair_span = max(source["extent"][0], target["extent"][0])
+    elif policy == "trajectory-envelope":
         trajectory_contract = _trajectory_envelope_camera_contract(
             source_bounds=source,
             target_bounds=target,
@@ -366,6 +500,12 @@ def _define_benchmark_camera(stage: Any, packet: Any, policy: str) -> dict[str, 
         "framing_contract": (
             trajectory_contract["framing_contract"] if trajectory_contract else None
         ),
+        "follow_contract": (
+            {key: value for key, value in follow_contract.items() if key != "frame_poses"}
+            if follow_contract
+            else None
+        ),
+        "follow_frame_poses": follow_contract["frame_poses"] if follow_contract else None,
     }
 
 
@@ -921,6 +1061,17 @@ def _run_measurement(
                     )
                 )
                 current_physics_timestamp = time.perf_counter()
+            if args.camera_policy == "trajectory-follow":
+                follow_poses = camera_record.get("follow_frame_poses") or []
+                if physics_index < 0 or physics_index >= len(follow_poses):
+                    raise RuntimeError(
+                        f"follow_camera_physics_index:{physics_index}:{len(follow_poses)}"
+                    )
+                _author_camera_pose(
+                    stage,
+                    camera_record["camera_path"],
+                    follow_poses[physics_index],
+                )
             requested_render_index = render_index
             requested_physics_index = physics_index
             armed = True
@@ -1054,7 +1205,11 @@ def _run_measurement(
         "profile": profile_record,
         "configuration": {
             "camera_path": camera_record["camera_path"],
-            "camera": camera_record,
+            "camera": {
+                key: value
+                for key, value in camera_record.items()
+                if key != "follow_frame_poses"
+            },
             "render_product_path": product_path,
             "resolution": [args.width, args.height],
             "renderer": "RayTracedLighting",
@@ -1425,7 +1580,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lane", choices=LANES)
     parser.add_argument("--profile", choices=PROFILES, default="current")
     parser.add_argument(
-        "--camera-policy", choices=CAMERA_POLICIES, default="trajectory-envelope"
+        "--camera-policy", choices=CAMERA_POLICIES, default="trajectory-follow"
     )
     parser.add_argument("--lanes", nargs="+", choices=LANES, default=list(LANES))
     parser.add_argument("--profiles", nargs="+", choices=PROFILES, default=list(PROFILES))

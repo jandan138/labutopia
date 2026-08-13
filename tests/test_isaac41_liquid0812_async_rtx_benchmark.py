@@ -18,7 +18,7 @@ def test_50hz_render_schedule_covers_all_30hz_physics_states() -> None:
 
 def test_benchmark_defaults_to_reproducible_session_camera() -> None:
     args = benchmark.build_parser().parse_args([])
-    assert args.camera_policy == "trajectory-envelope"
+    assert args.camera_policy == "trajectory-follow"
     assert args.width == 256
     assert args.height == 256
     assert args.save_full_video is False
@@ -63,6 +63,41 @@ def test_trajectory_camera_contract_covers_complete_motion_and_target() -> None:
     assert framing["sphere_angular_radius_degrees"] <= (
         framing["limiting_fov_degrees"] / 2.0
     )
+
+
+def test_follow_camera_adapts_to_each_physics_state_without_touching_physics() -> None:
+    source_bounds = {
+        "minimum": (0.25, 0.03, 0.76),
+        "maximum": (0.37, 0.15, 0.90),
+        "center": (0.31, 0.09, 0.83),
+        "extent": (0.12, 0.12, 0.14),
+    }
+    target_bounds = {
+        "minimum": (0.20, -0.30, 0.76),
+        "maximum": (0.36, -0.14, 0.92),
+        "center": (0.28, -0.22, 0.84),
+        "extent": (0.16, 0.16, 0.16),
+    }
+    poses = np.asarray(
+        [
+            [0.31, 0.09, 0.83, 0, 0, 0, 1],
+            [0.26, -0.09, 1.11, 0, 0, 0, 1],
+            [0.28, -0.19, 1.05, 0, 0, 0, 1],
+        ],
+        dtype=np.float64,
+    )
+    contract = benchmark._source_follow_camera_contract(
+        source_bounds=source_bounds,
+        target_bounds=target_bounds,
+        source_poses_xyzw=poses,
+        table_z=0.772,
+    )
+    assert contract["source_pose_count"] == 3
+    assert contract["physics_changes"] is False
+    assert contract["same_physics_state_reuses_camera_pose"] is True
+    assert len(contract["frame_poses"]) == 3
+    assert contract["frame_poses"][0] != contract["frame_poses"][1]
+    assert contract["maximum_camera_distance_m"] >= contract["minimum_camera_distance_m"]
 
 
 def test_full_video_cuda_store_size_is_bounded() -> None:
