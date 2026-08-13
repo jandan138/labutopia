@@ -1137,9 +1137,11 @@ def _run_visible_sync_audit_measurement(
     stage, stage_record = baseline._open_stage(args, application)
     profile_record = _configure_profile(stage, args.profile)
     camera_record = _define_benchmark_camera(stage, packet, args.camera_policy)
+    semantics = _author_source_semantics(stage)
+    for _ in range(4):
+        application.update()
     target = _create_render_target(args, application, camera_record["camera_path"])
     product_path = str(target["product_path"])
-    semantics = _author_source_semantics(stage)
     rgb = rep.AnnotatorRegistry.get_annotator("rgb")
     instance = rep.AnnotatorRegistry.get_annotator("instance_segmentation_fast")
     rgb.attach([product_path])
