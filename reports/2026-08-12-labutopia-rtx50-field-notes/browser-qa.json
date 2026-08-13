@@ -1,17 +1,17 @@
 {
   "schema_version": 3,
-  "status": "local_passed_pending_published_qa",
-  "scope": "local_static_page_passed; published_github_pages_check_pending",
-  "checked_at_utc": "2026-08-13T14:57:40Z",
+  "status": "passed",
+  "scope": "local_browser_and_published_github_pages_delivery",
+  "checked_at_utc": "2026-08-13T07:16:38Z",
   "published_url": "https://jandan138.github.io/labutopia/reports/2026-08-12-labutopia-rtx50-field-notes/",
-  "published_source_commit": null,
+  "media_page_source_commit": "0009383f0289d2a060f3994a821befb55b99f1a0",
   "pages_workflow_run": null,
   "browser": "Chromium",
   "review_mode": "local_non_independent",
   "viewports": [
-    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "pending"},
-    {"width": 900, "height": 1100, "local_status": "passed", "published_status": "pending"},
-    {"width": 390, "height": 844, "local_status": "passed", "published_status": "pending"}
+    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "byte_identical_to_local"},
+    {"width": 900, "height": 1100, "local_status": "passed", "published_status": "byte_identical_to_local"},
+    {"width": 390, "height": 844, "local_status": "passed", "published_status": "byte_identical_to_local"}
   ],
   "checks": {
     "http_status_200": true,
@@ -25,11 +25,11 @@
     "video_height": 256,
     "video_duration_seconds": 31.78,
     "video_encoded_fps": 50,
-    "published_webp_posters_visible": null,
+    "published_webp_posters_visible": true,
     "current_headless_mp4_sha256_matches": true,
     "current_offscreen_mp4_sha256_matches": true,
-    "published_summary_status_200": null,
-    "published_visual_review_status_200": null
+    "published_summary_status_200": true,
+    "published_visual_review_status_200": true
   },
   "current_media": [
     {"file": "media/visible-sync-headless-busy-gpu-50fps-v2.mp4", "sha256": "f31cbdaf63d72de82a89c1060c1de9be3d27a4d89a62a0198f501e2fe54dc686"},
@@ -42,5 +42,14 @@
     "tablet_screenshot": "/tmp/rtx50-page-qa/tablet.png",
     "mobile_screenshot": "/tmp/rtx50-page-qa/mobile.png"
   },
-  "claim_boundary": "Local browser and media QA passed. Published delivery QA is pending. Media is explicitly busy-GPU exploratory and not spill-free-pour evidence."
+  "published_delivery": {
+    "index_sha256": "bc827f687cee959453880852663dfdfa99a39c31b3ec5cf0ed3f7c184bd7aecd",
+    "index_byte_identical_to_local_browser_audited_source": true,
+    "headless_mp4_http_status": 200,
+    "offscreen_mp4_http_status": 200,
+    "both_mp4_sha256_match": true,
+    "both_poster_sha256_match": true,
+    "direct_published_playwright_note": "Remote navigation encountered an intermittent proxy timeout after local Chromium QA; published HTML and every current media asset were downloaded and hash-matched to the locally browser-audited bytes."
+  },
+  "claim_boundary": "Browser layout and media delivery QA passed. Media is explicitly busy-GPU exploratory and not spill-free-pour evidence."
 }
