@@ -691,7 +691,6 @@ def _create_render_target(
     args: argparse.Namespace, application: Any, camera_path: str
 ) -> dict[str, Any]:
     import omni.replicator.core as rep
-    from pxr import Usd
 
     if args.lane == "headless-product":
         product = rep.create.render_product(camera_path, (args.width, args.height))
@@ -1039,6 +1038,7 @@ def _capture_visible_sync_audit(
     import omni.physx
     import omni.replicator.core as rep
     from PIL import Image
+    from pxr import Usd
 
     windows = _sync_audit_physics_indices(source_poses)
     selected = {index: stage_name for stage_name, indices in windows.items() for index in indices}
