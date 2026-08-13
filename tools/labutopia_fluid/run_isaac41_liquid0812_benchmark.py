@@ -567,6 +567,27 @@ def _prim_world_matrix(stage: Any, prim_path: str) -> Any:
     return np.asarray([list(row) for row in value], dtype=np.float64)
 
 
+def _prim_world_bounds(stage: Any, prim_path: str) -> dict[str, list[float]]:
+    from pxr import Usd, UsdGeom
+
+    prim = stage.GetPrimAtPath(prim_path)
+    if not prim or not prim.IsValid():
+        raise RuntimeError(f"liquid0812_world_bounds_prim_missing:{prim_path}")
+    cache = UsdGeom.BBoxCache(
+        Usd.TimeCode.Default(),
+        [UsdGeom.Tokens.default_, UsdGeom.Tokens.render, UsdGeom.Tokens.proxy],
+        useExtentsHint=True,
+    )
+    bounds = cache.ComputeWorldBound(prim).ComputeAlignedRange()
+    minimum = [float(value) for value in bounds.GetMin()]
+    maximum = [float(value) for value in bounds.GetMax()]
+    return {
+        "minimum": minimum,
+        "maximum": maximum,
+        "center": [(minimum[index] + maximum[index]) * 0.5 for index in range(3)],
+    }
+
+
 def _root_to_mesh_relation(np: Any, stage: Any) -> Any:
     root_world = _prim_world_matrix(stage, SOURCE_PATH)
     mesh_world = _prim_world_matrix(stage, SOURCE_MESH_PATH)

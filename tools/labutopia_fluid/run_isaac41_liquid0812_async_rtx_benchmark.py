@@ -44,6 +44,13 @@ CAMERA_POLICIES = ("trajectory-follow", "trajectory-envelope", "benchmark", "sce
 TARGET_RENDER_HZ = 50
 DEFAULT_WIDTH = 256
 DEFAULT_HEIGHT = 256
+SOURCE_SEMANTIC_LABEL = "labutopia_source_beaker"
+SYNC_WINDOW_RADIUS = 4
+MIN_SOURCE_MASK_PIXELS = 8
+MAX_PROJECTED_CENTER_ERROR_PX = 8.0
+MIN_TRAJECTORY_DIRECTION_COSINE = 0.8
+MIN_TRAJECTORY_MAGNITUDE_RATIO = 0.7
+MAX_TRAJECTORY_MAGNITUDE_RATIO = 1.3
 
 
 def source_paths() -> tuple[Path, ...]:
@@ -81,6 +88,154 @@ def _target_render_count(observation_count: int) -> int:
 
 def _physics_index_for_render(render_index: int) -> int:
     return (render_index * PHYSICS_HZ) // TARGET_RENDER_HZ
+
+
+def _sync_audit_physics_indices(source_poses_xyzw: Any) -> dict[str, list[int]]:
+    import numpy as np
+
+    poses = np.asarray(source_poses_xyzw, dtype=np.float64)
+    if poses.ndim != 2 or poses.shape[1] != 7 or len(poses) < 9:
+        raise ValueError("visible_sync_source_poses_invalid")
+    first_tilt = baseline._first_tilt_observation(np, poses)
+    translation_limit = max(2, min(first_tilt, len(poses)))
+    translation_speeds = np.linalg.norm(np.diff(poses[:translation_limit, :3], axis=0), axis=1)
+    translation_center = int(np.argmax(translation_speeds)) + 1
+    initial_q = poses[0, 3:] / np.linalg.norm(poses[0, 3:])
+    angular = []
+    for quaternion in poses[:, 3:]:
+        normalized = quaternion / np.linalg.norm(quaternion)
+        cosine = min(1.0, max(-1.0, abs(float(np.dot(initial_q, normalized)))))
+        angular.append(math.degrees(2.0 * math.acos(cosine)))
+    half_max = max(angular) * 0.5
+    tilt_center = min(range(len(angular)), key=lambda index: abs(angular[index] - half_max))
+
+    def window(center: int) -> list[int]:
+        start = min(max(0, center - SYNC_WINDOW_RADIUS), len(poses) - 9)
+        return list(range(start, start + 9))
+
+    return {
+        "static": list(range(9)),
+        "translation_lift": window(translation_center),
+        "mid_tilt": window(tilt_center),
+        "final_settle": list(range(len(poses) - 9, len(poses))),
+    }
+
+
+def _first_render_index_for_physics(physics_index: int, render_count: int) -> int:
+    for render_index in range(render_count):
+        if _physics_index_for_render(render_index) == physics_index:
+            return render_index
+    raise ValueError(f"physics_state_has_no_render:{physics_index}:{render_count}")
+
+
+def _project_world_point(
+    point: Any,
+    *,
+    eye: Any,
+    target: Any,
+    width: int,
+    height: int,
+    focal_length_mm: float,
+    horizontal_aperture_mm: float,
+    vertical_aperture_mm: float,
+) -> tuple[float, float]:
+    import numpy as np
+
+    eye_value = np.asarray(eye, dtype=np.float64)
+    forward = np.asarray(target, dtype=np.float64) - eye_value
+    forward /= np.linalg.norm(forward)
+    right = np.cross(forward, np.asarray([0.0, 0.0, 1.0], dtype=np.float64))
+    right /= np.linalg.norm(right)
+    up = np.cross(right, forward)
+    relative = np.asarray(point, dtype=np.float64) - eye_value
+    depth = float(relative @ forward)
+    if depth <= 0.0:
+        raise ValueError("projected_point_behind_camera")
+    tangent_x = horizontal_aperture_mm / (2.0 * focal_length_mm)
+    tangent_y = vertical_aperture_mm / (2.0 * focal_length_mm)
+    pixel_x = (0.5 + float(relative @ right) / (2.0 * depth * tangent_x)) * width
+    pixel_y = (0.5 - float(relative @ up) / (2.0 * depth * tangent_y)) * height
+    return pixel_x, pixel_y
+
+
+def _source_instance_ids(info: dict[str, Any]) -> list[int]:
+    semantics = info.get("idToSemantics", {})
+    if isinstance(semantics, dict) and "idToSemantics" in semantics:
+        semantics = semantics["idToSemantics"]
+    result = []
+    for raw_id, labels in semantics.items():
+        if isinstance(labels, dict) and SOURCE_SEMANTIC_LABEL in str(labels.get("class", "")):
+            result.append(int(raw_id))
+    return sorted(result)
+
+
+def _evaluate_visible_sync_records(records: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    import numpy as np
+
+    checks = []
+    for record in records:
+        observed = np.asarray(record["mask_centroid_px"], dtype=np.float64)
+        projected = np.asarray(record["projected_center_px"], dtype=np.float64)
+        error = float(np.linalg.norm(observed - projected))
+        checks.append(
+            {
+                **record,
+                "projected_center_error_px": error,
+                "passed": int(record["mask_pixel_count"]) >= MIN_SOURCE_MASK_PIXELS
+                and error <= MAX_PROJECTED_CENTER_ERROR_PX,
+            }
+        )
+    stage_centers = []
+    for stage_name in ("static", "translation_lift", "mid_tilt", "final_settle"):
+        stage_records = [item for item in checks if item["stage"] == stage_name]
+        if not stage_records:
+            continue
+        stage_centers.append(
+            {
+                "stage": stage_name,
+                "observed": np.mean([item["mask_centroid_px"] for item in stage_records], axis=0),
+                "projected": np.mean([item["projected_center_px"] for item in stage_records], axis=0),
+            }
+        )
+    displacement_checks = []
+    for left, right in zip(stage_centers, stage_centers[1:]):
+        observed = right["observed"] - left["observed"]
+        projected = right["projected"] - left["projected"]
+        observed_norm = float(np.linalg.norm(observed))
+        projected_norm = float(np.linalg.norm(projected))
+        if projected_norm <= 1.0e-9:
+            cosine = 1.0 if observed_norm <= 1.0 else 0.0
+            ratio = 1.0 if observed_norm <= 1.0 else float("inf")
+        else:
+            cosine = float(observed @ projected / max(1.0e-12, observed_norm * projected_norm))
+            ratio = observed_norm / projected_norm
+        displacement_checks.append(
+            {
+                "from": left["stage"],
+                "to": right["stage"],
+                "direction_cosine": cosine,
+                "magnitude_ratio": ratio,
+                "passed": cosine >= MIN_TRAJECTORY_DIRECTION_COSINE
+                and MIN_TRAJECTORY_MAGNITUDE_RATIO <= ratio <= MAX_TRAJECTORY_MAGNITUDE_RATIO,
+            }
+        )
+    expected_count = 4 * 9
+    return {
+        "passed": len(checks) == expected_count
+        and all(item["passed"] for item in checks)
+        and len(displacement_checks) == 3
+        and all(item["passed"] for item in displacement_checks),
+        "expected_record_count": expected_count,
+        "actual_record_count": len(checks),
+        "thresholds": {
+            "minimum_mask_pixels": MIN_SOURCE_MASK_PIXELS,
+            "maximum_projected_center_error_px": MAX_PROJECTED_CENTER_ERROR_PX,
+            "minimum_direction_cosine": MIN_TRAJECTORY_DIRECTION_COSINE,
+            "magnitude_ratio_range": [MIN_TRAJECTORY_MAGNITUDE_RATIO, MAX_TRAJECTORY_MAGNITUDE_RATIO],
+        },
+        "records": checks,
+        "displacements": displacement_checks,
+    }
 
 
 def _configure_profile(stage: Any, profile: str) -> dict[str, Any]:
@@ -171,6 +326,27 @@ def _configure_profile(stage: Any, profile: str) -> dict[str, Any]:
     settings.set_bool("/app/hydraEngine/waitIdle", False)
     after = {path: settings.get(path) for path in paths}
     return {"profile": profile, "before": before, "after": after, "material": authored_material}
+
+
+def _author_source_semantics(stage: Any) -> dict[str, Any]:
+    from pxr import Semantics, Usd
+
+    prim = stage.GetPrimAtPath(baseline.SOURCE_PATH)
+    if not prim or not prim.IsValid():
+        raise RuntimeError("visible_sync_source_prim_missing")
+    with Usd.EditContext(stage, stage.GetSessionLayer()):
+        semantic = Semantics.SemanticsAPI.Get(prim, "LabUtopiaVisibleSync")
+        if not semantic:
+            semantic = Semantics.SemanticsAPI.Apply(prim, "LabUtopiaVisibleSync")
+        semantic.CreateSemanticTypeAttr().Set("class")
+        semantic.CreateSemanticDataAttr().Set(SOURCE_SEMANTIC_LABEL)
+    return {
+        "prim_path": baseline.SOURCE_PATH,
+        "type": "class",
+        "label": SOURCE_SEMANTIC_LABEL,
+        "authoring_layer": "anonymous_session_layer",
+        "input_usd_mutated": False,
+    }
 
 
 def _trajectory_envelope_camera_contract(
@@ -515,6 +691,7 @@ def _create_render_target(
     args: argparse.Namespace, application: Any, camera_path: str
 ) -> dict[str, Any]:
     import omni.replicator.core as rep
+    from pxr import Usd
 
     if args.lane == "headless-product":
         product = rep.create.render_product(camera_path, (args.width, args.height))
@@ -844,6 +1021,109 @@ def _save_full_video_artifacts(
     }
 
 
+def _capture_visible_sync_audit(
+    args: argparse.Namespace,
+    *,
+    stage: Any,
+    application: Any,
+    packet: Any,
+    camera_record: dict[str, Any],
+    target: dict[str, Any],
+    product_path: str,
+    source_poses: Any,
+    action_records: Sequence[dict[str, Any]],
+    physics_index: int,
+) -> dict[str, Any]:
+    """Capture untimed instance masks at the four locked trajectory windows."""
+    import numpy as np
+    import omni.physx
+    import omni.replicator.core as rep
+    from PIL import Image
+
+    windows = _sync_audit_physics_indices(source_poses)
+    selected = {index: stage_name for stage_name, indices in windows.items() for index in indices}
+    if physics_index + 1 != len(action_records):
+        raise RuntimeError("visible_sync_requires_complete_physics_trajectory")
+    semantics = _author_source_semantics(stage)
+    instance = rep.AnnotatorRegistry.get_annotator("instance_segmentation_fast")
+    instance.attach([product_path])
+    rep.orchestrator.run(num_frames=128, start_timeline=False)
+    simulation = omni.physx.get_physx_simulation_interface()
+    audit_dir = args.output_dir / "visible_sync_audit"
+    audit_dir.mkdir(parents=True, exist_ok=True)
+    records = []
+    try:
+        # Re-render selected already-simulated states by authoring the exact
+        # audited USD pose. This audit is deliberately untimed and does not
+        # advance physics or participate in the RGB throughput claim.
+        for index in sorted(selected):
+            pose = action_records[index]["usd_root_pose_xyzw"]
+            matrix = baseline._pose_matrix_xyzw(np, pose)
+            with Usd.EditContext(stage, stage.GetSessionLayer()):
+                baseline._set_source_usd_matrix(stage, matrix, None, simulation)
+            for _ in range(2):
+                application.update()
+            payload = instance.get_data()
+            data = np.asarray(payload.get("data"))
+            info = payload.get("info", {})
+            ids = _source_instance_ids(info)
+            if data.shape != (args.height, args.width):
+                raise RuntimeError(f"visible_sync_instance_shape:{data.shape}")
+            mask = np.isin(data, ids) if ids else np.zeros(data.shape, dtype=bool)
+            ys, xs = np.nonzero(mask)
+            if len(xs):
+                centroid = [float(xs.mean()), float(ys.mean())]
+                bbox = [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]
+            else:
+                centroid = [float("inf"), float("inf")]
+                bbox = None
+            mesh_bounds = baseline._prim_world_bounds(stage, baseline.SOURCE_MESH_PATH)
+            projected = _project_world_point(
+                mesh_bounds["center"],
+                eye=camera_record["eye"],
+                target=camera_record["target"],
+                width=args.width,
+                height=args.height,
+                focal_length_mm=camera_record["focal_length_mm"],
+                horizontal_aperture_mm=camera_record["horizontal_aperture_mm"],
+                vertical_aperture_mm=camera_record["vertical_aperture_mm"],
+            )
+            mask_path = audit_dir / f"{selected[index]}_{index:04d}.png"
+            Image.fromarray((mask.astype(np.uint8) * 255), mode="L").save(mask_path)
+            records.append(
+                {
+                    "stage": selected[index],
+                    "physics_index": index,
+                    "instance_ids": ids,
+                    "mask_pixel_count": int(mask.sum()),
+                    "mask_bbox_px": bbox,
+                    "mask_centroid_px": centroid,
+                    "projected_center_px": list(projected),
+                    "mask": baseline._file_record(mask_path),
+                }
+            )
+    finally:
+        try:
+            instance.detach([product_path])
+        except Exception:
+            pass
+    audit = _evaluate_visible_sync_records(records)
+    audit.update(
+        {
+            "schema": "labutopia.isaac41.visible_source_sync_audit.v1",
+            "lane": args.lane,
+            "camera_policy": args.camera_policy,
+            "same_render_product_as_rgb": True,
+            "timed_rgb_path_affected": False,
+            "windows": windows,
+            "semantics": semantics,
+        }
+    )
+    audit_path = audit_dir / "visible_source_sync_audit.json"
+    _atomic_json(audit_path, audit)
+    return {**audit, "manifest": baseline._file_record(audit_path)}
+
+
 def _run_measurement(
     args: argparse.Namespace,
     *,
@@ -997,6 +1277,7 @@ def _run_measurement(
     carb.settings.get_settings().set("/omni/replicator/captureOnPlay", False)
     rep.orchestrator.run(num_frames=scheduler_frame_budget, start_timeline=False)
     stepper = None
+    visible_sync_audit = None
     try:
         warmup_updates = 0
         while warmup_valid < args.render_warmup_frames:
@@ -1097,6 +1378,19 @@ def _run_measurement(
         timeline_playing_after = bool(timeline.is_playing())
         if timeline_playing_after:
             raise RuntimeError("async_render_started_timeline")
+        if args.visible_sync_audit:
+            visible_sync_audit = _capture_visible_sync_audit(
+                args,
+                stage=stage,
+                application=application,
+                packet=packet,
+                camera_record=camera_record,
+                target=target,
+                product_path=product_path,
+                source_poses=source_poses,
+                action_records=action_records,
+                physics_index=physics_index,
+            )
     finally:
         phase = "closed"
         subscription = None
@@ -1183,11 +1477,16 @@ def _run_measurement(
         "source_pose_tracking": motion_acceptance["source_pose_tracking"]["passed"],
         "no_penetration_or_nonfinite": stability["passed"],
         "complete_pour_numeric_quality": quality["numeric_passed"],
+        "visible_source_sync": (
+            bool(visible_sync_audit and visible_sync_audit["passed"])
+            if args.visible_sync_audit
+            else True
+        ),
     }
     performance_passed = all(performance_acceptance.values())
     physics_passed = all(physics_acceptance.values())
     result = {
-        "schema": "labutopia.isaac41.liquid0812_async_rtx_result.v2",
+        "schema": "labutopia.isaac41.liquid0812_async_rtx_result.v3",
         "status": (
             "passed_50fps_and_physics"
             if performance_passed and physics_passed
@@ -1242,6 +1541,10 @@ def _run_measurement(
                     else 0
                 ),
             },
+            "visible_sync_audit": {
+                "enabled": args.visible_sync_audit,
+                "timed_rgb_path_affected": False,
+            },
             "warmup_frames_excluded": args.render_warmup_frames,
             "scheduler": "single_replicator_continuous_run_without_timeline;no_per_frame_step_or_wait",
             "scheduler_frame_budget": scheduler_frame_budget,
@@ -1295,6 +1598,7 @@ def _run_measurement(
             "render_events": baseline._file_record(events_path),
             "review": review,
             "full_video": full_video,
+            "visible_sync_audit": visible_sync_audit,
         },
     }
     result["content_sha256"] = hashlib.sha256(
@@ -1402,6 +1706,8 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
         command.append("--save-review")
     if args.save_full_video:
         command.append("--save-full-video")
+    if args.visible_sync_audit:
+        command.append("--visible-sync-audit")
     return command
 
 
@@ -1511,6 +1817,9 @@ def _run_matrix(args: argparse.Namespace) -> int:
                 child_args.output_dir = run_root / "artifacts"
                 child_args.evidence_dir = run_root / "evidence"
                 child_args.save_review = args.save_review and repeat == 0
+                child_args.visible_sync_audit = (
+                    args.visible_sync_audit and repeat == 0
+                )
                 print(json.dumps({"event": "run_start", "cell": cell, "repeat": repeat}, sort_keys=True), flush=True)
                 code, result = _run_one_parent(child_args, gpu_preflight=gpu)
                 run_records.append({"cell": cell, "repeat": repeat, "returncode": code, "root": str(run_root)})
@@ -1619,6 +1928,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--save-review", action="store_true")
     parser.add_argument("--save-full-video", action="store_true")
+    parser.add_argument("--visible-sync-audit", action="store_true")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--execution-request", type=Path, help=argparse.SUPPRESS)
     return parser

@@ -107,6 +107,63 @@ def test_full_video_cuda_store_size_is_bounded() -> None:
     assert byte_count < 300 * 1024 * 1024
 
 
+def test_visible_sync_audit_selects_four_continuous_nine_state_windows() -> None:
+    poses = np.tile(
+        np.asarray([0, 0, 0, 0, 0, 0, 1], dtype=np.float64),
+        (benchmark.EXPECTED_OBSERVATIONS, 1),
+    )
+    poses[:, 0] = np.linspace(0.0, 0.4, len(poses))
+    poses[300, 0] += 0.02
+    angles = np.linspace(0.0, np.pi / 2.0, len(poses) - 500)
+    poses[500:, 5] = np.sin(angles / 2.0)
+    poses[500:, 6] = np.cos(angles / 2.0)
+
+    windows = benchmark._sync_audit_physics_indices(poses)
+
+    assert list(windows) == ["static", "translation_lift", "mid_tilt", "final_settle"]
+    assert windows["static"] == list(range(9))
+    assert windows["final_settle"] == list(range(944, 953))
+    assert all(
+        len(indices) == 9 and indices == list(range(indices[0], indices[0] + 9))
+        for indices in windows.values()
+    )
+
+
+def test_visible_sync_audit_rejects_a_frozen_visible_source() -> None:
+    stage_names = ("static", "translation_lift", "mid_tilt", "final_settle")
+    records = []
+    for stage_index, stage_name in enumerate(stage_names):
+        for sample in range(9):
+            records.append(
+                {
+                    "stage": stage_name,
+                    "physics_index": stage_index * 9 + sample,
+                    "mask_pixel_count": 100,
+                    "mask_centroid_px": [20.0, 20.0],
+                    "projected_center_px": [20.0 + stage_index * 20.0, 20.0],
+                }
+            )
+
+    audit = benchmark._evaluate_visible_sync_records(records)
+
+    assert audit["passed"] is False
+    assert any(not item["passed"] for item in audit["displacements"])
+
+
+def test_projection_places_camera_target_at_image_center() -> None:
+    projected = benchmark._project_world_point(
+        [0.0, 0.0, 0.0],
+        eye=[1.0, 0.0, 0.0],
+        target=[0.0, 0.0, 0.0],
+        width=256,
+        height=256,
+        focal_length_mm=26.0,
+        horizontal_aperture_mm=24.0,
+        vertical_aperture_mm=16.0,
+    )
+    assert projected == (128.0, 128.0)
+
+
 def test_kinematic_driver_interpolates_four_targets_at_120hz(monkeypatch) -> None:
     class View:
         def __init__(self) -> None:
