@@ -86,6 +86,7 @@ def test_report_summary_and_media_contract() -> None:
     assert browser_qa["status"] in {
         "local_passed_pending_published_qa",
         "published_passed_flicker_no_go_retraction",
+        "published_passed_root_cause_no_go_update",
     }
     assert browser_qa["checks"]["current_video_count"] == 0
     assert browser_qa["checks"]["total_video_count_including_collapsed_history"] == 4
