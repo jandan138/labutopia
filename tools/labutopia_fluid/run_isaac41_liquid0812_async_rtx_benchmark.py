@@ -1772,6 +1772,11 @@ def _run_child(args: argparse.Namespace) -> int:
         baseline._configure_runtime_settings()
         runtime_record = {
             "lane": "formal_isaac41_liquid0812_async_rtx",
+            "evidence_class": (
+                "non_authoritative_busy_gpu_exploration"
+                if args.allow_busy_gpu_exploratory
+                else "formal_comparable"
+            ),
             "receipt_path": str(receipt_path),
             "receipt_sha256": attestation.canonical_json_sha256(receipt),
             "execution_binding": binding,
@@ -1825,6 +1830,8 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
         "--source-driver", args.source_driver,
         "--integration-hz", str(args.integration_hz),
     ]
+    if args.allow_busy_gpu_exploratory:
+        command.append("--allow-busy-gpu-exploratory")
     if args.save_review:
         command.append("--save-review")
     if args.save_full_video:
@@ -2050,6 +2057,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--save-review", action="store_true")
     parser.add_argument("--save-full-video", action="store_true")
     parser.add_argument("--visible-sync-audit", action="store_true")
+    parser.add_argument("--allow-busy-gpu-exploratory", action="store_true")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--execution-request", type=Path, help=argparse.SUPPRESS)
     return parser
@@ -2087,7 +2095,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if None in (args.lane, args.output_dir, args.evidence_dir):
         raise ValueError("single_run_arguments_missing")
     gpu = baseline._sample_gpu(args.gpu_sample_seconds)
-    if not gpu["idle_enough"]:
+    if not gpu["idle_enough"] and not args.allow_busy_gpu_exploratory:
         print(
             json.dumps(
                 {"status": "blocked_gpu_busy", "gpu_preflight": gpu},
@@ -2096,6 +2104,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             flush=True,
         )
         return 3
+    if args.allow_busy_gpu_exploratory:
+        gpu = {
+            **gpu,
+            "exception": {
+                "approved_by": "user_message_2026-08-13",
+                "scope": "visible synchronization and video exploration only",
+                "rationale": "user accepted running alongside shared GPU workloads",
+                "environment_difference": "GPU is shared; runtime tuple and sealed child are unchanged",
+                "expiry": "this exploratory run only",
+                "evidence_impact": "non-authoritative and non-comparable; FPS cannot be promoted",
+            },
+        }
     code, _result = _run_one_parent(args, gpu_preflight=gpu)
     return code
 
