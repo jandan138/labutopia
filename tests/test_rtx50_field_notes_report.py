@@ -67,7 +67,10 @@ def test_report_summary_and_media_contract() -> None:
         "successful_pour_video": "fail",
     }
     assert review["independence"] == "not_independent"
-    assert browser_qa["status"] in {"local_passed_pending_published_qa", "passed"}
+    assert browser_qa["status"] in {
+        "local_passed_pending_published_qa",
+        "published_passed_flicker_no_go_retraction",
+    }
     assert browser_qa["checks"]["current_video_count"] == 0
     assert browser_qa["checks"]["total_video_count_including_collapsed_history"] == 4
     assert browser_qa["checks"]["historical_section_collapsed_by_default"] in {None, True}

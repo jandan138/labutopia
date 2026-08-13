@@ -1,17 +1,17 @@
 {
   "schema_version": 4,
-  "status": "local_passed_pending_published_qa",
-  "scope": "local_browser_qa_after_flicker_no_go_retraction",
-  "checked_at_utc": "2026-08-13T08:41:13Z",
+  "status": "published_passed_flicker_no_go_retraction",
+  "scope": "local_and_published_browser_qa_after_flicker_no_go_retraction",
+  "checked_at_utc": "2026-08-13T08:46:53Z",
   "published_url": "https://jandan138.github.io/labutopia/reports/2026-08-12-labutopia-rtx50-field-notes/",
-  "media_page_source_commit": null,
-  "pages_workflow_run": null,
-  "browser": "Chromium",
-  "review_mode": "local_non_independent",
+  "media_page_source_commit": "3d62eafcf45b2d16e8c8427479722cdaec6e18d0",
+  "pages_workflow_run": 31683330724,
+  "browser": "Chromium 145 via Playwright 1.62.1",
+  "review_mode": "local_and_published_non_independent",
   "viewports": [
-    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "pending"},
-    {"width": 900, "height": 1100, "local_status": "passed", "published_status": "pending"},
-    {"width": 390, "height": 844, "local_status": "passed", "published_status": "pending"}
+    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "passed"},
+    {"width": 900, "height": 1100, "local_status": "passed", "published_status": "passed"},
+    {"width": 390, "height": 844, "local_status": "passed", "published_status": "passed"}
   ],
   "checks": {
     "http_status_200": true,
@@ -26,11 +26,11 @@
     "video_height": 256,
     "video_duration_seconds": 31.78,
     "video_encoded_fps": 50,
-    "published_webp_posters_visible": null,
-    "current_headless_mp4_sha256_matches": null,
-    "current_offscreen_mp4_sha256_matches": null,
-    "published_summary_status_200": null,
-    "published_visual_review_status_200": null
+    "published_webp_posters_visible": true,
+    "retracted_headless_mp4_sha256_matches": true,
+    "retracted_offscreen_mp4_sha256_matches": true,
+    "published_summary_status_200": true,
+    "published_visual_review_status_200": true
   },
   "retracted_flicker_media": [
     {"file": "media/visible-sync-headless-busy-gpu-50fps-v2.mp4", "sha256": "f31cbdaf63d72de82a89c1060c1de9be3d27a4d89a62a0198f501e2fe54dc686"},
@@ -43,6 +43,19 @@
     "mobile_screenshot": "/tmp/rtx50-flicker-page-qa/mobile.png",
     "note": "Chromium media metadata loading cancels the preceding preload=none requests. Direct HTTP reads for all four MP4 files and both visible-sync WebP posters returned 200; this is not an unresolved asset failure."
   },
-  "published_delivery": null,
-  "claim_boundary": "The page retracts current video delivery and keeps flickering videos collapsed as failure evidence. Published QA is pending deployment."
+  "published_delivery": {
+    "status": "passed",
+    "source_commit": "3d62eafcf45b2d16e8c8427479722cdaec6e18d0",
+    "pages_workflow_run": 31683330724,
+    "index_sha256": "e5b290f9d64bd151737b9b858de92f4fe6a5d34e0fd302443501cd5d4a12aafc",
+    "benchmark_summary_sha256": "c7669ec3d7eb31b33137a8205fd390558359edba97fecfe8081191d472a41dd1",
+    "video_visual_review_sha256": "fb962957503847a5718cbcc80c7429b4362f914b61b3a60aff1b07044a9f75d6",
+    "published_audit_artifacts": {
+      "audit_json": "/tmp/rtx50-flicker-page-qa-published/audit.json",
+      "desktop_screenshot": "/tmp/rtx50-flicker-page-qa-published/desktop.png",
+      "tablet_screenshot": "/tmp/rtx50-flicker-page-qa-published/tablet.png",
+      "mobile_screenshot": "/tmp/rtx50-flicker-page-qa-published/mobile.png"
+    }
+  },
+  "claim_boundary": "The published page retracts current video delivery and keeps flickering videos collapsed as failure evidence. This QA validates page delivery and presentation, not physics or video quality acceptance."
 }
