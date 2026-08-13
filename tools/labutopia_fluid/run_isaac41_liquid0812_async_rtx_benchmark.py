@@ -40,7 +40,7 @@ PHYSICS_DT = baseline.PHYSICS_DT
 EXPECTED_OBSERVATIONS = baseline.EXPECTED_OBSERVATIONS
 LANES = ("headless-product", "offscreen-viewport")
 PROFILES = ("current", "fast-translucent", "fast-glass", "fast-opaque")
-CAMERA_POLICIES = ("benchmark", "scene")
+CAMERA_POLICIES = ("trajectory-envelope", "benchmark", "scene")
 TARGET_RENDER_HZ = 50
 DEFAULT_WIDTH = 256
 DEFAULT_HEIGHT = 256
@@ -173,6 +173,97 @@ def _configure_profile(stage: Any, profile: str) -> dict[str, Any]:
     return {"profile": profile, "before": before, "after": after, "material": authored_material}
 
 
+def _trajectory_envelope_camera_contract(
+    *,
+    source_bounds: dict[str, Any],
+    target_bounds: dict[str, Any],
+    source_poses_xyzw: Any,
+    table_z: float,
+) -> dict[str, Any]:
+    """Fit a fixed camera around the complete source trajectory and target.
+
+    A sphere is deliberately used instead of fitting only the initial source
+    and target bounds.  A sphere remains inside the camera frustum for every
+    view direction when the distance is derived from the narrowest FOV.
+    """
+    import numpy as np
+
+    poses = np.asarray(source_poses_xyzw, dtype=np.float64)
+    if poses.ndim != 2 or poses.shape[1] != 7 or not np.isfinite(poses).all():
+        raise ValueError("trajectory_camera_source_poses_invalid")
+    source_extent = np.asarray(source_bounds["extent"], dtype=np.float64)
+    source_radius = float(np.linalg.norm(source_extent) * 0.5)
+    # The packet trajectory is aligned to the runtime rigid body later by the
+    # benchmark.  Apply the same translation convention here so a localized
+    # scene remains framed even when its absolute origin differs from packet
+    # authoring space.
+    source_centers = (
+        np.asarray(source_bounds["center"], dtype=np.float64)
+        + poses[:, :3]
+        - poses[0, :3]
+    )
+    minimum = np.minimum(
+        source_centers.min(axis=0) - source_radius,
+        np.asarray(target_bounds["minimum"], dtype=np.float64),
+    )
+    maximum = np.maximum(
+        source_centers.max(axis=0) + source_radius,
+        np.asarray(target_bounds["maximum"], dtype=np.float64),
+    )
+    minimum[2] = min(float(minimum[2]), float(table_z) - 0.01)
+
+    unpadded_extent = maximum - minimum
+    padding = np.maximum(unpadded_extent * 0.08, np.asarray([0.015, 0.015, 0.015]))
+    minimum -= padding
+    maximum += padding
+    center = (minimum + maximum) * 0.5
+    radius = float(np.linalg.norm(maximum - minimum) * 0.5)
+
+    focal_length_mm = 26.0
+    horizontal_aperture_mm = 24.0
+    vertical_aperture_mm = 16.0
+    horizontal_fov = 2.0 * math.atan(horizontal_aperture_mm / (2.0 * focal_length_mm))
+    vertical_fov = 2.0 * math.atan(vertical_aperture_mm / (2.0 * focal_length_mm))
+    limiting_fov = min(horizontal_fov, vertical_fov)
+    distance = radius / math.sin(limiting_fov * 0.5)
+    side_y = 1.0 if poses[0, 1] >= float(target_bounds["center"][1]) else -1.0
+    view_direction = np.asarray([0.55, side_y, 0.65], dtype=np.float64)
+    view_direction /= np.linalg.norm(view_direction)
+    eye = center + view_direction * distance
+
+    return {
+        "eye": eye.tolist(),
+        "target": center.tolist(),
+        "focal_length_mm": focal_length_mm,
+        "horizontal_aperture_mm": horizontal_aperture_mm,
+        "vertical_aperture_mm": vertical_aperture_mm,
+        "envelope": {
+            "minimum": minimum.tolist(),
+            "maximum": maximum.tolist(),
+            "center": center.tolist(),
+            "radius_m": radius,
+            "source_radius_m": source_radius,
+            "padding_fraction": 0.08,
+            "minimum_padding_m": 0.015,
+            "source_pose_count": int(poses.shape[0]),
+        },
+        "framing_contract": {
+            "method": "complete_trajectory_padded_bounding_sphere",
+            "limiting_fov_degrees": math.degrees(limiting_fov),
+            "camera_distance_m": distance,
+            "sphere_angular_radius_degrees": math.degrees(math.asin(radius / distance)),
+            "all_source_pose_centers_inside_envelope": bool(
+                np.all(source_centers >= minimum) and np.all(source_centers <= maximum)
+            ),
+            "target_bounds_inside_envelope": bool(
+                np.all(np.asarray(target_bounds["minimum"]) >= minimum)
+                and np.all(np.asarray(target_bounds["maximum"]) <= maximum)
+            ),
+            "tabletop_inside_envelope": bool(minimum[2] <= table_z <= maximum[2]),
+        },
+    }
+
+
 def _define_benchmark_camera(stage: Any, packet: Any, policy: str) -> dict[str, Any]:
     """Author a reproducible close lab camera in the anonymous session layer."""
     if policy == "scene":
@@ -181,7 +272,7 @@ def _define_benchmark_camera(stage: Any, packet: Any, policy: str) -> dict[str, 
             "policy": policy,
             "authored": False,
         }
-    if policy != "benchmark":
+    if policy not in {"benchmark", "trajectory-envelope"}:
         raise ValueError(f"unknown_camera_policy:{policy}")
 
     from pxr import Gf, Usd, UsdGeom
@@ -208,25 +299,43 @@ def _define_benchmark_camera(stage: Any, packet: Any, policy: str) -> dict[str, 
     source = bounds(baseline.SOURCE_PATH)
     target = bounds(baseline.TARGET_PATH)
     table_z = float(packet.manifest["frames"]["table_top_z_m"])
-    focus = tuple(
-        source["center"][index] * 0.58 + target["center"][index] * 0.42
-        for index in range(2)
-    )
-    pair_span = max(
-        abs(source["center"][0] - target["center"][0])
-        + source["extent"][0] * 0.5
-        + target["extent"][0] * 0.5,
-        abs(source["center"][1] - target["center"][1])
-        + source["extent"][1] * 0.5
-        + target["extent"][1] * 0.5,
-    )
-    side_y = 1.0 if source["center"][1] >= target["center"][1] else -1.0
-    look_at = (focus[0], focus[1], table_z + 0.072)
-    eye = (
-        focus[0] + max(0.22, pair_span * 0.42),
-        focus[1] + side_y * max(0.33, pair_span * 0.76),
-        table_z + 0.27,
-    )
+    trajectory_contract = None
+    if policy == "trajectory-envelope":
+        trajectory_contract = _trajectory_envelope_camera_contract(
+            source_bounds=source,
+            target_bounds=target,
+            source_poses_xyzw=packet.array(
+                "source_poses_xyzw", (EXPECTED_OBSERVATIONS, 7)
+            ),
+            table_z=table_z,
+        )
+        eye = tuple(trajectory_contract["eye"])
+        look_at = tuple(trajectory_contract["target"])
+        pair_span = max(
+            trajectory_contract["envelope"]["maximum"][index]
+            - trajectory_contract["envelope"]["minimum"][index]
+            for index in range(2)
+        )
+    else:
+        focus = tuple(
+            source["center"][index] * 0.58 + target["center"][index] * 0.42
+            for index in range(2)
+        )
+        pair_span = max(
+            abs(source["center"][0] - target["center"][0])
+            + source["extent"][0] * 0.5
+            + target["extent"][0] * 0.5,
+            abs(source["center"][1] - target["center"][1])
+            + source["extent"][1] * 0.5
+            + target["extent"][1] * 0.5,
+        )
+        side_y = 1.0 if source["center"][1] >= target["center"][1] else -1.0
+        look_at = (focus[0], focus[1], table_z + 0.072)
+        eye = (
+            focus[0] + max(0.22, pair_span * 0.42),
+            focus[1] + side_y * max(0.33, pair_span * 0.76),
+            table_z + 0.27,
+        )
     with Usd.EditContext(stage, stage.GetSessionLayer()):
         camera = UsdGeom.Camera.Define(stage, BENCHMARK_CAMERA_PATH)
         transform = Gf.Matrix4d(1).SetLookAt(
@@ -251,6 +360,12 @@ def _define_benchmark_camera(stage: Any, packet: Any, policy: str) -> dict[str, 
         "source_bounds": source,
         "target_bounds": target,
         "pair_span_m": pair_span,
+        "trajectory_envelope": (
+            trajectory_contract["envelope"] if trajectory_contract else None
+        ),
+        "framing_contract": (
+            trajectory_contract["framing_contract"] if trajectory_contract else None
+        ),
     }
 
 
@@ -1309,7 +1424,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--matrix", action="store_true")
     parser.add_argument("--lane", choices=LANES)
     parser.add_argument("--profile", choices=PROFILES, default="current")
-    parser.add_argument("--camera-policy", choices=CAMERA_POLICIES, default="benchmark")
+    parser.add_argument(
+        "--camera-policy", choices=CAMERA_POLICIES, default="trajectory-envelope"
+    )
     parser.add_argument("--lanes", nargs="+", choices=LANES, default=list(LANES))
     parser.add_argument("--profiles", nargs="+", choices=PROFILES, default=list(PROFILES))
     parser.add_argument("--scene", type=Path, default=DEFAULT_SCENE)

@@ -18,12 +18,51 @@ def test_50hz_render_schedule_covers_all_30hz_physics_states() -> None:
 
 def test_benchmark_defaults_to_reproducible_session_camera() -> None:
     args = benchmark.build_parser().parse_args([])
-    assert args.camera_policy == "benchmark"
+    assert args.camera_policy == "trajectory-envelope"
     assert args.width == 256
     assert args.height == 256
     assert args.save_full_video is False
     assert args.source_driver == "physx-kinematic-target"
     assert args.integration_hz == 120
+
+
+def test_trajectory_camera_contract_covers_complete_motion_and_target() -> None:
+    source_bounds = {
+        "minimum": (0.25, 0.03, 0.76),
+        "maximum": (0.37, 0.15, 0.90),
+        "center": (0.31, 0.09, 0.83),
+        "extent": (0.12, 0.12, 0.14),
+    }
+    target_bounds = {
+        "minimum": (0.20, -0.30, 0.76),
+        "maximum": (0.36, -0.14, 0.92),
+        "center": (0.28, -0.22, 0.84),
+        "extent": (0.16, 0.16, 0.16),
+    }
+    poses = np.asarray(
+        [
+            [0.31, 0.09, 0.83, 0, 0, 0, 1],
+            [0.26, -0.09, 1.11, 0, 0, 0, 1],
+            [0.28, -0.19, 1.05, 0, 0, 0, 1],
+        ],
+        dtype=np.float64,
+    )
+    contract = benchmark._trajectory_envelope_camera_contract(
+        source_bounds=source_bounds,
+        target_bounds=target_bounds,
+        source_poses_xyzw=poses,
+        table_z=0.772,
+    )
+    framing = contract["framing_contract"]
+    assert framing["all_source_pose_centers_inside_envelope"] is True
+    assert framing["target_bounds_inside_envelope"] is True
+    assert framing["tabletop_inside_envelope"] is True
+    assert contract["envelope"]["source_pose_count"] == 3
+    assert contract["envelope"]["padding_fraction"] == 0.08
+    assert contract["envelope"]["maximum"][2] > 1.15
+    assert framing["sphere_angular_radius_degrees"] <= (
+        framing["limiting_fov_degrees"] / 2.0
+    )
 
 
 def test_full_video_cuda_store_size_is_bounded() -> None:
