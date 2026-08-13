@@ -374,6 +374,55 @@ def _author_source_semantics(stage: Any) -> dict[str, Any]:
     }
 
 
+def _author_visible_sync_proxy_material(stage: Any) -> dict[str, Any]:
+    """Make transparent source geometry visible to Isaac 4.1 instance buffers."""
+    from pxr import Gf, Sdf, Usd, UsdGeom, UsdShade
+
+    root = stage.GetPrimAtPath(baseline.SOURCE_MESH_PATH)
+    if not root or not root.IsValid():
+        raise RuntimeError("visible_sync_proxy_source_missing")
+    material_path = "/World/Looks/LabUtopiaVisibleSyncProxy"
+    bound_paths = []
+    with Usd.EditContext(stage, stage.GetSessionLayer()):
+        if not stage.GetPrimAtPath("/World/Looks"):
+            UsdGeom.Scope.Define(stage, "/World/Looks")
+        material = UsdShade.Material.Define(stage, material_path)
+        shader = UsdShade.Shader.Define(stage, f"{material_path}/PreviewSurface")
+        shader.CreateIdAttr("UsdPreviewSurface")
+        shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(
+            Gf.Vec3f(0.1, 0.9, 0.2)
+        )
+        shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.6)
+        shader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
+        shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(1.0)
+        material.CreateSurfaceOutput().ConnectToSource(
+            shader.ConnectableAPI(), "surface"
+        )
+        for prim in Usd.PrimRange(root):
+            if prim.IsA(UsdGeom.Gprim):
+                UsdShade.MaterialBindingAPI.Apply(prim).Bind(
+                    material,
+                    bindingStrength=UsdShade.Tokens.strongerThanDescendants,
+                )
+                bound_paths.append(str(prim.GetPath()))
+        if not bound_paths:
+            UsdShade.MaterialBindingAPI.Apply(root).Bind(
+                material,
+                bindingStrength=UsdShade.Tokens.strongerThanDescendants,
+            )
+            bound_paths.append(str(root.GetPath()))
+    return {
+        "material_path": material_path,
+        "bound_paths": bound_paths,
+        "color": [0.1, 0.9, 0.2],
+        "opacity": 1.0,
+        "authoring_layer": "anonymous_session_layer",
+        "input_usd_mutated": False,
+        "scope": "independent_instance_segmentation_audit_only",
+        "timed_rgb_or_delivery_video_affected": False,
+    }
+
+
 def _trajectory_envelope_camera_contract(
     *,
     source_bounds: dict[str, Any],
@@ -1138,6 +1187,7 @@ def _run_visible_sync_audit_measurement(
     profile_record = _configure_profile(stage, args.profile)
     camera_record = _define_benchmark_camera(stage, packet, args.camera_policy)
     semantics = _author_source_semantics(stage)
+    proxy_material = _author_visible_sync_proxy_material(stage)
     for _ in range(4):
         application.update()
     target = _create_render_target(args, application, camera_record["camera_path"])
@@ -1267,6 +1317,7 @@ def _run_visible_sync_audit_measurement(
             "performance_claim": False,
         },
         "semantics": semantics,
+        "instance_segmentation_proxy_material": proxy_material,
         "windows": windows,
         "pose_sync": pose_acceptance,
         "pixel_sync": pixel_audit,
