@@ -41,8 +41,18 @@ EXPECTED_OBSERVATIONS = baseline.EXPECTED_OBSERVATIONS
 LANES = ("headless-product", "offscreen-viewport")
 PROFILES = ("current", "fast-translucent", "fast-glass", "fast-opaque")
 AA_MODES = ("dlss", "native")
+CAPTURE_MODES = (
+    "zero-copy-async",
+    "zero-copy-blocking",
+    "managed-cuda-copy",
+    "cpu-copy-reference",
+    "viewport-byte-reference",
+)
+SCHEDULER_MODES = ("continuous", "step-wait", "viewport-capture")
+DIAGNOSTIC_VISIBILITY_MODES = ("full", "hide-liquid", "marker-only")
 CAMERA_POLICIES = ("trajectory-follow", "trajectory-envelope", "benchmark", "scene")
 TARGET_RENDER_HZ = 50
+OUTPUT_SCHEDULES = ("trajectory-50hz", "stable-30hz")
 DEFAULT_WIDTH = 256
 DEFAULT_HEIGHT = 256
 SOURCE_SEMANTIC_LABEL = "labutopia_source_beaker"
@@ -94,6 +104,37 @@ def _target_render_count(observation_count: int) -> int:
 
 def _physics_index_for_render(render_index: int) -> int:
     return (render_index * PHYSICS_HZ) // TARGET_RENDER_HZ
+
+
+def _render_schedule(args: argparse.Namespace) -> dict[str, Any]:
+    """Describe either the production 30:50 schedule or a frozen diagnostic."""
+    freeze_index = getattr(args, "freeze_physics_index", None)
+    if freeze_index is None:
+        if args.output_schedule == "stable-30hz":
+            start = int(args.capture_start_physics_index)
+            return {
+                "mode": "stable-30hz",
+                "render_count": args.max_observations - start,
+                "expected_physics_count": args.max_observations,
+                "capture_start_physics_index": start,
+                "encoded_fps": PHYSICS_HZ,
+                "mapping": f"physics_index=render_index+{start}",
+            }
+        return {
+            "mode": "trajectory",
+            "render_count": _target_render_count(args.max_observations),
+            "expected_physics_count": args.max_observations,
+            "encoded_fps": TARGET_RENDER_HZ,
+            "mapping": "physics_index=floor(render_index*30/50)",
+        }
+    return {
+        "mode": "frozen-state-diagnostic",
+        "render_count": int(args.freeze_render_frames),
+        "expected_physics_count": int(freeze_index) + 1,
+        "freeze_physics_index": int(freeze_index),
+        "encoded_fps": TARGET_RENDER_HZ,
+        "mapping": f"physics_index={int(freeze_index)} for every captured frame",
+    }
 
 
 def _sync_audit_physics_indices(source_poses_xyzw: Any) -> dict[str, list[int]]:
@@ -857,6 +898,7 @@ class _CudaFrameSink:
         height: int,
         review_indices: set[int],
         full_frame_count: int = 0,
+        blocking_copy: bool = False,
     ):
         self.torch = torch
         self.width = width
@@ -864,6 +906,12 @@ class _CudaFrameSink:
         self.ring = torch.empty((3, 3, height, width), dtype=torch.uint8, device="cuda:0")
         self.slot_events: list[Any | None] = [None, None, None]
         self.slot_sequences: list[int | None] = [None, None, None]
+        # A managed Replicator copy is returned to its cache when Python drops
+        # the last external reference.  Keep that owner alive until our CUDA
+        # copy event completes, otherwise the cache may overwrite it while the
+        # non-blocking torch copy is still in flight.
+        self.slot_source_owners: list[Any | None] = [None, None, None]
+        self.blocking_copy = bool(blocking_copy)
         self.checksums: list[Any] = []
         self.review_indices = review_indices
         self.review_order = sorted(review_indices)
@@ -884,7 +932,13 @@ class _CudaFrameSink:
         self.backpressure_wait_ms: list[float] = []
         self.consumed_sequences: list[int] = []
 
-    def publish(self, image_hwc: Any, sequence: int) -> dict[str, Any]:
+    def publish(
+        self,
+        image_hwc: Any,
+        sequence: int,
+        *,
+        source_owner: Any | None = None,
+    ) -> dict[str, Any]:
         torch = self.torch
         slot = sequence % 3
         previous = self.slot_events[slot]
@@ -897,6 +951,7 @@ class _CudaFrameSink:
             previous_sequence = self.slot_sequences[slot]
             if previous_sequence is not None:
                 self.consumed_sequences.append(previous_sequence)
+            self.slot_source_owners[slot] = None
         rgb = image_hwc[..., :3].permute(2, 0, 1)
         self.ring[slot].copy_(rgb, non_blocking=True)
         if self.full is not None:
@@ -906,8 +961,11 @@ class _CudaFrameSink:
         checksum = torch.sum(self.ring[slot][:, ::64, ::64], dtype=torch.int64)
         event = torch.cuda.Event(enable_timing=False, blocking=False)
         event.record(torch.cuda.current_stream())
+        if self.blocking_copy:
+            event.synchronize()
         self.slot_events[slot] = event
         self.slot_sequences[slot] = sequence
+        self.slot_source_owners[slot] = None if self.blocking_copy else source_owner
         self.checksums.append(checksum)
         return {"slot": slot, "shape": [3, self.height, self.width], "dtype": "torch.uint8"}
 
@@ -919,7 +977,224 @@ class _CudaFrameSink:
             sequence = self.slot_sequences[slot]
             if sequence is not None:
                 self.consumed_sequences.append(sequence)
+            self.slot_source_owners[slot] = None
         self.consumed_sequences.sort()
+
+
+def _capture_mode_contract(capture_mode: str) -> dict[str, Any]:
+    if capture_mode not in CAPTURE_MODES:
+        raise ValueError(f"unknown_capture_mode:{capture_mode}")
+    is_viewport = capture_mode == "viewport-byte-reference"
+    is_cpu = capture_mode in {"cpu-copy-reference", "viewport-byte-reference"}
+    managed = capture_mode == "managed-cuda-copy"
+    blocking = capture_mode in {"zero-copy-blocking", "cpu-copy-reference"}
+    return {
+        "mode": capture_mode,
+        "backend": (
+            "viewport_byte_capture" if is_viewport else "replicator_ldr_annotator"
+        ),
+        "annotator_device": "cpu" if is_cpu else "cuda",
+        "annotator_do_array_copy": bool(is_cpu or managed) if not is_viewport else None,
+        "sink_blocking_copy": blocking,
+        "retain_source_until_cuda_event": managed,
+        "intended_use": (
+            "diagnostic_reference"
+            if is_cpu
+            else ("safe_async_candidate" if managed else "zero_copy_diagnostic")
+        ),
+    }
+
+
+def _viewport_buffer_to_numpy(
+    buffer: Any,
+    buffer_size: int,
+    width: int,
+    height: int,
+) -> Any:
+    """Copy a Viewport ByteCapture capsule before its callback returns."""
+    import ctypes
+    import numpy as np
+
+    expected = int(width) * int(height) * 4
+    if int(buffer_size) != expected:
+        raise RuntimeError(
+            f"viewport_capture_buffer_size:{buffer_size}:{expected}:{width}:{height}"
+        )
+    ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.POINTER(
+        ctypes.c_ubyte * int(buffer_size)
+    )
+    ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
+    pointer = ctypes.pythonapi.PyCapsule_GetPointer(buffer, None)
+    if not pointer:
+        raise RuntimeError("viewport_capture_buffer_pointer_null")
+    return np.ctypeslib.as_array(pointer.contents).copy().reshape(
+        (int(height), int(width), 4)
+    )
+
+
+def _author_diagnostic_visibility(stage: Any, mode: str) -> dict[str, Any]:
+    """Author session-only visibility changes for root-cause isolation."""
+    if mode not in DIAGNOSTIC_VISIBILITY_MODES:
+        raise ValueError(f"unknown_diagnostic_visibility:{mode}")
+    from pxr import Usd, UsdGeom
+
+    hidden: list[str] = []
+    marker = None
+    with Usd.EditContext(stage, stage.GetSessionLayer()):
+        if mode in {"hide-liquid", "marker-only"}:
+            prim = stage.GetPrimAtPath(baseline.PARTICLE_SET_PATH)
+            if prim and prim.IsValid() and prim.IsA(UsdGeom.Imageable):
+                UsdGeom.Imageable(prim).MakeInvisible()
+                hidden.append(baseline.PARTICLE_SET_PATH)
+        if mode == "marker-only":
+            prim = stage.GetPrimAtPath(baseline.SOURCE_MESH_PATH)
+            if prim and prim.IsValid() and prim.IsA(UsdGeom.Imageable):
+                UsdGeom.Imageable(prim).MakeInvisible()
+                hidden.append(baseline.SOURCE_MESH_PATH)
+        if mode == "marker-only":
+            marker = _author_visible_sync_proxy_material(stage)
+    return {
+        "mode": mode,
+        "hidden_paths": hidden,
+        "marker": marker,
+        "authoring_layer": "anonymous_session_layer",
+        "input_usd_mutated": False,
+    }
+def _annotator_image_to_cuda(
+    *, annotator: Any, capture: dict[str, Any], torch: Any, wp: Any
+) -> tuple[Any, Any, dict[str, Any]]:
+    payload = annotator.get_data()
+    data = payload.get("data") if isinstance(payload, dict) else payload
+    if data is None or not hasattr(data, "shape") or len(data.shape) != 3:
+        raise RuntimeError("diagnostic_annotator_data_invalid")
+    if capture["annotator_device"] == "cpu":
+        import numpy as np
+
+        array = np.ascontiguousarray(data)
+        image = torch.from_numpy(array).to(device="cuda:0")
+        pointer = int(array.__array_interface__["data"][0])
+    else:
+        image = wp.to_torch(data)
+        pointer = int(getattr(data, "ptr", 0))
+    return image, payload, {
+        "source_pointer": pointer,
+        "source_python_id": id(data),
+        "source_device": capture["annotator_device"],
+    }
+
+
+def _classify_flicker_root_cause(cells: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Classify a completed diagnostic matrix without overclaiming."""
+
+    def passed(name: str) -> bool | None:
+        cell = cells.get(name)
+        if cell is None:
+            return None
+        return bool(cell.get("passed"))
+
+    zero_async = passed("zero-copy-async__continuous__full")
+    zero_blocking = passed("zero-copy-blocking__continuous__full")
+    managed = passed("managed-cuda-copy__continuous__full")
+    cpu = passed("cpu-copy-reference__continuous__full")
+    step_wait = passed("managed-cuda-copy__step-wait__full")
+    hidden_liquid = passed("managed-cuda-copy__step-wait__hide-liquid")
+    marker = passed("managed-cuda-copy__step-wait__marker-only")
+
+    if zero_async is False and (zero_blocking is True or managed is True or cpu is True):
+        return {
+            "status": "localized",
+            "cause": "asynchronous_source_buffer_lifetime_or_cuda_stream_ordering",
+            "selected_capture_mode": (
+                "managed-cuda-copy" if managed is True else "zero-copy-blocking"
+            ),
+        }
+    if managed is False and step_wait is True:
+        return {
+            "status": "localized",
+            "cause": "continuous_scheduler_render_state_coherence",
+            "selected_capture_mode": "managed-cuda-copy",
+            "selected_scheduler_mode": "step-wait",
+        }
+    if step_wait is False and hidden_liquid is True:
+        return {
+            "status": "localized",
+            "cause": "original_glass_and_liquid_transparency_composition",
+            "selected_capture_mode": None,
+        }
+    if hidden_liquid is False and marker is True:
+        return {
+            "status": "localized",
+            "cause": "original_glass_transparency_or_refraction_path",
+            "selected_capture_mode": None,
+        }
+    required = (
+        "zero-copy-async__continuous__full",
+        "zero-copy-blocking__continuous__full",
+        "managed-cuda-copy__continuous__full",
+        "cpu-copy-reference__continuous__full",
+    )
+    return {
+        "status": "incomplete" if any(name not in cells for name in required) else "unresolved",
+        "cause": None,
+        "selected_capture_mode": None,
+    }
+
+
+def compose_root_cause_audit(result_paths: Sequence[Path]) -> dict[str, Any]:
+    """Compose immutable child results into a decision record."""
+    cells: dict[str, dict[str, Any]] = {}
+    inputs = []
+    for raw_path in result_paths:
+        path = Path(raw_path).resolve()
+        result = json.loads(path.read_text(encoding="utf-8"))
+        configuration = result["configuration"]
+        capture_mode = configuration["capture"]["mode"]
+        scheduler_mode = configuration["scheduler_mode"]
+        visibility_mode = result["diagnostic_visibility"]["mode"]
+        cell_name = f"{capture_mode}__{scheduler_mode}__{visibility_mode}"
+        if cell_name in cells:
+            raise ValueError(f"duplicate_root_cause_cell:{cell_name}")
+        full_video = result.get("artifacts", {}).get("full_video")
+        if not full_video:
+            raise ValueError(f"root_cause_cell_missing_full_video:{cell_name}")
+        flicker = full_video.get("flicker_audit") or {}
+        passed = bool(flicker.get("passed"))
+        record_path = flicker.get("record", {}).get("path")
+        if not record_path:
+            raise ValueError(f"root_cause_cell_missing_flicker_record:{cell_name}")
+        flicker_record = json.loads(Path(record_path).read_text(encoding="utf-8"))
+        raw = flicker_record["raw_cuda_frames"]
+        cell = {
+            "passed": passed,
+            "capture_mode": capture_mode,
+            "scheduler_mode": scheduler_mode,
+            "diagnostic_visibility": visibility_mode,
+            "rtx_fps": result["timing"]["average_rtx_completed_gpu_consumed_fps"],
+            "raw_flicker_summary": raw.get("summary"),
+            "runtime_evidence_class": result["runtime"]["evidence_class"],
+            "scene_sha256": result["scene"]["sha256"],
+            "result": baseline._file_record(path),
+        }
+        cells[cell_name] = cell
+        inputs.append({"cell": cell_name, **cell})
+    classification = _classify_flicker_root_cause(cells)
+    evidence_classes = sorted({item["runtime_evidence_class"] for item in cells.values()})
+    scene_hashes = sorted({item["scene_sha256"] for item in cells.values()})
+    return {
+        "schema": "labutopia.isaac41.rtx_flicker_root_cause.v1",
+        "status": classification["status"],
+        "claim_boundary": (
+            "root_cause_diagnostic_only;original_usd_not_mutated;"
+            "performance_qualification_requires_idle_gpu_repeats"
+        ),
+        "classification": classification,
+        "comparability": {
+            "single_scene_sha256": len(scene_hashes) == 1,
+            "scene_sha256s": scene_hashes,
+            "runtime_evidence_classes": evidence_classes,
+        },
+        "cells": inputs,
+    }
 
 
 def _flicker_pair_metrics(
@@ -1132,7 +1407,7 @@ def _save_full_video_artifacts(
         raise RuntimeError(f"full_video_array_invalid:{frames_chw.shape}:{frames_chw.dtype}")
 
     safe_lane = lane.replace("-", "_")
-    video_path = output_dir / f"liquid0812_{safe_lane}_full_50fps.mp4"
+    video_path = output_dir / f"liquid0812_{safe_lane}_full_{fps}fps.mp4"
     command = [
         "/usr/bin/ffmpeg",
         "-hide_banner",
@@ -1214,7 +1489,7 @@ def _save_full_video_artifacts(
         "codec_h264": stream.get("codec_name") == "h264",
         "resolution_matches": [stream.get("width"), stream.get("height")]
         == [sink.width, sink.height],
-        "frame_rate_50": stream.get("avg_frame_rate") == f"{fps}/1",
+        "frame_rate_matches": stream.get("avg_frame_rate") == f"{fps}/1",
         "frame_count_matches": int(stream.get("nb_frames", -1)) == len(records),
         "duration_matches": abs(float(stream.get("duration", -1.0)) - expected_duration_s)
         <= 1.0 / fps,
@@ -1286,7 +1561,7 @@ def _save_full_video_artifacts(
         )
     ).hexdigest()
     manifest = {
-        "schema": "labutopia.isaac41.liquid0812_full_50fps_video.v1",
+        "schema": "labutopia.isaac41.liquid0812_full_rate_video.v1",
         "status": "encoded_and_verified",
         "claim_boundary": (
             "all_rtx_frames_retained_on_cuda_during_timed_window;"
@@ -1614,15 +1889,24 @@ def _run_measurement(
     packet = load_packet(args.packet)
     stage, stage_record = baseline._open_stage(args, application)
     profile_record = _configure_profile(stage, args.profile, args.aa_mode)
+    visibility_record = _author_diagnostic_visibility(
+        stage, args.diagnostic_visibility
+    )
     camera_record = _define_benchmark_camera(stage, packet, args.camera_policy)
     target = _create_render_target(args, application, camera_record["camera_path"])
     product_path = str(target["product_path"])
-    annotator = rep.AnnotatorRegistry.get_annotator(
-        "LdrColor", device="cuda", do_array_copy=False
-    )
-    annotator.attach([product_path])
+    capture_contract = _capture_mode_contract(args.capture_mode)
+    annotator = None
+    if capture_contract["backend"] == "replicator_ldr_annotator":
+        annotator = rep.AnnotatorRegistry.get_annotator(
+            "LdrColor",
+            device=capture_contract["annotator_device"],
+            do_array_copy=capture_contract["annotator_do_array_copy"],
+        )
+        annotator.attach([product_path])
     sdg = syntheticdata.acquire_syntheticdata_interface()
-    render_count = _target_render_count(args.max_observations)
+    render_schedule = _render_schedule(args)
+    render_count = int(render_schedule["render_count"])
     if render_count < 1:
         raise ValueError("render_count_must_be_positive")
     review_count = min(args.review_frames, render_count)
@@ -1637,6 +1921,7 @@ def _run_measurement(
         height=args.height,
         review_indices=review_indices,
         full_frame_count=render_count if args.save_full_video else 0,
+        blocking_copy=capture_contract["sink_blocking_copy"],
     )
     phase = "warmup"
     armed = False
@@ -1659,6 +1944,8 @@ def _run_measurement(
         nonlocal duplicate_frame_numbers, invalid_cuda_events, last_frame_number
         nonlocal settle_frames_remaining
         try:
+            if annotator is None:
+                return
             parsed = sdg.parse_rendered_simulation_event(
                 event.payload["product_path_handle"], event.payload["results"]
             )
@@ -1669,15 +1956,17 @@ def _run_measurement(
             if last_frame_number is not None and frame_number <= last_frame_number:
                 duplicate_frame_numbers += 1
                 return
-            data = annotator.get_data()
-            if isinstance(data, dict):
-                data = data.get("data")
-            if data is None or not hasattr(data, "shape") or len(data.shape) != 3:
-                ignored_events += 1
-                return
             try:
-                image = wp.to_torch(data)
+                image, source_owner, source_record = _annotator_image_to_cuda(
+                    annotator=annotator,
+                    capture=capture_contract,
+                    torch=torch,
+                    wp=wp,
+                )
             except RuntimeError as error:
+                if str(error) == "diagnostic_annotator_data_invalid":
+                    ignored_events += 1
+                    return
                 if "pointer resides on host memory" in str(error):
                     invalid_cuda_events += 1
                     ignored_events += 1
@@ -1699,7 +1988,15 @@ def _run_measurement(
                 ignored_events += 1
                 return
             event_wall = time.perf_counter()
-            tensor_record = sink.publish(image, requested_render_index)
+            tensor_record = sink.publish(
+                image,
+                requested_render_index,
+                source_owner=(
+                    source_owner
+                    if capture_contract["retain_source_until_cuda_event"]
+                    else None
+                ),
+            )
             state_age_ms = (
                 (event_wall - current_physics_timestamp) * 1000.0
                 if current_physics_timestamp is not None
@@ -1714,6 +2011,7 @@ def _run_measurement(
                     "render_complete_perf_s": event_wall,
                     "state_age_ms": state_age_ms,
                     "tensor": tensor_record,
+                    "capture_source": source_record,
                 }
             )
             armed = False
@@ -1723,16 +2021,18 @@ def _run_measurement(
             )
             armed = False
 
-    subscription = (
-        omni.usd.get_context()
-        .get_rendering_event_stream()
-        .create_subscription_to_pop_by_type(
-            int(omni.usd.StageRenderingEventType.NEW_FRAME),
-            on_new_frame,
-            name="labutopia_async_rtx_new_frame",
-            order=1100,
+    subscription = None
+    if annotator is not None:
+        subscription = (
+            omni.usd.get_context()
+            .get_rendering_event_stream()
+            .create_subscription_to_pop_by_type(
+                int(omni.usd.StageRenderingEventType.NEW_FRAME),
+                on_new_frame,
+                name="labutopia_async_rtx_new_frame",
+                order=1100,
+            )
         )
-    )
     timeline = omni.timeline.get_timeline_interface()
     timeline.stop()
     timeline_time_before = float(timeline.get_current_time())
@@ -1745,11 +2045,23 @@ def _run_measurement(
         carb.settings.get_settings().get("/omni/replicator/captureOnPlay")
     )
     carb.settings.get_settings().set("/omni/replicator/captureOnPlay", False)
-    rep.orchestrator.run(num_frames=scheduler_frame_budget, start_timeline=False)
+    if args.scheduler_mode == "continuous":
+        rep.orchestrator.run(num_frames=scheduler_frame_budget, start_timeline=False)
     stepper = None
     try:
         warmup_updates = 0
-        while warmup_valid < args.render_warmup_frames:
+        while (
+            warmup_valid < args.render_warmup_frames
+            if annotator is not None
+            else warmup_updates < args.render_warmup_frames
+        ):
+            if args.scheduler_mode == "step-wait":
+                rep.orchestrator.step(
+                    rt_subframes=args.rt_subframes,
+                    pause_timeline=True,
+                    delta_time=0.0,
+                )
+                rep.orchestrator.wait_until_complete()
             application.update()
             warmup_updates += 1
             if callback_errors:
@@ -1791,8 +2103,17 @@ def _run_measurement(
         timed_started = time.perf_counter()
         for render_index in range(render_count):
             previous_physics_index = physics_index
-            desired_physics_index = min(
-                args.max_observations - 1, _physics_index_for_render(render_index)
+            desired_physics_index = (
+                int(args.freeze_physics_index)
+                if args.freeze_physics_index is not None
+                else (
+                    render_index + int(args.capture_start_physics_index)
+                    if args.output_schedule == "stable-30hz"
+                    else min(
+                        args.max_observations - 1,
+                        _physics_index_for_render(render_index),
+                    )
+                )
             )
             while physics_index < desired_physics_index:
                 physics_index += 1
@@ -1852,14 +2173,89 @@ def _run_measurement(
             )
             armed = True
             record_count_before = len(records)
-            for _ in range(args.max_updates_per_frame):
-                application.update()
-                if callback_errors:
-                    raise RuntimeError(f"render_callback_failed:{callback_errors[-1]}")
-                if len(records) > record_count_before:
-                    break
-            else:
-                raise TimeoutError(f"render_frame_timeout:{render_index}:{product_path}")
+            if args.scheduler_mode == "viewport-capture":
+                from omni.kit.viewport.utility import capture_viewport_to_buffer
+
+                captured: list[Any] = []
+                capture_errors: list[dict[str, str]] = []
+
+                def on_viewport_capture(
+                    buffer: Any,
+                    buffer_size: int,
+                    width: int,
+                    height: int,
+                    _pixel_format: Any,
+                ) -> None:
+                    try:
+                        captured.append(
+                            _viewport_buffer_to_numpy(
+                                buffer, buffer_size, width, height
+                            )
+                        )
+                    except BaseException as error:
+                        capture_errors.append(
+                            {"type": type(error).__name__, "message": str(error)}
+                        )
+
+                capture = capture_viewport_to_buffer(
+                    target["viewport"], on_viewport_capture
+                )
+                for _ in range(args.max_updates_per_frame):
+                    application.update()
+                    if capture_errors:
+                        raise RuntimeError(
+                            f"viewport_capture_failed:{capture_errors[-1]}"
+                        )
+                    if captured:
+                        break
+                else:
+                    raise TimeoutError(
+                        f"viewport_capture_timeout:{render_index}:{product_path}"
+                    )
+                event_wall = time.perf_counter()
+                image = torch.from_numpy(captured[0]).to(device="cuda:0")
+                tensor_record = sink.publish(image, render_index)
+                capture_frame_number = int(capture.frame_number)
+                records.append(
+                    {
+                        "render_index": render_index,
+                        "render_frame_number": capture_frame_number,
+                        "product_path": product_path,
+                        "physics_index": physics_index,
+                        "render_complete_perf_s": event_wall,
+                        "state_age_ms": (
+                            (event_wall - current_physics_timestamp) * 1000.0
+                            if current_physics_timestamp is not None
+                            else None
+                        ),
+                        "tensor": tensor_record,
+                        "capture_source": {
+                            "backend": "viewport_byte_capture",
+                            "source_device": "cpu",
+                            "buffer_copied_before_callback_return": True,
+                        },
+                        "source_world_matrix_after_capture": baseline._prim_world_matrix(
+                            stage, baseline.SOURCE_PATH
+                        ).tolist(),
+                    }
+                )
+                armed = False
+            elif args.scheduler_mode == "step-wait":
+                rep.orchestrator.step(
+                    rt_subframes=args.rt_subframes,
+                    pause_timeline=True,
+                    delta_time=0.0,
+                )
+                rep.orchestrator.wait_until_complete()
+            if args.scheduler_mode != "viewport-capture":
+                for _ in range(args.max_updates_per_frame):
+                    application.update()
+                    if callback_errors:
+                        raise RuntimeError(f"render_callback_failed:{callback_errors[-1]}")
+                    if len(records) > record_count_before:
+                        break
+                else:
+                    raise TimeoutError(f"render_frame_timeout:{render_index}:{product_path}")
         sink.drain()
         timed_finished = time.perf_counter()
         # Derive the flicker-audit ROI after the timed window so diagnostics do
@@ -1915,7 +2311,8 @@ def _run_measurement(
         if stepper is not None:
             stepper.detach()
         try:
-            annotator.detach([product_path])
+            if annotator is not None:
+                annotator.detach([product_path])
         except Exception:
             pass
         try:
@@ -1962,6 +2359,7 @@ def _run_measurement(
             sink,
             records,
             lane=args.lane,
+            fps=int(render_schedule["encoded_fps"]),
             save_flicker_audit=args.save_flicker_audit,
         )
         if args.save_full_video
@@ -1978,7 +2376,8 @@ def _run_measurement(
         "average_rtx_completed_fps_at_least_50": average_rtx_fps >= TARGET_RENDER_HZ,
         "average_physics_fps_at_least_30": average_physics_fps >= PHYSICS_HZ,
         "expected_render_count": len(records) == render_count,
-        "expected_physics_count": len(scores) == args.max_observations,
+        "expected_physics_count": len(scores)
+        == int(render_schedule["expected_physics_count"]),
         "contiguous_render_indices": render_indices == list(range(render_count)),
         "strictly_increasing_frame_numbers": all(
             frame_numbers[index] > frame_numbers[index - 1] for index in range(1, len(frame_numbers))
@@ -1989,7 +2388,8 @@ def _run_measurement(
         "all_cuda_tensors_consumed": sink.consumed_sequences == list(range(render_count)),
         "no_callback_errors": not callback_errors,
         "no_duplicate_frame_numbers": duplicate_frame_numbers == 0,
-        "no_cpu_rgb_readback_in_timed_path": True,
+        "no_cpu_rgb_readback_in_timed_path": args.capture_mode
+        not in {"cpu-copy-reference", "viewport-byte-reference"},
     }
     if args.save_full_video:
         performance_acceptance["full_video_encoded_and_verified"] = bool(
@@ -2031,6 +2431,7 @@ def _run_measurement(
         "packet": baseline._file_record(args.packet),
         "stage": stage_record,
         "profile": profile_record,
+        "diagnostic_visibility": visibility_record,
         "configuration": {
             "camera_path": camera_record["camera_path"],
             "camera": {
@@ -2048,11 +2449,16 @@ def _run_measurement(
             ),
             "source_driver": args.source_driver,
             "target_render_hz": TARGET_RENDER_HZ,
+            "output_schedule": args.output_schedule,
             "aa_mode": args.aa_mode,
             "pose_render_settle_frames": args.pose_render_settle_frames,
+            "capture": capture_contract,
+            "scheduler_mode": args.scheduler_mode,
+            "rt_subframes": args.rt_subframes,
             "observation_count": args.max_observations,
             "render_count": render_count,
-            "mapping": "physics_index=floor(render_index*30/50)",
+            "render_schedule": render_schedule,
+            "mapping": render_schedule["mapping"],
             "cuda_tensor": {"shape": [3, args.height, args.width], "dtype": "uint8", "device": "cuda:0"},
             "consumer": "same_process_cuda_checksum_fake_consumer",
             "ring_size": 3,
@@ -2066,7 +2472,15 @@ def _run_measurement(
                 ),
             },
             "warmup_frames_excluded": args.render_warmup_frames,
-            "scheduler": "single_replicator_continuous_run_without_timeline;no_per_frame_step_or_wait",
+            "scheduler": (
+                "single_replicator_continuous_run_without_timeline"
+                if args.scheduler_mode == "continuous"
+                else (
+                    "per_frame_replicator_step_and_wait_without_timeline"
+                    if args.scheduler_mode == "step-wait"
+                    else "per_frame_native_viewport_byte_capture_without_timeline"
+                )
+            ),
             "scheduler_frame_budget": scheduler_frame_budget,
             "capture_on_play_before": capture_on_play_before,
             "capture_on_play_forced_false": True,
@@ -2223,6 +2637,9 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
         str(FORMAL_ISAAC41_PYTHON), "-I", "-B", str(Path(__file__).resolve()),
         "--child", "--lane", args.lane, "--profile", args.profile,
         "--aa-mode", args.aa_mode,
+        "--capture-mode", args.capture_mode,
+        "--scheduler-mode", args.scheduler_mode,
+        "--diagnostic-visibility", args.diagnostic_visibility,
         "--camera-policy", args.camera_policy,
         "--scene", str(args.scene), "--packet", str(args.packet),
         "--output-dir", str(args.output_dir), "--evidence-dir", str(args.evidence_dir),
@@ -2236,7 +2653,15 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
         "--source-driver", args.source_driver,
         "--integration-hz", str(args.integration_hz),
         "--pose-render-settle-frames", str(args.pose_render_settle_frames),
+        "--rt-subframes", str(args.rt_subframes),
+        "--freeze-render-frames", str(args.freeze_render_frames),
+        "--output-schedule", args.output_schedule,
+        "--capture-start-physics-index", str(args.capture_start_physics_index),
     ]
+    if args.freeze_physics_index is not None:
+        command.extend(
+            ["--freeze-physics-index", str(args.freeze_physics_index)]
+        )
     if args.allow_busy_gpu_exploratory:
         command.append("--allow-busy-gpu-exploratory")
     if args.save_review:
@@ -2439,6 +2864,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lanes", nargs="+", choices=LANES, default=list(LANES))
     parser.add_argument("--profiles", nargs="+", choices=PROFILES, default=list(PROFILES))
     parser.add_argument("--aa-mode", choices=AA_MODES, default="dlss")
+    parser.add_argument(
+        "--capture-mode", choices=CAPTURE_MODES, default="zero-copy-async"
+    )
+    parser.add_argument(
+        "--scheduler-mode", choices=SCHEDULER_MODES, default="continuous"
+    )
+    parser.add_argument(
+        "--diagnostic-visibility",
+        choices=DIAGNOSTIC_VISIBILITY_MODES,
+        default="full",
+    )
     parser.add_argument("--scene", type=Path, default=DEFAULT_SCENE)
     parser.add_argument("--packet", type=Path, default=DEFAULT_PACKET)
     parser.add_argument("--output-root", type=Path)
@@ -2467,7 +2903,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--save-review", action="store_true")
     parser.add_argument("--save-full-video", action="store_true")
     parser.add_argument("--save-flicker-audit", action="store_true")
-    parser.add_argument("--pose-render-settle-frames", type=int, choices=(0, 1), default=0)
+    parser.add_argument(
+        "--pose-render-settle-frames",
+        type=int,
+        choices=(0, 1, 2, 3, 4, 6, 8),
+        default=0,
+    )
+    parser.add_argument("--rt-subframes", type=int, choices=(1, 2, 4, 8), default=1)
+    parser.add_argument("--freeze-physics-index", type=int)
+    parser.add_argument("--freeze-render-frames", type=int, default=96)
+    parser.add_argument(
+        "--output-schedule", choices=OUTPUT_SCHEDULES, default="trajectory-50hz"
+    )
+    parser.add_argument("--capture-start-physics-index", type=int, default=0)
     parser.add_argument("--visible-sync-audit", action="store_true")
     parser.add_argument("--allow-busy-gpu-exploratory", action="store_true")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
@@ -2484,8 +2932,25 @@ def _validate_args(args: argparse.Namespace) -> None:
         raise ValueError("warmup_and_update_limit_must_be_positive")
     if args.review_frames < 0:
         raise ValueError("review_frames_must_be_nonnegative")
+    if args.freeze_physics_index is not None:
+        if not 0 <= args.freeze_physics_index < args.max_observations:
+            raise ValueError("freeze_physics_index_out_of_range")
+        if args.freeze_render_frames < 2:
+            raise ValueError("freeze_render_frames_must_be_at_least_two")
+    if not 0 <= args.capture_start_physics_index < args.max_observations:
+        raise ValueError("capture_start_physics_index_out_of_range")
+    if args.output_schedule == "stable-30hz":
+        if args.scheduler_mode != "step-wait":
+            raise ValueError("stable_30hz_requires_step_wait")
+        if args.pose_render_settle_frames < 1:
+            raise ValueError("stable_30hz_requires_settle_frame")
     if args.save_flicker_audit and not args.save_full_video:
         raise ValueError("flicker_audit_requires_full_video")
+    viewport_capture = args.capture_mode == "viewport-byte-reference"
+    if viewport_capture != (args.scheduler_mode == "viewport-capture"):
+        raise ValueError("viewport_capture_mode_and_scheduler_must_match")
+    if viewport_capture and args.lane not in {None, "offscreen-viewport"}:
+        raise ValueError("viewport_capture_requires_offscreen_viewport_lane")
     baseline._integration_substeps(args.integration_hz)
 
 

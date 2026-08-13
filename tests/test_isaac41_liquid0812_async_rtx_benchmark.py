@@ -25,8 +25,175 @@ def test_benchmark_defaults_to_reproducible_session_camera() -> None:
     assert args.source_driver == "physx-kinematic-target"
     assert args.integration_hz == 120
     assert args.aa_mode == "dlss"
+    assert args.capture_mode == "zero-copy-async"
+    assert args.scheduler_mode == "continuous"
+    assert args.diagnostic_visibility == "full"
     assert args.pose_render_settle_frames == 0
+    assert args.rt_subframes == 1
+    assert args.freeze_physics_index is None
+    assert args.freeze_render_frames == 96
+    assert args.output_schedule == "trajectory-50hz"
+    assert args.capture_start_physics_index == 0
     assert args.save_flicker_audit is False
+
+
+def test_frozen_render_schedule_repeats_one_completed_physics_state() -> None:
+    args = benchmark.build_parser().parse_args(
+        [
+            "--max-observations",
+            "480",
+            "--freeze-physics-index",
+            "448",
+            "--freeze-render-frames",
+            "96",
+        ]
+    )
+    benchmark._validate_args(args)
+    assert benchmark._render_schedule(args) == {
+        "mode": "frozen-state-diagnostic",
+        "render_count": 96,
+        "expected_physics_count": 449,
+        "freeze_physics_index": 448,
+        "encoded_fps": 50,
+        "mapping": "physics_index=448 for every captured frame",
+    }
+
+
+def test_stable_30hz_schedule_captures_one_settled_frame_per_state() -> None:
+    args = benchmark.build_parser().parse_args(
+        [
+            "--max-observations",
+            "480",
+            "--output-schedule",
+            "stable-30hz",
+            "--capture-start-physics-index",
+            "448",
+            "--scheduler-mode",
+            "step-wait",
+            "--pose-render-settle-frames",
+            "1",
+        ]
+    )
+    benchmark._validate_args(args)
+    assert benchmark._render_schedule(args) == {
+        "mode": "stable-30hz",
+        "render_count": 32,
+        "expected_physics_count": 480,
+        "capture_start_physics_index": 448,
+        "encoded_fps": 30,
+        "mapping": "physics_index=render_index+448",
+    }
+
+
+def test_capture_mode_contract_marks_managed_copy_as_safe_async() -> None:
+    managed = benchmark._capture_mode_contract("managed-cuda-copy")
+    assert managed == {
+        "mode": "managed-cuda-copy",
+        "backend": "replicator_ldr_annotator",
+        "annotator_device": "cuda",
+        "annotator_do_array_copy": True,
+        "sink_blocking_copy": False,
+        "retain_source_until_cuda_event": True,
+        "intended_use": "safe_async_candidate",
+    }
+    cpu = benchmark._capture_mode_contract("cpu-copy-reference")
+    assert cpu["annotator_device"] == "cpu"
+    assert cpu["sink_blocking_copy"] is True
+
+
+def test_viewport_reference_contract_is_explicitly_cpu_readback() -> None:
+    reference = benchmark._capture_mode_contract("viewport-byte-reference")
+    assert reference["backend"] == "viewport_byte_capture"
+    assert reference["annotator_do_array_copy"] is None
+    assert reference["annotator_device"] == "cpu"
+
+
+def test_viewport_reference_requires_matching_lane_and_scheduler() -> None:
+    import pytest
+
+    args = benchmark.build_parser().parse_args(
+        ["--capture-mode", "viewport-byte-reference"]
+    )
+    with pytest.raises(
+        ValueError, match="viewport_capture_mode_and_scheduler_must_match"
+    ):
+        benchmark._validate_args(args)
+
+    args = benchmark.build_parser().parse_args(
+        [
+            "--capture-mode",
+            "viewport-byte-reference",
+            "--scheduler-mode",
+            "viewport-capture",
+            "--lane",
+            "headless-product",
+        ]
+    )
+    with pytest.raises(ValueError, match="viewport_capture_requires"):
+        benchmark._validate_args(args)
+
+
+def test_root_cause_classifier_localizes_zero_copy_lifetime() -> None:
+    cells = {
+        "zero-copy-async__continuous__full": {"passed": False},
+        "zero-copy-blocking__continuous__full": {"passed": True},
+        "managed-cuda-copy__continuous__full": {"passed": True},
+        "cpu-copy-reference__continuous__full": {"passed": True},
+    }
+    result = benchmark._classify_flicker_root_cause(cells)
+    assert result["status"] == "localized"
+    assert result["cause"] == (
+        "asynchronous_source_buffer_lifetime_or_cuda_stream_ordering"
+    )
+    assert result["selected_capture_mode"] == "managed-cuda-copy"
+
+
+def test_root_cause_classifier_distinguishes_scheduler_and_transparency() -> None:
+    scheduler = benchmark._classify_flicker_root_cause(
+        {
+            "zero-copy-async__continuous__full": {"passed": False},
+            "zero-copy-blocking__continuous__full": {"passed": False},
+            "managed-cuda-copy__continuous__full": {"passed": False},
+            "cpu-copy-reference__continuous__full": {"passed": False},
+            "managed-cuda-copy__step-wait__full": {"passed": True},
+        }
+    )
+    assert scheduler["cause"] == "continuous_scheduler_render_state_coherence"
+
+    glass = benchmark._classify_flicker_root_cause(
+        {
+            "zero-copy-async__continuous__full": {"passed": False},
+            "zero-copy-blocking__continuous__full": {"passed": False},
+            "managed-cuda-copy__continuous__full": {"passed": False},
+            "cpu-copy-reference__continuous__full": {"passed": False},
+            "managed-cuda-copy__step-wait__full": {"passed": False},
+            "managed-cuda-copy__step-wait__hide-liquid": {"passed": False},
+            "managed-cuda-copy__step-wait__marker-only": {"passed": True},
+        }
+    )
+    assert glass["cause"] == "original_glass_transparency_or_refraction_path"
+
+
+def test_root_cause_composer_requires_full_video(tmp_path) -> None:
+    import json
+    import pytest
+
+    path = tmp_path / "result.json"
+    path.write_text(
+        json.dumps(
+            {
+                "configuration": {
+                    "capture": {"mode": "managed-cuda-copy"},
+                    "scheduler_mode": "continuous",
+                },
+                "diagnostic_visibility": {"mode": "full"},
+                "artifacts": {"full_video": None},
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="root_cause_cell_missing_full_video"):
+        benchmark.compose_root_cause_audit([path])
 
 
 def test_flicker_audit_passes_stable_same_state_pairs() -> None:

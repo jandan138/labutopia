@@ -1,17 +1,17 @@
 {
-  "schema_version": 4,
-  "status": "published_passed_flicker_no_go_retraction",
-  "scope": "local_and_published_browser_qa_after_flicker_no_go_retraction",
-  "checked_at_utc": "2026-08-13T08:46:53Z",
+  "schema_version": 5,
+  "status": "local_passed_pending_published_qa",
+  "scope": "local_browser_qa_after_root_cause_matrix_update",
+  "checked_at_utc": "2026-08-13T12:51:18Z",
   "published_url": "https://jandan138.github.io/labutopia/reports/2026-08-12-labutopia-rtx50-field-notes/",
   "media_page_source_commit": "3d62eafcf45b2d16e8c8427479722cdaec6e18d0",
   "pages_workflow_run": 31683330724,
   "browser": "Chromium 145 via Playwright 1.62.1",
-  "review_mode": "local_and_published_non_independent",
+  "review_mode": "local_non_independent",
   "viewports": [
-    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "passed"},
-    {"width": 900, "height": 1100, "local_status": "passed", "published_status": "passed"},
-    {"width": 390, "height": 844, "local_status": "passed", "published_status": "passed"}
+    {"width": 1440, "height": 1000, "local_status": "passed", "published_status": "pending"},
+    {"width": 900, "height": 1100, "local_status": "passed", "published_status": "pending"},
+    {"width": 390, "height": 844, "local_status": "passed", "published_status": "pending"}
   ],
   "checks": {
     "http_status_200": true,
@@ -31,20 +31,22 @@
     "retracted_offscreen_mp4_sha256_matches": true,
     "published_summary_status_200": true,
     "published_visual_review_status_200": true
+    ,"root_cause_matrix_visible": true
+    ,"no_replacement_claim_visible": true
   },
   "retracted_flicker_media": [
     {"file": "media/visible-sync-headless-busy-gpu-50fps-v2.mp4", "sha256": "f31cbdaf63d72de82a89c1060c1de9be3d27a4d89a62a0198f501e2fe54dc686"},
     {"file": "media/visible-sync-offscreen-busy-gpu-50fps-v2.mp4", "sha256": "997227e45b1a366cb94e4ff60914c0afe06f64e2ef9231b3441f8a21d4606ba7"}
   ],
   "local_audit_artifacts": {
-    "audit_json": "/tmp/rtx50-flicker-page-qa/audit.json",
-    "desktop_screenshot": "/tmp/rtx50-flicker-page-qa/desktop.png",
-    "tablet_screenshot": "/tmp/rtx50-flicker-page-qa/tablet.png",
-    "mobile_screenshot": "/tmp/rtx50-flicker-page-qa/mobile.png",
-    "note": "Chromium media metadata loading cancels the preceding preload=none requests. Direct HTTP reads for all four MP4 files and both visible-sync WebP posters returned 200; this is not an unresolved asset failure."
+    "audit_json": "/tmp/rtx50-root-cause-page-qa/audit.json",
+    "desktop_screenshot": "/tmp/rtx50-root-cause-page-qa/desktop.png",
+    "tablet_screenshot": "/tmp/rtx50-root-cause-page-qa/tablet.png",
+    "mobile_screenshot": "/tmp/rtx50-root-cause-page-qa/mobile.png",
+    "note": "All three local viewports returned HTTP 200 with no console errors, page errors, failed requests, horizontal overflow, broken media, or missing anchors."
   },
-  "published_delivery": {
-    "status": "passed",
+  "previous_published_delivery": {
+    "status": "superseded_pending_new_deploy",
     "source_commit": "3d62eafcf45b2d16e8c8427479722cdaec6e18d0",
     "pages_workflow_run": 31683330724,
     "index_sha256": "e5b290f9d64bd151737b9b858de92f4fe6a5d34e0fd302443501cd5d4a12aafc",

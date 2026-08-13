@@ -170,7 +170,7 @@
       <section id="cover" class="hero">
         <div class="eyebrow">2026-08-12 · 2026-08-13 follow-up · Rendering systems / evidence engineering</div>
         <h2>驱动和可见杯<br>已经同步，<br>但视频仍会闪烁</h2>
-        <p class="lede">PhysX 碰撞杯和可见 USD 杯的数值姿态已经同步，但逐帧复核发现运动杯在相邻 RTX 图中交替发白、残影和恢复。DLSS、Native AA、丢弃一张过渡帧及其组合都没有通过闪烁门，所以本页撤回“诊断视频已就绪”的结论，也没有用另一条坏视频覆盖它。</p>
+        <p class="lede">PhysX 碰撞杯和可见 USD 杯的数值姿态已经同步，但逐帧复核发现运动杯在相邻 RTX 图中交替发白、残影和恢复。新一轮根因矩阵已经排除 CUDA 缓冲生命周期、H.264、网页播放器和 Replicator Annotator；问题收敛到 RTX 场景状态切换后的多帧收敛。当前仍没有一条全程无闪的视频，因此没有覆盖网页主视频。</p>
         <div class="verdict"><i></i> VIDEO QUALITY NO-GO · NO REPLACEMENT PROMOTED</div>
 
         <div class="recorder" aria-label="50赫兹渲染与30赫兹物理双时钟示意">
@@ -184,7 +184,7 @@
           <p>我遇到的是一个<strong>指标合同错位</strong>：GUI overlay 显示约 50 FPS，同事录屏也很流畅，但同步 headless RGB 端点只有 3.31 FPS。overlay 测的是 viewport 更新，不证明每秒真的有 50 张模型能消费的新 RTX 图。</p>
           <p>我把物理和渲染拆成 30/50 两个时钟，用目标 render product 的 <code>NEW_FRAME</code> 完成事件计数；每一帧都必须有递增 frame number，并通过 <code>LdrColor(device="cuda")</code> 进入三槽 GPU consumer。计时路径不做 CPU RGB 读回。</p>
           <p>上一版虽然已使用 PhysX kinematic target，但 RTX 画面仍可能读取静止的 USD 杯；现在每个物理步完成后都读取 PhysX 实际姿态，并把同一姿态镜像到渲染 session。数值门显示目标、PhysX、USD 根节点与可见 mesh 的最大位置误差只有 0.000123 mm。</p>
-          <p>逐帧审查进一步发现：源杯虽然会随碰撞体运动，但外观在相邻 RTX 图中交替变化。原始 CUDA 帧已经闪，说明问题发生在编码之前；四组修复候选均失败，因此视频只保留为折叠诊断证据，不再作为当前交付结果。</p>
+          <p>逐帧审查进一步发现：源杯虽然会随碰撞体运动，但外观在相邻 RTX 图中交替变化。四种缓冲策略、CPU 参考抓帧和原生 Viewport 抓帧都复现；固定同一物理状态 96 帧时只有开头 1–3 帧剧烈变化，随后稳定。这把根因收敛到 RTX 场景状态切换后的透明/反射历史收敛，而不是编码或 GPU→CPU 链路。</p>
         </div>
       </section>
 
@@ -206,8 +206,22 @@
         <p class="caption">* 650 个物理状态的共享 GPU 探索筛选，只用于比较修复方向；源码收尾后又用最终代码复跑 DLSS，58.04 FPS，原始帧 P95 仍为 2.54%，结论未变。发布门要求 P95 ≤ 0.5%、最大值 ≤ 1.0%。</p>
         <div class="callout warn">
           <b>当前结论</b>
-          <p>数值姿态同步通过，但视频视觉稳定性失败；此外液体仍会提前漏出。下一步不再继续调 AA，而要检查异步 <code>NEW_FRAME</code> 事件、<code>LdrColor(device="cuda", do_array_copy=False)</code> 与 USD/PhysX 状态之间是否取到了交替的新旧缓冲。</p>
+          <p>数值姿态同步通过，但视频视觉稳定性失败；此外液体仍会提前漏出。缓冲生命周期和 Annotator 已经被排除。下一步是建立“每个物理状态至少两张同状态图”的收敛门，再只把通过门的后帧写入交付视频；若仍失败，再做离线视觉杯与物理杯的资产级解耦。</p>
         </div>
+        <h4>2026-08-13 根因矩阵：哪些方向已经排除</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>实验</th><th>观测</th><th>判断</th></tr></thead>
+            <tbody>
+              <tr><td>CUDA 零拷贝异步 / 阻塞 / managed copy</td><td>三者均闪；约 61.11 / 61.91 / 61.20 FPS*</td><td class="pass">排除缓冲生命周期为主因</td></tr>
+              <tr><td>CPU copy 参考</td><td>仍闪；58.81 FPS*</td><td class="pass">排除 CUDA 独有链路</td></tr>
+              <tr><td>原生 Viewport byte capture</td><td>固定状态仍有前 1–3 张收敛帧</td><td class="pass">排除 Replicator Annotator</td></tr>
+              <tr><td>固定物理状态 96 帧</td><td>P95 变化仅 0.117%，但第 0→1 帧最大 4.64%</td><td class="fail">确认状态切换后需要收敛</td></tr>
+              <tr><td>30 Hz、Native AA、丢 1 帧完整候选</td><td>953 帧、31.77 秒；密集接触表仍见少量尖刺/幽灵杯</td><td class="fail">不替换网页视频</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="caption">* 共享 GPU 忙载探索值，只能比较方向，不能当正式性能资格。正式 50 Hz 仍需空闲 GPU 重复运行。</p>
         <details class="history">
           <summary>展开有闪烁的 visible-sync 视频（仅供复现问题）</summary>
           <p class="caption">重点看约 14 秒以后。它们是失败证据，不是当前可交付视频。</p>

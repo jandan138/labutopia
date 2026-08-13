@@ -1,5 +1,5 @@
 {
-  "schema": "labutopia.rtx50_full_video_visual_review.v4",
+  "schema": "labutopia.rtx50_full_video_visual_review.v5",
   "date": "2026-08-13",
   "review_method": "local_non_independent_full_video_contact_sheet_consecutive_frame_and_automated_flicker_review",
   "reviewed_videos": [
@@ -22,6 +22,9 @@
     "During source motion the beaker alternates between clear, pale, and ghosted appearances in adjacent RTX frames.",
     "The same defect is present in raw CUDA frames and H.264-decoded frames, so encoding and the web player are not the root cause.",
     "DLSS, native AA, one discarded transition frame, and native AA plus one discarded transition frame all failed the flicker gate.",
+    "Zero-copy asynchronous, zero-copy blocking, managed CUDA copy, and CPU copy references all reproduced the defect.",
+    "Native Viewport byte capture also reproduced initial convergence frames at one frozen physics state, excluding the Replicator annotator as the primary cause.",
+    "A full 953-frame 30 FPS native-AA candidate that discarded one transition frame still showed occasional spike and ghost-beaker frames in dense contact sheets, so it was not promoted.",
     "Detached liquid remains visible and numeric pre-tilt retention fails.",
     "The videos are retained only as failure evidence and are not promoted as current diagnostic delivery."
   ],

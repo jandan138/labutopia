@@ -40,6 +40,14 @@ def test_report_claims_and_failure_boundary() -> None:
         assert text in html
     for text in ("展开历史 teleport 视频", "共享 GPU 忙载", "数值姿态同步已经修好", "原始 CUDA 帧与 H.264 解码帧同时失败"):
         assert text in html
+    for text in (
+        "根因矩阵",
+        "排除缓冲生命周期为主因",
+        "排除 Replicator Annotator",
+        "953 帧、31.77 秒",
+        "不替换网页视频",
+    ):
+        assert text in html
 
 
 def test_report_summary_and_media_contract() -> None:
@@ -61,6 +69,14 @@ def test_report_summary_and_media_contract() -> None:
     assert current["qualification_matrix"]["offscreen_viewport"]["runs_meeting_50_rtx_fps"] == 0
     assert [run["integration_hz"] for run in summary["busy_gpu_integration_screen"]["runs"]] == [30, 60, 120]
     assert summary["historical_teleport_reference"]["use_for_current_claims"] is False
+    root_cause = summary["root_cause_matrix_2026_08_13"]
+    assert root_cause["status"] == (
+        "localized_rtx_state_transition_convergence_no_video_promotion"
+    )
+    assert root_cause["frozen_state_managed_capture"]["frame_count"] == 96
+    assert root_cause["frozen_state_managed_capture"]["world_transform_constant"] is True
+    assert root_cause["native_viewport_reference"]["replicator_annotator_primary_cause"] is False
+    assert root_cause["stable_30hz_native_candidate"]["promoted"] is False
     assert review["verdicts"] == {
         "visible_source_motion": "pass",
         "diagnostic_video": "fail_flicker",

@@ -1,5 +1,5 @@
 {
-  "schema": "labutopia.rtx50_field_notes_summary.v4",
+  "schema": "labutopia.rtx50_field_notes_summary.v5",
   "status": "visible_source_numeric_sync_pass_video_flicker_no_go_no_replacement_promoted",
   "date": "2026-08-13",
   "runtime": {
@@ -133,7 +133,44 @@
       "decoded_h264_changed_fraction_p95": 0.026038898926559677,
       "status": "failed"
     },
-    "decision": "No candidate video is promoted. Investigate asynchronous CUDA capture and render-state coherence."
+    "decision": "No candidate video is promoted. Buffer lifetime, CPU/GPU copy choice, H.264, web playback, and the Replicator annotator are excluded as the primary cause; next gate is per-state RTX convergence."
+  },
+  "root_cause_matrix_2026_08_13": {
+    "status": "localized_rtx_state_transition_convergence_no_video_promotion",
+    "evidence_class": "non_authoritative_busy_gpu_exploration",
+    "same_scene_and_formal_runtime_contract": true,
+    "input_usd_mutated": false,
+    "capture_lifecycle": [
+      {"mode": "zero-copy-async", "rtx_fps": 61.1119, "flicker": "failed"},
+      {"mode": "zero-copy-blocking", "rtx_fps": 61.9102, "flicker": "failed"},
+      {"mode": "managed-cuda-copy", "rtx_fps": 61.1992, "flicker": "failed"},
+      {"mode": "cpu-copy-reference", "rtx_fps": 58.8057, "flicker": "failed"}
+    ],
+    "native_viewport_reference": {
+      "fixed_physics_state": 448,
+      "frame_count": 96,
+      "rtx_fps": 23.9769,
+      "result": "initial_1_to_3_frames_change_then_converge",
+      "replicator_annotator_primary_cause": false
+    },
+    "frozen_state_managed_capture": {
+      "fixed_physics_state": 448,
+      "frame_count": 96,
+      "changed_fraction_p95": 0.0011690934211924754,
+      "changed_fraction_max": 0.04644489318737379,
+      "worst_pair": [0, 1],
+      "world_transform_constant": true
+    },
+    "stable_30hz_native_candidate": {
+      "frame_count": 953,
+      "encoded_fps": 30,
+      "duration_s": 31.766666666666666,
+      "measured_completed_frame_fps": 3.674517069948217,
+      "visual_review": "failed_occasional_spike_and_ghost_beaker",
+      "promoted": false
+    },
+    "cause_statement": "RTX transparent/reflection output needs multiple frames to converge after scene-state changes; fixed-count discard is not yet sufficient across the full trajectory.",
+    "claim_boundary": "diagnostic localization only; shared GPU busy; not formal FPS qualification and not a successful no-leak pour"
   },
   "busy_gpu_integration_screen": {
     "status": "all_quality_no_go",
@@ -154,5 +191,5 @@
       {"lane": "offscreen-viewport", "rtx_fps": 51.852212530428666, "file": "media/offscreen-viewport-full-50fps.mp4", "sha256": "cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344"}
     ]
   },
-  "next_gate": "Repair asynchronous CUDA capture/render-state coherence before promoting a video; separately repair source-beaker collision geometry and particle retention."
+  "next_gate": "Require at least two captured frames per physics state, compare them before promotion, and write only a converged later frame; separately repair source-beaker collision geometry and particle retention."
 }
