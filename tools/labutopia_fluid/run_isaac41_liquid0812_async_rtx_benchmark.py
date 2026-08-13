@@ -288,7 +288,9 @@ def _fit_follow_camera_pose(
     maximum += padding
     center = (minimum + maximum) * 0.5
 
-    view_direction = np.asarray([0.55, 1.0, 0.65], dtype=np.float64)
+    # The pour primarily travels in Y. Looking across X keeps that separation
+    # on the wider horizontal sensor axis instead of the tighter vertical FOV.
+    view_direction = np.asarray([1.0, 0.0, 0.55], dtype=np.float64)
     view_direction /= np.linalg.norm(view_direction)
     forward = -view_direction
     world_up = np.asarray([0.0, 0.0, 1.0], dtype=np.float64)
@@ -901,6 +903,7 @@ def _run_measurement(
     requested_render_index = -1
     requested_physics_index = -1
     current_physics_timestamp = None
+    last_camera_physics_index = None
     warmup_valid = 0
     records: list[dict[str, Any]] = []
     callback_errors: list[dict[str, str]] = []
@@ -1067,11 +1070,13 @@ def _run_measurement(
                     raise RuntimeError(
                         f"follow_camera_physics_index:{physics_index}:{len(follow_poses)}"
                     )
-                _author_camera_pose(
-                    stage,
-                    camera_record["camera_path"],
-                    follow_poses[physics_index],
-                )
+                if physics_index != last_camera_physics_index:
+                    _author_camera_pose(
+                        stage,
+                        camera_record["camera_path"],
+                        follow_poses[physics_index],
+                    )
+                    last_camera_physics_index = physics_index
             requested_render_index = render_index
             requested_physics_index = physics_index
             armed = True
