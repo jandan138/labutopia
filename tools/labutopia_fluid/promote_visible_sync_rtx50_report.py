@@ -55,6 +55,10 @@ def _eligible(result: dict[str, Any], audit: dict[str, Any], lane: str) -> None:
         raise RuntimeError(f"promotion_result_schema:{lane}")
     if result.get("lane") != lane or audit.get("lane") != lane:
         raise RuntimeError(f"promotion_lane_mismatch:{lane}")
+    if result["runtime"].get("evidence_class") != "formal_comparable":
+        raise RuntimeError(f"promotion_result_not_formal:{lane}")
+    if audit["runtime"].get("evidence_class") != "formal_comparable":
+        raise RuntimeError(f"promotion_audit_not_formal:{lane}")
     if result["configuration"]["camera"]["policy"] != "trajectory-envelope":
         raise RuntimeError(f"promotion_camera_policy:{lane}")
     if result["configuration"]["source_driver"] != "physx-kinematic-target":

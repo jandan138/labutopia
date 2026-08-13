@@ -9,6 +9,7 @@ def _result() -> dict:
     return {
         "schema": "labutopia.isaac41.liquid0812_async_rtx_result.v3",
         "lane": "headless-product",
+        "runtime": {"evidence_class": "formal_comparable"},
         "configuration": {
             "camera": {"policy": "trajectory-envelope"},
             "source_driver": "physx-kinematic-target",
@@ -25,6 +26,7 @@ def _result() -> dict:
 def _audit() -> dict:
     return {
         "lane": "headless-product",
+        "runtime": {"evidence_class": "formal_comparable"},
         "status": "passed",
         "pose_sync": {"passed": True},
         "pixel_sync": {"passed": True},

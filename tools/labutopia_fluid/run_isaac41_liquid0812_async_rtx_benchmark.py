@@ -358,11 +358,9 @@ def _author_source_semantics(stage: Any) -> dict[str, Any]:
         for prim in Usd.PrimRange(root):
             if not prim.IsActive() or not prim.IsDefined():
                 continue
-            semantic = Semantics.SemanticsAPI.Get(prim, "LabUtopiaVisibleSync")
+            semantic = Semantics.SemanticsAPI.Get(prim, "Semantics")
             if not semantic:
-                semantic = Semantics.SemanticsAPI.Apply(
-                    prim, "LabUtopiaVisibleSync"
-                )
+                semantic = Semantics.SemanticsAPI.Apply(prim, "Semantics")
             semantic.CreateSemanticTypeAttr().Set("class")
             semantic.CreateSemanticDataAttr().Set(SOURCE_SEMANTIC_LABEL)
             authored_paths.append(str(prim.GetPath()))
