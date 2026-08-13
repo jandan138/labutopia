@@ -172,6 +172,39 @@
     "cause_statement": "RTX transparent/reflection output needs multiple frames to converge after scene-state changes; fixed-count discard is not yet sufficient across the full trajectory.",
     "claim_boundary": "diagnostic localization only; shared GPU busy; not formal FPS qualification and not a successful no-leak pour"
   },
+  "gui_equivalence_followup_2026_08_13": {
+    "status": "continuous_presentation_removes_severe_pose_flash_liquid_retention_no_go",
+    "evidence_class": "non_authoritative_busy_gpu_exploration",
+    "formal_runtime_contract_used": true,
+    "input_usd_mutated": false,
+    "pose_author_ab": {
+      "session_mirror": "PhysX and visible USD pose agree",
+      "physx_only": "visible USD pose can remain 0.12604797 m stale",
+      "legacy_usd_teleport": "still converges over multiple frames after a render-starved large state jump"
+    },
+    "corrected_full_continuous_lane": {
+      "physics_states": 953,
+      "captured_frames": 953,
+      "encoded_fps": 30,
+      "duration_s": 31.766666666666666,
+      "measured_completed_frame_fps": 44.84797826451311,
+      "maximum_usd_expected_matrix_element_error": 0.0,
+      "maximum_packet_to_physx_position_error_m": 1.228781230931777e-07,
+      "visual_review": "pass_no_old_new_pose_alternation;not_independent",
+      "promoted": false
+    },
+    "main_viewport_lane": {
+      "status": "blocked_runtime_before_attestation",
+      "reason": "DSW has no X or active windowing service; SimulationApp(headless=False) cannot acquire IWindowing",
+      "claim": "offscreen native viewport does not prove desktop-window or WebRTC equivalence"
+    },
+    "remaining_physics_no_go": {
+      "pre_tilt_maximum_particles_outside_source": 36,
+      "allowed": 10,
+      "particle_count": 548
+    },
+    "claim_boundary": "visual synchronization diagnosis only; CPU viewport-byte reference capture; not a formal FPS qualification and not a no-leak delivery video"
+  },
   "busy_gpu_integration_screen": {
     "status": "all_quality_no_go",
     "claim_boundary": "shared-GPU exploratory screen; do not compare as formal performance qualification",
@@ -191,5 +224,5 @@
       {"lane": "offscreen-viewport", "rtx_fps": 51.852212530428666, "file": "media/offscreen-viewport-full-50fps.mp4", "sha256": "cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344"}
     ]
   },
-  "next_gate": "Require at least two captured frames per physics state, compare them before promotion, and write only a converged later frame; separately repair source-beaker collision geometry and particle retention."
+  "next_gate": "Repair source-beaker collision geometry and pre-tilt particle retention; then rerun the continuous presentation lane on an idle GPU. Run the explicit main-viewport lane only on a desktop or WebRTC-enabled node."
 }

@@ -77,6 +77,18 @@ def test_report_summary_and_media_contract() -> None:
     assert root_cause["frozen_state_managed_capture"]["world_transform_constant"] is True
     assert root_cause["native_viewport_reference"]["replicator_annotator_primary_cause"] is False
     assert root_cause["stable_30hz_native_candidate"]["promoted"] is False
+    followup = summary["gui_equivalence_followup_2026_08_13"]
+    assert followup["corrected_full_continuous_lane"]["captured_frames"] == 953
+    assert (
+        followup["corrected_full_continuous_lane"]
+        ["maximum_usd_expected_matrix_element_error"]
+        == 0.0
+    )
+    assert followup["corrected_full_continuous_lane"]["promoted"] is False
+    assert followup["main_viewport_lane"]["status"] == (
+        "blocked_runtime_before_attestation"
+    )
+    assert followup["remaining_physics_no_go"]["pre_tilt_maximum_particles_outside_source"] == 36
     assert review["verdicts"] == {
         "visible_source_motion": "pass",
         "diagnostic_video": "fail_flicker",

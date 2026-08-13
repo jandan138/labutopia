@@ -38,7 +38,7 @@ BENCHMARK_CAMERA_PATH = "/World/LabUtopiaAsyncRtxCamera"
 PHYSICS_HZ = baseline.PHYSICS_HZ
 PHYSICS_DT = baseline.PHYSICS_DT
 EXPECTED_OBSERVATIONS = baseline.EXPECTED_OBSERVATIONS
-LANES = ("headless-product", "offscreen-viewport")
+LANES = ("headless-product", "offscreen-viewport", "main-viewport")
 PROFILES = ("current", "fast-translucent", "fast-glass", "fast-opaque")
 AA_MODES = ("dlss", "native")
 CAPTURE_MODES = (
@@ -52,7 +52,11 @@ SCHEDULER_MODES = ("continuous", "step-wait", "viewport-capture")
 DIAGNOSTIC_VISIBILITY_MODES = ("full", "hide-liquid", "marker-only")
 CAMERA_POLICIES = ("trajectory-follow", "trajectory-envelope", "benchmark", "scene")
 TARGET_RENDER_HZ = 50
-OUTPUT_SCHEDULES = ("trajectory-50hz", "stable-30hz")
+OUTPUT_SCHEDULES = (
+    "trajectory-50hz",
+    "stable-30hz",
+    "continuous-30hz-window",
+)
 DEFAULT_WIDTH = 256
 DEFAULT_HEIGHT = 256
 SOURCE_SEMANTIC_LABEL = "labutopia_source_beaker"
@@ -110,10 +114,10 @@ def _render_schedule(args: argparse.Namespace) -> dict[str, Any]:
     """Describe either the production 30:50 schedule or a frozen diagnostic."""
     freeze_index = getattr(args, "freeze_physics_index", None)
     if freeze_index is None:
-        if args.output_schedule == "stable-30hz":
+        if args.output_schedule in {"stable-30hz", "continuous-30hz-window"}:
             start = int(args.capture_start_physics_index)
             return {
-                "mode": "stable-30hz",
+                "mode": args.output_schedule,
                 "render_count": args.max_observations - start,
                 "expected_physics_count": args.max_observations,
                 "capture_start_physics_index": start,
@@ -853,14 +857,42 @@ def _create_render_target(
             "window": None,
             "kind": "direct_headless_render_product",
         }
-    if args.lane != "offscreen-viewport":
+    if args.lane not in {"offscreen-viewport", "main-viewport"}:
         raise ValueError(f"unknown_lane:{args.lane}")
     from omni.isaac.core.utils import extensions
 
     extensions.enable_extension("omni.kit.viewport.window")
     for _ in range(8):
         application.update()
-    from omni.kit.viewport.utility import create_viewport_window
+    from omni.kit.viewport.utility import (
+        create_viewport_window,
+        get_active_viewport_window,
+    )
+
+    if args.lane == "main-viewport":
+        window = get_active_viewport_window()
+        if window is None or window.viewport_api is None:
+            raise RuntimeError(
+                "main_viewport_unavailable:run_on_a_host_with_an_active_kit_window_or_webrtc_session"
+            )
+        viewport = window.viewport_api
+        viewport.camera_path = camera_path
+        viewport.resolution = (args.width, args.height)
+        viewport.resolution_scale = 1
+        for _ in range(8):
+            application.update()
+        product_path = viewport.get_render_product_path()
+        if not product_path:
+            raise RuntimeError("main_viewport_render_product_missing")
+        return {
+            "product_path": product_path,
+            "product": None,
+            "viewport": viewport,
+            # The application owns its primary window; do not destroy it as a
+            # runner-created resource during cleanup.
+            "window": None,
+            "kind": "active_main_viewport_render_product",
+        }
 
     window = create_viewport_window(
         "LabUtopia Async RTX Offscreen",
@@ -1820,6 +1852,7 @@ def _run_visible_sync_audit_measurement(
             "render_product_path": product_path,
             "resolution": [args.width, args.height],
             "source_driver": args.source_driver,
+            "pose_publish_mode": args.pose_publish_mode,
             "integration_hz": args.integration_hz,
             "physics_states": EXPECTED_OBSERVATIONS,
             "same_render_product_for_rgb_and_instance": True,
@@ -2039,6 +2072,11 @@ def _run_measurement(
     scheduler_frame_budget = (
         args.render_warmup_frames
         + render_count * (1 + args.pose_render_settle_frames)
+        + (
+            int(args.capture_start_physics_index)
+            if args.continuous_render_preroll
+            else 0
+        )
         + 64
     )
     capture_on_play_before = bool(
@@ -2108,7 +2146,8 @@ def _run_measurement(
                 if args.freeze_physics_index is not None
                 else (
                     render_index + int(args.capture_start_physics_index)
-                    if args.output_schedule == "stable-30hz"
+                    if args.output_schedule
+                    in {"stable-30hz", "continuous-30hz-window"}
                     else min(
                         args.max_observations - 1,
                         _physics_index_for_render(render_index),
@@ -2151,6 +2190,15 @@ def _run_measurement(
                     )
                 )
                 current_physics_timestamp = time.perf_counter()
+                # Match an interactive viewport's presentation cadence during
+                # an unrecorded preroll.  Without these updates RTX first sees
+                # one large transform discontinuity after hundreds of physics
+                # states, which is not equivalent to GUI playback.
+                if (
+                    args.continuous_render_preroll
+                    and physics_index < desired_physics_index
+                ):
+                    application.update()
             if args.camera_policy == "trajectory-follow":
                 follow_poses = camera_record.get("follow_frame_poses") or []
                 if physics_index < 0 or physics_index >= len(follow_poses):
@@ -2236,6 +2284,16 @@ def _run_measurement(
                         },
                         "source_world_matrix_after_capture": baseline._prim_world_matrix(
                             stage, baseline.SOURCE_PATH
+                        ).tolist(),
+                        "source_physx_pose_xyzw": action_records[physics_index][
+                            "actual_pose_xyzw"
+                        ].tolist(),
+                        "source_expected_usd_world_matrix": (
+                            initial_physx_to_usd_matrix
+                            @ baseline._pose_matrix_xyzw(
+                                np,
+                                action_records[physics_index]["actual_pose_xyzw"],
+                            )
                         ).tolist(),
                     }
                 )
@@ -2425,7 +2483,7 @@ def _run_measurement(
         ),
         "runtime": runtime_record,
         "lane": args.lane,
-        "headless_simulation_app": True,
+        "headless_simulation_app": args.lane != "main-viewport",
         "render_target_kind": target["kind"],
         "scene": baseline._file_record(args.scene),
         "packet": baseline._file_record(args.packet),
@@ -2448,8 +2506,11 @@ def _run_measurement(
                 args.integration_hz
             ),
             "source_driver": args.source_driver,
+            "pose_publish_mode": args.pose_publish_mode,
             "target_render_hz": TARGET_RENDER_HZ,
             "output_schedule": args.output_schedule,
+            "capture_start_physics_index": args.capture_start_physics_index,
+            "continuous_render_preroll": args.continuous_render_preroll,
             "aa_mode": args.aa_mode,
             "pose_render_settle_frames": args.pose_render_settle_frames,
             "capture": capture_contract,
@@ -2570,7 +2631,7 @@ def _run_child(args: argparse.Namespace) -> int:
     sys.argv = [sys.argv[0]]
     application = SimulationApp(
         {
-            "headless": True,
+            "headless": args.lane != "main-viewport",
             "width": args.width,
             "height": args.height,
             "renderer": "RayTracedLighting",
@@ -2651,6 +2712,7 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
         "--max-updates-per-frame", str(args.max_updates_per_frame),
         "--review-frames", str(args.review_frames),
         "--source-driver", args.source_driver,
+        "--pose-publish-mode", args.pose_publish_mode,
         "--integration-hz", str(args.integration_hz),
         "--pose-render-settle-frames", str(args.pose_render_settle_frames),
         "--rt-subframes", str(args.rt_subframes),
@@ -2658,6 +2720,8 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
         "--output-schedule", args.output_schedule,
         "--capture-start-physics-index", str(args.capture_start_physics_index),
     ]
+    if args.continuous_render_preroll:
+        command.append("--continuous-render-preroll")
     if args.freeze_physics_index is not None:
         command.extend(
             ["--freeze-physics-index", str(args.freeze_physics_index)]
@@ -2895,6 +2959,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=baseline.DEFAULT_SOURCE_DRIVER,
     )
     parser.add_argument(
+        "--pose-publish-mode",
+        choices=baseline.POSE_PUBLISH_MODES,
+        default=baseline.DEFAULT_POSE_PUBLISH_MODE,
+    )
+    parser.add_argument(
         "--integration-hz",
         type=int,
         choices=baseline.INTEGRATION_HZ_CHOICES,
@@ -2916,6 +2985,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--output-schedule", choices=OUTPUT_SCHEDULES, default="trajectory-50hz"
     )
     parser.add_argument("--capture-start-physics-index", type=int, default=0)
+    parser.add_argument(
+        "--continuous-render-preroll",
+        action="store_true",
+        help=(
+            "Render every physics state before the retained window so RTX "
+            "observes GUI-like continuous motion instead of one large jump."
+        ),
+    )
     parser.add_argument("--visible-sync-audit", action="store_true")
     parser.add_argument("--allow-busy-gpu-exploratory", action="store_true")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
@@ -2949,7 +3026,11 @@ def _validate_args(args: argparse.Namespace) -> None:
     viewport_capture = args.capture_mode == "viewport-byte-reference"
     if viewport_capture != (args.scheduler_mode == "viewport-capture"):
         raise ValueError("viewport_capture_mode_and_scheduler_must_match")
-    if viewport_capture and args.lane not in {None, "offscreen-viewport"}:
+    if viewport_capture and args.lane not in {
+        None,
+        "offscreen-viewport",
+        "main-viewport",
+    }:
         raise ValueError("viewport_capture_requires_offscreen_viewport_lane")
     baseline._integration_substeps(args.integration_hz)
 

@@ -23,6 +23,7 @@ def test_benchmark_defaults_to_reproducible_session_camera() -> None:
     assert args.height == 256
     assert args.save_full_video is False
     assert args.source_driver == "physx-kinematic-target"
+    assert args.pose_publish_mode == "session-mirror"
     assert args.integration_hz == 120
     assert args.aa_mode == "dlss"
     assert args.capture_mode == "zero-copy-async"
@@ -34,6 +35,7 @@ def test_benchmark_defaults_to_reproducible_session_camera() -> None:
     assert args.freeze_render_frames == 96
     assert args.output_schedule == "trajectory-50hz"
     assert args.capture_start_physics_index == 0
+    assert args.continuous_render_preroll is False
     assert args.save_flicker_audit is False
 
 
@@ -85,6 +87,30 @@ def test_stable_30hz_schedule_captures_one_settled_frame_per_state() -> None:
     }
 
 
+def test_continuous_30hz_window_records_each_physics_state_once() -> None:
+    args = benchmark.build_parser().parse_args(
+        [
+            "--max-observations",
+            "480",
+            "--output-schedule",
+            "continuous-30hz-window",
+            "--capture-start-physics-index",
+            "448",
+            "--continuous-render-preroll",
+        ]
+    )
+    benchmark._validate_args(args)
+    assert benchmark._render_schedule(args) == {
+        "mode": "continuous-30hz-window",
+        "render_count": 32,
+        "expected_physics_count": 480,
+        "capture_start_physics_index": 448,
+        "encoded_fps": 30,
+        "mapping": "physics_index=render_index+448",
+    }
+    assert args.continuous_render_preroll is True
+
+
 def test_capture_mode_contract_marks_managed_copy_as_safe_async() -> None:
     managed = benchmark._capture_mode_contract("managed-cuda-copy")
     assert managed == {
@@ -131,6 +157,21 @@ def test_viewport_reference_requires_matching_lane_and_scheduler() -> None:
     )
     with pytest.raises(ValueError, match="viewport_capture_requires"):
         benchmark._validate_args(args)
+
+
+def test_main_viewport_is_an_explicit_supported_viewport_capture_lane() -> None:
+    args = benchmark.build_parser().parse_args(
+        [
+            "--capture-mode",
+            "viewport-byte-reference",
+            "--scheduler-mode",
+            "viewport-capture",
+            "--lane",
+            "main-viewport",
+        ]
+    )
+    benchmark._validate_args(args)
+    assert args.lane == "main-viewport"
 
 
 def test_root_cause_classifier_localizes_zero_copy_lifetime() -> None:
@@ -437,6 +478,50 @@ def test_kinematic_driver_interpolates_four_targets_at_120hz(monkeypatch) -> Non
     ]
     assert action["integration_steps"] == 4
     assert action["pose_error"]["position_m"] == 0.0
+
+
+def test_physx_only_publish_mode_does_not_author_a_second_usd_pose(monkeypatch) -> None:
+    class View:
+        def __init__(self) -> None:
+            self.pose = np.asarray([[0, 0, 0, 0, 0, 0, 1]], dtype=np.float32)
+
+        def set_kinematic_targets(self, targets, _indices) -> None:
+            self.pose = np.asarray(targets, dtype=np.float32)
+
+        def get_transforms(self):
+            return self.pose.copy()
+
+    class Stepper:
+        def step(self) -> None:
+            pass
+
+    identity = np.eye(4, dtype=np.float64)
+    mirror_calls = []
+    monkeypatch.setattr(baseline, "_prim_world_matrix", lambda _stage, _path: identity)
+    monkeypatch.setattr(
+        baseline,
+        "_mirror_physx_pose_to_usd",
+        lambda *_args: mirror_calls.append(True),
+    )
+    action = baseline._advance_source_interval(
+        np=np,
+        args=Namespace(
+            source_driver="physx-kinematic-target",
+            pose_publish_mode="physx-only",
+            integration_hz=30,
+        ),
+        stage=None,
+        stepper=Stepper(),
+        source_view=View(),
+        source_indices=np.asarray([0], dtype=np.uint32),
+        alignment={"rigid_from_packet": identity, "usd_from_packet": identity},
+        previous_packet_pose=np.asarray([0, 0, 0, 0, 0, 0, 1], dtype=np.float32),
+        current_packet_pose=np.asarray([0, 0, 0, 0, 0, 0, 1], dtype=np.float32),
+        source_matrix_time_code=None,
+        simulation=None,
+    )
+    assert mirror_calls == []
+    assert action["pose_publish_mode"] == "physx-only"
 
 
 def test_motion_acceptance_rejects_legacy_driver_and_visible_numeric_leak() -> None:

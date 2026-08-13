@@ -47,8 +47,10 @@ EXPECTED_OBSERVATIONS = 953
 PHYSICS_HZ = 30
 PHYSICS_DT = 1.0 / PHYSICS_HZ
 SOURCE_DRIVERS = ("physx-kinematic-target", "legacy-usd-teleport")
+POSE_PUBLISH_MODES = ("session-mirror", "physx-only")
 INTEGRATION_HZ_CHOICES = (30, 60, 120)
 DEFAULT_SOURCE_DRIVER = "physx-kinematic-target"
+DEFAULT_POSE_PUBLISH_MODE = "session-mirror"
 DEFAULT_INTEGRATION_HZ = 120
 PRE_TILT_MAX_OUTSIDE_FRACTION = 0.02
 MAX_KINEMATIC_POSITION_ERROR_M = 1.0e-3
@@ -536,7 +538,15 @@ def _advance_source_interval(
     expected_usd_root_matrix = (
         initial_physx_to_usd_matrix @ _pose_matrix_xyzw(np, actual_pose)
     )
-    if args.source_driver == "physx-kinematic-target":
+    pose_publish_mode = getattr(
+        args, "pose_publish_mode", DEFAULT_POSE_PUBLISH_MODE
+    )
+    if pose_publish_mode not in POSE_PUBLISH_MODES:
+        raise ValueError(f"liquid0812_pose_publish_mode_invalid:{pose_publish_mode}")
+    if (
+        args.source_driver == "physx-kinematic-target"
+        and pose_publish_mode == "session-mirror"
+    ):
         _mirror_physx_pose_to_usd(
             stage,
             expected_usd_root_matrix,
@@ -562,6 +572,7 @@ def _advance_source_interval(
         "target_pose_xyzw": np.asarray(target_pose, dtype=np.float64),
         "actual_pose_xyzw": actual_pose,
         "actual_packet_pose_xyzw": actual_packet_pose,
+        "pose_publish_mode": pose_publish_mode,
         "pose_error": _pose_error(np, target_pose, actual_pose),
         "usd_root_pose_xyzw": usd_root_pose,
         "usd_pose_error": usd_pose_error,
@@ -1318,6 +1329,8 @@ def _child_command(args: argparse.Namespace, request_path: Path, *, save_video: 
         str(args.render_warmup_observations),
         "--source-driver",
         args.source_driver,
+        "--pose-publish-mode",
+        args.pose_publish_mode,
         "--integration-hz",
         str(args.integration_hz),
     ]
@@ -1698,6 +1711,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--render-warmup-observations", type=int, default=16)
     parser.add_argument(
         "--source-driver", choices=SOURCE_DRIVERS, default=DEFAULT_SOURCE_DRIVER
+    )
+    parser.add_argument(
+        "--pose-publish-mode",
+        choices=POSE_PUBLISH_MODES,
+        default=DEFAULT_POSE_PUBLISH_MODE,
     )
     parser.add_argument(
         "--integration-hz",
