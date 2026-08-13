@@ -156,6 +156,7 @@
         <a href="#contract">03 / 什么才算一帧</a>
         <a href="#battle">04 / 四幕排障</a>
         <a href="#qualification">05 / 资格矩阵</a>
+        <a href="#kinematic">05.5 / 规范驱动复测</a>
         <a href="#boundary">06 / 已闭合与未闭合</a>
         <a href="#eval">07 / 能否交给评测</a>
         <a href="#interview">08 / 追问预案</a>
@@ -164,7 +165,7 @@
     </aside>
     <main>
       <section id="cover" class="hero">
-        <div class="eyebrow">2026-08-12 · Rendering systems / evidence engineering</div>
+        <div class="eyebrow">2026-08-12 · 2026-08-13 follow-up · Rendering systems / evidence engineering</div>
         <h2>从 GUI 50 FPS<br>到真正可消费的 RTX 50 Hz</h2>
         <p class="lede">一个画面角落显示 50 FPS 的液体 demo，为什么模型同步取图却只有 3.31 FPS？这次复盘讲我们如何重新定义“完成一帧”，把 RTX 图留在 GPU，并用 12 次正式运行把答案从观感变成证据。</p>
         <div class="verdict"><i></i> PERFORMANCE CLOSED · PHYSICS QUALITY OPEN</div>
@@ -280,6 +281,33 @@ physics_index = floor(render_index × 30 / 50)</pre>
         <p>上表不包含这次“保存完整视频”的两条额外正式运行。加入 298 MiB CUDA 全帧库后，headless 为 52.22 FPS，offscreen 为 51.85 FPS；说明完整留帧没有把推荐档拖回 50 以下。</p>
       </section>
 
+      <section id="kinematic">
+        <div class="eyebrow">05.5 · 2026-08-13 kinematic follow-up</div>
+        <h3>把“拖动杯子”改规范以后，漏液并没有自动消失</h3>
+        <p>旧视频的问题不是杯子真的被机械手稳定拿住，而是每个 30 Hz 控制点直接改 USD transform，再要求 PhysX 接受一次瞬移。新实现把源杯改成 kinematic rigid body，用 <code>RigidBodyView.set_kinematic_targets</code> 写入目标；30 Hz 控制点之间按 30/60/120 Hz 插值，并在每次写入后读取 PhysX 的真实姿态。</p>
+        <div class="metrics">
+          <div class="metric"><b>0.000123 mm</b><span>三档最大位置跟踪误差</span></div>
+          <div class="metric"><b>0.000025°</b><span>三档最大旋转跟踪误差</span></div>
+          <div class="metric"><b>548 / 548</b><span>第 0 帧粒子全部在源杯</span></div>
+          <div class="metric"><b>NO-GO</b><span>三档液体质量门均失败</span></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>积分频率</th><th>物理均值</th><th>模型就绪 FPS</th><th>倾斜前最多杯外</th><th>最终：目标 / 桌面 / 桌下</th><th>结论</th></tr></thead>
+            <tbody>
+              <tr><td>30 Hz</td><td>5.76 ms</td><td>164.60</td><td>32 / 548</td><td>507 / 40 / 1</td><td class="fail">NO-GO</td></tr>
+              <tr><td>60 Hz</td><td>10.99 ms</td><td>88.35</td><td>23 / 548</td><td>496 / 38 / 14</td><td class="fail">NO-GO</td></tr>
+              <tr><td>120 Hz</td><td>21.64 ms</td><td>45.46</td><td>23 / 548</td><td>478 / 40 / 30</td><td class="fail">NO-GO</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>这组数字把两个问题拆开了：<strong>杯子驱动已经修好</strong>，但液体仍在尚未倾斜时从 548/548 下降到约 524–526 个杯内。更小的 120 Hz 步长没有救回质量，最终穿到桌下的粒子反而从 1 个增加到 30 个。因此根因不再是“轨迹瞬移”，而应继续查粒子初始间距、源杯 convex decomposition 内壁、rest/contact offset 与运动碰撞裕量。</p>
+        <div class="callout warn">
+          <b>为什么没有再产一条新视频</b>
+          <p>预先约定的 stop rule 是：静置、倾斜前保液和完整倾倒数值门先通过，才进入 RTX 50 Hz 与视频交付。三档都失败，所以本轮停在物理层；继续渲染只能得到一条更规范地展示失败的视频，不能成为“不撒不漏”的交付物。</p>
+        </div>
+      </section>
+
       <section id="boundary">
         <div class="eyebrow">06 · Evidence boundary</div>
         <h3>知道哪条线闭合，比“全都成功”更重要</h3>
@@ -292,13 +320,14 @@ physics_index = floor(render_index × 30 / 50)</pre>
               <li>headless/offscreen fast-glass 重复集均 3/3 超过 50。</li>
               <li>完整 CUDA 留帧后的两条视频运行仍超过 50。</li>
               <li>两条运行绑定 Isaac 4.1 effective-runtime v2 receipt。</li>
+              <li>源杯已改为 PhysX kinematic target，姿态读回误差远低于 0.5 mm / 0.1° 门槛。</li>
             </ul>
           </article>
           <article>
             <h4>未闭合</h4>
             <ul>
-              <li>物理状态 422–423 起出现粒子穿到桌面下。</li>
-              <li>目标杯最终接收率仍为 0。</li>
+              <li>规范驱动下仍有 23–32 个粒子在倾斜前离开源杯分类。</li>
+              <li>30/60/120 Hz 最终分别有 1/14/30 个粒子穿到桌下。</li>
               <li>render 759 后源杯被镜头上边界裁切。</li>
               <li>独立复核看不到连续液流，视频不具备完整倒液过程的视觉资格。</li>
               <li>H.264 编码在计时后完成，不声称实时编码 50 FPS。</li>
@@ -324,6 +353,7 @@ physics_index = floor(render_index × 30 / 50)</pre>
         <details><summary>两张图共享一个物理状态，算不算假 50 Hz？</summary><p>相机确实完成了 50 次新渲染，所以是 50 Hz imaging；世界状态只有 30 Hz，所以不能叫 50 Hz state sampling。manifest 明确保留一对多映射。</p></details>
         <details><summary>为什么 3 次都要跑？</summary><p>原始玻璃最能说明问题：单次曾有 50.36，但另外两次 47.65/48.92。没有重复资格，就很容易挑到一次幸运结果。</p></details>
         <details><summary>最值得复用的方法是什么？</summary><p>先定义可证伪的端点，再分层测量；所有优化都记录 effective settings；速度门与视觉/物理质量门分开；单次成功永远不自动升级为资格声明。</p></details>
+        <details><summary>改成 kinematic target 后为什么还漏？</summary><p>kinematic target 修复的是“杯子怎么移动”，不是“粒子和杯壁如何接触”。姿态回读已经证明杯子严格跟轨迹走；剩余的早期漏液更指向源杯内壁碰撞近似、offset 和粒子初始状态。把积分从 30 提高到 120 Hz 仍失败，也排除了“只要多算几个子步就好”的简单解释。</p></details>
       </section>
 
       <section id="evidence">
@@ -333,9 +363,10 @@ physics_index = floor(render_index × 30 / 50)</pre>
         <p class="hash">Offscreen MP4 · cab0059edaacdbbbd70a48611c094716d6f46e02804cd2eb87a1ad01801ab344</p>
         <p class="hash">Headless runtime receipt · 42b9460932d4275752533cec22c0f0f885481a605910245ef953663e6f22e72d</p>
         <p class="hash">Offscreen runtime receipt · 34e22e4ddd0d621a85ab7fecba0d364dedb24f5ee66f280ec5ac7cabbd212305</p>
+        <p class="hash">Kinematic sweep · f343c5f5c2b7fda02adf0dd5e7341e80c90991c7dc37ce7cd3dd06e2e8401c8f</p>
         <p>完整结构化摘要见 <a href="benchmark-summary.json">benchmark-summary.json</a>。</p>
       </section>
-      <footer>LabUtopia · RTX 50 Hz Field Notes · formal Isaac Sim 4.1 lane · 2026-08-12</footer>
+      <footer>LabUtopia · RTX 50 Hz Field Notes · formal Isaac Sim 4.1 lane · updated 2026-08-13</footer>
     </main>
   </div>
   <script>

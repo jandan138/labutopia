@@ -45,8 +45,14 @@ EXPECTED_PARTICLE_COUNT = 548
 EXPECTED_OBSERVATIONS = 953
 PHYSICS_HZ = 30
 PHYSICS_DT = 1.0 / PHYSICS_HZ
+SOURCE_DRIVERS = ("physx-kinematic-target", "legacy-usd-teleport")
+INTEGRATION_HZ_CHOICES = (30, 60, 120)
+DEFAULT_SOURCE_DRIVER = "physx-kinematic-target"
+DEFAULT_INTEGRATION_HZ = 120
+PRE_TILT_MAX_OUTSIDE_FRACTION = 0.02
+MAX_KINEMATIC_POSITION_ERROR_M = 5.0e-4
+MAX_KINEMATIC_ROTATION_ERROR_DEG = 0.1
 STATIC_HOLD_SECONDS = 8
-STATIC_HOLD_STEPS = PHYSICS_HZ * STATIC_HOLD_SECONDS
 REVIEW_INDICES = frozenset({0, 300, 450, 580, 650, 750, 852, 952})
 
 
@@ -98,6 +104,88 @@ def _matrix_pose_xyzw(np: Any, matrix: Any) -> Any:
     pose[:3] = value[3, :3]
     pose[3:] = Rotation.from_matrix(value[:3, :3].T).as_quat()
     return pose.astype(np.float32)
+
+
+def _integration_substeps(integration_hz: int) -> int:
+    if integration_hz not in INTEGRATION_HZ_CHOICES:
+        raise ValueError(f"liquid0812_integration_hz_invalid:{integration_hz}")
+    if integration_hz % PHYSICS_HZ:
+        raise ValueError(f"liquid0812_integration_not_multiple_of_control:{integration_hz}")
+    return integration_hz // PHYSICS_HZ
+
+
+def _pose_error(np: Any, target_xyzw: Any, actual_xyzw: Any) -> dict[str, float]:
+    target = np.asarray(target_xyzw, dtype=np.float64).reshape(7)
+    actual = np.asarray(actual_xyzw, dtype=np.float64).reshape(7)
+    position_m = float(np.linalg.norm(actual[:3] - target[:3]))
+    target_q = target[3:] / np.linalg.norm(target[3:])
+    actual_q = actual[3:] / np.linalg.norm(actual[3:])
+    cosine = min(1.0, max(-1.0, abs(float(np.dot(target_q, actual_q)))))
+    rotation_degrees = math.degrees(2.0 * math.acos(cosine))
+    return {"position_m": position_m, "rotation_degrees": rotation_degrees}
+
+
+def _first_tilt_observation(np: Any, source_poses: Any, threshold_degrees: float = 0.1) -> int:
+    poses = np.asarray(source_poses, dtype=np.float64)
+    initial = poses[0, 3:] / np.linalg.norm(poses[0, 3:])
+    for index, quaternion in enumerate(poses[:, 3:]):
+        normalized = quaternion / np.linalg.norm(quaternion)
+        cosine = min(1.0, max(-1.0, abs(float(np.dot(initial, normalized)))))
+        if math.degrees(2.0 * math.acos(cosine)) > threshold_degrees:
+            return index
+    return len(poses)
+
+
+def _motion_acceptance(
+    np: Any,
+    *,
+    scores: Sequence[dict[str, Any]],
+    action_records: Sequence[dict[str, Any]],
+    source_poses: Any,
+    source_driver: str,
+) -> dict[str, Any]:
+    if not scores or not action_records:
+        raise ValueError("liquid0812_motion_acceptance_requires_records")
+    first_tilt_observation = _first_tilt_observation(np, source_poses)
+    pre_tilt_scores = scores[: min(first_tilt_observation, len(scores))]
+    pre_tilt_outside_counts = [
+        EXPECTED_PARTICLE_COUNT - int(score["source"]) - int(score["nonfinite"])
+        for score in pre_tilt_scores
+    ]
+    pre_tilt_max_outside = max(pre_tilt_outside_counts, default=0)
+    pre_tilt_max_below = max(
+        (int(score["below_table"]) for score in pre_tilt_scores), default=0
+    )
+    maximum_pose_position_error = max(
+        float(action["pose_error"]["position_m"]) for action in action_records
+    )
+    maximum_pose_rotation_error = max(
+        float(action["pose_error"]["rotation_degrees"])
+        for action in action_records
+    )
+    pre_tilt_max_allowed = int(
+        math.floor(EXPECTED_PARTICLE_COUNT * PRE_TILT_MAX_OUTSIDE_FRACTION)
+    )
+    return {
+        "pre_tilt_retention": {
+            "passed": pre_tilt_max_outside <= pre_tilt_max_allowed
+            and pre_tilt_max_below == 0,
+            "first_tilt_observation": first_tilt_observation,
+            "maximum_outside_source_count": pre_tilt_max_outside,
+            "maximum_allowed_outside_source_count": pre_tilt_max_allowed,
+            "maximum_below_table_count": pre_tilt_max_below,
+            "visual_no_leak_review_pending": True,
+        },
+        "source_pose_tracking": {
+            "passed": source_driver == "physx-kinematic-target"
+            and maximum_pose_position_error <= MAX_KINEMATIC_POSITION_ERROR_M
+            and maximum_pose_rotation_error <= MAX_KINEMATIC_ROTATION_ERROR_DEG,
+            "maximum_position_error_m": maximum_pose_position_error,
+            "maximum_rotation_error_degrees": maximum_pose_rotation_error,
+            "position_threshold_m": MAX_KINEMATIC_POSITION_ERROR_M,
+            "rotation_threshold_degrees": MAX_KINEMATIC_ROTATION_ERROR_DEG,
+        },
+    }
 
 
 def _file_record(path: Path) -> dict[str, Any]:
@@ -172,12 +260,21 @@ def _sample_gpu(seconds: int = 10) -> dict[str, Any]:
         for sample in samples
         for gpu in sample.get("gpus", [])
     ]
+    compute_process_samples = [
+        sample.get("compute_processes", []) for sample in samples
+    ]
+    no_compute_processes = all(
+        not process_rows for process_rows in compute_process_samples
+    )
     return {
         "duration_seconds": seconds,
         "samples": samples,
         "maximum_utilization_percent": max(utilizations) if utilizations else None,
         "mean_utilization_percent": statistics.fmean(utilizations) if utilizations else None,
-        "idle_enough": bool(utilizations) and max(utilizations) <= 20.0,
+        "no_compute_processes": no_compute_processes,
+        "idle_enough": bool(utilizations)
+        and max(utilizations) <= 20.0
+        and no_compute_processes,
     }
 
 
@@ -248,6 +345,8 @@ def _open_stage(args: argparse.Namespace, application: Any) -> tuple[Any, dict[s
     context = omni.usd.get_context()
     if not context.open_stage(str(args.scene)):
         raise RuntimeError("liquid0812_stage_open_failed")
+    for _ in range(args.stage_warmup_updates):
+        application.update()
     stage = context.get_stage()
     if stage is None:
         raise RuntimeError("liquid0812_stage_missing")
@@ -255,19 +354,36 @@ def _open_stage(args: argparse.Namespace, application: Any) -> tuple[Any, dict[s
     physics_settings = _configure_physics_scene_for_pbd(
         stage,
         PHYSICS_SCENE_PATH,
-        integration_dt=PHYSICS_DT,
+        integration_dt=1.0 / args.integration_hz,
         strict_mode=True,
     )
     source_prim = stage.GetPrimAtPath(SOURCE_PATH)
-    source_body_contract = {
-        "applied_schemas": list(source_prim.GetAppliedSchemas()),
-        "rigid_body_enabled": source_prim.GetAttribute("physics:rigidBodyEnabled").Get(),
-        "kinematic_enabled": source_prim.GetAttribute("physics:kinematicEnabled").Get(),
-        "runtime_schema_edits": False,
-        "motion_compatibility": "author_existing_xformOp_transform_then_flush_physx_changes",
-    }
-    for _ in range(args.stage_warmup_updates):
+    if args.source_driver == "physx-kinematic-target":
+        from tools.labutopia_fluid.run_interndata_online_surface_probe import (
+            apply_source_body_mode,
+            source_body_mode_contract,
+        )
+
+        source_body_contract = apply_source_body_mode(
+            source_prim,
+            source_body_mode_contract("kinematic", treatment="benchmark"),
+        )
         application.update()
+    else:
+        source_body_contract = {
+            "applied_schemas": list(source_prim.GetAppliedSchemas()),
+            "rigid_body_enabled": source_prim.GetAttribute("physics:rigidBodyEnabled").Get(),
+            "kinematic_enabled": source_prim.GetAttribute("physics:kinematicEnabled").Get(),
+            "runtime_schema_edits": False,
+            "mode": "dynamic",
+            "action_driver": "USD_xformOp_transform_plus_PhysX_flush_changes",
+            "claim_eligible": False,
+        }
+    effective_kinematic = bool(
+        source_prim.GetAttribute("physics:kinematicEnabled").Get()
+    )
+    if effective_kinematic != (args.source_driver == "physx-kinematic-target"):
+        raise RuntimeError("liquid0812_source_driver_mode_mismatch")
     return stage, {
         "physics_settings": physics_settings,
         "asset_configuration": _asset_configuration(stage),
@@ -275,7 +391,9 @@ def _open_stage(args: argparse.Namespace, application: Any) -> tuple[Any, dict[s
     }
 
 
-def _attach_stepper_and_source(stage: Any) -> tuple[Any, Any, Any, Any]:
+def _attach_stepper_and_source(
+    stage: Any, args: argparse.Namespace
+) -> tuple[Any, Any, Any, Any, Any]:
     import numpy as np
     import omni.physics.tensors
     import omni.physx
@@ -288,8 +406,8 @@ def _attach_stepper_and_source(stage: Any) -> tuple[Any, Any, Any, Any]:
     stage_id = UsdUtils.StageCache.Get().GetId(stage).ToLongInt()
     stepper = StrictPhysicsStepper.attach(
         interface=omni.physx.get_physx_simulation_interface(),
-        logical_dt=PHYSICS_DT,
-        integration_dt=PHYSICS_DT,
+        logical_dt=1.0 / args.integration_hz,
+        integration_dt=1.0 / args.integration_hz,
         substeps_per_logical_step=1,
         stage_id=stage_id,
     )
@@ -298,8 +416,101 @@ def _attach_stepper_and_source(stage: Any) -> tuple[Any, Any, Any, Any]:
     if source_view.count != 1:
         raise RuntimeError(f"liquid0812_source_view_count:{source_view.count}")
     source_indices = np.asarray([0], dtype=np.uint32)
-    initial_pose = np.asarray(source_view.get_transforms(), dtype=np.float64).reshape((-1, 7))[0]
-    return stepper, source_view, source_indices, initial_pose
+    initial_pose = np.asarray(
+        source_view.get_transforms(), dtype=np.float64
+    ).reshape((-1, 7))[0]
+    # Keep the simulation view alive for as long as the rigid-body view is
+    # used.  In Isaac 4.1 the child view does not own the tensor backend.
+    return stepper, tensor_simulation, source_view, source_indices, initial_pose
+
+
+def _source_motion_alignment(
+    np: Any,
+    *,
+    initial_rigid_pose: Any,
+    source_poses: Any,
+    initial_usd_matrix: Any,
+) -> dict[str, Any]:
+    initial_rigid_pose = np.asarray(initial_rigid_pose, dtype=np.float64).reshape(7)
+    packet_initial_matrix = _pose_matrix_xyzw(np, source_poses[0])
+    return {
+        "initial_rigid_pose_xyzw": initial_rigid_pose,
+        "rigid_from_packet": (
+            _pose_matrix_xyzw(np, initial_rigid_pose)
+            @ np.linalg.inv(packet_initial_matrix)
+        ),
+        "usd_from_packet": initial_usd_matrix @ np.linalg.inv(packet_initial_matrix),
+    }
+
+
+def _rigid_target_for_packet_pose(
+    np: Any, alignment: dict[str, Any], packet_pose: Any
+) -> Any:
+    return _matrix_pose_xyzw(
+        np,
+        alignment["rigid_from_packet"] @ _pose_matrix_xyzw(np, packet_pose),
+    )
+
+
+def _packet_pose_for_actual_rigid(
+    np: Any, alignment: dict[str, Any], actual_rigid_pose: Any
+) -> Any:
+    return _matrix_pose_xyzw(
+        np,
+        np.linalg.inv(alignment["rigid_from_packet"])
+        @ _pose_matrix_xyzw(np, actual_rigid_pose),
+    )
+
+
+def _advance_source_interval(
+    *,
+    np: Any,
+    args: argparse.Namespace,
+    stage: Any,
+    stepper: Any,
+    source_view: Any,
+    source_indices: Any,
+    alignment: dict[str, Any],
+    previous_packet_pose: Any,
+    current_packet_pose: Any,
+    source_matrix_time_code: float | None,
+    simulation: Any,
+) -> dict[str, Any]:
+    from tools.labutopia_fluid.fluid_benchmark_contract import interpolate_pose_xyzw
+
+    substeps = _integration_substeps(args.integration_hz)
+    target_pose = None
+    for substep_index in range(substeps):
+        alpha = float(substep_index + 1) / float(substeps)
+        packet_pose = interpolate_pose_xyzw(
+            previous_packet_pose, current_packet_pose, alpha
+        )
+        target_pose = _rigid_target_for_packet_pose(np, alignment, packet_pose)
+        if args.source_driver == "physx-kinematic-target":
+            source_view.set_kinematic_targets(
+                np.asarray([target_pose], dtype=np.float32), source_indices
+            )
+        else:
+            actual_usd_matrix = (
+                alignment["usd_from_packet"] @ _pose_matrix_xyzw(np, packet_pose)
+            )
+            _set_source_usd_matrix(
+                stage, actual_usd_matrix, source_matrix_time_code, simulation
+            )
+        stepper.step()
+    if target_pose is None:
+        raise RuntimeError("liquid0812_source_interval_without_target")
+    actual_pose = np.asarray(
+        source_view.get_transforms(), dtype=np.float64
+    ).reshape((-1, 7))[0]
+    actual_packet_pose = _packet_pose_for_actual_rigid(np, alignment, actual_pose)
+    return {
+        "target_pose_xyzw": np.asarray(target_pose, dtype=np.float64),
+        "actual_pose_xyzw": actual_pose,
+        "actual_packet_pose_xyzw": actual_packet_pose,
+        "pose_error": _pose_error(np, target_pose, actual_pose),
+        "integration_steps": substeps,
+    }
 
 
 def _source_usd_matrix(stage: Any) -> tuple[Any, float | None, list[float]]:
@@ -412,16 +623,33 @@ def _run_static_hold(args: argparse.Namespace, application: Any, packet: Any) ->
     import numpy as np
 
     stage, stage_record = _open_stage(args, application)
-    stepper, source_view, source_indices, initial_pose = _attach_stepper_and_source(stage)
+    stepper, _tensor_simulation, source_view, source_indices, initial_pose = (
+        _attach_stepper_and_source(stage, args)
+    )
     source_frame_local = packet.array("source_frame_local_matrix", (4, 4))
     source_poses = packet.array("source_poses_xyzw", (EXPECTED_OBSERVATIONS, 7))
     initial_usd_matrix, source_matrix_time_code, source_matrix_time_samples = (
         _source_usd_matrix(stage)
     )
+    alignment = _source_motion_alignment(
+        np,
+        initial_rigid_pose=initial_pose,
+        source_poses=source_poses,
+        initial_usd_matrix=initial_usd_matrix,
+    )
+    step_count = args.integration_hz * STATIC_HOLD_SECONDS
     timings = []
     scores = []
     try:
-        for index in range(STATIC_HOLD_STEPS):
+        if args.source_driver == "physx-kinematic-target":
+            source_view.set_kinematic_targets(
+                np.asarray(
+                    [_rigid_target_for_packet_pose(np, alignment, source_poses[0])],
+                    dtype=np.float32,
+                ),
+                source_indices,
+            )
+        for index in range(step_count):
             started = time.perf_counter()
             stepper.step()
             positions = _read_positions(stage)
@@ -448,7 +676,9 @@ def _run_static_hold(args: argparse.Namespace, application: Any, packet: Any) ->
     passed = (
         maximum["below_table"] == 0
         and maximum["nonfinite"] == 0
-        and minimum_source >= int(initial["source"])
+        and minimum_source
+        >= EXPECTED_PARTICLE_COUNT
+        - int(math.floor(EXPECTED_PARTICLE_COUNT * PRE_TILT_MAX_OUTSIDE_FRACTION))
         and all(int(score["particle_count"]) == EXPECTED_PARTICLE_COUNT for score in scores)
     )
     from tools.labutopia_fluid.fluid_benchmark_contract import summarize_milliseconds
@@ -456,7 +686,8 @@ def _run_static_hold(args: argparse.Namespace, application: Any, packet: Any) ->
     return {
         "status": "passed" if passed else "failed",
         "duration_s": STATIC_HOLD_SECONDS,
-        "step_count": STATIC_HOLD_STEPS,
+        "step_count": step_count,
+        "integration_hz": args.integration_hz,
         "timing": summarize_milliseconds(timings[1:]),
         "initial_partition": initial,
         "final_partition": final,
@@ -469,7 +700,11 @@ def _run_static_hold(args: argparse.Namespace, application: Any, packet: Any) ->
         "source_usd_matrix": initial_usd_matrix.tolist(),
         "source_matrix_time_code": source_matrix_time_code,
         "source_matrix_time_samples": source_matrix_time_samples,
-        "source_motion_driver": "none_static_hold",
+        "source_motion_driver": (
+            "physx_kinematic_target_hold"
+            if args.source_driver == "physx-kinematic-target"
+            else "none_dynamic_hold"
+        ),
         **stage_record,
     }
 
@@ -523,19 +758,25 @@ def _run_pour(
     )
 
     stage, stage_record = _open_stage(args, application)
-    stepper, source_view, source_indices, initial_source_pose = _attach_stepper_and_source(stage)
+    (
+        stepper,
+        _tensor_simulation,
+        source_view,
+        source_indices,
+        initial_source_pose,
+    ) = _attach_stepper_and_source(stage, args)
     source_poses = packet.array("source_poses_xyzw", (EXPECTED_OBSERVATIONS, 7))
     source_frame_local = packet.array("source_frame_local_matrix", (4, 4))
     initial_usd_matrix, source_matrix_time_code, source_matrix_time_samples = (
         _source_usd_matrix(stage)
     )
-    usd_from_packet = initial_usd_matrix @ np.linalg.inv(
-        _pose_matrix_xyzw(np, source_poses[0])
+    alignment = _source_motion_alignment(
+        np,
+        initial_rigid_pose=initial_source_pose,
+        source_poses=source_poses,
+        initial_usd_matrix=initial_usd_matrix,
     )
     simulation = omni.physx.get_physx_simulation_interface()
-
-    def usd_matrix_for_packet_pose(packet_pose: Any) -> Any:
-        return usd_from_packet @ _pose_matrix_xyzw(np, packet_pose)
 
     rendered = args.mode == "headless-rendered"
     rep = None
@@ -567,17 +808,24 @@ def _run_pour(
     capture_ms = []
     model_ready_ms = []
     scores = []
+    action_records = []
     frame_hashes = []
     records_path = output_dir / "observations.jsonl"
     records = records_path.open("xb")
     try:
-        _set_source_usd_matrix(
-            stage,
-            usd_matrix_for_packet_pose(source_poses[0]),
-            source_matrix_time_code,
-            simulation,
+        initial_action = _advance_source_interval(
+            np=np,
+            args=args,
+            stage=stage,
+            stepper=stepper,
+            source_view=source_view,
+            source_indices=source_indices,
+            alignment=alignment,
+            previous_packet_pose=source_poses[0],
+            current_packet_pose=source_poses[0],
+            source_matrix_time_code=source_matrix_time_code,
+            simulation=simulation,
         )
-        stepper.step()
         initial_positions = _read_positions(stage)
         initial_position_hash = hashlib.sha256(
             np.ascontiguousarray(initial_positions, dtype="<f4").tobytes()
@@ -586,26 +834,30 @@ def _run_pour(
             model_started = time.perf_counter()
             physics_started = time.perf_counter()
             previous_index = max(0, observation_index - 1)
-            pose = interpolate_pose_xyzw(
-                source_poses[previous_index], source_poses[observation_index], 1.0
+            action = _advance_source_interval(
+                np=np,
+                args=args,
+                stage=stage,
+                stepper=stepper,
+                source_view=source_view,
+                source_indices=source_indices,
+                alignment=alignment,
+                previous_packet_pose=source_poses[previous_index],
+                current_packet_pose=source_poses[observation_index],
+                source_matrix_time_code=source_matrix_time_code,
+                simulation=simulation,
             )
-            actual_usd_matrix = usd_matrix_for_packet_pose(pose)
-            _set_source_usd_matrix(
-                stage,
-                actual_usd_matrix,
-                source_matrix_time_code,
-                simulation,
-            )
-            stepper.step()
             positions = _read_positions(stage)
             physics_ms.append((time.perf_counter() - physics_started) * 1000.0)
+            action_records.append(action)
 
             score_started = time.perf_counter()
             score = _partition(
                 positions,
                 packet=packet,
                 source_frame_world=(
-                    source_frame_local @ _pose_matrix_xyzw(np, source_poses[observation_index])
+                    source_frame_local
+                    @ _pose_matrix_xyzw(np, action["actual_packet_pose_xyzw"])
                 ),
                 observation_index=observation_index,
             )
@@ -649,7 +901,22 @@ def _run_pour(
             records.write(
                 (
                     json.dumps(
-                        {"observation_index": observation_index, "score": score, "camera_sha256": camera_hash},
+                        {
+                            "observation_index": observation_index,
+                            "score": score,
+                            "camera_sha256": camera_hash,
+                            "action": {
+                                "driver": args.source_driver,
+                                "integration_hz": args.integration_hz,
+                                "integration_steps": action["integration_steps"],
+                                "target_pose_xyzw": action["target_pose_xyzw"].tolist(),
+                                "actual_pose_xyzw": action["actual_pose_xyzw"].tolist(),
+                                "actual_packet_pose_xyzw": action[
+                                    "actual_packet_pose_xyzw"
+                                ].tolist(),
+                                "pose_error": action["pose_error"],
+                            },
+                        },
                         sort_keys=True,
                         allow_nan=False,
                     )
@@ -691,6 +958,13 @@ def _run_pour(
         "model_ready_fps": 1000.0 / statistics.fmean(model_ready_ms[warm_slice]),
     }
     final = scores[-1]
+    motion_acceptance = _motion_acceptance(
+        np,
+        scores=scores,
+        action_records=action_records,
+        source_poses=source_poses,
+        source_driver=args.source_driver,
+    )
     separated_acceptance = {
         "penetration": {
             "passed": stability["checks"]["no_below_table_penetration"]
@@ -709,22 +983,38 @@ def _run_pour(
             "threshold": 0.90,
         },
         "stable_tail": quality["checks"]["stable_tail"],
+        **motion_acceptance,
     }
+    numeric_motion_passed = bool(
+        args.source_driver == "physx-kinematic-target"
+        and stability["passed"]
+        and separated_acceptance["pre_tilt_retention"]["passed"]
+        and separated_acceptance["source_pose_tracking"]["passed"]
+        and quality["numeric_passed"]
+    )
     return {
-        "status": "measured" if stability["passed"] else "failed_stability",
+        "status": "numeric_pass" if numeric_motion_passed else "measured_no_go",
         "mode": args.mode,
         "particle_count": EXPECTED_PARTICLE_COUNT,
         "observation_count": args.max_observations,
-        "physics_hz": PHYSICS_HZ,
-        "physics_dt_s": PHYSICS_DT,
-        "substeps_per_observation": 1,
+        "control_hz": PHYSICS_HZ,
+        "integration_hz": args.integration_hz,
+        "physics_dt_s": 1.0 / args.integration_hz,
+        "substeps_per_observation": _integration_substeps(args.integration_hz),
         "trajectory": "fluid_benchmark_packet_v2_953_frame_pose_with_initial_rigid_alignment",
-        "source_motion_driver": "USD_xformOp_transform_relative_trajectory_plus_PhysX_flush_changes",
+        "source_motion_driver": args.source_driver,
+        "formal_claim_eligible_driver": args.source_driver == "physx-kinematic-target",
         "initial_source_pose_xyzw": initial_source_pose.tolist(),
         "initial_source_usd_matrix": initial_usd_matrix.tolist(),
         "source_matrix_time_code": source_matrix_time_code,
         "source_matrix_time_samples": source_matrix_time_samples,
-        "usd_from_packet_relation": usd_from_packet.tolist(),
+        "initial_action": {
+            "target_pose_xyzw": initial_action["target_pose_xyzw"].tolist(),
+            "actual_pose_xyzw": initial_action["actual_pose_xyzw"].tolist(),
+            "pose_error": initial_action["pose_error"],
+        },
+        "rigid_from_packet_relation": alignment["rigid_from_packet"].tolist(),
+        "usd_from_packet_relation": alignment["usd_from_packet"].tolist(),
         "initial_position_sha256": initial_position_hash,
         "timing": timing,
         "quality": quality,
@@ -761,11 +1051,20 @@ def _run_benchmark(
         omni.usd.get_context().close_stage()
         application.update()
     pour = _run_pour(args, application, packet, output_dir)
+    if static_hold is not None:
+        pour["separated_acceptance"]["static_hold"] = {
+            "passed": static_hold["status"] == "passed",
+            "minimum_source_count": static_hold["minimum_source_count"],
+            "maximum_counts": static_hold["maximum_counts"],
+        }
+        if static_hold["status"] != "passed":
+            pour["status"] = "measured_no_go"
     result = {
         "schema": "labutopia.isaac41.liquid0812_fast_benchmark_result.v1",
         "claim_boundary": (
             "formal_isaac41_runtime;liquid0812_fast_usd_only;"
-            "548_particles;30hz;single_native_isosurface_camera;not_full_product_scene"
+            "548_particles;30hz_control;configurable_integration_hz;"
+            "single_native_isosurface_camera;not_full_product_scene"
         ),
         "runtime": runtime_record,
         "scene": _file_record(args.scene),
@@ -837,7 +1136,6 @@ def _run_child(args: argparse.Namespace) -> int:
                 "execution_binding": binding,
             },
         )
-        return 0
     except BaseException as error:
         _atomic_json(
             args.evidence_dir / "child_failure.json",
@@ -848,9 +1146,15 @@ def _run_child(args: argparse.Namespace) -> int:
                 "traceback": traceback.format_exc(),
             },
         )
+        # Do not call Kit close here: Isaac 4.1 may terminate the process with
+        # status 0 during teardown and overwrite this formal failure status.
+        # Interpreter teardown releases the failed child process resources.
         return 2
-    finally:
+    try:
         application.close()
+    except SystemExit:
+        pass
+    return 0
 
 
 def _child_command(args: argparse.Namespace, request_path: Path, *, save_video: bool) -> list[str]:
@@ -882,6 +1186,10 @@ def _child_command(args: argparse.Namespace, request_path: Path, *, save_video: 
         str(args.stage_warmup_updates),
         "--render-warmup-observations",
         str(args.render_warmup_observations),
+        "--source-driver",
+        args.source_driver,
+        "--integration-hz",
+        str(args.integration_hz),
     ]
     if save_video:
         command.append("--save-video")
@@ -996,6 +1304,105 @@ def _reference_video_record(path: Path) -> dict[str, Any] | None:
             "provenance": "local_non_independent_visual_read_of_gui_overlay",
         },
     }
+
+
+def _run_integration_sweep(args: argparse.Namespace) -> int:
+    root = args.output_root
+    if root.exists() and any(root.iterdir()):
+        raise FileExistsError(f"output_root_not_empty:{root}")
+    root.mkdir(parents=True, exist_ok=True)
+    runs = []
+    failures = []
+    selected_integration_hz = None
+    for integration_hz in INTEGRATION_HZ_CHOICES:
+        gpu = _sample_gpu(args.gpu_sample_seconds)
+        if not gpu["idle_enough"]:
+            failures.append(
+                {
+                    "integration_hz": integration_hz,
+                    "reason": "gpu_busy",
+                    "gpu_preflight": gpu,
+                }
+            )
+            break
+        run_root = root / f"integration-{integration_hz}hz"
+        child_args = argparse.Namespace(**vars(args))
+        child_args.integration_sweep = False
+        child_args.matrix = False
+        child_args.integration_hz = integration_hz
+        child_args.source_driver = "physx-kinematic-target"
+        child_args.mode = "physics-only"
+        child_args.output_dir = run_root / "artifacts"
+        child_args.evidence_dir = run_root / "evidence"
+        code, result = _run_one_parent(
+            child_args, gpu_preflight=gpu, save_video=False
+        )
+        run_record = {
+            "integration_hz": integration_hz,
+            "returncode": code,
+            "root": str(run_root),
+            "status": result["pour"]["status"] if result is not None else None,
+            "model_ready_fps": (
+                result["pour"]["timing"]["model_ready_fps"]
+                if result is not None
+                else None
+            ),
+            "pre_tilt_retention": (
+                result["pour"]["separated_acceptance"]["pre_tilt_retention"]
+                if result is not None
+                else None
+            ),
+            "source_pose_tracking": (
+                result["pour"]["separated_acceptance"]["source_pose_tracking"]
+                if result is not None
+                else None
+            ),
+            "quality": result["pour"]["quality"] if result is not None else None,
+        }
+        runs.append(run_record)
+        if result is None:
+            failures.append(
+                {"integration_hz": integration_hz, "reason": "run_failed"}
+            )
+            break
+        if result["pour"]["status"] == "numeric_pass":
+            selected_integration_hz = integration_hz
+            break
+    complete = not failures
+    status = (
+        "qualified"
+        if selected_integration_hz is not None
+        else ("measured_no_go" if complete else "incomplete")
+    )
+    sweep = {
+        "schema": "labutopia.isaac41.liquid0812_kinematic_integration_sweep.v1",
+        "status": status,
+        "selection_policy": "lowest_tested_integration_hz_with_numeric_pass",
+        "source_driver": "physx-kinematic-target",
+        "control_hz": PHYSICS_HZ,
+        "candidate_integration_hz": list(INTEGRATION_HZ_CHOICES),
+        "selected_integration_hz": selected_integration_hz,
+        "runs": runs,
+        "failures": failures,
+    }
+    sweep["content_sha256"] = hashlib.sha256(
+        json.dumps(
+            sweep, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode("utf-8")
+    ).hexdigest()
+    _atomic_json(root / "integration_sweep.json", sweep)
+    print(
+        json.dumps(
+            {
+                "status": status,
+                "selected_integration_hz": selected_integration_hz,
+                "sweep": str(root / "integration_sweep.json"),
+            },
+            sort_keys=True,
+        ),
+        flush=True,
+    )
+    return 0 if complete else 2
 
 
 def _run_matrix(args: argparse.Namespace) -> int:
@@ -1119,8 +1526,10 @@ def _run_matrix(args: argparse.Namespace) -> int:
         "reference_video": _reference_video_record(args.video_reference),
         "configuration": {
             "particle_count": EXPECTED_PARTICLE_COUNT,
-            "physics_hz": PHYSICS_HZ,
-            "substeps_per_observation": 1,
+            "control_hz": PHYSICS_HZ,
+            "integration_hz": args.integration_hz,
+            "substeps_per_observation": _integration_substeps(args.integration_hz),
+            "source_driver": args.source_driver,
             "solver_position_iterations": 16,
             "render_resolution": [args.width, args.height],
             "camera_path": CAMERA_PATH,
@@ -1142,6 +1551,7 @@ def _run_matrix(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--matrix", action="store_true")
+    parser.add_argument("--integration-sweep", action="store_true")
     parser.add_argument("--mode", choices=("physics-only", "headless-rendered"))
     parser.add_argument("--scene", type=Path, default=DEFAULT_SCENE)
     parser.add_argument("--packet", type=Path, default=DEFAULT_PACKET)
@@ -1156,6 +1566,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--height", type=int, default=1068)
     parser.add_argument("--stage-warmup-updates", type=int, default=32)
     parser.add_argument("--render-warmup-observations", type=int, default=16)
+    parser.add_argument(
+        "--source-driver", choices=SOURCE_DRIVERS, default=DEFAULT_SOURCE_DRIVER
+    )
+    parser.add_argument(
+        "--integration-hz",
+        type=int,
+        choices=INTEGRATION_HZ_CHOICES,
+        default=DEFAULT_INTEGRATION_HZ,
+    )
     parser.add_argument("--save-video", action="store_true")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--execution-request", type=Path, help=argparse.SUPPRESS)
@@ -1176,6 +1595,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_child(args)
     if args.execution_request is not None:
         raise ValueError("execution_request_is_child_only")
+    if args.integration_sweep:
+        if args.matrix or args.output_root is None:
+            raise ValueError("integration_sweep_arguments_invalid")
+        return _run_integration_sweep(args)
     if args.matrix:
         if args.output_root is None:
             raise ValueError("matrix_output_root_required")
@@ -1185,6 +1608,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.mode is None or args.output_dir is None or args.evidence_dir is None:
         raise ValueError("single_run_arguments_missing")
     gpu_preflight = _sample_gpu(args.gpu_sample_seconds)
+    if not gpu_preflight["idle_enough"]:
+        print(
+            json.dumps(
+                {"status": "blocked_gpu_busy", "gpu_preflight": gpu_preflight},
+                sort_keys=True,
+            ),
+            flush=True,
+        )
+        return 3
     code, _ = _run_one_parent(args, gpu_preflight=gpu_preflight, save_video=args.save_video)
     return code
 

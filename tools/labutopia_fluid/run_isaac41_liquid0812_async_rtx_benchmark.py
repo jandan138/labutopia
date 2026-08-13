@@ -749,17 +749,23 @@ def _run_measurement(
             if warmup_updates > args.max_updates_per_frame * max(1, args.render_warmup_frames):
                 raise TimeoutError(f"render_warmup_timeout:{warmup_valid}:{warmup_updates}")
 
-        stepper, _source_view, _source_indices, initial_source_pose = baseline._attach_stepper_and_source(stage)
+        stepper, _tensor_simulation, source_view, source_indices, initial_source_pose = (
+            baseline._attach_stepper_and_source(stage, args)
+        )
         source_poses = packet.array("source_poses_xyzw", (EXPECTED_OBSERVATIONS, 7))
         source_frame_local = packet.array("source_frame_local_matrix", (4, 4))
         initial_usd_matrix, source_matrix_time_code, source_matrix_time_samples = baseline._source_usd_matrix(stage)
-        usd_from_packet = initial_usd_matrix @ np.linalg.inv(
-            baseline._pose_matrix_xyzw(np, source_poses[0])
+        alignment = baseline._source_motion_alignment(
+            np,
+            initial_rigid_pose=initial_source_pose,
+            source_poses=source_poses,
+            initial_usd_matrix=initial_usd_matrix,
         )
         simulation = omni.physx.get_physx_simulation_interface()
         physics_index = -1
         physics_ms: list[float] = []
         scores = []
+        action_records = []
         phase = "timed"
         timed_started = time.perf_counter()
         for render_index in range(render_count):
@@ -770,22 +776,31 @@ def _run_measurement(
                 physics_index += 1
                 physics_started = time.perf_counter()
                 previous_index = max(0, physics_index - 1)
-                pose = interpolate_pose_xyzw(
-                    source_poses[previous_index], source_poses[physics_index], 1.0
+                action = baseline._advance_source_interval(
+                    np=np,
+                    args=args,
+                    stage=stage,
+                    stepper=stepper,
+                    source_view=source_view,
+                    source_indices=source_indices,
+                    alignment=alignment,
+                    previous_packet_pose=source_poses[previous_index],
+                    current_packet_pose=source_poses[physics_index],
+                    source_matrix_time_code=source_matrix_time_code,
+                    simulation=simulation,
                 )
-                actual_usd_matrix = usd_from_packet @ baseline._pose_matrix_xyzw(np, pose)
-                baseline._set_source_usd_matrix(
-                    stage, actual_usd_matrix, source_matrix_time_code, simulation
-                )
-                stepper.step()
                 positions = baseline._read_positions(stage)
                 physics_ms.append((time.perf_counter() - physics_started) * 1000.0)
+                action_records.append(action)
                 scores.append(
                     baseline._partition(
                         positions,
                         packet=packet,
                         source_frame_world=(
-                            source_frame_local @ baseline._pose_matrix_xyzw(np, source_poses[physics_index])
+                            source_frame_local
+                            @ baseline._pose_matrix_xyzw(
+                                np, action["actual_packet_pose_xyzw"]
+                            )
                         ),
                         observation_index=physics_index,
                     )
@@ -848,6 +863,13 @@ def _run_measurement(
     state_ages_ms = [float(record["state_age_ms"]) for record in records if record["state_age_ms"] is not None]
     quality = evaluate_quality_gate(scores, visual_liquid_passed=None)
     stability = evaluate_stability_gate(scores, expected_particle_count=baseline.EXPECTED_PARTICLE_COUNT)
+    motion_acceptance = baseline._motion_acceptance(
+        np,
+        scores=scores,
+        action_records=action_records,
+        source_poses=source_poses,
+        source_driver=args.source_driver,
+    )
     review = _save_review_artifacts(output_dir, sink) if args.save_review else None
     full_video = (
         _save_full_video_artifacts(output_dir, sink, records, lane=args.lane)
@@ -861,7 +883,7 @@ def _run_measurement(
     )
     average_rtx_fps = len(records) / elapsed_s
     average_physics_fps = len(scores) / elapsed_s
-    acceptance = {
+    performance_acceptance = {
         "average_rtx_completed_fps_at_least_50": average_rtx_fps >= TARGET_RENDER_HZ,
         "average_physics_fps_at_least_30": average_physics_fps >= PHYSICS_HZ,
         "expected_render_count": len(records) == render_count,
@@ -879,16 +901,33 @@ def _run_measurement(
         "no_cpu_rgb_readback_in_timed_path": True,
     }
     if args.save_full_video:
-        acceptance["full_video_encoded_and_verified"] = bool(
+        performance_acceptance["full_video_encoded_and_verified"] = bool(
             full_video and all(full_video["checks"].values())
         )
-    passed = all(acceptance.values())
+    physics_acceptance = {
+        "formal_kinematic_driver": args.source_driver == "physx-kinematic-target",
+        "pre_tilt_retention": motion_acceptance["pre_tilt_retention"]["passed"],
+        "source_pose_tracking": motion_acceptance["source_pose_tracking"]["passed"],
+        "no_penetration_or_nonfinite": stability["passed"],
+        "complete_pour_numeric_quality": quality["numeric_passed"],
+    }
+    performance_passed = all(performance_acceptance.values())
+    physics_passed = all(physics_acceptance.values())
     result = {
-        "schema": "labutopia.isaac41.liquid0812_async_rtx_result.v1",
-        "status": "passed_50fps" if passed else "measured_no_go",
+        "schema": "labutopia.isaac41.liquid0812_async_rtx_result.v2",
+        "status": (
+            "passed_50fps_and_physics"
+            if performance_passed and physics_passed
+            else (
+                "passed_50fps_quality_no_go"
+                if performance_passed
+                else "measured_no_go"
+            )
+        ),
         "claim_boundary": (
             "experimental_async_rtx_completed_gpu_ready_protocol;not_current_state_artifact_ready;"
-            "single_camera;30hz_physics;50hz_render_schedule;same_physics_state_may_back_two_renders"
+            "single_camera;30hz_control;configurable_integration_hz;50hz_render_schedule;"
+            "same_control_state_may_back_two_renders"
         ),
         "runtime": runtime_record,
         "lane": args.lane,
@@ -904,7 +943,12 @@ def _run_measurement(
             "render_product_path": product_path,
             "resolution": [args.width, args.height],
             "renderer": "RayTracedLighting",
-            "physics_hz": PHYSICS_HZ,
+            "control_hz": PHYSICS_HZ,
+            "integration_hz": args.integration_hz,
+            "substeps_per_control_observation": baseline._integration_substeps(
+                args.integration_hz
+            ),
+            "source_driver": args.source_driver,
             "target_render_hz": TARGET_RENDER_HZ,
             "observation_count": args.max_observations,
             "render_count": render_count,
@@ -958,10 +1002,17 @@ def _run_measurement(
             "initial_source_pose_xyzw": initial_source_pose.tolist(),
             "source_matrix_time_code": source_matrix_time_code,
             "source_matrix_time_samples": source_matrix_time_samples,
+            "rigid_from_packet_relation": alignment["rigid_from_packet"].tolist(),
+            "motion_acceptance": motion_acceptance,
             "quality": quality,
             "stability": stability,
         },
-        "acceptance": acceptance,
+        "acceptance": {
+            "performance": performance_acceptance,
+            "physics": physics_acceptance,
+            "performance_passed": performance_passed,
+            "physics_passed": physics_passed,
+        },
         "artifacts": {
             "render_events": baseline._file_record(events_path),
             "review": review,
@@ -1032,7 +1083,6 @@ def _run_child(args: argparse.Namespace) -> int:
                 "execution_binding": binding,
             },
         )
-        return 0
     except BaseException as error:
         _atomic_json(
             args.evidence_dir / "child_failure.json",
@@ -1043,9 +1093,14 @@ def _run_child(args: argparse.Namespace) -> int:
                 "traceback": traceback.format_exc(),
             },
         )
+        # Preserve the formal nonzero outcome; failed children rely on normal
+        # interpreter teardown instead of Kit close, which may force exit 0.
         return 2
-    finally:
+    try:
         application.close()
+    except SystemExit:
+        pass
+    return 0
 
 
 def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
@@ -1062,6 +1117,8 @@ def _child_command(args: argparse.Namespace, request_path: Path) -> list[str]:
         "--render-warmup-frames", str(args.render_warmup_frames),
         "--max-updates-per-frame", str(args.max_updates_per_frame),
         "--review-frames", str(args.review_frames),
+        "--source-driver", args.source_driver,
+        "--integration-hz", str(args.integration_hz),
     ]
     if args.save_review:
         command.append("--save-review")
@@ -1221,7 +1278,12 @@ def _run_matrix(args: argparse.Namespace) -> int:
         "claim_boundary": "experimental_async_rtx_completed_gpu_ready;not_strict_artifact_ready",
         "configuration": {
             "lanes": list(args.lanes), "profiles": list(args.profiles), "repeats": args.repeats,
-            "resolution": [args.width, args.height], "physics_hz": PHYSICS_HZ,
+            "resolution": [args.width, args.height], "control_hz": PHYSICS_HZ,
+            "integration_hz": args.integration_hz,
+            "substeps_per_control_observation": baseline._integration_substeps(
+                args.integration_hz
+            ),
+            "source_driver": args.source_driver,
             "target_render_hz": TARGET_RENDER_HZ, "observation_count": args.max_observations,
             "camera_policy": args.camera_policy,
         },
@@ -1264,6 +1326,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--render-warmup-frames", type=int, default=16)
     parser.add_argument("--max-updates-per-frame", type=int, default=600)
     parser.add_argument("--review-frames", type=int, default=60)
+    parser.add_argument(
+        "--source-driver",
+        choices=baseline.SOURCE_DRIVERS,
+        default=baseline.DEFAULT_SOURCE_DRIVER,
+    )
+    parser.add_argument(
+        "--integration-hz",
+        type=int,
+        choices=baseline.INTEGRATION_HZ_CHOICES,
+        default=baseline.DEFAULT_INTEGRATION_HZ,
+    )
     parser.add_argument("--save-review", action="store_true")
     parser.add_argument("--save-full-video", action="store_true")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
@@ -1280,6 +1353,7 @@ def _validate_args(args: argparse.Namespace) -> None:
         raise ValueError("warmup_and_update_limit_must_be_positive")
     if args.review_frames < 0:
         raise ValueError("review_frames_must_be_nonnegative")
+    baseline._integration_substeps(args.integration_hz)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -1302,6 +1376,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     if None in (args.lane, args.output_dir, args.evidence_dir):
         raise ValueError("single_run_arguments_missing")
     gpu = baseline._sample_gpu(args.gpu_sample_seconds)
+    if not gpu["idle_enough"]:
+        print(
+            json.dumps(
+                {"status": "blocked_gpu_busy", "gpu_preflight": gpu},
+                sort_keys=True,
+            ),
+            flush=True,
+        )
+        return 3
     code, _result = _run_one_parent(args, gpu_preflight=gpu)
     return code
 

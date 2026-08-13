@@ -66,5 +66,21 @@
     },
     "visual_first_obvious_failure_render_index": 759,
     "statement": "RTX throughput is qualified; liquid containment and full-action framing are not qualified."
+  },
+  "kinematic_followup": {
+    "date": "2026-08-13",
+    "status": "driver_pass_quality_no_go",
+    "source_driver": "physx-kinematic-target",
+    "control_hz": 30,
+    "selected_integration_hz": null,
+    "selection_policy": "lowest integration frequency passing static hold, pre-tilt retention, pose tracking and full-pour numeric quality",
+    "sweep_content_sha256": "f343c5f5c2b7fda02adf0dd5e7341e80c90991c7dc37ce7cd3dd06e2e8401c8f",
+    "runs": [
+      {"integration_hz": 30, "physics_mean_ms": 5.761374304650211, "model_ready_fps": 164.6044289221205, "pre_tilt_max_outside": 32, "final_target": 507, "final_tabletop_spill": 40, "final_below_table": 1, "status": "measured_no_go"},
+      {"integration_hz": 60, "physics_mean_ms": 10.992341741387333, "model_ready_fps": 88.35041394601252, "pre_tilt_max_outside": 23, "final_target": 496, "final_tabletop_spill": 38, "final_below_table": 14, "status": "measured_no_go"},
+      {"integration_hz": 120, "physics_mean_ms": 21.636711478530735, "model_ready_fps": 45.46117650406641, "pre_tilt_max_outside": 23, "final_target": 478, "final_tabletop_spill": 40, "final_below_table": 30, "status": "measured_no_go"}
+    ],
+    "formal_runtime_receipts": "3/3 MATCH effective-runtime v2",
+    "rtx_rerun_skipped_by_stop_rule": true
   }
 }
